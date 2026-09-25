@@ -47,6 +47,19 @@ private static void drain()
 	}
 }
 
+private static uint lane_of(Gitree.Window window, string subject)
+{
+	foreach (var commit in window.history.rows())
+	{
+		if (commit.get_subject() == subject)
+		{
+			return commit.mylane;
+		}
+	}
+
+	assert_not_reached();
+}
+
 private static string labels(Gitree.HistoryActivity activity, int row)
 {
 	return string.joinv(",", activity.labels_for(activity.rows()[row]));
@@ -57,6 +70,7 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
+	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-the-ticks-alone", test_refs_that_cannot_be_read_leave_the_ticks_alone);
 	Test.add_func("/gitree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
@@ -93,6 +107,18 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 	return window;
 }
 
+private static string subjects_of(Gitree.Window window)
+{
+	var names = new string[0];
+
+	foreach (var commit in window.history.rows())
+	{
+		names += commit.get_subject();
+	}
+
+	return string.joinv(",", names);
+}
+
 private static File ticks_file(Repo repo)
 {
 	return repo.path.get_child(".git").get_child("git-tree-ticks");
@@ -127,6 +153,46 @@ private static void test_bytes_that_are_not_utf8_show_as_replacements()
 
 		window.destroy();
 		message.delete();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_history_settings_redraw_the_list()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.commit("master one");
+		repo.git({"checkout", "--quiet", "-b", "side", "master~1"});
+		repo.commit("side one", "side");
+		repo.commit("side two", "side");
+		repo.checkout("master");
+		repo.commit("master two");
+		repo.checkout("side");
+
+		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".preferences.history");
+		var window = opened(repo, {"refs/heads/master", "refs/heads/side"});
+		var by_time = subjects_of(window);
+
+		assert_cmpstr(by_time, CompareOperator.EQ, "master two,side two,side one,master one,base");
+		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 0);
+
+		settings.set_boolean("mainline-head", false);
+		drain();
+		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 1);
+
+		settings.set_boolean("topological-order", true);
+		drain();
+		assert_cmpstr(subjects_of(window), CompareOperator.NE, by_time);
+
+		settings.reset("mainline-head");
+		settings.reset("topological-order");
+		window.destroy();
 		repo.remove();
 	}
 	catch (Error e)

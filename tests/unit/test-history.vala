@@ -510,6 +510,24 @@ private static void test_topological_order_keeps_children_above_parents()
 		assert_cmpint(rows.length, CompareOperator.EQ, timed.history.tick(tips(timed, all), {}).length);
 
 		repo.remove();
+
+		var interleaved = Repo.create();
+		interleaved.commit("base");
+		interleaved.commit("master one");
+		interleaved.git({"checkout", "--quiet", "-b", "side", "master~1"});
+		interleaved.commit("side one", "side");
+		interleaved.commit("side two", "side");
+		interleaved.checkout("master");
+		interleaved.commit("master two");
+
+		var by_time = open(interleaved.path, false);
+		var by_parents = open(interleaved.path, true);
+		string[] both = {"master", "side"};
+
+		assert_cmpstr(subjects(by_time.history.tick(tips(by_time, both), {})), CompareOperator.EQ, "master two,side two,side one,master one,base");
+		assert_cmpstr(subjects(by_parents.history.tick(tips(by_parents, both), {})), CompareOperator.NE, "master two,side two,side one,master one,base");
+
+		interleaved.remove();
 	}
 	catch (Error e)
 	{

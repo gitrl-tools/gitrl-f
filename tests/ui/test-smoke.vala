@@ -23,12 +23,12 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/smoke/window-shows-with-gitg-style", test_window_shows_with_gitg_style);
+	Test.add_func("/gitree/ui/smoke/window-shows-after-gitg-init", test_window_shows_after_gitg_init);
 
 	return Test.run();
 }
 
-private static void test_window_shows_with_gitg_style()
+private static void test_window_shows_after_gitg_init()
 {
 	try
 	{

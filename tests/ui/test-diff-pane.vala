@@ -124,6 +124,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/diff-pane/count-line-wording", test_count_line_wording);
 	Test.add_func("/gitree/ui/diff-pane/details-survive-bytes-that-are-not-utf8", test_details_survive_bytes_that_are_not_utf8);
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
+	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths-from-a-subfolder", test_diff_is_limited_to_the_paths_from_a_subfolder);
 	Test.add_func("/gitree/ui/diff-pane/diff-names-renames-and-binary-files", test_diff_names_renames_and_binary_files);
 	Test.add_func("/gitree/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
 	Test.add_func("/gitree/ui/diff-pane/huge-diff-is-cut-and-says-so", test_huge_diff_is_cut_and_says_so);
@@ -178,7 +179,7 @@ private static string marked_words(Gitree.Window window, string tag_name)
 	return string.joinv("|", words);
 }
 
-private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths = {}) throws Error
+private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths = {}, File? directory = null) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 
@@ -189,7 +190,7 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 
 	var window = new Gitree.Window(application());
 	window.set_default_size(1200, 900);
-	window.open_repository(Gitree.Application.discover_repository(repo.path), ticks, paths, repo.path);
+	window.open_repository(Gitree.Application.discover_repository(repo.path), ticks, paths, directory != null ? directory : repo.path);
 	window.show();
 	settle(300);
 
@@ -367,6 +368,36 @@ private static void test_diff_is_limited_to_the_paths()
 		assert_cmpint(names.length, CompareOperator.EQ, 1);
 		assert_true("sub/a" in names[0]);
 		assert_true(count_line(window).has_prefix("1 file changed"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_diff_is_limited_to_the_paths_from_a_subfolder()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first", "sub/a");
+		repo.git({"checkout", "--quiet", "-b", "side"});
+		FileUtils.set_contents(repo.path.get_child("sub").get_child("a").get_path(), "changed\n");
+		FileUtils.set_contents(repo.path.get_child("a").get_path(), "other\n");
+		repo.git({"add", "--all"});
+		repo.git({"commit", "--quiet", "-m", "both"});
+
+		var window = opened(repo, {"refs/heads/side"}, {"a"}, repo.path.get_child("sub"));
+
+		select_subject(window, "both");
+
+		var names = headers(window);
+
+		assert_cmpint(names.length, CompareOperator.EQ, 1);
+		assert_true("sub/a" in names[0]);
 
 		window.destroy();
 		repo.remove();

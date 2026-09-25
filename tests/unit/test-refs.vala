@@ -86,14 +86,18 @@ private static void test_annotated_tag_is_followed_to_its_commit()
 	{
 		var repo = fixture();
 		var first = repo.git({"rev-parse", "HEAD~1"}).strip();
+		var found = false;
 
 		foreach (var reference in Gitree.Refs.read(open(repo.path)))
 		{
 			if (reference.name == "refs/tags/v1")
 			{
 				assert_cmpstr(reference.target.to_string(), CompareOperator.EQ, first);
+				found = true;
 			}
 		}
+
+		assert_true(found);
 
 		repo.remove();
 	}

@@ -41,14 +41,7 @@ private static Gitree.Application application()
 
 private static string differences(File a, File b) throws Error
 {
-	string[] argv = { "diff", "-r", "--no-dereference", "-x", "git-tree-ticks", a.get_path(), b.get_path() };
-	string output;
-	string errors;
-	int status;
-
-	Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, out output, out errors, out status);
-
-	return output + errors;
+	return run({ "diff", "-r", "--no-dereference", "-x", "git-tree-ticks", a.get_path(), b.get_path() });
 }
 
 private static void every_row(Gitree.Window window)
@@ -69,6 +62,17 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/session/a-session-changes-nothing-but-the-ticks", test_a_session_changes_nothing_but_the_ticks);
 
 	return Test.run();
+}
+
+private static string run(string[] argv) throws Error
+{
+	string output;
+	string errors;
+	int status;
+
+	Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, out output, out errors, out status);
+
+	return output + errors;
 }
 
 private static void settle(int milliseconds)
@@ -97,7 +101,7 @@ private static void test_a_session_changes_nothing_but_the_ticks()
 		FileUtils.set_contents(repo.path.get_child("untracked").get_path(), "untracked\n");
 
 		var copy = repo.path.get_parent().get_child(repo.path.get_basename() + "-copy");
-		Process.spawn_command_line_sync("cp -a %s %s".printf(repo.path.get_path(), copy.get_path()));
+		run({ "cp", "-a", repo.path.get_path(), copy.get_path() });
 
 		var location = Gitree.Application.discover_repository(repo.path);
 		var window = new Gitree.Window(application());
@@ -135,7 +139,7 @@ private static void test_a_session_changes_nothing_but_the_ticks()
 		assert_true(repo.path.get_child(".git").get_child("git-tree-ticks").query_exists());
 		assert_cmpstr(differences(copy, repo.path), CompareOperator.EQ, "");
 
-		Process.spawn_command_line_sync("rm -rf %s".printf(copy.get_path()));
+		run({ "rm", "-rf", copy.get_path() });
 		repo.remove();
 	}
 	catch (Error e)
