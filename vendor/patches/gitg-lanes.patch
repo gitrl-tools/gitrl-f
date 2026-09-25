@@ -34,7 +34,32 @@
  	public void reset(Ggit.OId[]?            reserved = null,
  	                  Gee.HashSet<Ggit.OId>? roots    = null)
  	{
-@@ -219,7 +246,7 @@
+@@ -168,7 +195,6 @@
+ 			expand_lanes(next);
+ 		}
+ 
+-		debug("commit: %s %s", next.get_subject(), next.get_id().to_string());
+ 		LaneContainer? mylane = find_lane_by_oid(myoid, out nextpos);
+ 		if (mylane == null && d_roots != null && !d_roots.contains(myoid))
+ 		{
+@@ -211,7 +237,15 @@
+ 
+ 		var hidden = mylane.is_hidden;
+ 
+-		lanes = lanes_list();
++		if (hidden)
++		{
++			lanes = null;
++		}
++		else
++		{
++			lanes = lanes_list();
++		}
++
+ 		prepare_lanes(next, nextpos, hidden);
+ 
+ 		return !hidden;
+@@ -219,7 +253,7 @@
  
  	private void prepare_lanes(Commit next, int pos, bool hidden)
  	{
@@ -43,7 +68,7 @@
  		var myoid = next.get_id();
  
  		if (!hidden)
-@@ -229,10 +256,10 @@
+@@ -229,10 +263,10 @@
  
  		var mylane = d_lanes[pos];
  
@@ -56,7 +81,7 @@
  
  			var container = find_lane_by_oid(poid, out lnpos);
  
-@@ -536,11 +563,9 @@
+@@ -536,11 +570,9 @@
  	{
  		expand_lane_from_oid(commit.get_id());
  

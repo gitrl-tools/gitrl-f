@@ -145,11 +145,17 @@ The same cause as the renderer. `get_selection()` returns `PatchSet[]`, and the 
 
 ## gitg-lanes.patch
 
-Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`. Two places read the parents of a commit: `prepare_lanes()` and `expand_lanes()`. They now ask `parent_ids()`, which calls that function when it is set, and reads the commit when it is not.
+Three changes.
 
-**Why.** Under a path limit, gitree shows only the commits that change the paths. It takes the parents of each one from `git log --parents`, which rewrites them to the nearest shown ancestors. libgit2 has no history simplification by path. The lanes must follow the rewritten parents, or the graph does not join from one shown commit to the next. The commit object holds its real parents, so the lanes need another source.
+**1. Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`.** Two places read the parents of a commit: `prepare_lanes()` and `expand_lanes()`. They now ask `parent_ids()`, which calls that function when it is set, and reads the commit when it is not.
 
-**Cost.** None. With no path limit, no function is set. Then the lanes read the parents of the commit as upstream does, and the result is the same.
+Under a path limit, gitree shows only the commits that change the paths. It takes the parents of each one from `git log --parents`, which rewrites them to the nearest shown ancestors. libgit2 has no history simplification by path. The lanes must follow the rewritten parents, or the graph does not join from one shown commit to the next. The commit object holds its real parents, so the lanes need another source.
+
+**2. Removes the `debug()` call at the start of `next()`.** Its arguments, the subject of the commit and its hash as text, are made for every commit even when debug output is off. On a tick of one branch of a history of 100000 commits, the lanes took 0.296 s with the call and 0.272 s without it (measured, 2026-09-25).
+
+**3. Does not make the list of lanes for a hidden commit.** `next()` copied every lane into a new list for each commit, and the caller drops that list when `next()` returns false, which it does for a hidden commit. A hidden commit is one on the first parent line of the mainline that no ticked ref reaches. `next()` now gives null for it, as it already does for a commit that it saves as a miss. The same tick took 0.255 s with this change and the one above (measured).
+
+**Cost.** None. With no path limit, no function is set, and the lanes read the parents of the commit as upstream does. Every caller, `Gitg.CommitModel` included, reads the list only when `next()` returns true. The pixel comparison with gitg is unchanged at zero differing pixels.
 
 ## resources.xml.patch
 

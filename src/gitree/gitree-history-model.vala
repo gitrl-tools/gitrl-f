@@ -229,29 +229,13 @@ public class HistoryModel : Object, Gtk.TreeModel
 
 	public void set_rows(Gitg.Commit[] rows)
 	{
-		var path = new Gtk.TreePath.from_indices(d_rows.length);
-
-		while (d_rows.length > 0)
-		{
-			path.prev();
-			d_rows.length--;
-			row_deleted(path.copy());
-		}
-
 		d_stamp++;
 		d_rows = rows;
 		d_index.clear();
 
-		var iter = Gtk.TreeIter();
-		iter.stamp = d_stamp;
-		path = new Gtk.TreePath.from_indices(0);
-
 		for (var i = 0; i < d_rows.length; i++)
 		{
 			d_index[d_rows[i].get_id()] = i;
-			iter.user_data = (void *)(ulong)i;
-			row_inserted(path.copy(), iter);
-			path.next();
 		}
 	}
 }

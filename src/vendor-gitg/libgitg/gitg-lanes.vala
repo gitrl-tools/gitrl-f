@@ -195,7 +195,6 @@ public class Lanes : Object
 			expand_lanes(next);
 		}
 
-		debug("commit: %s %s", next.get_subject(), next.get_id().to_string());
 		LaneContainer? mylane = find_lane_by_oid(myoid, out nextpos);
 		if (mylane == null && d_roots != null && !d_roots.contains(myoid))
 		{
@@ -238,7 +237,15 @@ public class Lanes : Object
 
 		var hidden = mylane.is_hidden;
 
-		lanes = lanes_list();
+		if (hidden)
+		{
+			lanes = null;
+		}
+		else
+		{
+			lanes = lanes_list();
+		}
+
 		prepare_lanes(next, nextpos, hidden);
 
 		return !hidden;
