@@ -120,6 +120,15 @@ gitree_bench = executable(
   install: false,
 )
 
+gitree_dump = executable(
+  'gitree-dump',
+  files('parity/gitree-dump.vala') + gitree_all_resources,
+  include_directories: [top_inc, vendor_gitg_inc],
+  dependencies: test_deps,
+  vala_args: test_vala_flags,
+  install: false,
+)
+
 if get_option('visual_tests')
   test(
     'visual-parity',
