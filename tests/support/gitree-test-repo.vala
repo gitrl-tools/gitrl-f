@@ -22,11 +22,11 @@ namespace GitreeTest
 
 public class Repo : Object
 {
-	public const string AUTHOR_DATE = "2026-07-20 10:00:00 +0200";
-	public const string COMMITTER_DATE = "2026-07-20 11:00:00 +0200";
+	private const int64 EPOCH = 1767225600;
 
 	public File path { get; private set; }
 
+	private int d_clock;
 	private string[] d_env;
 
 	public Repo(File location) throws Error
@@ -40,16 +40,14 @@ public class Repo : Object
 
 		var env = Environ.get();
 
-		env = Environ.set_variable(env, "GIT_AUTHOR_DATE", AUTHOR_DATE, true);
-		env = Environ.set_variable(env, "GIT_COMMITTER_DATE", COMMITTER_DATE, true);
 		env = Environ.set_variable(env, "GIT_CONFIG_GLOBAL", "/dev/null", true);
 		env = Environ.set_variable(env, "GIT_CONFIG_SYSTEM", "/dev/null", true);
 
 		d_env = env;
 
-		git({"init", "--quiet", "--initial-branch=main"});
-		git({"config", "user.name", "Test Author"});
-		git({"config", "user.email", "test@example.com"});
+		git({"init", "--quiet", "--initial-branch=master"});
+		git({"config", "user.name", "Tester"});
+		git({"config", "user.email", "tester@example.com"});
 	}
 
 	public void branch(string name) throws Error
@@ -57,15 +55,31 @@ public class Repo : Object
 		git({"branch", name});
 	}
 
+	public void branched() throws Error
+	{
+		commit("base one");
+		commit("base two");
+		git({"checkout", "--quiet", "-b", "feature/scan"});
+		commit("feature one", "feature");
+		git({"checkout", "--quiet", "-b", "fix/stamp", "master"});
+		commit("fix one", "fix");
+		commit("fix two", "fix");
+		checkout("master");
+		commit("master three");
+		merge("fix/stamp");
+		commit("master four");
+		git({"update-ref", "refs/remotes/origin/master", "master~1"});
+		git({"tag", "v1", "master~3"});
+	}
+
 	public void checkout(string target) throws Error
 	{
 		git({"checkout", "--quiet", target});
 	}
 
-	public string commit(string message = "commit", string? filename = null, string? content = null) throws Error
+	public string commit(string subject, string name = "file", string? text = null) throws Error
 	{
-		var name = filename != null ? filename : "file.txt";
-		var body = content != null ? content : message + "\n";
+		d_clock++;
 
 		var target = path.get_child(name);
 		var parent = target.get_parent();
@@ -75,22 +89,24 @@ public class Repo : Object
 			parent.make_directory_with_parents();
 		}
 
-		FileUtils.set_contents(target.get_path(), body);
+		var stream = target.append_to(FileCreateFlags.NONE);
+		stream.write(((text != null ? text : subject) + "\n").data);
+		stream.close();
 
-		git({"add", "--all"});
-		git({"commit", "--quiet", "-m", message});
+		git({"add", name});
+		git({"commit", "--quiet", "-m", subject});
 
 		return git({"rev-parse", "HEAD"}).strip();
 	}
 
 	public string commit_at(int day, string message, string? filename = null) throws Error
 	{
-		var name = filename != null ? filename : "file.txt";
+		var name = filename != null ? filename : "file";
 		FileUtils.set_contents(path.get_child(name).get_path(), message + "\n");
 
 		git({"add", "--all"});
 
-		var when = "@%lld".printf((int64)1577836800 + (int64)day * 86400);
+		var when = "@%lld +0000".printf((int64)1577836800 + (int64)day * 86400);
 
 		var env = Environ.set_variable(d_env, "GIT_AUTHOR_DATE", when, true);
 		env = Environ.set_variable(env, "GIT_COMMITTER_DATE", when, true);
@@ -102,6 +118,8 @@ public class Repo : Object
 
 	public string commit_bytes(string message, string filename, uint8[] content) throws Error
 	{
+		d_clock++;
+
 		var target = path.get_child(filename);
 
 		target.replace_contents(content, null, false, FileCreateFlags.REPLACE_DESTINATION,
@@ -126,12 +144,18 @@ public class Repo : Object
 
 	public string git(string[] args) throws Error
 	{
-		return run_git(args, d_env);
+		var when = "@%lld +0000".printf(EPOCH + d_clock);
+
+		var env = Environ.set_variable(d_env, "GIT_AUTHOR_DATE", when, true);
+		env = Environ.set_variable(env, "GIT_COMMITTER_DATE", when, true);
+
+		return run_git(args, env);
 	}
 
-	public void merge(string name, string message = "merge") throws Error
+	public void merge(string name) throws Error
 	{
-		git({"merge", "--no-ff", "--quiet", "-m", message, name});
+		d_clock++;
+		git({"merge", "--quiet", "--no-ff", "--no-edit", name});
 	}
 
 	public void remove()

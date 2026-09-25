@@ -3,9 +3,21 @@ gitree_lib_sources = files(
   'gitree-command-line.vala',
   'gitree-dash-view.vala',
   'gitree-history-activity.vala',
+  'gitree-history-model.vala',
+  'gitree-history-paned.vala',
+  'gitree-history.vala',
+  'gitree-poll.vala',
   'gitree-preferences-dialog.vala',
+  'gitree-ref.vala',
+  'gitree-refs-header.vala',
+  'gitree-refs-list.vala',
+  'gitree-refs-row.vala',
+  'gitree-refs.vala',
   'gitree-repository.vala',
+  'gitree-search.vala',
+  'gitree-ticks.vala',
   'gitree-window.vala',
+  'gitree-word-diff.vala',
 )
 
 gitree_resources = gnome.compile_resources(

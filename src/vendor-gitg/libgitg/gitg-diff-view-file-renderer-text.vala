@@ -822,7 +822,12 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 
 			if (rtype == RegionType.CONTEXT)
 			{
-				apply_word_marks(buffer, marked_removed, marked_added);
+				if (origin != Ggit.DiffLineType.CONTEXT_EOFNL &&
+				    origin != Ggit.DiffLineType.ADD_EOFNL &&
+				    origin != Ggit.DiffLineType.DEL_EOFNL)
+				{
+					apply_word_marks(buffer, marked_removed, marked_added);
+				}
 
 				if (d_style == Style.OLD || d_style == Style.NEW)
 				{

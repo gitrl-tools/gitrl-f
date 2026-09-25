@@ -20,43 +20,25 @@
 namespace Gitree
 {
 
-public errordomain RepositoryError
+public enum RefKind
 {
-	NOT_A_REPOSITORY,
+	LOCAL,
+	REMOTE,
+	TAG,
 }
 
-public class Repository : Object
+public class Ref : Object
 {
-	public static File common_dir(Gitg.Repository repository)
+	public bool head { get; construct; }
+	public RefKind kind { get; construct; }
+	public string name { get; construct; }
+	public string remote { get; construct; }
+	public string short_name { get; construct; }
+	public Ggit.OId target { get; construct; }
+
+	public Ref(string name, string short_name, RefKind kind, string remote, Ggit.OId target, bool head)
 	{
-		var git_dir = repository.get_location();
-		var pointer = git_dir.get_child("commondir");
-		string contents;
-
-		try
-		{
-			FileUtils.get_contents(pointer.get_path(), out contents);
-		}
-		catch (FileError e)
-		{
-			return git_dir;
-		}
-
-		return git_dir.resolve_relative_path(contents.strip());
-	}
-
-	public static Gitg.Repository open(File location) throws RepositoryError
-	{
-		try
-		{
-			Gitg.init();
-
-			return new Gitg.Repository(location, null);
-		}
-		catch (Error e)
-		{
-			throw new RepositoryError.NOT_A_REPOSITORY("%s", e.message);
-		}
+		Object(name: name, short_name: short_name, kind: kind, remote: remote, target: target, head: head);
 	}
 }
 

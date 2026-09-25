@@ -130,6 +130,33 @@ public class Lanes : Object
 		reset();
 	}
 
+	public delegate Ggit.OId[] ParentsFunc(Commit commit);
+
+	private ParentsFunc? d_parents_func;
+
+	public void set_parents_func(owned ParentsFunc? func)
+	{
+		d_parents_func = (owned)func;
+	}
+
+	private Ggit.OId[] parent_ids(Commit commit)
+	{
+		if (d_parents_func != null)
+		{
+			return d_parents_func(commit);
+		}
+
+		var parents = commit.get_parents();
+		var ids = new Ggit.OId[parents.size];
+
+		for (uint i = 0; i < parents.size; ++i)
+		{
+			ids[i] = parents.get_id(i);
+		}
+
+		return ids;
+	}
+
 	public void reset(Ggit.OId[]?            reserved = null,
 	                  Gee.HashSet<Ggit.OId>? roots    = null)
 	{
@@ -219,7 +246,7 @@ public class Lanes : Object
 
 	private void prepare_lanes(Commit next, int pos, bool hidden)
 	{
-		var parents = next.get_parents();
+		var parents = parent_ids(next);
 		var myoid = next.get_id();
 
 		if (!hidden)
@@ -229,10 +256,10 @@ public class Lanes : Object
 
 		var mylane = d_lanes[pos];
 
-		for (uint i = 0; i < parents.size; ++i)
+		for (uint i = 0; i < parents.length; ++i)
 		{
 			int lnpos;
-			var poid = parents.get_id(i);
+			var poid = parents[i];
 
 			var container = find_lane_by_oid(poid, out lnpos);
 
@@ -536,11 +563,9 @@ public class Lanes : Object
 	{
 		expand_lane_from_oid(commit.get_id());
 
-		var parents = commit.get_parents();
-
-		for (uint i = 0; i < parents.size; ++i)
+		foreach (var parent in parent_ids(commit))
 		{
-			expand_lane_from_oid(parents.get_id(i));
+			expand_lane_from_oid(parent);
 		}
 	}
 

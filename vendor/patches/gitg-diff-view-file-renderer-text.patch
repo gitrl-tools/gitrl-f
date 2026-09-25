@@ -268,16 +268,21 @@
  			if (i == lines.size - 1 && text.length > 0 && text[text.length - 1] == '\n')
  			{
  				text = text.slice(0, text.length - 1);
-@@ -823,6 +822,8 @@
+@@ -823,6 +822,13 @@
  
  			if (rtype == RegionType.CONTEXT)
  			{
-+				apply_word_marks(buffer, marked_removed, marked_added);
++				if (origin != Ggit.DiffLineType.CONTEXT_EOFNL &&
++				    origin != Ggit.DiffLineType.ADD_EOFNL &&
++				    origin != Ggit.DiffLineType.DEL_EOFNL)
++				{
++					apply_word_marks(buffer, marked_removed, marked_added);
++				}
 +
  				if (d_style == Style.OLD || d_style == Style.NEW)
  				{
  					if (in_change_line == true)
-@@ -879,6 +880,14 @@
+@@ -879,6 +885,14 @@
  				buffer.get_end_iter(out t_iter);
  				buffer.create_source_mark(null, mark, t_iter);
  
@@ -292,7 +297,7 @@
  				buffer.insert(ref iter, text, -1);
  				buffer_line++;
  				if (d_style == Style.OLD || d_style == Style.NEW)
-@@ -907,6 +916,14 @@
+@@ -907,6 +921,14 @@
  			{
  				if (d_style == Style.OLD || d_style == Style.NEW)
  				{
@@ -307,7 +312,7 @@
  					if (d_style == Style.OLD)
  						add_line_num++;
  					else
-@@ -917,12 +934,20 @@
+@@ -917,12 +939,20 @@
  					buffer.get_end_iter(out t_iter);
  					buffer.create_source_mark(null, "added", t_iter);
  

@@ -27,6 +27,7 @@ public class Window : Gtk.ApplicationWindow
 		{"dash", on_dash_activated},
 		{"preferences", on_preferences_activated},
 		{"reload", on_reload_activated},
+		{"search", on_search_activated},
 	};
 
 	[GtkChild]
@@ -52,8 +53,20 @@ public class Window : Gtk.ApplicationWindow
 
 	private DashView d_dash;
 	private HistoryActivity d_history;
+	private Settings d_interface_settings;
+	private Poll d_poll;
 	private Gitg.Repository? d_repository;
 	private Settings d_state_settings;
+
+	public bool error_shown
+	{
+		get { return d_infobar.visible; }
+	}
+
+	public bool polling
+	{
+		get { return d_poll.running; }
+	}
 
 	public Gitg.Repository? repository
 	{
@@ -81,13 +94,43 @@ public class Window : Gtk.ApplicationWindow
 		});
 
 		d_dash = new DashView();
-		d_dash.repository_activated.connect(set_repository);
+		d_dash.repository_activated.connect((repository) => {
+			set_repository(repository, null, {}, null);
+		});
 		d_dash.show_error.connect((primary, secondary) => {
 			show_infobar(primary, secondary, Gtk.MessageType.ERROR);
 		});
 		d_main_stack.add_named(d_dash, "dash");
 
 		d_history = new HistoryActivity();
+		d_history.bind_property("search-visible", d_search_button, "active", BindingFlags.BIDIRECTIONAL | BindingFlags.SYNC_CREATE);
+		d_history.show_error.connect((primary, secondary) => {
+			show_infobar(primary, secondary, Gtk.MessageType.ERROR);
+		});
+
+		d_poll = new Poll();
+		d_poll.changed.connect(() => {
+			d_history.refresh();
+		});
+
+		d_interface_settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");
+		d_interface_settings.changed["enable-monitoring"].connect(() => {
+			update_poll();
+		});
+
+		reload.connect(() => {
+			d_history.refresh();
+			d_poll.reset();
+		});
+
+		destroy.connect(() => {
+			d_poll.stop();
+		});
+
+		delete_event.connect(() => {
+			d_history.save_ticks();
+			return false;
+		});
 		d_stack_activities.add_titled(d_history.widget, d_history.id, d_history.display_name);
 
 		restore_state();
@@ -124,11 +167,19 @@ public class Window : Gtk.ApplicationWindow
 		reload();
 	}
 
-	public void open_repository(File location)
+	private void on_search_activated(SimpleAction action, Variant? parameter)
+	{
+		if (d_search_button.visible)
+		{
+			d_search_button.active = !d_search_button.active;
+		}
+	}
+
+	public void open_repository(File location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null)
 	{
 		try
 		{
-			set_repository(Repository.open(location));
+			set_repository(Repository.open(location), ticks, paths, directory);
 		}
 		catch (Error e)
 		{
@@ -156,10 +207,12 @@ public class Window : Gtk.ApplicationWindow
 		}
 	}
 
-	private void set_repository(Gitg.Repository repository)
+	private void set_repository(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory)
 	{
 		d_repository = repository;
-		d_history.repository = d_repository;
+		d_history.open(repository, ticks, paths, directory);
+		d_poll.repository = repository;
+		update_poll();
 		d_dash.add_repository(d_repository);
 		update_title();
 		show_activities();
@@ -174,9 +227,20 @@ public class Window : Gtk.ApplicationWindow
 		d_search_button.visible = true;
 	}
 
+	public HistoryActivity history
+	{
+		get { return d_history; }
+	}
+
 	public void show_dash()
 	{
+		if (d_repository != null)
+		{
+			d_history.save_ticks();
+		}
+
 		d_main_stack.visible_child_name = "dash";
+		d_poll.stop();
 
 		d_dash_button.visible = false;
 		d_activities_switcher.visible = false;
@@ -209,6 +273,18 @@ public class Window : Gtk.ApplicationWindow
 		var location = workdir != null ? workdir : d_repository.get_location();
 
 		d_header_bar.subtitle = location != null ? Gitg.Utils.replace_home_dir_with_tilde(location) : null;
+	}
+
+	private void update_poll()
+	{
+		if (d_repository != null && d_interface_settings.get_boolean("enable-monitoring"))
+		{
+			d_poll.start();
+		}
+		else
+		{
+			d_poll.stop();
+		}
 	}
 
 	protected override bool window_state_event(Gdk.EventWindowState event)

@@ -1,0 +1,216 @@
+/*
+ * This file is part of gitree
+ *
+ * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
+ *
+ * gitree is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 2 of the License, or (at your option) any later
+ * version.
+ *
+ * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with gitree. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+namespace GitreeTest
+{
+
+public static int main(string[] args)
+{
+	Test.init(ref args);
+
+	Test.add_func("/gitree/word-diff/changed-word", test_a_changed_word_in_a_long_line);
+	Test.add_func("/gitree/word-diff/added-word", test_an_added_word_marks_only_that_word);
+	Test.add_func("/gitree/word-diff/phrase-is-one-mark", test_a_mark_does_not_end_on_whitespace);
+	Test.add_func("/gitree/word-diff/punctuation", test_punctuation_is_its_own_word);
+	Test.add_func("/gitree/word-diff/unrelated-lines", test_two_unrelated_lines_take_no_marks);
+	Test.add_func("/gitree/word-diff/wide-characters", test_marks_land_on_the_right_bytes_past_a_wide_character);
+	Test.add_func("/gitree/word-diff/flat-form-agrees", test_the_flat_form_carries_the_same_offsets);
+	Test.add_func("/gitree/word-diff/flat-form-declines", test_the_flat_form_declines_where_refine_declines);
+	Test.add_func("/gitree/word-diff/identical-lines", test_an_identical_line_takes_no_marks);
+	Test.add_func("/gitree/word-diff/only-changed-words-are-marked", test_only_changed_words_are_marked);
+	Test.add_func("/gitree/word-diff/empty-line", test_an_empty_line_takes_no_marks);
+
+	return Test.run();
+}
+
+private static string marked(string line, Gitree.WordSpan[] spans)
+{
+	var parts = new string[spans.length];
+
+	for (var i = 0; i < spans.length; i++)
+	{
+		parts[i] = line.substring(spans[i].start, spans[i].end - spans[i].start);
+	}
+
+	return string.joinv("|", parts);
+}
+
+private static void test_a_changed_word_in_a_long_line()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	var old_line = "The quick brown fox jumps over the lazy dog";
+	var new_line = "The quick brown cat jumps over the lazy dog";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line,
+	                                   out old_spans, out new_spans));
+
+	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "fox");
+	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "cat");
+}
+
+private static void test_a_mark_does_not_end_on_whitespace()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	var old_line = "alpha beta gamma delta";
+	var new_line = "alpha one two gamma delta";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line,
+	                                   out old_spans, out new_spans));
+
+	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "one two");
+	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "beta");
+}
+
+private static void test_an_added_word_marks_only_that_word()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	var old_line = "call(first, third)";
+	var new_line = "call(first, second, third)";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line,
+	                                   out old_spans, out new_spans));
+
+	assert_cmpint(old_spans.length, CompareOperator.EQ, 0);
+	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "second,");
+}
+
+private static void test_an_empty_line_takes_no_marks()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	assert_false(Gitree.WordDiff.refine("", "something",
+	                                    out old_spans, out new_spans));
+}
+
+private static void test_an_identical_line_takes_no_marks()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	assert_false(Gitree.WordDiff.refine("same line", "same line",
+	                                    out old_spans, out new_spans));
+}
+
+private static void test_marks_land_on_the_right_bytes_past_a_wide_character()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	var old_line = "καλημέρα alpha beta";
+	var new_line = "καλημέρα alpha gamma";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line,
+	                                   out old_spans, out new_spans));
+
+	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "beta");
+	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "gamma");
+}
+
+private static void test_only_changed_words_are_marked()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	var old_line = "remap(\"scan\", \"scan_raw\")";
+	var new_line = "remap(\"scan\", \"raw_scan\")";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line, out old_spans, out new_spans));
+
+	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "scan_raw");
+	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "raw_scan");
+}
+
+private static void test_punctuation_is_its_own_word()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	var old_line = "value = compute(a, b);";
+	var new_line = "value = compute(a, c);";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line,
+	                                   out old_spans, out new_spans));
+
+	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "b");
+	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "c");
+}
+
+private static void test_the_flat_form_carries_the_same_offsets()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+	int[] old_flat;
+	int[] new_flat;
+
+	var old_line = "one two three four";
+	var new_line = "one six three four";
+
+	assert_true(Gitree.WordDiff.refine(old_line, new_line,
+	                                   out old_spans, out new_spans));
+	assert_true(Gitree.WordDiff.refine_flat(old_line, new_line,
+	                                        out old_flat, out new_flat));
+
+	assert_cmpint(old_flat.length, CompareOperator.EQ, old_spans.length * 2);
+	assert_cmpint(new_flat.length, CompareOperator.EQ, new_spans.length * 2);
+
+	for (var i = 0; i < old_spans.length; i++)
+	{
+		assert_cmpint(old_flat[i * 2], CompareOperator.EQ, old_spans[i].start);
+		assert_cmpint(old_flat[i * 2 + 1], CompareOperator.EQ, old_spans[i].end);
+	}
+
+	for (var i = 0; i < new_spans.length; i++)
+	{
+		assert_cmpint(new_flat[i * 2], CompareOperator.EQ, new_spans[i].start);
+		assert_cmpint(new_flat[i * 2 + 1], CompareOperator.EQ, new_spans[i].end);
+	}
+}
+
+private static void test_the_flat_form_declines_where_refine_declines()
+{
+	int[] old_flat;
+	int[] new_flat;
+
+	assert_false(Gitree.WordDiff.refine_flat("alpha beta gamma", "nothing alike here",
+	                                         out old_flat, out new_flat));
+
+	assert_cmpint(old_flat.length, CompareOperator.EQ, 0);
+	assert_cmpint(new_flat.length, CompareOperator.EQ, 0);
+}
+
+private static void test_two_unrelated_lines_take_no_marks()
+{
+	Gitree.WordSpan[] old_spans;
+	Gitree.WordSpan[] new_spans;
+
+	assert_false(Gitree.WordDiff.refine("import os", "def main(argv):",
+	                                    out old_spans, out new_spans));
+
+	assert_cmpint(old_spans.length, CompareOperator.EQ, 0);
+	assert_cmpint(new_spans.length, CompareOperator.EQ, 0);
+}
+
+}

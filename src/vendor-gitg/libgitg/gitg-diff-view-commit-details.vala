@@ -47,6 +47,27 @@ class Gitg.DiffViewCommitDetails : Gtk.Grid
 	[GtkChild( name = "grid_parents" )]
 	private unowned Gtk.Grid d_grid_parents;
 
+	[GtkChild( name = "label_parents" )]
+	private unowned Gtk.Label d_label_parents;
+
+	[GtkChild( name = "grid_labels_container" )]
+	private unowned Gtk.Grid d_grid_labels_container;
+
+	[GtkChild( name = "box_labels" )]
+	private unowned Gtk.Box d_box_labels;
+
+	private Ggit.OId[]? d_shown_parents;
+	private Gitg.Ref[] d_shown_labels = new Gitg.Ref[0];
+
+	public signal void parent_activated(Ggit.OId id);
+
+	public void set_extras(Ggit.OId[]? parents, Gitg.Ref[] labels)
+	{
+		d_shown_parents = parents;
+		d_shown_labels = labels;
+		update();
+	}
+
 	[GtkChild( name = "expander_files" )]
 	private unowned Gtk.Expander d_expander_files;
 
@@ -105,16 +126,6 @@ class Gitg.DiffViewCommitDetails : Gtk.Grid
 			if (d_parent_commit != value)
 			{
 				d_parent_commit = value;
-
-				if (value != null)
-				{
-					var button = d_parents_map[value.get_id()];
-
-					if (button != null)
-					{
-						button.active = true;
-					}
-				}
 			}
 		}
 	}
@@ -145,8 +156,6 @@ class Gitg.DiffViewCommitDetails : Gtk.Grid
 			update_datetime();
 		}
 	}
-
-	private Gee.HashMap<Ggit.OId, Gtk.RadioButton> d_parents_map;
 
 	private GLib.Regex regex_url = /\w+:(\/?\/?)[^\s]+/;
 	private Ggit.Config config {get; set;}
@@ -209,9 +218,12 @@ class Gitg.DiffViewCommitDetails : Gtk.Grid
 
 	private void update()
 	{
-		d_parents_map = new Gee.HashMap<Ggit.OId, Gtk.RadioButton>((oid) => oid.hash(), (o1, o2) => o1.equal(o2));
-
 		foreach (var child in d_grid_parents.get_children())
+		{
+			child.destroy();
+		}
+
+		foreach (var child in d_box_labels.get_children())
 		{
 			child.destroy();
 		}
@@ -248,44 +260,76 @@ class Gitg.DiffViewCommitDetails : Gtk.Grid
 
 		parent_commit = first_parent;
 
-		if (parents.size > 1)
+		var ids = d_shown_parents;
+
+		if (ids == null)
 		{
-			d_grid_parents_container.show();
-			var grp = new SList<Gtk.RadioButton>();
+			ids = new Ggit.OId[0];
 
-			Gtk.RadioButton? first = null;
-
-			foreach (var parent in parents)
+			for (uint i = 0; i < parents.size; i++)
 			{
-				var pid = parent.get_id().to_string().substring(0, 6);
-				var psubj = parent.get_subject();
-
-				var button = new Gtk.RadioButton.with_label(grp, @"$pid: $psubj");
-
-				if (first == null)
-				{
-					first = button;
-				}
-
-				button.group = first;
-
-				d_parents_map[parent.get_id()] = button;
-
-				button.show();
-				d_grid_parents.add(button);
-
-				var par = parent;
-
-				button.toggled.connect(() => {
-					if (button.active) {
-						parent_commit = par;
-					}
-				});
+				ids += parents.get_id(i);
 			}
 		}
-		else
+
+		d_label_parents.label = ngettext("Parent", "Parents", ids.length);
+		d_grid_parents_container.visible = ids.length > 0;
+
+		foreach (var id in ids)
 		{
-			d_grid_parents_container.hide();
+			var subject = "";
+
+			try
+			{
+				subject = repository.lookup<Ggit.Commit>(id).get_subject();
+			}
+			catch {}
+
+			var link = new Gtk.Label(null);
+			var pid = id;
+
+			link.xalign = 0;
+			link.set_markup("<a href=\"%s\">%s %s</a>".printf(id.to_string(),
+			                                                  id.to_string().substring(0, 7),
+			                                                  Markup.escape_text(subject)));
+			link.activate_link.connect(() => {
+				parent_activated(pid);
+				return true;
+			});
+			link.show();
+
+			d_grid_parents.add(link);
+		}
+
+		d_grid_labels_container.visible = d_shown_labels.length > 0;
+
+		if (d_shown_labels.length > 0)
+		{
+			var layout = create_pango_layout("Mj");
+			int width;
+			int height;
+
+			layout.get_pixel_size(out width, out height);
+
+			var labels = new SList<Gitg.Ref>();
+
+			foreach (var label in d_shown_labels)
+			{
+				labels.append(label);
+			}
+
+			var font = get_pango_context().get_font_description();
+			var pills = new Gtk.DrawingArea();
+
+			pills.set_size_request(LabelRenderer.width(pills, font, labels), height + 8);
+			pills.draw.connect((cr) => {
+				Gdk.Rectangle area = { 0, 0, pills.get_allocated_width(), pills.get_allocated_height() };
+				LabelRenderer.draw(pills, font, cr, labels, area);
+				return true;
+			});
+			pills.show();
+
+			d_box_labels.add(pills);
 		}
 
 		update_avatar();

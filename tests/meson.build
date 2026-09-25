@@ -3,6 +3,7 @@ test_support_sources = files('support/gitree-test-repo.vala')
 test_deps = [
   vendor_gitg_dep,
   gitree_dep,
+  gtksourceview_dep,
 ]
 
 test_vala_flags = vala_flags + [
@@ -20,8 +21,14 @@ test_env_base = {
 
 unit_tests = [
   'cli',
+  'history',
+  'path-history',
+  'refs',
+  'search',
   'settings',
   'smoke',
+  'ticks',
+  'word-diff',
 ]
 
 foreach name : unit_tests
@@ -52,11 +59,24 @@ foreach name : unit_tests
   )
 endforeach
 
+test(
+  'read-only',
+  find_program('unit/test-read-only.sh'),
+  args: [gitree_exe],
+  suite: 'unit',
+)
+
 xvfb_wrapper = find_program('ui/run-xvfb.sh')
 
 ui_tests = [
   'dash',
+  'diff-pane',
+  'follow',
+  'history-activity',
   'preferences',
+  'refs-panel',
+  'search',
+  'session',
   'smoke',
   'window',
 ]
@@ -89,3 +109,12 @@ foreach name : ui_tests
     timeout: 60,
   )
 endforeach
+
+gitree_bench = executable(
+  'gitree-bench',
+  files('perf/bench.vala') + gitree_all_resources,
+  include_directories: [top_inc, vendor_gitg_inc],
+  dependencies: test_deps,
+  vala_args: test_vala_flags,
+  install: false,
+)

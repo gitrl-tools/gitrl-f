@@ -25,7 +25,7 @@ private static string history(Repo repo) throws Error
 	repo.branch("feature");
 	repo.checkout("feature");
 	repo.commit("on feature", "feature.txt");
-	repo.checkout("main");
+	repo.checkout("master");
 	repo.commit("on main", "main.txt");
 	repo.merge("feature");
 
@@ -54,9 +54,9 @@ private static void test_fixture_builds_history()
 
 		var branches = repo.git({"for-each-ref", "--format=%(refname:short)", "refs/heads"});
 		assert_true("feature" in branches);
-		assert_true("main" in branches);
+		assert_true("master" in branches);
 
-		FileUtils.set_contents(repo.path.get_child("file.txt").get_path(), "dirty\n");
+		FileUtils.set_contents(repo.path.get_child("file").get_path(), "dirty\n");
 		repo.stash("wip");
 
 		var stash = repo.git({"stash", "list"});

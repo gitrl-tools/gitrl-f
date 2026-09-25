@@ -1,0 +1,51 @@
+--- a/libgitg/resources/ui/gitg-diff-view-commit-details.ui
++++ b/libgitg/resources/ui/gitg-diff-view-commit-details.ui
+@@ -179,6 +179,48 @@
+             <property name="width">2</property>
+           </packing>
+         </child>
++        <child>
++          <object class="GtkGrid" id="grid_labels_container">
++            <property name="visible">True</property>
++            <property name="can_focus">False</property>
++            <property name="margin_top">12</property>
++            <property name="row_spacing">6</property>
++            <property name="column_spacing">6</property>
++            <child>
++              <object class="GtkLabel" id="label_labels">
++                <property name="visible">True</property>
++                <property name="can_focus">False</property>
++                <property name="label" translatable="yes">Refs</property>
++                <property name="xalign">0</property>
++                <attributes>
++                  <attribute name="weight" value="bold"/>
++                </attributes>
++              </object>
++              <packing>
++                <property name="left_attach">0</property>
++                <property name="top_attach">0</property>
++              </packing>
++            </child>
++            <child>
++              <object class="GtkBox" id="box_labels">
++                <property name="visible">True</property>
++                <property name="can_focus">False</property>
++                <property name="margin_start">12</property>
++                <property name="spacing">6</property>
++                <property name="hexpand">True</property>
++              </object>
++              <packing>
++                <property name="left_attach">0</property>
++                <property name="top_attach">1</property>
++              </packing>
++            </child>
++          </object>
++          <packing>
++            <property name="left_attach">0</property>
++            <property name="top_attach">3</property>
++            <property name="width">2</property>
++          </packing>
++        </child>
+       </object>
+     </child>
+     <child>

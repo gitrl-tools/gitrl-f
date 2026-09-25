@@ -29,7 +29,10 @@ public class Application : Gtk.Application
 	};
 
 	private string[] d_arguments;
+	private File? d_directory;
 	private File? d_location;
+	private string[] d_paths;
+	private Gee.Set<string>? d_ticks;
 
 	public Application()
 	{
@@ -39,18 +42,18 @@ public class Application : Gtk.Application
 
 	protected override void activate()
 	{
-		create_window(d_location);
+		create_window(d_location, d_ticks, d_paths, d_directory);
 
 		base.activate();
 	}
 
-	public void create_window(File? location)
+	public void create_window(File? location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null)
 	{
 		var window = new Window(this);
 
 		if (location != null)
 		{
-			window.open_repository(location);
+			window.open_repository(location, ticks, paths, directory);
 		}
 
 		window.present();
@@ -88,13 +91,39 @@ public class Application : Gtk.Application
 			return true;
 		}
 
-		var location = discover_repository(File.new_for_path(Environment.get_current_dir()));
+		d_directory = File.new_for_path(Environment.get_current_dir());
+		d_paths = command_line.paths;
+
+		var location = discover_repository(d_directory);
 
 		if (location == null && !command_line.is_empty)
 		{
 			stderr.printf("git tree: not a git repository\n");
 			exit_status = 1;
 			return true;
+		}
+
+		if (location != null)
+		{
+			try
+			{
+				var repository = Repository.open(location);
+				var refs = Refs.read(repository);
+
+				d_ticks = Ticks.resolve(command_line, refs, Ticks.load(Ticks.file_for(repository), refs));
+			}
+			catch (TicksError.NO_MATCH e)
+			{
+				stderr.printf("git tree: no ref matches '%s'\n", e.message);
+				exit_status = 1;
+				return true;
+			}
+			catch (Error e)
+			{
+				stderr.printf("git tree: %s\n", e.message);
+				exit_status = 1;
+				return true;
+			}
 		}
 
 		d_location = location;
@@ -162,6 +191,7 @@ public class Application : Gtk.Application
 
 		set_accels_for_action("app.quit", {"<Primary>q"});
 		set_accels_for_action("win.reload", {"F5"});
+		set_accels_for_action("win.search", {"<Primary>f"});
 	}
 }
 
