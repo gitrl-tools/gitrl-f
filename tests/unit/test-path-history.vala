@@ -63,6 +63,7 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gitree/path-history/a-failed-git-run-gives-its-message", test_a_failed_git_run_gives_its_message);
 	Test.add_func("/gitree/path-history/commits-and-parents-are-git-logs", test_commits_and_parents_are_git_logs);
 	Test.add_func("/gitree/path-history/history-with-a-path-is-freed", test_history_with_a_path_is_freed);
 	Test.add_func("/gitree/path-history/parent-link-under-a-path-limit-goes-to-a-shown-commit", test_parent_link_under_a_path_limit_goes_to_a_shown_commit);
@@ -83,6 +84,37 @@ private static string subjects(Gitg.Commit[] rows)
 	}
 
 	return string.joinv(",", parts);
+}
+
+private static void test_a_failed_git_run_gives_its_message()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("a one", "a");
+
+		var repository = Gitree.Repository.open(Gitree.Application.discover_repository(repo.path));
+		var refs = Gitree.Refs.read(repository);
+		var outside = File.new_for_path(DirUtils.make_tmp("gitree-outside-XXXXXX"));
+
+		try
+		{
+			new Gitree.History.with_paths(repository, refs, {"a"}, outside, false);
+			Test.fail_printf("git ran outside a repository");
+		}
+		catch (Error e)
+		{
+			assert_true(e.message.has_prefix("fatal: not a git repository"));
+			assert_false(e.message.has_suffix("\n"));
+		}
+
+		DirUtils.remove(outside.get_path());
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_commits_and_parents_are_git_logs()

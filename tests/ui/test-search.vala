@@ -86,6 +86,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gitree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
 	Test.add_func("/gitree/ui/search/tick-searches-again", test_tick_searches_again);
+	Test.add_func("/gitree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
 	Test.add_func("/gitree/ui/search/typing-moves-nothing", test_typing_moves_nothing);
 
 	return Test.run();
@@ -281,6 +282,32 @@ private static void test_tick_searches_again()
 		window.history.set_ticks(ticks);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ticking_nothing_counts_no_match()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo);
+
+		type_text(window, "fix");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "3 matches");
+
+		window.history.set_ticks(new Gee.HashSet<string>());
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+		assert_true(window.history.search_field.get_style_context().has_class("error"));
 
 		window.destroy();
 		repo.remove();

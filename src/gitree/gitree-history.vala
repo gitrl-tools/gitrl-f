@@ -199,7 +199,10 @@ public class History : Object
 
 		if (!process.get_successful())
 		{
-			throw new IOError.FAILED("%s", ((string)errors.get_data()).strip());
+			var data = errors.get_data();
+			var message = data.length > 0 ? ((string)data).ndup(data.length).strip() : "";
+
+			throw new IOError.FAILED("%s", message != "" ? message : _("git failed"));
 		}
 
 		var records = new string[0];

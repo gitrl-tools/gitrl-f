@@ -20,7 +20,10 @@ Checked again: 2026-09-25, for gitree.
 into `vendor/upstream/`. That tree is not committed. It is 19 MB of code that
 gitree does not change, and the checksum above makes it again on demand. The
 repository holds the part cut from it, in `src/vendor-gitg/`, and each patch
-to that part, in `vendor/patches/`.
+to that part, in `vendor/patches/`. Four more files are gitg 44's, byte for
+byte: `src/gitree/resources/ui/style.css`, and `config.vapi`,
+`gitg-platform-support.vapi` and `gsettings-desktop-schemas.vapi` in `vapi/`.
+`tests/vendor/check-closure.sh` compares them with upstream.
 
 ## Target platform
 

@@ -178,7 +178,12 @@ private static void test_collapse_scale_follows_its_key()
 
 	assert_cmpfloat(scale.adjustment.lower, CompareOperator.EQ, 0);
 	assert_cmpfloat(scale.adjustment.upper, CompareOperator.EQ, 5);
+	assert_cmpfloat(scale.adjustment.page_size, CompareOperator.EQ, 1);
 	assert_cmpfloat(scale.get_value(), CompareOperator.EQ, keys.get_int("collapse-inactive-lanes"));
+
+	scale.set_value(5);
+	drain();
+	assert_cmpint(keys.get_int("collapse-inactive-lanes"), CompareOperator.EQ, 4);
 
 	scale.set_value(4.4);
 	drain();

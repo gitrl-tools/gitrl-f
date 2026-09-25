@@ -16,8 +16,8 @@ grep -oE "'((libgitg|libgitg-ext)/[A-Za-z0-9/_-]+\.(vala|c|xml)|gitree-[a-z0-9-]
 	| tr -d "'" > "$tmp/listed.unsorted"
 grep -oE '>ui/[A-Za-z0-9._-]+<' src/vendor-gitg/libgitg/resources/resources.xml \
 	| tr -d '<>' | sed 's|^|libgitg/resources/|' >> "$tmp/listed.unsorted"
-grep -E '\.c$' "$tmp/listed.unsorted" | sed 's/\.c$/.h/' >> "$tmp/listed.unsorted"
-sort -u "$tmp/listed.unsorted" > "$tmp/listed"
+grep -E '\.c$' "$tmp/listed.unsorted" | sed 's/\.c$/.h/' > "$tmp/headers"
+sort -u "$tmp/listed.unsorted" "$tmp/headers" > "$tmp/listed"
 
 present=$(grep -v '^gitree-' "$tmp/present" || true)
 unlisted=$(comm -23 "$tmp/present" "$tmp/listed")
@@ -65,6 +65,17 @@ if [ -d vendor/upstream ]; then
 			status=1
 		fi
 	done
+	while read -r copy source; do
+		if ! cmp -s "vendor/upstream/$source" "$copy"; then
+			echo "FAIL: $copy is not byte for byte upstream $source" >&2
+			status=1
+		fi
+	done <<-EOF
+	src/gitree/resources/ui/style.css gitg/resources/ui/style.css
+	vapi/config.vapi vapi/config.vapi
+	vapi/gitg-platform-support.vapi vapi/gitg-platform-support.vapi
+	vapi/gsettings-desktop-schemas.vapi vapi/gsettings-desktop-schemas.vapi
+	EOF
 	for p in vendor/patches/*.patch; do
 		if ! grep -qx "$(basename "$p")" "$tmp/used"; then
 			echo "FAIL: $p patches no vendored file that differs from upstream" >&2

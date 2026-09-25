@@ -654,7 +654,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.model = null;
 		d_model.set_rows(rows);
 		d_paned.commit_list_view.model = d_model;
-		d_matches = Search.find(rows, d_needle);
+		find_matches();
 
 		var total = d_history != null ? d_history.size : 0;
 		d_paned.summary.label = _("Showing %u of %d commits").printf(d_model.size, total);

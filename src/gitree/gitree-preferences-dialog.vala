@@ -88,7 +88,7 @@ public class PreferencesDialog : Gtk.Dialog
 
 		var early = new Gtk.Label(_("Early"));
 		var late = new Gtk.Label(_("Late"));
-		var scale = new Gtk.Scale.with_range(Gtk.Orientation.HORIZONTAL, 0, 5, 1);
+		var scale = new Gtk.Scale(Gtk.Orientation.HORIZONTAL, new Gtk.Adjustment(0, 0, 5, 1, 1, 1));
 		scale.digits = 0;
 		scale.draw_value = false;
 		scale.hexpand = true;

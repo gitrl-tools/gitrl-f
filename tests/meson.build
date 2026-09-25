@@ -66,6 +66,12 @@ test(
   suite: 'unit',
 )
 
+test(
+  'vendor-closure',
+  find_program('vendor/check-closure.sh'),
+  suite: 'unit',
+)
+
 xvfb_wrapper = find_program('ui/run-xvfb.sh')
 
 ui_tests = [
