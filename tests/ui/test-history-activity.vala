@@ -75,6 +75,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
 	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
+	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
 	Test.add_func("/gitree/ui/history-activity/pane-positions-are-kept", test_pane_positions_are_kept);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
@@ -298,6 +299,37 @@ private static void test_history_settings_redraw_the_list()
 
 		settings.reset("mainline-head");
 		settings.reset("topological-order");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_left_pane_is_never_cut_off()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master"});
+		window.history.paned.position = 40;
+
+		for (var i = 0; i < 20; i++)
+		{
+			drain();
+			Thread.usleep(10000);
+		}
+
+		int x;
+		int y;
+		window.history.paned.filter.translate_coordinates(window, 0, 0, out x, out y);
+
+		assert_cmpint(x, CompareOperator.GE, 0);
+
 		window.destroy();
 		repo.remove();
 	}
