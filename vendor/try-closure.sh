@@ -4,9 +4,7 @@ set -eu
 
 here=$(dirname "$(readlink -f "$0")")
 root=$(dirname "$here")
-out=${TMPDIR:-/tmp}/gitree-closure
-rm -rf "$out"
-mkdir -p "$out"
+out=$(mktemp -d "${TMPDIR:-/tmp}/gitree-closure.XXXXXX")
 
 cat > "$out/config.h" <<'EOF'
 #define APPLICATION_ID "io.github.li9i.gitree"

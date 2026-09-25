@@ -4,6 +4,7 @@ set -eu
 
 root=$(dirname "$(dirname "$(readlink -f "$0")")")
 build=$root/_build
+caller=$(pwd)
 
 cd "$root"
 
@@ -28,6 +29,7 @@ run)
 	configure
 	ninja -C _build
 	shift
+	cd "$caller"
 	GSETTINGS_SCHEMA_DIR="$build/data" exec "$build/src/gitree/git-tree" "$@"
 	;;
 clean)

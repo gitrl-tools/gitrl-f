@@ -10,6 +10,15 @@ fi
 export GIT_CONFIG_GLOBAL=/dev/null
 export GIT_CONFIG_SYSTEM=/dev/null
 
+build() {
+	mkdir "$1"
+	git init -q -b master "$1"
+	"$2" >"$1.stream"
+	git -C "$1" fast-import --quiet <"$1.stream"
+	rm "$1.stream"
+	git -C "$1" reset -q --hard
+}
+
 stream_big() {
 	awk '
 	function commit(ref, msg, from, merge, path) {
@@ -76,13 +85,6 @@ stream_big100() {
 		}
 		printf "reset refs/heads/side\nfrom :50000\n\n"
 	}'
-}
-
-build() {
-	mkdir "$1"
-	git init -q -b master "$1"
-	"$2" | git -C "$1" fast-import --quiet
-	git -C "$1" reset -q --hard
 }
 
 mkdir -p "$1"

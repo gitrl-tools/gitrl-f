@@ -34,7 +34,10 @@ private() {
 	env GITREE_DOTFILES="$dotfiles" HOME="$home/run" XDG_CACHE_HOME="$home/run/.cache" \
 		XDG_CONFIG_HOME="$home/run/.config" XDG_DATA_HOME="$home/run/.local/share" \
 		GSETTINGS_SCHEMA_DIR="$root/_build/data" GSETTINGS_BACKEND=memory GIT_CONFIG_GLOBAL=/dev/null \
-		GTK_THEME=Adwaita sh "$root/tests/ui/run-xvfb.sh" "$@" 2>/dev/null
+		GTK_THEME=Adwaita sh "$root/tests/ui/run-xvfb.sh" "$@" 2>"$home/errors" || {
+		cat "$home/errors" >&2
+		exit 1
+	}
 }
 
 for name in big big100; do

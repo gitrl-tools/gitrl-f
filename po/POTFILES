@@ -1,0 +1,14 @@
+data/io.github.li9i.gitree.gschema.xml.in
+src/gitree/gitree-application.vala
+src/gitree/gitree-dash-view.vala
+src/gitree/gitree-history-activity.vala
+src/gitree/gitree-history.vala
+src/gitree/gitree-preferences-dialog.vala
+src/gitree/gitree-refs-list.vala
+src/gitree/gitree-refs-row.vala
+src/gitree/gitree-search.vala
+src/gitree/gitree-window.vala
+src/gitree/resources/ui/gitree-history-paned.ui
+src/gitree/resources/ui/gitree-menus.ui
+src/gitree/resources/ui/gitree-refs-row.ui
+src/gitree/resources/ui/gitree-window.ui

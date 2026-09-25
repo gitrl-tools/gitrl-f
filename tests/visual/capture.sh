@@ -37,11 +37,18 @@ app=$!
 
 stop() {
 	kill -TERM "-$app" 2>/dev/null || true
-	wait "$app" 2>/dev/null || true
+	waited=0
 
 	while kill -0 "-$app" 2>/dev/null; do
+		if [ "$waited" -ge 50 ]; then
+			kill -KILL "-$app" 2>/dev/null || true
+		fi
+
 		sleep 0.1
+		waited=$((waited + 1))
 	done
+
+	wait "$app" 2>/dev/null || true
 }
 
 trap stop EXIT

@@ -69,6 +69,15 @@ capture() {
 	echo "  captured $name"
 }
 
+check() {
+	count=$("$here/compare.sh" "$2" "$3")
+	echo "  $1: $count differing pixels"
+
+	if [ "$count" -ne 0 ]; then
+		failed=1
+	fi
+}
+
 crop() {
 	convert "$out/$1.png" -crop "$2" +repage "$out/$1-$3.png"
 
@@ -79,15 +88,6 @@ crop() {
 }
 
 failed=0
-
-check() {
-	count=$("$here/compare.sh" "$2" "$3")
-	echo "  $1: $count differing pixels"
-
-	if [ "$count" -ne 0 ]; then
-		failed=1
-	fi
-}
 
 echo "--- capture ---"
 capture gitg-1 gitg "$fixture"
@@ -110,9 +110,11 @@ check "gitg diff" "$out/gitg-1-diff.png" "$out/gitg-2-diff.png"
 check "gitree window" "$out/gitree-1.png" "$out/gitree-2.png"
 
 echo "--- gitree against gitg ---"
-check "list" "$out/gitg-1-list.png" "$out/gitree-1-list.png"
+list=$("$here/compare.sh" "$out/gitg-1-list.png" "$out/gitree-1-list.png")
+echo "  list: $list differing pixels"
 
-if [ "$count" -ne 0 ]; then
+if [ "$list" -ne 0 ]; then
+	failed=1
 	echo "--- what moved in the list ---"
 	python3 "$here/measure.py" "$out/gitg-1-list.png" --json >"$out/gitg.json"
 	python3 "$here/measure.py" "$out/gitree-1-list.png" --json >"$out/gitree.json"
