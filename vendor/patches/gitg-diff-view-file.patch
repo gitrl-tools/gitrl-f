@@ -1,0 +1,50 @@
+--- a/libgitg/gitg-diff-view-file.vala
++++ b/libgitg/gitg-diff-view-file.vala
+@@ -82,47 +82,6 @@
+ 	public DiffViewFileInfo? info {get; construct set;}
+ 	private Gee.HashMap<Gtk.Widget, bool> d_diff_stat_visible_map = new Gee.HashMap<Gtk.Widget, bool>();
+ 
+-	public bool has_selection()
+-	{
+-		bool has_selection = false;
+-		foreach (DiffViewFileRenderer renderer in renderer_list)
+-		{
+-			var selectable = renderer as DiffSelectable;
+-			if (selectable != null)
+-				has_selection = selectable.has_selection;
+-			if (has_selection)
+-				break;
+-		}
+-		return has_selection;
+-	}
+-
+-	public void clear_selection()
+-	{
+-		foreach (var renderer in renderer_list)
+-		{
+-			var sel = renderer as DiffSelectable;
+-			sel.clear_selection();
+-		}
+-	}
+-
+-	public PatchSet get_selection()
+-	{
+-		var ret = new PatchSet();
+-
+-		foreach (var renderer in renderer_list)
+-		{
+-			var sel = renderer as DiffSelectable;
+-
+-			if (sel != null && sel.has_selection && sel.selection.patches.length != 0)
+-			{
+-				ret = sel.selection;
+-				break;
+-			}
+-		}
+-
+-		return ret;
+-	}
+-
+ 	public DiffViewFile(DiffViewFileInfo? info)
+ 	{
+ 		Object(info: info);

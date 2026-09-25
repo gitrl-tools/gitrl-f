@@ -1,0 +1,54 @@
+--- a/libgitg/gitg-repository-list-box.vala
++++ b/libgitg/gitg-repository-list-box.vala
+@@ -182,51 +182,6 @@
+ 					{
+ 						var head = d_repository.get_head();
+ 						head_name = head.parsed_name.shortname;
+-
+-						var commit = (Ggit.Commit)head.lookup();
+-						var tree = commit.get_tree();
+-
+-						Ggit.OId? entry_id = null;
+-
+-						for (var i = 0; i < tree.size(); i++)
+-						{
+-							var entry = tree.get(i);
+-							var name = entry.get_name();
+-
+-							if (name != null && name.has_suffix(".doap"))
+-							{
+-								entry_id = entry.get_id();
+-								break;
+-							}
+-						}
+-
+-						if (entry_id != null)
+-						{
+-							var blob = d_repository.lookup<Ggit.Blob>(entry_id);
+-
+-							unowned uint8[] content = blob.get_raw_content();
+-							var doap = new Ide.Doap();
+-							doap.load_from_data((string)content, -1);
+-
+-							head_description = doap.get_shortdesc();
+-
+-							foreach (var lang in doap.get_languages())
+-							{
+-								var frame = new Gtk.Frame(null);
+-								frame.shadow_type = Gtk.ShadowType.NONE;
+-								frame.get_style_context().add_class("language-frame");
+-								frame.show();
+-
+-								var label = new Gtk.Label(lang);
+-								var attr_list = new Pango.AttrList();
+-								attr_list.insert(Pango.attr_scale_new(Pango.Scale.SMALL));
+-								label.set_attributes(attr_list);
+-								label.show();
+-
+-								frame.add(label);
+-								d_languages_box.add(frame);
+-							}
+-						}
+ 					} catch {}
+ 				}
+ 

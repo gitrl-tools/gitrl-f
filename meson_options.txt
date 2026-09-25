@@ -1,0 +1,14 @@
+option(
+  'profile',
+  type: 'combo',
+  choices: ['default', 'development'],
+  value: 'default',
+  description: 'The build profile. "development" uses a separate application id so it can be installed beside a release build.',
+)
+
+option(
+  'visual_tests',
+  type: 'boolean',
+  value: false,
+  description: 'Build the pixel comparison with gitg. Off by default: it needs an X server, ImageMagick and an installed gitg.',
+)

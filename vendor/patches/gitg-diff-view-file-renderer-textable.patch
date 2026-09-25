@@ -1,0 +1,11 @@
+--- a/libgitg/gitg-diff-view-file-renderer-textable.vala
++++ b/libgitg/gitg-diff-view-file-renderer-textable.vala
+@@ -17,7 +17,7 @@
+  * along with gitg. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-interface Gitg.DiffViewFileRendererTextable : DiffSelectable, DiffViewFileRenderer
++interface Gitg.DiffViewFileRendererTextable : DiffViewFileRenderer
+ {
+ 	public abstract bool wrap_lines { get; set; }
+ 	public abstract new int tab_width { get; set; }
