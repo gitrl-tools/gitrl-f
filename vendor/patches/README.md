@@ -85,9 +85,15 @@ The offsets are byte offsets because they index a string, but a text buffer coun
 
 ## gitg-diff-view-file-renderer-text-split.patch
 
-The same removal in the split renderer: the `DiffSelectable` interface, the `has_selection` property, `clear_selection()` and the `selection` property.
+Two changes.
 
-Upstream had already put the bodies of the three in comments. The split view gave no selection and returned an empty `PatchSet`. So what goes is three members that only named a type from `gitg-stage.vala`. `can_select` stays, for the cause given above.
+**1. The same removal in the split renderer:** the `DiffSelectable` interface, the `has_selection` property, `clear_selection()` and the `selection` property. Upstream had already put the bodies of the three in comments. The split view gave no selection and returned an empty `PatchSet`. So what goes is three members that only named a type from `gitg-stage.vala`. `can_select` stays, for the cause given above.
+
+**2. The two sides scroll left and right together.** When the horizontal adjustment of one side changes, `follow()` gives its value to the other. A flag stops the change that comes back, so a side that is wider than the other can scroll to its end.
+
+**Why.** In gitg, each side of the split view has its own horizontal scroll bar, and a line then shows at two different places. The operator asked that the two move together.
+
+**Cost.** Two handlers and a flag. The vertical scroll is not changed: the two sides are in one scrolled pane for that already.
 
 ## gitg-diff-view-file-renderer-textable.patch
 

@@ -27,6 +27,7 @@ class Gitg.DiffViewFileRendererTextSplit : Gtk.Box, DiffViewFileRenderer, DiffVi
 
 	private Gitg.DiffViewFileRendererText d_renderer_left;
 	private Gitg.DiffViewFileRendererText d_renderer_right;
+	private bool d_following;
 
 	public DiffViewFileInfo info { get; construct set; }
 
@@ -105,6 +106,26 @@ class Gitg.DiffViewFileRendererTextSplit : Gtk.Box, DiffViewFileRenderer, DiffVi
 		d_renderer_right = new Gitg.DiffViewFileRendererText(info, handle_selection, DiffViewFileRendererText.Style.NEW);
 		d_scroll_left.add(d_renderer_left);
 		d_scroll_right.add(d_renderer_right);
+
+		d_scroll_left.hadjustment.value_changed.connect(() => {
+			follow(d_scroll_left.hadjustment, d_scroll_right.hadjustment);
+		});
+
+		d_scroll_right.hadjustment.value_changed.connect(() => {
+			follow(d_scroll_right.hadjustment, d_scroll_left.hadjustment);
+		});
+	}
+
+	private void follow(Gtk.Adjustment from, Gtk.Adjustment to)
+	{
+		if (d_following)
+		{
+			return;
+		}
+
+		d_following = true;
+		to.value = from.value;
+		d_following = false;
 	}
 
 	construct

@@ -118,6 +118,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
 	Test.add_func("/gitree/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
 	Test.add_func("/gitree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
+	Test.add_func("/gitree/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
 	Test.add_func("/gitree/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
 	Test.add_func("/gitree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
 	Test.add_func("/gitree/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
@@ -605,6 +606,62 @@ private static void test_sections_start_folded_when_there_are_several()
 			file.get("expanded", out expanded);
 			assert_false(expanded);
 		}
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_split_sides_scroll_together()
+{
+	try
+	{
+		var repo = Repo.create();
+		var wide = string.nfill(400, 'a');
+		repo.commit("start", "f", wide + " one");
+		FileUtils.set_contents(repo.path.get_child("f").get_path(), wide + " two " + wide + "\n");
+		repo.git({"commit", "--quiet", "-am", "widen"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "widen");
+
+		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.ToggleButton)))
+		{
+			var toggle = (Gtk.ToggleButton)widget;
+
+			if (toggle.label == "Split")
+			{
+				toggle.active = true;
+			}
+		}
+
+		settle(300);
+
+		var split = find_named(window.history.diff_view, "GitgDiffViewFileRendererTextSplit")[0];
+		var sides = find_all(split, typeof(Gtk.ScrolledWindow));
+		var left = ((Gtk.ScrolledWindow)sides[0]).hadjustment;
+		var right = ((Gtk.ScrolledWindow)sides[1]).hadjustment;
+
+		assert_cmpfloat(left.upper - left.page_size, CompareOperator.GT, 200);
+		assert_cmpfloat(right.upper - right.page_size, CompareOperator.GT, 200);
+
+		left.value = 150;
+		assert_cmpfloat(right.value, CompareOperator.EQ, 150);
+
+		right.value = 40;
+		assert_cmpfloat(left.value, CompareOperator.EQ, 40);
+
+		var end = right.upper - right.page_size;
+		assert_cmpfloat(end, CompareOperator.GT, left.upper - left.page_size);
+
+		right.value = end;
+		assert_cmpfloat(right.value, CompareOperator.EQ, end);
+		assert_cmpfloat(left.value, CompareOperator.EQ, left.upper - left.page_size);
 
 		window.destroy();
 		repo.remove();
