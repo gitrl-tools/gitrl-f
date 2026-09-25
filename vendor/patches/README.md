@@ -147,7 +147,7 @@ The same cause as the renderer. `get_selection()` returns `PatchSet[]`, and the 
 
 Three changes.
 
-**1. Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`.** Two places read the parents of a commit: `prepare_lanes()` and `expand_lanes()`. They now ask `parent_ids()`, which calls that function when it is set, and reads the commit when it is not.
+**1. Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`.** Two places read the parents of a commit: `prepare_lanes()` and `expand_lanes()`. They now ask `parent_ids()`, which calls that function when it is set, and reads the commit when it is not. `Gitg.Lanes` does not own the function: the caller owns the lanes and must live longer than them. An owned function held a reference to its caller, and the two were never freed.
 
 Under a path limit, gitree shows only the commits that change the paths. It takes the parents of each one from `git log --parents`, which rewrites them to the nearest shown ancestors. libgit2 has no history simplification by path. The lanes must follow the rewritten parents, or the graph does not join from one shown commit to the next. The commit object holds its real parents, so the lanes need another source.
 

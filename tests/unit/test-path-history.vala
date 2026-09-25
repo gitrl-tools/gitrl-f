@@ -64,6 +64,7 @@ public static int main(string[] args)
 	Test.init(ref args);
 
 	Test.add_func("/gitree/path-history/commits-and-parents-are-git-logs", test_commits_and_parents_are_git_logs);
+	Test.add_func("/gitree/path-history/history-with-a-path-is-freed", test_history_with_a_path_is_freed);
 	Test.add_func("/gitree/path-history/parent-link-under-a-path-limit-goes-to-a-shown-commit", test_parent_link_under_a_path_limit_goes_to_a_shown_commit);
 	Test.add_func("/gitree/path-history/path-keeps-only-commits-that-change-it-and-joins-the-graph", test_path_keeps_only_commits_that_change_it_and_joins_the_graph);
 	Test.add_func("/gitree/path-history/path-limit-ticks-a-branch-whose-tip-misses-the-path", test_path_limit_ticks_a_branch_whose_tip_misses_the_path);
@@ -115,6 +116,30 @@ private static void test_commits_and_parents_are_git_logs()
 			assert_cmpstr(logged(history, rows), CompareOperator.EQ, expected);
 			assert_cmpint(history.size, CompareOperator.EQ, expected.split("\n").length);
 		}
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_history_with_a_path_is_freed()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("a one", "a");
+
+		Gee.List<Gitree.Ref> refs;
+		Gitree.History? history = history_for(repo, "", {"a"}, out refs);
+		var freed = false;
+
+		history.weak_ref(() => { freed = true; });
+		history = null;
+
+		assert_true(freed);
 
 		repo.remove();
 	}

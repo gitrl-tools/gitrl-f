@@ -6,11 +6,11 @@
  
 +	public delegate Ggit.OId[] ParentsFunc(Commit commit);
 +
-+	private ParentsFunc? d_parents_func;
++	private unowned ParentsFunc? d_parents_func;
 +
-+	public void set_parents_func(owned ParentsFunc? func)
++	public void set_parents_func(ParentsFunc? func)
 +	{
-+		d_parents_func = (owned)func;
++		d_parents_func = func;
 +	}
 +
 +	private Ggit.OId[] parent_ids(Commit commit)
