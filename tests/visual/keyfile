@@ -1,0 +1,18 @@
+[io/github/li9i/gitree/state/history]
+paned-panels-position=400
+
+[io/github/li9i/gitree/state/window]
+size=(1400, 900)
+
+[org/gnome/desktop/interface]
+font-name='DejaVu Sans 10'
+monospace-font-name='DejaVu Sans Mono 10'
+
+[org/gnome/gitg/preferences/history]
+default-selection='all-commits'
+
+[org/gnome/gitg/state/history]
+paned-panels-position=400
+
+[org/gnome/gitg/state/window]
+size=(1400, 900)

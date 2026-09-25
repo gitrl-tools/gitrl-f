@@ -119,3 +119,16 @@ gitree_bench = executable(
   vala_args: test_vala_flags,
   install: false,
 )
+
+if get_option('visual_tests')
+  test(
+    'visual-parity',
+    find_program('visual/test-parity.sh'),
+    suite: 'visual',
+    env: test_env_base + {
+      'GITREE_VISUAL_OUT': join_paths(meson.current_build_dir(), 'visual'),
+    },
+    depends: [gitree_exe, gschemas_compiled],
+    timeout: 300,
+  )
+endif
