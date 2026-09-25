@@ -184,7 +184,25 @@ public class HistoryPaned : Gtk.Paned
 		var state_settings = new Settings(Config.APPLICATION_ID + ".state.history");
 
 		position = state_settings.get_int("paned-sidebar-position");
-		d_paned_panels.position = state_settings.get_int("paned-panels-position");
+
+		if (state_settings.get_user_value("paned-panels-position") != null)
+		{
+			d_paned_panels.position = state_settings.get_int("paned-panels-position");
+		}
+		else
+		{
+			ulong handler = 0;
+
+			handler = d_paned_panels.size_allocate.connect((allocation) => {
+				var length = d_paned_panels.orientation == Gtk.Orientation.VERTICAL ? allocation.height : allocation.width;
+
+				if (length > 1)
+				{
+					d_paned_panels.disconnect(handler);
+					d_paned_panels.position = length / 2;
+				}
+			});
+		}
 
 		notify["position"].connect(() => {
 			state_settings.set_int("paned-sidebar-position", position);

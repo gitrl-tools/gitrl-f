@@ -69,6 +69,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitree/ui/history-activity/bottom-pane-starts-at-the-middle", test_bottom_pane_starts_at_the_middle);
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
@@ -115,6 +116,38 @@ private static string subjects_of(Gitree.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_bottom_pane_starts_at_the_middle()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".state.history");
+		settings.reset("paned-panels-position");
+
+		var window = new Gitree.Window(application());
+		window.set_default_size(800, 600);
+		window.open_repository(Gitree.Application.discover_repository(repo.path));
+		window.show();
+		drain();
+
+		var panels = window.history.paned.paned_panels;
+		var middle = panels.get_allocated_height() / 2;
+
+		assert_cmpint(panels.get_allocated_height(), CompareOperator.GT, 300);
+		assert_cmpint((panels.position - middle).abs(), CompareOperator.LE, 4);
+
+		settings.reset("paned-panels-position");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_bytes_that_are_not_utf8_show_as_replacements()
