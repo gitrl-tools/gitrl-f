@@ -16,13 +16,6 @@ export GIT_COMMITTER_EMAIL="ada@example.com"
 
 hour=0
 
-stamp() {
-	hour=$((hour + 1))
-	GIT_AUTHOR_DATE="2024-03-04T$(printf '%02d' "$hour"):00:00+0100"
-	GIT_COMMITTER_DATE=$GIT_AUTHOR_DATE
-	export GIT_AUTHOR_DATE GIT_COMMITTER_DATE
-}
-
 change() {
 	stamp
 	printf '%s\n' "$2" >> "$1"
@@ -33,6 +26,13 @@ change() {
 merge() {
 	stamp
 	git merge -q --no-ff -m "$2" "$1"
+}
+
+stamp() {
+	hour=$((hour + 1))
+	GIT_AUTHOR_DATE="2024-03-04T$(printf '%02d' "$hour"):00:00+0100"
+	GIT_COMMITTER_DATE=$GIT_AUTHOR_DATE
+	export GIT_AUTHOR_DATE GIT_COMMITTER_DATE
 }
 
 rm -rf "$1"

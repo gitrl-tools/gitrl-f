@@ -151,13 +151,6 @@ private static void settle(int milliseconds)
 	}
 }
 
-private static void type_text(Gitree.Window window, string text)
-{
-	window.history.search_visible = true;
-	window.history.search_field.text = text;
-	settle(400);
-}
-
 private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 {
 	try
@@ -401,6 +394,13 @@ private static void test_typing_moves_nothing()
 	{
 		Test.fail_printf("%s", e.message);
 	}
+}
+
+private static void type_text(Gitree.Window window, string text)
+{
+	window.history.search_visible = true;
+	window.history.search_field.text = text;
+	settle(400);
 }
 
 }

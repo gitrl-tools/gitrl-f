@@ -22,6 +22,14 @@ namespace Gitree
 
 public class Bench : Object
 {
+	private static void drain()
+	{
+		while (Gtk.events_pending())
+		{
+			Gtk.main_iteration();
+		}
+	}
+
 	public static int main(string[] args)
 	{
 		if (args.length < 2)
@@ -87,14 +95,6 @@ public class Bench : Object
 		}
 
 		return 0;
-	}
-
-	private static void drain()
-	{
-		while (Gtk.events_pending())
-		{
-			Gtk.main_iteration();
-		}
 	}
 
 	private static double peak_memory()

@@ -36,6 +36,23 @@ public class RefsHeader : Gtk.ListBoxRow
 
 	public bool expanded { get; set; default = true; }
 	public string key { get; construct; }
+
+	public bool is_shown_by_folds
+	{
+		get
+		{
+			for (var group = parent_group; group != null; group = group.parent_group)
+			{
+				if (!group.expanded)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}
+
 	public RefsHeader? parent_group { get; construct; }
 	public string title { get; construct; }
 
@@ -81,22 +98,6 @@ public class RefsHeader : Gtk.ListBoxRow
 		}
 
 		return false;
-	}
-
-	public bool is_shown_by_folds
-	{
-		get
-		{
-			for (var group = parent_group; group != null; group = group.parent_group)
-			{
-				if (!group.expanded)
-				{
-					return false;
-				}
-			}
-
-			return true;
-		}
 	}
 
 	public void show_count(int ticked, int total)

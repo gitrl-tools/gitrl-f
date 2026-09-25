@@ -121,6 +121,8 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
+	Test.add_func("/gitree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
 	Test.add_func("/gitree/ui/diff-pane/count-line-wording", test_count_line_wording);
 	Test.add_func("/gitree/ui/diff-pane/details-survive-bytes-that-are-not-utf8", test_details_survive_bytes_that_are_not_utf8);
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
@@ -134,14 +136,11 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/diff-pane/parents-row-links-select-the-parent", test_parents_row_links_select_the_parent);
 	Test.add_func("/gitree/ui/diff-pane/refs-row-shows-ticked-refs", test_refs_row_shows_ticked_refs);
 	Test.add_func("/gitree/ui/diff-pane/root-and-shallow-commits-have-no-parents-row", test_root_and_shallow_commits_have_no_parents_row);
+	Test.add_func("/gitree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
 	Test.add_func("/gitree/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
+	Test.add_func("/gitree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
 	Test.add_func("/gitree/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
 	Test.add_func("/gitree/ui/diff-pane/word-marks-reach-across-a-no-newline-marker", test_word_marks_reach_across_a_no_newline_marker);
-	Test.add_func("/gitree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
-
-	Test.add_func("/gitree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
-	Test.add_func("/gitree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
-	Test.add_func("/gitree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
 	return Test.run();
 }
 
@@ -277,6 +276,35 @@ private static void test_added_lines_without_a_removed_partner_are_not_word_mark
 		assert_true("new" in added);
 		assert_false("extra" in added);
 		assert_false("one" in added);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_an_image_uses_gitgs_image_view()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var pixbuf = new Gdk.Pixbuf(Gdk.Colorspace.RGB, false, 8, 4, 4);
+		pixbuf.fill((uint32)0xff0000ffU);
+
+		uint8[] png;
+		pixbuf.save_to_buffer(out png, "png");
+		repo.commit_bytes("image", "dot.png", png);
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "image");
+
+		assert_cmpint(find_named(window.history.diff_view, "GitgDiffViewFileRendererImage").length, CompareOperator.EQ, 1);
 
 		window.destroy();
 		repo.remove();
@@ -760,6 +788,50 @@ private static void test_root_and_shallow_commits_have_no_parents_row()
 	}
 }
 
+private static void test_sections_start_folded_when_there_are_several()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("one file", "a");
+		FileUtils.set_contents(repo.path.get_child("b").get_path(), "b\n");
+		FileUtils.set_contents(repo.path.get_child("c").get_path(), "c\n");
+		repo.git({"add", "--all"});
+		repo.git({"commit", "--quiet", "-m", "two files"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "one file");
+
+		foreach (var file in find_named(window.history.diff_view, "GitgDiffViewFile"))
+		{
+			bool expanded;
+			file.get("expanded", out expanded);
+			assert_true(expanded);
+		}
+
+		select_subject(window, "two files");
+
+		var files = find_named(window.history.diff_view, "GitgDiffViewFile");
+
+		assert_cmpint(files.length, CompareOperator.EQ, 2);
+
+		foreach (var file in files)
+		{
+			bool expanded;
+			file.get("expanded", out expanded);
+			assert_false(expanded);
+		}
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ticking_nothing_clears_the_details()
 {
 	try
@@ -785,6 +857,47 @@ private static void test_ticking_nothing_clears_the_details()
 	}
 }
 
+private static void test_word_mark_colours()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("start", "f", "alpha beta gamma");
+		FileUtils.set_contents(repo.path.get_child("f").get_path(), "alpha BETA gamma\n");
+		repo.git({"commit", "--quiet", "-am", "shout"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "shout");
+
+		var checked = 0;
+
+		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.SourceView)))
+		{
+			var table = ((Gtk.SourceView)widget).buffer.tag_table;
+			var added = table.lookup("word-added");
+			var removed = table.lookup("word-removed");
+
+			if (added == null || removed == null)
+			{
+				continue;
+			}
+
+			assert_cmpstr(added.background_rgba.to_string(), CompareOperator.EQ, "rgb(168,240,168)");
+			assert_cmpstr(removed.background_rgba.to_string(), CompareOperator.EQ, "rgb(255,176,176)");
+			checked++;
+		}
+
+		assert_true(checked > 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
 
 private static void test_word_marks_in_both_views()
 {
@@ -853,118 +966,4 @@ private static void test_word_marks_reach_across_a_no_newline_marker()
 	}
 }
 
-private static void test_an_image_uses_gitgs_image_view()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.commit("first");
-
-		var pixbuf = new Gdk.Pixbuf(Gdk.Colorspace.RGB, false, 8, 4, 4);
-		pixbuf.fill((uint32)0xff0000ffU);
-
-		uint8[] png;
-		pixbuf.save_to_buffer(out png, "png");
-		repo.commit_bytes("image", "dot.png", png);
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "image");
-
-		assert_cmpint(find_named(window.history.diff_view, "GitgDiffViewFileRendererImage").length, CompareOperator.EQ, 1);
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_sections_start_folded_when_there_are_several()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.commit("one file", "a");
-		FileUtils.set_contents(repo.path.get_child("b").get_path(), "b\n");
-		FileUtils.set_contents(repo.path.get_child("c").get_path(), "c\n");
-		repo.git({"add", "--all"});
-		repo.git({"commit", "--quiet", "-m", "two files"});
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "one file");
-
-		foreach (var file in find_named(window.history.diff_view, "GitgDiffViewFile"))
-		{
-			bool expanded;
-			file.get("expanded", out expanded);
-			assert_true(expanded);
-		}
-
-		select_subject(window, "two files");
-
-		var files = find_named(window.history.diff_view, "GitgDiffViewFile");
-
-		assert_cmpint(files.length, CompareOperator.EQ, 2);
-
-		foreach (var file in files)
-		{
-			bool expanded;
-			file.get("expanded", out expanded);
-			assert_false(expanded);
-		}
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_word_mark_colours()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.commit("start", "f", "alpha beta gamma");
-		FileUtils.set_contents(repo.path.get_child("f").get_path(), "alpha BETA gamma\n");
-		repo.git({"commit", "--quiet", "-am", "shout"});
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "shout");
-
-		var checked = 0;
-
-		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.SourceView)))
-		{
-			var table = ((Gtk.SourceView)widget).buffer.tag_table;
-			var added = table.lookup("word-added");
-			var removed = table.lookup("word-removed");
-
-			if (added == null || removed == null)
-			{
-				continue;
-			}
-
-			assert_cmpstr(added.background_rgba.to_string(), CompareOperator.EQ, "rgb(168,240,168)");
-			assert_cmpstr(removed.background_rgba.to_string(), CompareOperator.EQ, "rgb(255,176,176)");
-			checked++;
-		}
-
-		assert_true(checked > 0);
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
 }

@@ -345,16 +345,6 @@ public class History : Object
 		return ret;
 	}
 
-	public Ggit.OId? start_of(Ggit.OId tip)
-	{
-		if (d_index.has_key(tip))
-		{
-			return tip;
-		}
-
-		return d_starts.has_key(tip) ? d_starts[tip] : null;
-	}
-
 	private void reach(int[] starts, bool first_parent_only, bool[] reached)
 	{
 		var stack = starts;
@@ -382,6 +372,16 @@ public class History : Object
 				}
 			}
 		}
+	}
+
+	public Ggit.OId? start_of(Ggit.OId tip)
+	{
+		if (d_index.has_key(tip))
+		{
+			return tip;
+		}
+
+		return d_starts.has_key(tip) ? d_starts[tip] : null;
 	}
 
 	private static Ggit.OId? target_of(Ggit.Ref reference) throws Error

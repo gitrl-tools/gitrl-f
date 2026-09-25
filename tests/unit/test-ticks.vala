@@ -19,23 +19,6 @@
 namespace GitreeTest
 {
 
-private static string names(Gee.List<Gitree.Ref> refs, Gee.Set<string>? ticks)
-{
-	var shorts = new Gee.ArrayList<string>();
-
-	foreach (var reference in refs)
-	{
-		if (ticks.contains(reference.name))
-		{
-			shorts.add(reference.short_name);
-		}
-	}
-
-	shorts.sort();
-
-	return string.joinv(",", shorts.to_array());
-}
-
 public static int main(string[] args)
 {
 	Test.init(ref args);
@@ -53,6 +36,23 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ticks/unreadable-file-means-first-run", test_unreadable_file_means_first_run);
 
 	return Test.run();
+}
+
+private static string names(Gee.List<Gitree.Ref> refs, Gee.Set<string>? ticks)
+{
+	var shorts = new Gee.ArrayList<string>();
+
+	foreach (var reference in refs)
+	{
+		if (ticks.contains(reference.name))
+		{
+			shorts.add(reference.short_name);
+		}
+	}
+
+	shorts.sort();
+
+	return string.joinv(",", shorts.to_array());
 }
 
 private static Gee.List<Gitree.Ref> refs_of(Repo repo) throws Error
@@ -259,13 +259,6 @@ private static void test_options_add_up()
 	}
 }
 
-private static string ticks_for(Repo repo, string[] arguments) throws Error
-{
-	var refs = refs_of(repo);
-
-	return names(refs, Gitree.Ticks.resolve(new Gitree.CommandLine(arguments), refs, null));
-}
-
 private static void test_unknown_ref_stops_before_the_window_opens()
 {
 	try
@@ -312,6 +305,13 @@ private static void test_unreadable_file_means_first_run()
 	{
 		Test.fail_printf("%s", e.message);
 	}
+}
+
+private static string ticks_for(Repo repo, string[] arguments) throws Error
+{
+	var refs = refs_of(repo);
+
+	return names(refs, Gitree.Ticks.resolve(new Gitree.CommandLine(arguments), refs, null));
 }
 
 }

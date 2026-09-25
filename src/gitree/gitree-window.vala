@@ -63,6 +63,11 @@ public class Window : Gtk.ApplicationWindow
 		get { return d_infobar.visible; }
 	}
 
+	public HistoryActivity history
+	{
+		get { return d_history; }
+	}
+
 	public bool polling
 	{
 		get { return d_poll.running; }
@@ -234,11 +239,6 @@ public class Window : Gtk.ApplicationWindow
 		d_search_button.visible = true;
 	}
 
-	public HistoryActivity history
-	{
-		get { return d_history; }
-	}
-
 	public void show_dash()
 	{
 		if (d_repository != null)
@@ -265,6 +265,18 @@ public class Window : Gtk.ApplicationWindow
 		d_infobar.show();
 	}
 
+	private void update_poll()
+	{
+		if (d_repository != null && d_interface_settings.get_boolean("enable-monitoring"))
+		{
+			d_poll.start();
+		}
+		else
+		{
+			d_poll.stop();
+		}
+	}
+
 	private void update_title()
 	{
 		if (d_repository == null)
@@ -280,18 +292,6 @@ public class Window : Gtk.ApplicationWindow
 		var location = workdir != null ? workdir : d_repository.get_location();
 
 		d_header_bar.subtitle = location != null ? Gitg.Utils.replace_home_dir_with_tilde(location) : null;
-	}
-
-	private void update_poll()
-	{
-		if (d_repository != null && d_interface_settings.get_boolean("enable-monitoring"))
-		{
-			d_poll.start();
-		}
-		else
-		{
-			d_poll.stop();
-		}
 	}
 
 	protected override bool window_state_event(Gdk.EventWindowState event)

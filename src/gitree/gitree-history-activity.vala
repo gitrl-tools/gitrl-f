@@ -156,6 +156,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		owned get { return d_box; }
 	}
 
+	public signal void show_error(string primary, string secondary);
+
 	static construct
 	{
 		Gitg.WordMarks.func = WordDiff.refine_flat;
@@ -555,6 +557,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.scroll_to_cell(path, null, false, 0, 0);
 	}
 
+	private int selected_row()
+	{
+		var commit = selected;
+
+		if (commit == null)
+		{
+			return -1;
+		}
+
+		var path = d_model.path_from_commit(commit.get_id());
+
+		return path != null ? path.get_indices()[0] : -1;
+	}
+
 	public void set_ticks(Gee.Set<string> ticks)
 	{
 		d_ticks = new Gee.HashSet<string>();
@@ -583,22 +599,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_diff.shown_parents = d_history.parents_of(commit);
 		d_diff.shown_labels = labels;
 		d_diff.commit = commit;
-	}
-
-	public signal void show_error(string primary, string secondary);
-
-	private int selected_row()
-	{
-		var commit = selected;
-
-		if (commit == null)
-		{
-			return -1;
-		}
-
-		var path = d_model.path_from_commit(commit.get_id());
-
-		return path != null ? path.get_indices()[0] : -1;
 	}
 
 	private void show_match_count()

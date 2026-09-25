@@ -34,6 +34,18 @@ public class Ticks : Object
 		return Repository.common_dir(repository).get_child(FILE_NAME);
 	}
 
+	public static bool glob_match(string pattern, string text)
+	{
+		try
+		{
+			return new Regex(glob_pattern(pattern), RegexCompileFlags.DOTALL).match(text);
+		}
+		catch (RegexError e)
+		{
+			return false;
+		}
+	}
+
 	private static string glob_pattern(string pattern)
 	{
 		var regex = new StringBuilder("^");
@@ -101,18 +113,6 @@ public class Ticks : Object
 		regex.append("$");
 
 		return regex.str;
-	}
-
-	public static bool glob_match(string pattern, string text)
-	{
-		try
-		{
-			return new Regex(glob_pattern(pattern), RegexCompileFlags.DOTALL).match(text);
-		}
-		catch (RegexError e)
-		{
-			return false;
-		}
 	}
 
 	public static Gee.Set<string>? load(File file, Gee.List<Ref> refs)

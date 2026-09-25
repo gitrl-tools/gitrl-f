@@ -22,6 +22,27 @@ namespace Gitree
 
 public class Refs : Object
 {
+	private static Ggit.OId? commit_of(Gitg.Repository repository, Ggit.Ref reference)
+	{
+		try
+		{
+			var target = reference.lookup();
+
+			if (target is Ggit.Tag)
+			{
+				var tag = (Ggit.Tag)target;
+
+				return tag.get_target_type().is_a(typeof(Ggit.Commit)) ? tag.get_target_id() : null;
+			}
+
+			return (target is Ggit.Commit) ? target.get_id() : null;
+		}
+		catch (Error e)
+		{
+			return null;
+		}
+	}
+
 	private static int compare(Ref a, Ref b)
 	{
 		if (a.kind != b.kind)
@@ -73,27 +94,6 @@ public class Refs : Object
 		}
 
 		return strcmp(left, right);
-	}
-
-	private static Ggit.OId? commit_of(Gitg.Repository repository, Ggit.Ref reference)
-	{
-		try
-		{
-			var target = reference.lookup();
-
-			if (target is Ggit.Tag)
-			{
-				var tag = (Ggit.Tag)target;
-
-				return tag.get_target_type().is_a(typeof(Ggit.Commit)) ? tag.get_target_id() : null;
-			}
-
-			return (target is Ggit.Commit) ? target.get_id() : null;
-		}
-		catch (Error e)
-		{
-			return null;
-		}
 	}
 
 	private static string[] natural_parts(string text)

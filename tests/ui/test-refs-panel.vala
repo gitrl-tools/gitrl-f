@@ -110,9 +110,8 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
 	Test.add_func("/gitree/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
 	Test.add_func("/gitree/ui/refs-panel/none-and-only", test_none_and_only);
-	Test.add_func("/gitree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
-
 	Test.add_func("/gitree/ui/refs-panel/only-shows-under-the-pointer", test_only_shows_under_the_pointer);
+	Test.add_func("/gitree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
 	return Test.run();
 }
 
@@ -360,32 +359,6 @@ private static void test_none_and_only()
 	}
 }
 
-private static void test_ref_name_activates_the_ref()
-{
-	try
-	{
-		var repo = fixture();
-		Gee.List<Gitree.Ref> refs;
-		var list = panel(repo, out refs);
-		string? activated = null;
-
-		list.ref_activated.connect((reference) => {
-			activated = reference.name;
-		});
-
-		list.row_activated(row(list, "fix/stamp"));
-
-		assert_cmpstr(activated, CompareOperator.EQ, "refs/heads/fix/stamp");
-
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-
 private static void test_only_shows_under_the_pointer()
 {
 	try
@@ -420,4 +393,30 @@ private static void test_only_shows_under_the_pointer()
 		Test.fail_printf("%s", e.message);
 	}
 }
+
+private static void test_ref_name_activates_the_ref()
+{
+	try
+	{
+		var repo = fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+		string? activated = null;
+
+		list.ref_activated.connect((reference) => {
+			activated = reference.name;
+		});
+
+		list.row_activated(row(list, "fix/stamp"));
+
+		assert_cmpstr(activated, CompareOperator.EQ, "refs/heads/fix/stamp");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 }

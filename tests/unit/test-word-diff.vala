@@ -24,17 +24,17 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gitree/word-diff/changed-word", test_a_changed_word_in_a_long_line);
 	Test.add_func("/gitree/word-diff/added-word", test_an_added_word_marks_only_that_word);
-	Test.add_func("/gitree/word-diff/phrase-is-one-mark", test_a_mark_does_not_end_on_whitespace);
-	Test.add_func("/gitree/word-diff/punctuation", test_punctuation_is_its_own_word);
-	Test.add_func("/gitree/word-diff/unrelated-lines", test_two_unrelated_lines_take_no_marks);
-	Test.add_func("/gitree/word-diff/wide-characters", test_marks_land_on_the_right_bytes_past_a_wide_character);
+	Test.add_func("/gitree/word-diff/changed-word", test_a_changed_word_in_a_long_line);
+	Test.add_func("/gitree/word-diff/empty-line", test_an_empty_line_takes_no_marks);
 	Test.add_func("/gitree/word-diff/flat-form-agrees", test_the_flat_form_carries_the_same_offsets);
 	Test.add_func("/gitree/word-diff/flat-form-declines", test_the_flat_form_declines_where_refine_declines);
 	Test.add_func("/gitree/word-diff/identical-lines", test_an_identical_line_takes_no_marks);
 	Test.add_func("/gitree/word-diff/only-changed-words-are-marked", test_only_changed_words_are_marked);
-	Test.add_func("/gitree/word-diff/empty-line", test_an_empty_line_takes_no_marks);
+	Test.add_func("/gitree/word-diff/phrase-is-one-mark", test_a_mark_does_not_end_on_whitespace);
+	Test.add_func("/gitree/word-diff/punctuation", test_punctuation_is_its_own_word);
+	Test.add_func("/gitree/word-diff/unrelated-lines", test_two_unrelated_lines_take_no_marks);
+	Test.add_func("/gitree/word-diff/wide-characters", test_marks_land_on_the_right_bytes_past_a_wide_character);
 
 	return Test.run();
 }
