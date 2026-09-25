@@ -390,22 +390,33 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory)
 	{
+		Gee.List<Ref> refs;
+		Gee.Set<string> resolved;
+
+		try
+		{
+			refs = Refs.read(repository);
+			resolved = Ticks.resolve(null, refs, ticks != null ? ticks : Ticks.load(Ticks.file_for(repository), refs));
+		}
+		catch (Error e)
+		{
+			d_repository = null;
+			d_history = null;
+			d_refs = new Gee.ArrayList<Ref>();
+			d_ticks = new Gee.HashSet<string>();
+			d_paned.refs_list.set_refs(d_refs, d_ticks);
+			show_ticks();
+			show_error(_("Could not read the refs"), e.message);
+			return;
+		}
+
 		d_repository = repository;
 		d_paths = paths;
 		this.directory = directory;
 		d_diff.repository = repository;
 		d_diff.options.pathspec = pathspec();
-
-		try
-		{
-			d_refs = Refs.read(repository);
-			d_ticks = Ticks.resolve(null, d_refs, ticks != null ? ticks : Ticks.load(Ticks.file_for(repository), d_refs));
-		}
-		catch (Error e)
-		{
-			show_error(_("Could not read the refs"), e.message);
-			return;
-		}
+		d_refs = refs;
+		d_ticks = resolved;
 
 		try
 		{

@@ -58,9 +58,11 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
+	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-the-ticks-alone", test_refs_that_cannot_be_read_leave_the_ticks_alone);
 	Test.add_func("/gitree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
 	Test.add_func("/gitree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
 	Test.add_func("/gitree/ui/history-activity/ticks-are-kept-when-the-window-closes", test_ticks_are_kept_when_the_window_closes);
+	Test.add_func("/gitree/ui/history-activity/ticks-are-not-written-again-after-leaving-for-the-chooser", test_ticks_are_not_written_again_after_leaving_for_the_chooser);
 	Test.add_func("/gitree/ui/history-activity/window-jump-ticks-an-unticked-ref-and-selects-its-tip", test_window_jump_ticks_an_unticked_ref_and_selects_its_tip);
 	Test.add_func("/gitree/ui/history-activity/window-labels-only-ticked-refs", test_window_labels_only_ticked_refs);
 	Test.add_func("/gitree/ui/history-activity/window-with-nothing-ticked-shows-the-empty-notice", test_window_with_nothing_ticked_shows_the_empty_notice);
@@ -89,6 +91,11 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 	drain();
 
 	return window;
+}
+
+private static File ticks_file(Repo repo)
+{
+	return repo.path.get_child(".git").get_child("git-tree-ticks");
 }
 
 private static void test_bytes_that_are_not_utf8_show_as_replacements()
@@ -152,6 +159,44 @@ private static void test_path_bar_and_path_notice()
 
 		window.destroy();
 		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_refs_that_cannot_be_read_leave_the_ticks_alone()
+{
+	try
+	{
+		var first = Repo.create();
+		first.branched();
+
+		var broken = Repo.create();
+		broken.commit("first");
+		broken.branch("other");
+		broken.git({"pack-refs", "--all"});
+
+		var kept = "+ refs/heads/master\n- refs/heads/other\n";
+		FileUtils.set_contents(ticks_file(broken).get_path(), kept);
+		FileUtils.set_contents(broken.path.get_child(".git").get_child("packed-refs").get_path(), "garbage\n");
+
+		var window = opened(first, {"refs/heads/master"});
+		window.open_repository(Gitree.Application.discover_repository(broken.path));
+		drain();
+
+		assert_cmpint(window.history.rows().length, CompareOperator.EQ, 0);
+
+		window.close();
+		drain();
+
+		string contents;
+		FileUtils.get_contents(ticks_file(broken).get_path(), out contents);
+		assert_cmpstr(contents, CompareOperator.EQ, kept);
+
+		first.remove();
+		broken.remove();
 	}
 	catch (Error e)
 	{
@@ -236,6 +281,35 @@ private static void test_ticks_are_kept_when_the_window_closes()
 			"+ refs/tags/v1",
 			"",
 		}));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ticks_are_not_written_again_after_leaving_for_the_chooser()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master"});
+		window.show_dash();
+		drain();
+
+		var changed = "+ refs/heads/feature/scan\n";
+		FileUtils.set_contents(ticks_file(repo).get_path(), changed);
+
+		window.close();
+		drain();
+
+		string contents;
+		FileUtils.get_contents(ticks_file(repo).get_path(), out contents);
+		assert_cmpstr(contents, CompareOperator.EQ, changed);
 
 		repo.remove();
 	}

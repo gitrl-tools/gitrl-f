@@ -128,7 +128,11 @@ public class Window : Gtk.ApplicationWindow
 		});
 
 		delete_event.connect(() => {
-			d_history.save_ticks();
+			if (d_repository != null)
+			{
+				d_history.save_ticks();
+			}
+
 			return false;
 		});
 		d_stack_activities.add_titled(d_history.widget, d_history.id, d_history.display_name);
