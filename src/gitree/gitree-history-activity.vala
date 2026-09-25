@@ -20,16 +20,39 @@
 namespace Gitree
 {
 
-public int main(string[] args)
+public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity
 {
-	Intl.setlocale(LocaleCategory.ALL, "");
-	Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.GITG_LOCALEDIR);
-	Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
-	Intl.textdomain(Config.GETTEXT_PACKAGE);
+	private Gtk.Box d_widget;
 
-	var app = new Gitree.Application();
+	public GitgExt.Application? application { owned get; construct set; }
 
-	return app.run(args);
+	public string description
+	{
+		owned get { return _("Show the history of the refs you tick"); }
+	}
+
+	public string display_name
+	{
+		owned get { return _("History"); }
+	}
+
+	public string id
+	{
+		owned get { return "/io/github/li9i/gitree/Activities/History"; }
+	}
+
+	public Gitg.Repository? repository { get; set; }
+
+	public Gtk.Widget? widget
+	{
+		owned get { return d_widget; }
+	}
+
+	construct
+	{
+		d_widget = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
+		d_widget.show();
+	}
 }
 
 }

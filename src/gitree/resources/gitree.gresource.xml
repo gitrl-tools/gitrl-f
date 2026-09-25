@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/io/github/li9i/gitree">
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitree-window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitree-menus.ui</file>
+
+    <file compressed="true">ui/style.css</file>
+  </gresource>
+</gresources>

@@ -1,0 +1,221 @@
+/*
+ * This file is part of gitree
+ *
+ * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
+ *
+ * gitree is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 2 of the License, or (at your option) any later
+ * version.
+ *
+ * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with gitree. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+namespace Gitree
+{
+
+[GtkTemplate (ui = "/io/github/li9i/gitree/ui/gitree-window.ui")]
+public class Window : Gtk.ApplicationWindow
+{
+	private const ActionEntry[] s_action_entries = {
+		{"dash", on_dash_activated},
+		{"preferences", on_preferences_activated},
+		{"reload", on_reload_activated},
+	};
+
+	[GtkChild]
+	private unowned Gtk.StackSwitcher d_activities_switcher;
+	[GtkChild]
+	private unowned Gtk.Button d_dash_button;
+	[GtkChild]
+	private unowned Gtk.MenuButton d_gear_menu;
+	[GtkChild]
+	private unowned Gtk.HeaderBar d_header_bar;
+	[GtkChild]
+	private unowned Gtk.InfoBar d_infobar;
+	[GtkChild]
+	private unowned Gtk.Label d_infobar_primary_label;
+	[GtkChild]
+	private unowned Gtk.Label d_infobar_secondary_label;
+	[GtkChild]
+	private unowned Gtk.Stack d_main_stack;
+	[GtkChild]
+	private unowned Gtk.ToggleButton d_search_button;
+	[GtkChild]
+	private unowned Gtk.Stack d_stack_activities;
+
+	private DashView d_dash;
+	private HistoryActivity d_history;
+	private Gitg.Repository? d_repository;
+	private Settings d_state_settings;
+
+	public Gitg.Repository? repository
+	{
+		get { return d_repository; }
+	}
+
+	public signal void reload();
+
+	public Window(Gtk.Application application)
+	{
+		Object(application: application);
+	}
+
+	construct
+	{
+		d_state_settings = new Settings("%s.state.window".printf(Config.APPLICATION_ID));
+
+		add_action_entries(s_action_entries, this);
+
+		var builder = new Gtk.Builder.from_resource("/io/github/li9i/gitree/ui/gitree-menus.ui");
+		d_gear_menu.menu_model = builder.get_object("gear-menu") as MenuModel;
+
+		d_infobar.response.connect((id) => {
+			d_infobar.hide();
+		});
+
+		d_dash = new DashView();
+		d_dash.repository_activated.connect(set_repository);
+		d_dash.show_error.connect((primary, secondary) => {
+			show_infobar(primary, secondary, Gtk.MessageType.ERROR);
+		});
+		d_main_stack.add_named(d_dash, "dash");
+
+		d_history = new HistoryActivity();
+		d_stack_activities.add_titled(d_history.widget, d_history.id, d_history.display_name);
+
+		restore_state();
+
+		show_dash();
+	}
+
+	protected override bool configure_event(Gdk.EventConfigure event)
+	{
+		if ((d_state_settings.get_int("state") & Gdk.WindowState.MAXIMIZED) == 0)
+		{
+			int width;
+			int height;
+			get_size(out width, out height);
+
+			d_state_settings.set_value("size", new Variant("(ii)", width, height));
+		}
+
+		return base.configure_event(event);
+	}
+
+	private void on_dash_activated(SimpleAction action, Variant? parameter)
+	{
+		show_dash();
+	}
+
+	private void on_preferences_activated(SimpleAction action, Variant? parameter)
+	{
+		new PreferencesDialog(this).present();
+	}
+
+	private void on_reload_activated(SimpleAction action, Variant? parameter)
+	{
+		reload();
+	}
+
+	public void open_repository(File location)
+	{
+		try
+		{
+			set_repository(Repository.open(location));
+		}
+		catch (Error e)
+		{
+			show_infobar(_("Failed to open repository"), e.message, Gtk.MessageType.ERROR);
+			show_dash();
+		}
+	}
+
+	private void restore_state()
+	{
+		var size = d_state_settings.get_value("size");
+
+		int width;
+		int height;
+		size.get("(ii)", out width, out height);
+
+		if (width > 0 && height > 0)
+		{
+			set_default_size(width, height);
+		}
+
+		if ((d_state_settings.get_int("state") & Gdk.WindowState.MAXIMIZED) != 0)
+		{
+			maximize();
+		}
+	}
+
+	private void set_repository(Gitg.Repository repository)
+	{
+		d_repository = repository;
+		d_history.repository = d_repository;
+		d_dash.add_repository(d_repository);
+		update_title();
+		show_activities();
+	}
+
+	public void show_activities()
+	{
+		d_main_stack.visible_child_name = "activities";
+
+		d_dash_button.visible = true;
+		d_activities_switcher.visible = d_stack_activities.get_children().length() > 1;
+		d_search_button.visible = true;
+	}
+
+	public void show_dash()
+	{
+		d_main_stack.visible_child_name = "dash";
+
+		d_dash_button.visible = false;
+		d_activities_switcher.visible = false;
+		d_search_button.visible = false;
+
+		d_repository = null;
+		update_title();
+	}
+
+	public void show_infobar(string primary, string secondary, Gtk.MessageType type)
+	{
+		d_infobar_primary_label.label = primary;
+		d_infobar_secondary_label.label = secondary;
+		d_infobar.message_type = type;
+		d_infobar.show();
+	}
+
+	private void update_title()
+	{
+		if (d_repository == null)
+		{
+			d_header_bar.title = "gitree";
+			d_header_bar.subtitle = null;
+			return;
+		}
+
+		d_header_bar.title = d_repository.name;
+
+		var workdir = d_repository.get_workdir();
+		var location = workdir != null ? workdir : d_repository.get_location();
+
+		d_header_bar.subtitle = location != null ? Gitg.Utils.replace_home_dir_with_tilde(location) : null;
+	}
+
+	protected override bool window_state_event(Gdk.EventWindowState event)
+	{
+		d_state_settings.set_int("state", event.new_window_state);
+		return base.window_state_event(event);
+	}
+}
+
+}

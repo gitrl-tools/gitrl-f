@@ -20,16 +20,26 @@
 namespace Gitree
 {
 
-public int main(string[] args)
+public errordomain RepositoryError
 {
-	Intl.setlocale(LocaleCategory.ALL, "");
-	Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.GITG_LOCALEDIR);
-	Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
-	Intl.textdomain(Config.GETTEXT_PACKAGE);
+	NOT_A_REPOSITORY,
+}
 
-	var app = new Gitree.Application();
+public class Repository : Object
+{
+	public static Gitg.Repository open(File location) throws RepositoryError
+	{
+		try
+		{
+			Gitg.init();
 
-	return app.run(args);
+			return new Gitg.Repository(location, null);
+		}
+		catch (Error e)
+		{
+			throw new RepositoryError.NOT_A_REPOSITORY("%s", e.message);
+		}
+	}
 }
 
 }
