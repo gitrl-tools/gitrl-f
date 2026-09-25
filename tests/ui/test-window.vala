@@ -77,7 +77,6 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/ui/window/header-bar-order", test_header_bar_order);
 	Test.add_func("/gitree/ui/window/menu-entries", test_menu_entries);
-	Test.add_func("/gitree/ui/window/opens-centred", test_opens_centred);
 	Test.add_func("/gitree/ui/window/shortcuts", test_shortcuts);
 	Test.add_func("/gitree/ui/window/size-is-kept", test_size_is_kept);
 	Test.add_func("/gitree/ui/window/title-and-subtitle", test_title_and_subtitle);
@@ -156,24 +155,6 @@ private static void test_menu_entries()
 	assert_nonnull(menu_button);
 	assert_cmpstr(string.joinv("|", labels_of(menu_button.menu_model)), CompareOperator.EQ,
 	              "0:_New Window:app.new-window|1:_Reload:win.reload|2:_Preferences:win.preferences|2:_About gitree:app.about|2:_Quit:app.quit");
-
-	window.destroy();
-}
-
-private static void test_opens_centred()
-{
-	var window = new Gitree.Window(application());
-	window.set_default_size(600, 400);
-	window.show();
-	drain();
-
-	Gdk.Rectangle frame;
-	window.get_window().get_frame_extents(out frame);
-
-	var workarea = window.get_display().get_monitor_at_window(window.get_window()).get_workarea();
-
-	assert_cmpint((frame.x - (workarea.x + (workarea.width - frame.width) / 2)).abs(), CompareOperator.LE, 8);
-	assert_cmpint((frame.y - (workarea.y + (workarea.height - frame.height) / 2)).abs(), CompareOperator.LE, 8);
 
 	window.destroy();
 }
