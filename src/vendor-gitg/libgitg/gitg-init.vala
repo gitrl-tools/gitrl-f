@@ -66,21 +66,6 @@ public void init() throws Error
 	factory.register(typeof(Ggit.Commit),
 	                 typeof(Gitg.Commit));
 
-	// Add our own css provider
-	var screen = Gdk.Screen.get_default();
-
-	if (screen != null)
-	{
-		Gtk.CssProvider? provider = Gitg.Resource.load_css("libgitg-style.css");
-
-		if (provider != null)
-		{
-			Gtk.StyleContext.add_provider_for_screen(screen,
-			                                         provider,
-			                                         600);
-		}
-	}
-
 }
 
 }

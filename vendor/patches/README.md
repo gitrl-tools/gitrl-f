@@ -32,9 +32,9 @@ Two changes.
 
 **1. Removes the registration of the `Ggit.Remote` -> `Gitg.Remote` factory.** Remote operations are out of scope, so `gitg-remote.vala` is not vendored, and the registration cannot compile.
 
-**2. Adds the CSS provider only when there is a `Gdk.Screen`.** Upstream gives `Gdk.Screen.get_default()` directly to `Gtk.StyleContext.add_provider_for_screen()`. With no display, that value is null, GTK fails a critical assertion, and `Gitg.init()` stops the process. `Gitg.init()` also registers the Ggit type factory that all other code needs. `git tree -h`, a ref that matches nothing, and arguments outside a repository must all work with no display, and so must the unit tests.
+**2. Removes the CSS provider.** Upstream gives `Gdk.Screen.get_default()` directly to `Gtk.StyleContext.add_provider_for_screen()`. With no display, that value is null, GTK fails a critical assertion, and `Gitg.init()` stops the process. `Gitg.init()` also registers the Ggit type factory that all other code needs. `git tree -h`, a ref that matches nothing, and arguments outside a repository must all work with no display, and so must the unit tests. A check for a screen inside `Gitg.init()` is not sufficient: gitree opens the repository to read its refs before GTK opens the display, and `Gitg.init()` does its work on the first call only. Thus a window started in a repository did not get the stylesheet. `Gitree.Application.startup()` adds `libgitg-style.css` at the priority that upstream uses, when the screen exists.
 
-**Cost.** None. With no screen, the type factory is the part that has an effect. The CSS has an effect only on a screen, and there the code path is the same as upstream.
+**Cost.** The stylesheet is added in a different function. Its content, its priority and its screen are the same as upstream.
 
 ## gitg-ext-application.patch
 

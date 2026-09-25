@@ -28,7 +28,6 @@ public class Application : Gtk.Application
 		{"quit", on_quit_activated},
 	};
 
-	private string[] d_arguments;
 	private File? d_directory;
 	private File? d_location;
 	private string[] d_paths;
@@ -127,10 +126,21 @@ public class Application : Gtk.Application
 		}
 
 		d_location = location;
-		d_arguments = { arguments[0] };
-		arguments = d_arguments;
 
-		return base.local_command_line(ref arguments, out exit_status);
+		try
+		{
+			register();
+		}
+		catch (Error e)
+		{
+			stderr.printf("git tree: %s\n", e.message);
+			exit_status = 1;
+			return true;
+		}
+
+		activate();
+		exit_status = 0;
+		return true;
 	}
 
 	private static void on_about_activated(SimpleAction action, Variant? parameter)
@@ -182,6 +192,13 @@ public class Application : Gtk.Application
 
 		if (screen != null)
 		{
+			var gitg_provider = Gitg.Resource.load_css("libgitg-style.css");
+
+			if (gitg_provider != null)
+			{
+				Gtk.StyleContext.add_provider_for_screen(screen, gitg_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+			}
+
 			var provider = new Gtk.CssProvider();
 			provider.load_from_resource("/io/github/li9i/gitree/ui/style.css");
 			Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);

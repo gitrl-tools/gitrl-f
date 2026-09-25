@@ -78,6 +78,7 @@ ui_tests = [
   'search',
   'session',
   'smoke',
+  'startup',
   'window',
 ]
 
