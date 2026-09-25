@@ -226,7 +226,6 @@ public class RefsList : Gtk.ListBox
 		RefsHeader? branches = null;
 		RefsHeader? remotes = null;
 		RefsHeader? tags = null;
-		var remote_groups = new Gee.HashMap<string, RefsHeader>();
 		var remote_names = new Gee.ArrayList<string>();
 
 		foreach (var reference in refs)
@@ -260,7 +259,6 @@ public class RefsList : Gtk.ListBox
 			}
 
 			var group = add_header("remote:" + remote, remote, remotes);
-			remote_groups[remote] = group;
 
 			foreach (var reference in refs)
 			{

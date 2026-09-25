@@ -83,7 +83,7 @@ public class Dump : Object
 			}
 
 			var rows = history.tick(tips, History.mainline(repository, true));
-			var shown = new Gee.HashSet<Ggit.OId>((Gee.HashDataFunc)Ggit.OId.hash, (Gee.EqualDataFunc)Ggit.OId.equal);
+			var shown = History.id_set();
 
 			foreach (var commit in rows)
 			{

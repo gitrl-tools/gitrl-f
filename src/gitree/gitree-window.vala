@@ -94,6 +94,9 @@ public class Window : Gtk.ApplicationWindow
 		});
 
 		d_dash = new DashView();
+		d_dash.location_activated.connect((location) => {
+			open_repository(location);
+		});
 		d_dash.repository_activated.connect((repository) => {
 			set_repository(repository, null, {}, null);
 		});

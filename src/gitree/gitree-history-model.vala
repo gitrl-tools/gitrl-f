@@ -34,8 +34,7 @@ public class HistoryModel : Object, Gtk.TreeModel
 	construct
 	{
 		d_rows = new Gitg.Commit[0];
-		d_index = new Gee.HashMap<Ggit.OId, int>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
-		                                        (Gee.EqualDataFunc<Ggit.OId>)Ggit.OId.equal);
+		d_index = History.id_map<int>();
 	}
 
 	public Gitg.Commit? commit_from_iter(Gtk.TreeIter iter)
@@ -43,18 +42,6 @@ public class HistoryModel : Object, Gtk.TreeModel
 		return_val_if_fail(iter.stamp == d_stamp, null);
 
 		return get_row((uint)(ulong)iter.user_data);
-	}
-
-	public Gitg.Commit? commit_from_path(Gtk.TreePath path)
-	{
-		int[] indices = path.get_indices();
-
-		if (indices.length != 1)
-		{
-			return null;
-		}
-
-		return get_row((uint)indices[0]);
 	}
 
 	public Type get_column_type(int index)

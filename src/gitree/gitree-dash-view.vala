@@ -25,6 +25,7 @@ public class DashView : Gtk.Box
 	private Gitg.RepositoryListBox d_repository_list;
 	private Gtk.SearchEntry d_search_entry;
 
+	public signal void location_activated(File location);
 	public signal void repository_activated(Gitg.Repository repository);
 	public signal void show_error(string primary, string secondary);
 
@@ -101,7 +102,7 @@ public class DashView : Gtk.Box
 		d_repository_list.filter_text(d_search_entry.text);
 	}
 
-	private void open_location(File file)
+	public void open_location(File file)
 	{
 		var location = Application.discover_repository(file);
 
@@ -112,14 +113,7 @@ public class DashView : Gtk.Box
 			return;
 		}
 
-		try
-		{
-			repository_activated(Repository.open(location));
-		}
-		catch (Error e)
-		{
-			show_error(_("Failed to open repository"), e.message);
-		}
+		location_activated(location);
 	}
 }
 

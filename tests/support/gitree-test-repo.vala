@@ -99,23 +99,6 @@ public class Repo : Object
 		return git({"rev-parse", "HEAD"}).strip();
 	}
 
-	public string commit_at(int day, string message, string? filename = null) throws Error
-	{
-		var name = filename != null ? filename : "file";
-		FileUtils.set_contents(path.get_child(name).get_path(), message + "\n");
-
-		git({"add", "--all"});
-
-		var when = "@%lld +0000".printf((int64)1577836800 + (int64)day * 86400);
-
-		var env = Environ.set_variable(d_env, "GIT_AUTHOR_DATE", when, true);
-		env = Environ.set_variable(env, "GIT_COMMITTER_DATE", when, true);
-
-		run_git({"commit", "--quiet", "-m", message}, env);
-
-		return git({"rev-parse", "HEAD"}).strip();
-	}
-
 	public string commit_bytes(string message, string filename, uint8[] content) throws Error
 	{
 		d_clock++;
@@ -188,11 +171,6 @@ public class Repo : Object
 		}
 
 		file.delete();
-	}
-
-	public void reset(string target) throws Error
-	{
-		git({"reset", "--quiet", "--hard", target});
 	}
 
 	private string run_git(string[] args, string[] env) throws Error

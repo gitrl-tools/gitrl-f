@@ -71,6 +71,8 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitree/ui/dash/a-folder-in-a-repository-opens-it", test_a_folder_in_a_repository_opens_it);
+	Test.add_func("/gitree/ui/dash/a-folder-outside-a-repository-shows-an-error", test_a_folder_outside_a_repository_shows_an_error);
 	Test.add_func("/gitree/ui/dash/opened-repository-is-listed-and-opens", test_opened_repository_is_listed_and_opens);
 	Test.add_func("/gitree/ui/dash/shows-with-no-repository", test_shows_with_no_repository);
 
@@ -88,6 +90,67 @@ private static void settle(int milliseconds)
 
 		Thread.usleep(10000);
 	}
+}
+
+private static void test_a_folder_in_a_repository_opens_it()
+{
+	Repo repo;
+
+	try
+	{
+		repo = Repo.create();
+		repo.commit("first");
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("fixture failed: %s", e.message);
+		return;
+	}
+
+	var window = new Gitree.Window(application());
+	window.show();
+	settle(100);
+
+	var dash = find(window, typeof(Gitree.DashView)) as Gitree.DashView;
+	dash.open_location(repo.path);
+	settle(100);
+
+	var bar = window.get_titlebar() as Gtk.HeaderBar;
+	assert_cmpstr(bar.title, CompareOperator.EQ, repo.path.get_basename());
+	assert_false(dash.get_mapped());
+	assert_false(window.error_shown);
+
+	window.destroy();
+	repo.remove();
+}
+
+private static void test_a_folder_outside_a_repository_shows_an_error()
+{
+	string outside;
+
+	try
+	{
+		outside = DirUtils.make_tmp("gitree-outside-XXXXXX");
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("fixture failed: %s", e.message);
+		return;
+	}
+
+	var window = new Gitree.Window(application());
+	window.show();
+	settle(100);
+
+	var dash = find(window, typeof(Gitree.DashView)) as Gitree.DashView;
+	dash.open_location(File.new_for_path(outside));
+	settle(100);
+
+	assert_true(window.error_shown);
+	assert_true(dash.get_mapped());
+
+	window.destroy();
+	DirUtils.remove(outside);
 }
 
 private static void test_opened_repository_is_listed_and_opens()

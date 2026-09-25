@@ -236,7 +236,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_box.show_all();
 
 		d_diff = new Gitg.DiffView();
-		d_diff.show_parents = true;
 		d_diff.vexpand = true;
 		d_diff.show();
 		d_paned.box_details.add(d_diff);
@@ -280,7 +279,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		d_settings.changed["topological-order"].connect(() => {
-			reload();
+			refresh();
 		});
 		d_settings.changed["mainline-head"].connect(() => {
 			show_ticks();
@@ -521,11 +520,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			adjustment.value = scroll;
 			return false;
 		});
-	}
-
-	public void reload()
-	{
-		refresh();
 	}
 
 	public Gitg.Commit[] rows()

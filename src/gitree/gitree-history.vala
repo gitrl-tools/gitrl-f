@@ -161,15 +161,8 @@ public class History : Object
 	private void begin()
 	{
 		d_commits = new Gitg.Commit[0];
-		d_index = new Gee.HashMap<Ggit.OId, int>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
-		                                        (Gee.EqualDataFunc<Ggit.OId>)Ggit.OId.equal);
-		d_starts = new Gee.HashMap<Ggit.OId, Ggit.OId?>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
-		                                               (Gee.EqualDataFunc<Ggit.OId>)Ggit.OId.equal);
-	}
-
-	public bool contains(Ggit.OId id)
-	{
-		return d_index.has_key(id);
+		d_index = id_map<int>();
+		d_starts = id_map<Ggit.OId?>();
 	}
 
 	private static string[] git(File directory, string[] arguments, string? input) throws Error
@@ -229,7 +222,13 @@ public class History : Object
 		return records;
 	}
 
-	private static Gee.HashSet<Ggit.OId> id_set()
+	public static Gee.HashMap<Ggit.OId, V> id_map<V>()
+	{
+		return new Gee.HashMap<Ggit.OId, V>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
+		                                    (Gee.EqualDataFunc<Ggit.OId>)Ggit.OId.equal);
+	}
+
+	public static Gee.HashSet<Ggit.OId> id_set()
 	{
 		return new Gee.HashSet<Ggit.OId>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
 		                                 (Gee.EqualDataFunc<Ggit.OId>)Ggit.OId.equal);
