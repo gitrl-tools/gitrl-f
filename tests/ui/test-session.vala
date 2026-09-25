@@ -59,7 +59,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/session/a-session-changes-nothing-but-the-ticks", test_a_session_changes_nothing_but_the_ticks);
+	Test.add_func("/gitree/ui/session/a-session-changes-nothing", test_a_session_changes_nothing);
 
 	return Test.run();
 }
@@ -88,7 +88,7 @@ private static void settle(int milliseconds)
 	}
 }
 
-private static void test_a_session_changes_nothing_but_the_ticks()
+private static void test_a_session_changes_nothing()
 {
 	try
 	{
