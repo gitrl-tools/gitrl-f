@@ -130,9 +130,6 @@ public class RefsList : Gtk.ListBox
 
 			changed_by_user();
 		});
-		row.only.connect(() => {
-			only(reference);
-		});
 
 		d_rows.add(row);
 		add(row);
@@ -202,13 +199,6 @@ public class RefsList : Gtk.ListBox
 		}
 
 		ref_activated(((RefsRow)row).reference);
-	}
-
-	public void only(Ref reference)
-	{
-		d_ticks.clear();
-		d_ticks.add(reference.name);
-		changed_by_user();
 	}
 
 	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks)

@@ -109,9 +109,9 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/refs-panel/group-checkbox-count-and-mixed-state", test_group_checkbox_count_and_mixed_state);
 	Test.add_func("/gitree/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
 	Test.add_func("/gitree/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
-	Test.add_func("/gitree/ui/refs-panel/none-and-only", test_none_and_only);
-	Test.add_func("/gitree/ui/refs-panel/only-shows-under-the-pointer", test_only_shows_under_the_pointer);
+	Test.add_func("/gitree/ui/refs-panel/none-unticks-every-ref", test_none_unticks_every_ref);
 	Test.add_func("/gitree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
+	Test.add_func("/gitree/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
 	return Test.run();
 }
 
@@ -333,7 +333,7 @@ private static void test_groups_order_and_notes()
 	}
 }
 
-private static void test_none_and_only()
+private static void test_none_unticks_every_ref()
 {
 	try
 	{
@@ -346,45 +346,7 @@ private static void test_none_and_only()
 
 		list.tick_none();
 		assert_cmpint(list.ticks.size, CompareOperator.EQ, 0);
-
-		row(list, "origin/master").only();
-		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ, "refs/remotes/origin/master");
-		assert_cmpint(changes, CompareOperator.EQ, 2);
-
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_only_shows_under_the_pointer()
-{
-	try
-	{
-		var repo = fixture();
-		Gee.List<Gitree.Ref> refs;
-		var list = panel(repo, out refs);
-		var target = row(list, "fix/stamp");
-		Gtk.Label? only = null;
-
-		foreach (var widget in find_all(target, typeof(Gtk.Label)))
-		{
-			if (((Gtk.Label)widget).get_text() == "only")
-			{
-				only = (Gtk.Label)widget;
-			}
-		}
-
-		assert_nonnull(only);
-		assert_false(only.visible);
-
-		target.set_state_flags(Gtk.StateFlags.PRELIGHT, false);
-		assert_true(only.visible);
-
-		target.unset_state_flags(Gtk.StateFlags.PRELIGHT);
-		assert_false(only.visible);
+		assert_cmpint(changes, CompareOperator.EQ, 1);
 
 		repo.remove();
 	}
@@ -410,6 +372,30 @@ private static void test_ref_name_activates_the_ref()
 		list.row_activated(row(list, "fix/stamp"));
 
 		assert_cmpstr(activated, CompareOperator.EQ, "refs/heads/fix/stamp");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_rows_offer_no_only_link()
+{
+	try
+	{
+		var repo = fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+		var target = row(list, "fix/stamp");
+
+		target.set_state_flags(Gtk.StateFlags.PRELIGHT, false);
+
+		foreach (var widget in find_all(target, typeof(Gtk.Label)))
+		{
+			assert_cmpstr(((Gtk.Label)widget).get_text(), CompareOperator.NE, "only");
+		}
 
 		repo.remove();
 	}

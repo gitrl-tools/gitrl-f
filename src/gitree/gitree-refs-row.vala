@@ -31,8 +31,6 @@ public class RefsRow : Gtk.ListBoxRow
 	private unowned Gtk.Label d_label;
 	[GtkChild]
 	private unowned Gtk.Label d_note;
-	[GtkChild]
-	private unowned Gtk.Label d_only;
 
 	private bool d_updating;
 
@@ -50,7 +48,6 @@ public class RefsRow : Gtk.ListBoxRow
 		}
 	}
 
-	public signal void only();
 	public signal void toggled();
 
 	public RefsRow(Ref reference, RefsHeader group)
@@ -82,22 +79,11 @@ public class RefsRow : Gtk.ListBoxRow
 				toggled();
 			}
 		});
-
-		d_only.activate_link.connect(() => {
-			only();
-			return true;
-		});
 	}
 
 	public bool matches(string needle)
 	{
 		return needle in reference.short_name.down();
-	}
-
-	protected override void state_flags_changed(Gtk.StateFlags previous)
-	{
-		base.state_flags_changed(previous);
-		d_only.visible = (get_state_flags() & Gtk.StateFlags.PRELIGHT) != 0;
 	}
 }
 

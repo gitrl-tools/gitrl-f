@@ -42,19 +42,6 @@
             </style>
           </object>
         </child>
-        <child>
-          <object class="GtkLabel" id="d_only">
-            <property name="visible">False</property>
-            <property name="no_show_all">True</property>
-            <property name="halign">end</property>
-            <property name="hexpand">True</property>
-            <property name="use_markup">True</property>
-            <property name="label" translatable="yes">&lt;a href="only"&gt;only&lt;/a&gt;</property>
-            <attributes>
-              <attribute name="scale" value="0.8333333333333"/>
-            </attributes>
-          </object>
-        </child>
       </object>
     </child>
   </template>
