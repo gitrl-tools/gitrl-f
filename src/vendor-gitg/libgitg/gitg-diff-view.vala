@@ -41,19 +41,6 @@ public class Gitg.DiffView : Gtk.Grid
 	[GtkChild( name = "text_view_message" )]
 	private unowned Gtk.TextView d_text_view_message;
 
-	[GtkChild( name = "grid_content" )]
-	private unowned Gtk.Grid d_grid_content;
-
-	public const int CUT_CHARACTERS = 200000;
-
-	private Gtk.Label d_label_count;
-	private Gtk.Label d_label_cut;
-
-	public Ggit.OId[]? shown_parents;
-	public Gitg.Ref[] shown_labels = new Gitg.Ref[0];
-
-	public signal void parent_activated(Ggit.OId id);
-
 	private Ggit.Diff? d_diff;
 	private Commit? d_commit;
 	private Ggit.DiffOptions? d_options;
@@ -219,25 +206,6 @@ public class Gitg.DiffView : Gtk.Grid
 		d_parent_commit_notify = d_commit_details.notify["parent-commit"].connect(parent_commit_changed);
 
 		bind_property("use-gravatar", d_commit_details, "use-gravatar", BindingFlags.SYNC_CREATE);
-
-		d_commit_details.parent_activated.connect((id) => {
-			parent_activated(id);
-		});
-
-		d_label_count = new Gtk.Label(null);
-		d_label_count.xalign = 0;
-		d_label_count.margin_start = 18;
-		d_label_count.margin_end = 18;
-		d_label_count.margin_bottom = 6;
-		d_label_count.get_style_context().add_class("dim-label");
-		d_grid_content.insert_next_to(d_text_view_message, Gtk.PositionType.BOTTOM);
-		d_grid_content.attach_next_to(d_label_count, d_text_view_message, Gtk.PositionType.BOTTOM);
-
-		d_label_cut = new Gtk.Label(_("(the pane shows the first %d characters)").printf(CUT_CHARACTERS));
-		d_label_cut.xalign = 0;
-		d_label_cut.margin = 18;
-		d_label_cut.get_style_context().add_class("dim-label");
-		d_grid_content.attach_next_to(d_label_cut, d_grid_files, Gtk.PositionType.BOTTOM);
 		d_text_view_message.event_after.connect (on_event_after);
 		d_text_view_message.key_press_event.connect (on_key_press);
 		d_text_view_message.motion_notify_event.connect (on_motion_notify_event);
@@ -558,8 +526,6 @@ public class Gitg.DiffView : Gtk.Grid
 		{
 			d_commit_details.hide();
 			d_scrolledwindow.hide();
-			d_label_count.hide();
-			d_label_cut.hide();
 			return;
 		}
 
@@ -574,7 +540,6 @@ public class Gitg.DiffView : Gtk.Grid
 		{
 			SignalHandler.block(d_commit_details, d_parent_commit_notify);
 			d_commit_details.commit = d_commit;
-			d_commit_details.set_extras(shown_parents, shown_labels);
 			SignalHandler.unblock(d_commit_details, d_parent_commit_notify);
 
 			int parent = 0;
@@ -751,10 +716,6 @@ public class Gitg.DiffView : Gtk.Grid
 		var current_is_binary = false;
 
 		var maxlines = 0;
-		var added = 0;
-		var removed = 0;
-		var characters = 0;
-		var cut = false;
 
 		Anon add_hunk = () => {
 			if (current_hunk != null)
@@ -789,11 +750,6 @@ public class Gitg.DiffView : Gtk.Grid
 					}
 
 					add_file();
-
-					if (cut)
-					{
-						return 0;
-					}
 
 					DiffViewFileInfo? info = null;
 					var deltakey = key_for_delta(delta);
@@ -980,13 +936,7 @@ public class Gitg.DiffView : Gtk.Grid
 						return 1;
 					}
 
-					if (!cut)
-					{
-						characters += hunk.get_header().char_count();
-						cut = characters > CUT_CHARACTERS;
-					}
-
-					if (!current_is_binary && !cut)
+					if (!current_is_binary)
 					{
 						maxlines = int.max(maxlines, hunk.get_old_start() + hunk.get_old_lines());
 						maxlines = int.max(maxlines, hunk.get_new_start() + hunk.get_new_lines());
@@ -1006,24 +956,7 @@ public class Gitg.DiffView : Gtk.Grid
 						return 1;
 					}
 
-					var origin = line.get_origin();
-
-					if (origin == Ggit.DiffLineType.ADDITION)
-					{
-						added++;
-					}
-					else if (origin == Ggit.DiffLineType.DELETION)
-					{
-						removed++;
-					}
-
-					if (!cut)
-					{
-						characters += line.get_text().char_count();
-						cut = characters > CUT_CHARACTERS;
-					}
-
-					if (!current_is_binary && !cut && current_lines != null)
+					if (!current_is_binary)
 					{
 						current_lines.add(line);
 					}
@@ -1032,20 +965,6 @@ public class Gitg.DiffView : Gtk.Grid
 				}
 			);
 		} catch {}
-
-		var files_changed = (int)diff.get_num_deltas();
-		var count = ngettext("%d file changed", "%d files changed", files_changed).printf(files_changed)
-		            + ", " + ngettext("%d line added", "%d lines added", added).printf(added)
-		            + ", " + ngettext("%d line removed", "%d lines removed", removed).printf(removed);
-
-		if (d_commit != null && d_commit.get_parents().size > 1)
-		{
-			count += _(", against the first parent %s").printf(d_commit.get_parents().get_id(0).to_string().substring(0, 7));
-		}
-
-		d_label_count.label = count;
-		d_label_count.show();
-		d_label_cut.visible = cut;
 
 		add_hunk();
 		add_file();

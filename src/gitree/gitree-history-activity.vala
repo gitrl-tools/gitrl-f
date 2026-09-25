@@ -255,10 +255,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		interface_settings.bind("use-gravatar", d_diff, "use-gravatar", SettingsBindFlags.GET | SettingsBindFlags.SET);
 		interface_settings.bind("enable-diff-highlighting", d_diff, "highlight", SettingsBindFlags.GET | SettingsBindFlags.SET);
 
-		d_diff.parent_activated.connect((id) => {
-			select(id);
-		});
-
 		d_paned.commit_list_view.get_selection().changed.connect(() => {
 			show_details();
 			show_match_count();
@@ -581,15 +577,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		var labels = new Gitg.Ref[0];
-
-		foreach (var label in ticked_labels(commit))
-		{
-			labels += label;
-		}
-
-		d_diff.shown_parents = d_history.parents_of(commit);
-		d_diff.shown_labels = labels;
 		d_diff.commit = commit;
 	}
 

@@ -14,8 +14,7 @@ GSETTINGS_SCHEMA_DIR=${GSETTINGS_SCHEMA_DIR:-$root/_build/data}
 export GSETTINGS_SCHEMA_DIR
 
 LIST=490x345+206+51
-GITG_DIFF=1194x111+206+602
-GITREE_DIFF=1194x111+206+761
+PANE=1194x449+206+451
 
 for tool in Xvfb xwd convert compare xdotool dbus-run-session gitg python3 setsid; do
 	if ! command -v "$tool" >/dev/null 2>&1; then
@@ -99,14 +98,13 @@ for name in gitg-1 gitg-2 gitree-1 gitree-2; do
 	crop "$name" "$LIST" list
 done
 
-crop gitg-1 "$GITG_DIFF" diff
-crop gitg-2 "$GITG_DIFF" diff
-crop gitree-1 "$GITREE_DIFF" diff
-crop gitree-2 "$GITREE_DIFF" diff
+for name in gitg-1 gitg-2 gitree-1 gitree-2; do
+	crop "$name" "$PANE" pane
+done
 
 echo "--- a capture against itself, taken twice ---"
 check "gitg list" "$out/gitg-1-list.png" "$out/gitg-2-list.png"
-check "gitg diff" "$out/gitg-1-diff.png" "$out/gitg-2-diff.png"
+check "gitg pane" "$out/gitg-1-pane.png" "$out/gitg-2-pane.png"
 check "gitree window" "$out/gitree-1.png" "$out/gitree-2.png"
 
 echo "--- gitree against gitg ---"
@@ -138,7 +136,7 @@ if len(gitg["dots"]) != len(gitree["dots"]):
 PY
 fi
 
-check "diff" "$out/gitg-1-diff.png" "$out/gitree-1-diff.png"
+check "pane" "$out/gitg-1-pane.png" "$out/gitree-1-pane.png"
 
 echo "--- gitree against its reference window ---"
 
@@ -151,7 +149,7 @@ fi
 
 echo "--- self check: the comparison must see a changed colour and a shift ---"
 "$here/selfcheck.sh" "$out/gitree-1-list.png" '#c4a000' "$out" || failed=1
-"$here/selfcheck.sh" "$out/gitree-1-diff.png" '#dcffdc' "$out" || failed=1
+"$here/selfcheck.sh" "$out/gitree-1-pane.png" '#dcffdc' "$out" || failed=1
 
 if [ "$failed" -ne 0 ]; then
 	echo "visual parity FAILED; the captures are in $out"

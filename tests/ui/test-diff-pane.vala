@@ -39,21 +39,6 @@ private static Gitree.Application application()
 	return app;
 }
 
-private static string count_line(Gitree.Window window)
-{
-	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.Label)))
-	{
-		var label = (Gtk.Label)widget;
-
-		if (label.visible && (" changed, " in label.label))
-		{
-			return label.label;
-		}
-	}
-
-	return "";
-}
-
 private static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 {
 	var found = new Gtk.Widget[0];
@@ -123,19 +108,15 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
 	Test.add_func("/gitree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
-	Test.add_func("/gitree/ui/diff-pane/count-line-wording", test_count_line_wording);
+	Test.add_func("/gitree/ui/diff-pane/details-are-gitgs", test_details_are_gitgs);
 	Test.add_func("/gitree/ui/diff-pane/details-survive-bytes-that-are-not-utf8", test_details_survive_bytes_that_are_not_utf8);
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths-from-a-subfolder", test_diff_is_limited_to_the_paths_from_a_subfolder);
 	Test.add_func("/gitree/ui/diff-pane/diff-names-renames-and-binary-files", test_diff_names_renames_and_binary_files);
 	Test.add_func("/gitree/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
-	Test.add_func("/gitree/ui/diff-pane/huge-diff-is-cut-and-says-so", test_huge_diff_is_cut_and_says_so);
 	Test.add_func("/gitree/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
 	Test.add_func("/gitree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
 	Test.add_func("/gitree/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
-	Test.add_func("/gitree/ui/diff-pane/parents-row-links-select-the-parent", test_parents_row_links_select_the_parent);
-	Test.add_func("/gitree/ui/diff-pane/refs-row-shows-ticked-refs", test_refs_row_shows_ticked_refs);
-	Test.add_func("/gitree/ui/diff-pane/root-and-shallow-commits-have-no-parents-row", test_root_and_shallow_commits_have_no_parents_row);
 	Test.add_func("/gitree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
 	Test.add_func("/gitree/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
 	Test.add_func("/gitree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
@@ -194,23 +175,6 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 	settle(300);
 
 	return window;
-}
-
-private static Gtk.Widget[] parent_links(Gitree.Window window)
-{
-	var links = new Gtk.Widget[0];
-
-	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.Label)))
-	{
-		var label = (Gtk.Label)widget;
-
-		if (label.get_mapped() && label.label.has_prefix("<a href=\"") && !label.label.has_prefix("<a href=\"mailto:"))
-		{
-			links += label;
-		}
-	}
-
-	return links;
 }
 
 private static void select_subject(Gitree.Window window, string subject)
@@ -315,30 +279,48 @@ private static void test_an_image_uses_gitgs_image_view()
 	}
 }
 
-private static void test_count_line_wording()
+private static void test_details_are_gitgs()
 {
 	try
 	{
 		var repo = Repo.create();
 		repo.commit("one line", "a");
-		repo.commit("two files", "b");
 		repo.git({"checkout", "--quiet", "-b", "side"});
 		repo.commit("side", "c");
 		repo.checkout("master");
 		repo.commit("more", "a", "x\ny");
 		repo.merge("side");
 
-		var window = opened(repo, {"refs/heads/master"});
-		var first = repo.git({"rev-parse", "--short=7", "HEAD~1"}).strip();
-
-		select_subject(window, "one line");
-		assert_cmpstr(count_line(window), CompareOperator.EQ, "1 file changed, 1 line added, 0 lines removed");
+		var window = opened(repo, {"refs/heads/master", "refs/heads/side"});
 
 		select_subject(window, "more");
-		assert_cmpstr(count_line(window), CompareOperator.EQ, "1 file changed, 2 lines added, 0 lines removed");
+
+		var details = find_named(window, "GitgDiffViewCommitDetails")[0];
+
+		foreach (var widget in find_all(details, typeof(Gtk.Label)))
+		{
+			var label = (Gtk.Label)widget;
+
+			if (label.get_mapped())
+			{
+				assert_false(label.get_text() == "Parent" || label.get_text() == "Parents" || label.get_text() == "Refs");
+				assert_false("changed," in label.get_text());
+			}
+		}
 
 		select_subject(window, "Merge branch 'side'");
-		assert_cmpstr(count_line(window), CompareOperator.EQ, "1 file changed, 1 line added, 0 lines removed, against the first parent " + first);
+
+		var choices = 0;
+
+		foreach (var widget in find_all(details, typeof(Gtk.RadioButton)))
+		{
+			if (widget.get_mapped())
+			{
+				choices++;
+			}
+		}
+
+		assert_cmpint(choices, CompareOperator.EQ, 2);
 
 		window.destroy();
 		repo.remove();
@@ -395,7 +377,6 @@ private static void test_diff_is_limited_to_the_paths()
 
 		assert_cmpint(names.length, CompareOperator.EQ, 1);
 		assert_true("sub/a" in names[0]);
-		assert_true(count_line(window).has_prefix("1 file changed"));
 
 		window.destroy();
 		repo.remove();
@@ -474,62 +455,6 @@ private static void test_file_names_with_spaces_or_quotes_are_read_whole()
 
 		select_subject(window, "odd names");
 		assert_cmpstr(string.joinv("|", headers(window)), CompareOperator.EQ, "with space \"and\" quote's.txt");
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_huge_diff_is_cut_and_says_so()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.commit("first");
-
-		var big = new StringBuilder();
-
-		for (var n = 0; n < 40000; n++)
-		{
-			big.append_printf("line number %d\n", n);
-		}
-
-		FileUtils.set_contents(repo.path.get_child("big.txt").get_path(), big.str);
-		repo.git({"add", "big.txt"});
-		repo.git({"commit", "--quiet", "-m", "big one"});
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "big one");
-		settle(1000);
-
-		var text = source_text(window);
-		var note = false;
-
-		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.Label)))
-		{
-			var label = (Gtk.Label)widget;
-			note = note || (label.visible && label.label == "(the pane shows the first %d characters)".printf(Gitg.DiffView.CUT_CHARACTERS));
-		}
-
-		assert_true(note);
-
-		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.SourceView)))
-		{
-			var count = ((Gtk.SourceView)widget).buffer.get_char_count();
-
-			if (count > Gitg.DiffView.CUT_CHARACTERS)
-			{
-				Test.fail_printf("a view holds %d characters", count);
-			}
-		}
-
-		assert_true(text.char_count() > 0);
-		assert_cmpstr(count_line(window), CompareOperator.EQ, "1 file changed, 40000 lines added, 0 lines removed");
 
 		window.destroy();
 		repo.remove();
@@ -638,148 +563,6 @@ private static void test_orientation_follows_the_layout_setting()
 
 		settings.reset("orientation");
 		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_parents_row_links_select_the_parent()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.branched();
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "Merge branch 'fix/stamp'");
-
-		var links = parent_links(window);
-		Gtk.Label? second = null;
-
-		assert_cmpint(links.length, CompareOperator.EQ, 2);
-
-		foreach (var link in links)
-		{
-			if (((Gtk.Label)link).get_text().has_suffix(" fix two"))
-			{
-				second = (Gtk.Label)link;
-			}
-		}
-
-		assert_nonnull(second);
-
-		second.activate_link("x");
-		settle(300);
-
-		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "fix two");
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_refs_row_shows_ticked_refs()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.branched();
-		repo.git({"tag", "v2", "master"});
-
-		var window = opened(repo, {"refs/heads/master", "refs/tags/v2"});
-
-		select_subject(window, "master four");
-
-		var pills = 0;
-
-		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.DrawingArea)))
-		{
-			if (!widget.get_mapped())
-			{
-				continue;
-			}
-
-			var surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, widget.get_allocated_width(), widget.get_allocated_height());
-			var cr = new Cairo.Context(surface);
-
-			widget.draw(cr);
-			surface.flush();
-
-			unowned uint8[] data = surface.get_data();
-			var blue = 0;
-			var orange = 0;
-
-			for (var i = 0; i + 3 < surface.get_stride() * surface.get_height(); i += 4)
-			{
-				if (data[i] == 0x87 && data[i + 1] == 0x4a && data[i + 2] == 0x20)
-				{
-					blue++;
-				}
-
-				if (data[i] == 0x00 && data[i + 1] == 0x5c && data[i + 2] == 0xce)
-				{
-					orange++;
-				}
-			}
-
-			if (blue > 20)
-			{
-				pills++;
-			}
-
-			if (orange > 20)
-			{
-				pills++;
-			}
-		}
-
-		assert_cmpint(pills, CompareOperator.EQ, 2);
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_root_and_shallow_commits_have_no_parents_row()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.commit("one");
-		repo.commit("two");
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "one");
-		assert_cmpint(parent_links(window).length, CompareOperator.EQ, 0);
-		window.destroy();
-
-		repo.git({"clone", "--quiet", "--depth", "1", "file://" + repo.path.get_path(), "shallow"});
-
-		var shallow = new Gitree.Window(application());
-		var ticks = new Gee.HashSet<string>();
-		ticks.add("refs/heads/master");
-		shallow.set_default_size(1200, 900);
-		shallow.open_repository(Gitree.Application.discover_repository(repo.path.get_child("shallow")), ticks, {}, null);
-		shallow.show();
-		settle(300);
-
-		assert_cmpstr(shallow.history.selected.get_subject(), CompareOperator.EQ, "two");
-		assert_cmpint(parent_links(shallow).length, CompareOperator.EQ, 0);
-
-		shallow.destroy();
 		repo.remove();
 	}
 	catch (Error e)

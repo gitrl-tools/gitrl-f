@@ -95,24 +95,6 @@ Removes `DiffSelectable` from the base list of the interface, one line.
 
 **Why.** The two renderers above implement this interface, and neither implements `DiffSelectable` now.
 
-## gitg-diff-view-commit-details.patch
-
-Replaces the parent buttons of a merge with a row of parents on every commit, and adds a row of refs. The two rows take what `gitg-diff-view.patch` gives them through `set_extras()`.
-
-- **Parents.** A row named "Parent" or "Parents" holds one link for each parent: the short hash and the subject. A click emits `parent_activated`. With no list given, the row shows the parents of the commit. A commit with no parents has no row.
-- **Refs.** A row named "Refs" holds the refs given, drawn by `LabelRenderer.draw()` in a drawing area, as the history list draws them.
-- The merge is always compared with its first parent. `parent_commit` is set to the first parent and nothing changes it.
-
-**Why.** In gitg, the parent buttons choose which parent a merge is compared with. gitree always compares a merge with its first parent, as the Python version did. It shows the parents as links that select the parent in the history. The Python version also showed the ticked refs of the commit.
-
-**Cost.** gitree cannot compare a merge with another parent. The pills are drawn, and not rendered to an image. In the details grid, `LabelRenderer.render_ref()` gave an image with the text of the pill but no background (seen on 2026-09-25).
-
-## gitg-diff-view-commit-details.ui.patch
-
-Adds the Refs row to the template of the details grid, below the parents. The row is `grid_labels_container`, with the label "Refs" and the box `box_labels` for the pills.
-
-**Why.** The row is part of the grid, next to the parents row, so it is in the template with that row.
-
 ## gitg-diff-view-file.patch
 
 Removes `has_selection()`, `clear_selection()` and `get_selection()`, which asked each renderer of one file for its selection.
@@ -123,25 +105,13 @@ gitrl-z's patch to this file also hides the Unif and Split switcher of each file
 
 ## gitg-diff-view.patch
 
-Four changes.
+Removes the `has_selection` property, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
-**1. Removes the `has_selection` property, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.**
+**Why.** The same cause as the renderer. `get_selection()` returns `PatchSet[]`, and the rest keep that property in step with the renderers.
 
-The same cause as the renderer. `get_selection()` returns `PatchSet[]`, and the rest keep that property in step with the renderers. `handle_selection` stays, as given above, and is false.
+`handle_selection` stays, as given above, and is false. gitrl-z's patch to this file also adds a property that sets the view of every file at once. gitree keeps the switcher of each file and does not take that property.
 
-**2. Adds two public fields, `shown_parents` and `shown_labels`, and the signal `parent_activated`.** The caller fills the fields before it sets `commit`, and the pane gives them to the details grid, whose patch is below. The signal passes on a click on a parent in that grid.
-
-**Why.** Under a path limit, gitree shows the parents that `git log --parents` rewrites, not the parents in the commit. It also shows only the refs that are ticked. The pane cannot know either. The fields are not properties, because GObject has no property type for an array.
-
-**3. Adds a line under the message that counts the changes of the commit:** the files, the lines added and the lines removed. For a merge, `, against the first parent` and the short hash follow. The count covers every line of the diff, also when change 4 cuts it.
-
-**Why.** gitg shows a count per file only. The count of the whole commit was in the Python version of `git tree`, and gitree keeps it.
-
-**4. Cuts a diff that is longer than `CUT_CHARACTERS`, 200000 characters, at the last whole line before that point.** The characters of the lines and of the hunk headers count. The files after the cut are not shown, and a note at the end of the pane gives the number.
-
-**Why.** A very large diff makes the pane slow to build and to scroll. The Python version cut the same diff at the same point.
-
-**Cost.** The two labels are made in code. They go in the grid of the pane, next to the message and after the files, so the template file of the pane does not change. gitrl-z's patch to this file also adds a property that sets the view of every file at once. gitree keeps the switcher of each file and does not take that property.
+**Cost.** None. Selection only feeds staging, which gitree does not have.
 
 ## gitg-lanes.patch
 
