@@ -1,0 +1,16 @@
+# Meson build directories
+_build/
+build/
+
+# Vendored upstream working copy. vendor/fetch-upstream.sh makes it again,
+# and vendor/PROVENANCE records its source. It is not committed.
+vendor/upstream/
+vendor/*.tar.xz
+!vendor/gitg_44-1build2.debian.tar.xz
+
+# Test output
+tests/visual/output/
+
+# Python bytecode
+__pycache__/
+*.pyc

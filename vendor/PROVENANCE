@@ -1,0 +1,92 @@
+# Vendored source provenance
+
+gitree vendors part of the source of gitg. This file records what was
+vendored and where it came from. It also gives the evidence that it is the
+source of the gitg installed on the target platform.
+
+Recorded: 2026-07-21, for gitrl-z, which vendors the same source.
+Checked again: 2026-09-25, for gitree.
+
+## Upstream
+
+    Project:  gitg
+    Version:  44
+    URL:      https://download.gnome.org/sources/gitg/44/gitg-44.tar.xz
+    SHA-256:  342a31684dab9671cd341bd3e3ce665adcee0460c2a081ddc493cdbc03132530
+    Size:     10629268 bytes
+    Licence:  GPL-2.0-or-later
+
+`./fetch-upstream.sh` fetches the tarball again, verifies it and extracts it
+into `vendor/upstream/`. That tree is not committed. It is 19 MB of code that
+gitree does not change, and the checksum above makes it again on demand. The
+repository holds the part cut from it, in `src/vendor-gitg/`, and each patch
+to that part, in `vendor/patches/`.
+
+## Target platform
+
+    Distribution:  Ubuntu 24.04.4 LTS (noble)
+    Package:       gitg 44-1build2 (universe, amd64)
+    Reported:      `gitg --version` -> "gitg 44"
+
+On 2026-07-21 gitrl-z recorded Ubuntu 24.04.3. The gitg package is the same
+on both dates.
+
+## Does the vendored source match the installed gitg?
+
+Yes, exactly. This was checked, not assumed, because the comparison of
+gitree's window with gitg's depends on it.
+
+Ubuntu's `gitg_44.orig.tar.xz` is not the same tarball as GNOME's
+`gitg-44.tar.xz`. Ubuntu's tarballs are in
+http://archive.ubuntu.com/ubuntu/pool/universe/g/gitg/.
+
+    GNOME   gitg-44.tar.xz         10629268 bytes
+            SHA-256 342a31684dab9671cd341bd3e3ce665adcee0460c2a081ddc493cdbc03132530
+
+    Ubuntu  gitg_44.orig.tar.xz    10629352 bytes
+            SHA-256 5b0e99ab3e7b94b0daa98ca8041d5ec9280ee0a2c28338a5506a968ac52e2354
+
+Ubuntu cut its orig tarball from the upstream git history after the version
+bump that follows the release, so its `meson.build` reads
+`version: '45.alpha'`. Ubuntu then carries one patch, which reverts that
+bump:
+
+    debian/patches/series
+      Revert-Bump-version-for-development.patch
+
+A diff of the two extracted trees gives one file that differs:
+
+    Files gnome/meson.build and ubuntu/meson.build differ
+    3c3
+    <   version: '44',
+    ---
+    >   version: '45.alpha',
+
+When Ubuntu's patch is applied to its own orig tree, a diff against the
+GNOME tarball gives no differences:
+
+    $ patch -p1 < debian/patches/Revert-Bump-version-for-development.patch
+    $ diff -rq gnome ubuntu-patched
+    $ echo $?
+    0
+
+Thus GNOME's `gitg-44.tar.xz` is byte for byte the source that Ubuntu built
+`gitg 44-1build2` from. It is correct to vendor from GNOME, and no Ubuntu
+patch is necessary.
+
+gitrl-z took this evidence on 2026-07-21. On 2026-09-25 each step was done
+again for gitree, from fresh downloads of the three tarballs, and each result
+above was the same.
+
+## Ubuntu packaging tarball
+
+`gitg_44-1build2.debian.tar.xz` (8036 bytes, SHA-256
+253e380b9f89b270fb20ac34e056205e8de18e64a2d96b7d5a47eefc1c723a5a) is Ubuntu's
+packaging for this version, kept for reference. Its `Build-Depends` lists
+`libxml2-utils` and not `libxml2-dev`, so libxml2 is a tool at build time
+(xmllint) and not a library that gitg links.
+
+## Licence
+
+gitg is GPL-2.0-or-later. Because gitree vendors its source, gitree is
+GPL-2.0-or-later too. Refer to `COPYING`.
