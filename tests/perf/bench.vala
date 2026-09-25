@@ -26,8 +26,15 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n", args[0]);
+			stderr.printf("usage: %s [--window] <repository> [<full ref name>...]\n", args[0]);
 			return 2;
+		}
+
+		if (args[1] == "--window")
+		{
+			Gtk.init(ref args);
+
+			return window(args[2], args[3:args.length]);
 		}
 
 		try
@@ -82,6 +89,14 @@ public class Bench : Object
 		return 0;
 	}
 
+	private static void drain()
+	{
+		while (Gtk.events_pending())
+		{
+			Gtk.main_iteration();
+		}
+	}
+
 	private static double peak_memory()
 	{
 		string status;
@@ -118,6 +133,76 @@ public class Bench : Object
 
 		stdout.printf("tick, %s: %.3f s, of which lanes %.3f s, %d rows\n", label, timer.elapsed(), lanes, rows.length);
 		stdout.flush();
+	}
+
+	private static int window(string path, string[] only)
+	{
+		var app = new Application();
+
+		try
+		{
+			app.register();
+		}
+		catch (Error e)
+		{
+			stderr.printf("%s\n", e.message);
+			return 1;
+		}
+
+		var window = new Window(app);
+		window.show();
+		drain();
+
+		var timer = new Timer();
+		window.open_repository(File.new_for_path(path));
+		drain();
+
+		stdout.printf("window open %.3f s\n", timer.elapsed());
+		stdout.flush();
+
+		var every = new Gee.HashSet<string>();
+
+		try
+		{
+			foreach (var reference in Refs.read(window.repository))
+			{
+				every.add(reference.name);
+			}
+		}
+		catch (Error e)
+		{
+			stderr.printf("%s\n", e.message);
+			return 1;
+		}
+
+		timer.start();
+		window.history.set_ticks(every);
+		drain();
+
+		stdout.printf("window tick, every ref ticked: %.3f s\n", timer.elapsed());
+
+		foreach (var name in only)
+		{
+			var ticks = new Gee.HashSet<string>();
+			ticks.add(name);
+
+			timer.start();
+			window.history.set_ticks(ticks);
+			drain();
+
+			stdout.printf("window tick, only %s: %.3f s\n", name, timer.elapsed());
+		}
+
+		timer.start();
+		window.activate_action("reload", null);
+		drain();
+
+		stdout.printf("window reload %.3f s\n", timer.elapsed());
+		stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
+
+		window.destroy();
+
+		return 0;
 	}
 }
 

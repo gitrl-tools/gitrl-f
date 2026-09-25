@@ -38,4 +38,4 @@ The first command gets gitg 44 and verifies it against `vendor/PROVENANCE`. `sh 
 
 The first command runs every suite. Every test runs with a private home folder in the build directory. Thus no test reads your git configuration or writes to your list of recent files. The `unit` suite needs no display. The `ui` suite drives real widgets in Xvfb. The `visual` suite compares the window with the installed gitg, pixel by pixel. It is off by default (`-Dvisual_tests=true`), because it needs an X server and gitg.
 
-`tests/perf/fixture.sh <directory>` builds the two large repositories that the speed of gitree is measured on.
+`tests/perf/fixture.sh <directory>` builds the two large repositories that the speed of gitree is measured on. `tests/perf/measure.sh <directory>` then opens the window of gitree and of the Python prototype on each, three times, and prints the time to open, to tick, to reload, and the peak memory.
