@@ -109,7 +109,7 @@ public class Application : Gtk.Application
 				var repository = Repository.open(location);
 				var refs = Refs.read(repository);
 
-				d_ticks = Ticks.resolve(command_line, refs, Ticks.load(Ticks.file_for(repository), refs));
+				d_ticks = Ticks.resolve(command_line, refs);
 			}
 			catch (TicksError.NO_MATCH e)
 			{

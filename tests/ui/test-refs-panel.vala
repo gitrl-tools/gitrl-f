@@ -121,7 +121,7 @@ private static Gitree.RefsList panel(Repo repo, out Gee.List<Gitree.Ref> refs) t
 	var list = new Gitree.RefsList();
 
 	refs = Gitree.Refs.read(repository);
-	list.set_refs(refs, Gitree.Ticks.resolve(null, refs, null));
+	list.set_refs(refs, Gitree.Ticks.resolve(null, refs));
 
 	var window = new Gtk.Window();
 	window.add(list);

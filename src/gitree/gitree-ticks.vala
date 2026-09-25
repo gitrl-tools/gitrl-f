@@ -27,13 +27,6 @@ public errordomain TicksError
 
 public class Ticks : Object
 {
-	public const string FILE_NAME = "git-tree-ticks";
-
-	public static File file_for(Gitg.Repository repository)
-	{
-		return Repository.common_dir(repository).get_child(FILE_NAME);
-	}
-
 	public static bool glob_match(string pattern, string text)
 	{
 		try
@@ -115,50 +108,7 @@ public class Ticks : Object
 		return regex.str;
 	}
 
-	public static Gee.Set<string>? load(File file, Gee.List<Ref> refs)
-	{
-		string contents;
-
-		try
-		{
-			FileUtils.get_contents(file.get_path(), out contents);
-		}
-		catch (FileError e)
-		{
-			if (!(e is FileError.NOENT))
-			{
-				stderr.printf("git tree: could not read the ticks: %s\n", e.message);
-			}
-
-			return null;
-		}
-
-		var known = new Gee.HashMap<string, bool>();
-
-		foreach (var line in contents.split("\n"))
-		{
-			if (line.has_prefix("+ ") || line.has_prefix("- "))
-			{
-				known[line.substring(2)] = line[0] == '+';
-			}
-		}
-
-		var ticks = new Gee.HashSet<string>();
-
-		foreach (var reference in refs)
-		{
-			var ticked = known.has_key(reference.name) ? known[reference.name] : reference.kind == RefKind.LOCAL;
-
-			if (ticked)
-			{
-				ticks.add(reference.name);
-			}
-		}
-
-		return ticks;
-	}
-
-	public static Gee.Set<string> resolve(CommandLine? command_line, Gee.List<Ref> refs, Gee.Set<string>? stored) throws TicksError
+	public static Gee.Set<string> resolve(CommandLine? command_line, Gee.List<Ref> refs) throws TicksError
 	{
 		var all = command_line != null && command_line.all;
 		var local = command_line != null && (command_line.local || all);
@@ -169,12 +119,6 @@ public class Ticks : Object
 
 		if (!local && !remotes && !tags && patterns.length == 0)
 		{
-			if (stored != null)
-			{
-				ticks.add_all(stored);
-				return ticks;
-			}
-
 			foreach (var reference in refs)
 			{
 				if (reference.kind == RefKind.LOCAL)
@@ -220,24 +164,6 @@ public class Ticks : Object
 		return ticks;
 	}
 
-	public static void save(File file, Gee.List<Ref> refs, Gee.Set<string> ticks)
-	{
-		var contents = new StringBuilder();
-
-		foreach (var reference in refs)
-		{
-			contents.append_printf("%c %s\n", ticks.contains(reference.name) ? '+' : '-', reference.name);
-		}
-
-		try
-		{
-			FileUtils.set_contents(file.get_path(), contents.str);
-		}
-		catch (FileError e)
-		{
-			stderr.printf("git tree: could not keep the ticks: %s\n", e.message);
-		}
-	}
 }
 
 }

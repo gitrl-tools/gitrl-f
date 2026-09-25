@@ -27,24 +27,6 @@ public errordomain RepositoryError
 
 public class Repository : Object
 {
-	public static File common_dir(Gitg.Repository repository)
-	{
-		var git_dir = repository.get_location();
-		var pointer = git_dir.get_child("commondir");
-		string contents;
-
-		try
-		{
-			FileUtils.get_contents(pointer.get_path(), out contents);
-		}
-		catch (FileError e)
-		{
-			return git_dir;
-		}
-
-		return git_dir.resolve_relative_path(contents.strip());
-	}
-
 	public static Gitg.Repository open(File location) throws RepositoryError
 	{
 		try

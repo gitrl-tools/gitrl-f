@@ -68,7 +68,7 @@ public class Dump : Object
 		{
 			var repository = Repository.open(location);
 			var refs = Refs.read(repository);
-			var ticks = Ticks.resolve(command_line, refs, Ticks.load(Ticks.file_for(repository), refs));
+			var ticks = Ticks.resolve(command_line, refs);
 			var history = command_line.paths.length > 0
 				? new History.with_paths(repository, refs, command_line.paths, directory, false)
 				: new History(repository, refs, false);

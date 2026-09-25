@@ -30,10 +30,9 @@ ticked ref reaches are drawn, and only ticked refs are labelled.
 A commit that a ticked branch shares with an unticked one still
 shows, as part of the ticked branch.
 
-With no <ref> and no option, the ticks you left when you last
-closed the window in this repository come back. The first time,
-every local branch is ticked and nothing else. Outside a
-repository, it opens a list of the repositories you opened last.
+With no <ref> and no option, every local branch is ticked and
+nothing else. Outside a repository, it opens a list of the
+repositories you opened last.
 
     <ref>...        tick only these; a glob such as 'feature/*' works
     -a, --all       tick every ref
@@ -45,8 +44,7 @@ repository, it opens a list of the repositories you opened last.
                     or folders
 
 Options add up: 'git tree -l origin/master' ticks every local
-branch and origin/master. The ticks are saved when the window
-closes, whatever opened it.
+branch and origin/master.
 
 The window follows the repository. A commit, a fetch, a checkout
 or a rebase redraws it with the same ticks, the same commit

@@ -397,7 +397,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		try
 		{
 			refs = Refs.read(repository);
-			resolved = Ticks.resolve(null, refs, ticks != null ? ticks : Ticks.load(Ticks.file_for(repository), refs));
+			resolved = ticks != null ? ticks : Ticks.resolve(null, refs);
 		}
 		catch (Error e)
 		{
@@ -534,14 +534,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return ret;
-	}
-
-	public void save_ticks()
-	{
-		if (d_repository != null)
-		{
-			Ticks.save(Ticks.file_for(d_repository), d_refs, d_ticks);
-		}
 	}
 
 	private void select(Ggit.OId id)

@@ -135,14 +135,6 @@ public class Window : Gtk.ApplicationWindow
 			d_poll.stop();
 		});
 
-		delete_event.connect(() => {
-			if (d_repository != null)
-			{
-				d_history.save_ticks();
-			}
-
-			return false;
-		});
 		d_stack_activities.add_titled(d_history.widget, d_history.id, d_history.display_name);
 
 		restore_state();
@@ -241,11 +233,6 @@ public class Window : Gtk.ApplicationWindow
 
 	public void show_dash()
 	{
-		if (d_repository != null)
-		{
-			d_history.save_ticks();
-		}
-
 		d_main_stack.visible_child_name = "dash";
 		d_poll.stop();
 

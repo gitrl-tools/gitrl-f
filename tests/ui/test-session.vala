@@ -41,7 +41,7 @@ private static Gitree.Application application()
 
 private static string differences(File a, File b) throws Error
 {
-	return run({ "diff", "-r", "--no-dereference", "-x", "git-tree-ticks", a.get_path(), b.get_path() });
+	return run({ "diff", "-r", "--no-dereference", a.get_path(), b.get_path() });
 }
 
 private static void every_row(Gitree.Window window)
@@ -136,7 +136,6 @@ private static void test_a_session_changes_nothing_but_the_ticks()
 		limited.close();
 		settle(100);
 
-		assert_true(repo.path.get_child(".git").get_child("git-tree-ticks").query_exists());
 		assert_cmpstr(differences(copy, repo.path), CompareOperator.EQ, "");
 
 		run({ "rm", "-rf", copy.get_path() });

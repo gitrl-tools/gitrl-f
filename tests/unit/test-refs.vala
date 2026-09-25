@@ -62,7 +62,6 @@ public static int main(string[] args)
 	Test.init(ref args);
 
 	Test.add_func("/gitree/refs/annotated-tag-is-followed-to-its-commit", test_annotated_tag_is_followed_to_its_commit);
-	Test.add_func("/gitree/refs/common-directory-of-a-linked-worktree", test_common_directory_of_a_linked_worktree);
 	Test.add_func("/gitree/refs/detached-head-is-a-local-ref-named-head", test_detached_head_is_a_local_ref_named_head);
 	Test.add_func("/gitree/refs/kinds-names-and-order", test_kinds_names_and_order);
 	Test.add_func("/gitree/refs/natural-order-is-the-prototypes", test_natural_order_is_the_prototypes);
@@ -99,30 +98,6 @@ private static void test_annotated_tag_is_followed_to_its_commit()
 
 		assert_true(found);
 
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_common_directory_of_a_linked_worktree()
-{
-	try
-	{
-		var repo = fixture();
-		var worktree = repo.path.get_parent().get_child(repo.path.get_basename() + "-worktree");
-
-		repo.git({"worktree", "add", "--quiet", worktree.get_path(), "f2"});
-
-		var main = Gitree.Repository.common_dir(open(repo.path));
-		var linked = Gitree.Repository.common_dir(open(worktree));
-
-		assert_cmpstr(main.get_path(), CompareOperator.EQ, repo.path.get_child(".git").get_path());
-		assert_cmpstr(linked.get_path(), CompareOperator.EQ, main.get_path());
-
-		repo.git({"worktree", "remove", "--force", worktree.get_path()});
 		repo.remove();
 	}
 	catch (Error e)
