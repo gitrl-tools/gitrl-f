@@ -116,6 +116,12 @@ public class Window : Gtk.ApplicationWindow
 			show_infobar(primary, secondary, Gtk.MessageType.ERROR);
 		});
 
+		var dash_tooltip = d_dash_button.tooltip_text;
+
+		d_history.paned.notify["details-only"].connect(() => {
+			d_dash_button.tooltip_text = d_history.paned.details_only ? _("Show the refs and the list") : dash_tooltip;
+		});
+
 		d_poll = new Poll();
 		d_poll.changed.connect(() => {
 			d_history.refresh();
@@ -168,6 +174,12 @@ public class Window : Gtk.ApplicationWindow
 
 	private void on_dash_activated(SimpleAction action, Variant? parameter)
 	{
+		if (d_history.paned.details_only)
+		{
+			d_history.paned.details_only = false;
+			return;
+		}
+
 		show_dash();
 	}
 

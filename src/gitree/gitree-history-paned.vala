@@ -30,6 +30,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Box d_box_main;
 	[GtkChild]
+	private unowned Gtk.Box d_box_sidebar;
+	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_author;
 	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_subject;
@@ -87,6 +89,24 @@ public class HistoryPaned : Gtk.Box
 		get { return d_commit_list_view; }
 	}
 
+	public bool details_only
+	{
+		get { return !d_box_sidebar.visible; }
+
+		set
+		{
+			var list = d_paned_panels.get_child1() == d_box_details ? d_paned_panels.get_child2() : d_paned_panels.get_child1();
+
+			d_box_sidebar.visible = !value;
+			list.visible = !value;
+
+			if (!value)
+			{
+				d_commit_list_view.grab_focus();
+			}
+		}
+	}
+
 	public bool details_visible
 	{
 		get { return d_box_details.visible; }
@@ -119,6 +139,7 @@ public class HistoryPaned : Gtk.Box
 				return;
 			}
 
+			details_only = false;
 			d_paned_panels.orientation = value;
 
 			foreach (var widget in new Gtk.Widget[] { d_paned_sidebar, d_paned_panels, d_box_details, d_stack_list })

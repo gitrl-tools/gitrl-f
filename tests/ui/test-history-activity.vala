@@ -66,6 +66,19 @@ private static void drain()
 	}
 }
 
+private static Gtk.Label label_with(Gtk.Widget root, string text)
+{
+	foreach (var widget in find_all(root, typeof(Gtk.Label)))
+	{
+		if (((Gtk.Label)widget).get_text() == text)
+		{
+			return (Gtk.Label)widget;
+		}
+	}
+
+	error("no label %s", text);
+}
+
 private static string labels(Gitree.HistoryActivity activity, int row)
 {
 	return string.joinv(",", activity.labels_for(activity.rows()[row]));
@@ -88,9 +101,12 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitree/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
 	Test.add_func("/gitree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
 	Test.add_func("/gitree/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
+	Test.add_func("/gitree/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
+	Test.add_func("/gitree/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
@@ -112,6 +128,11 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/window-with-nothing-ticked-shows-the-empty-notice", test_window_with_nothing_ticked_shows_the_empty_notice);
 
 	return Test.run();
+}
+
+private static bool only_details_shown(Gitree.Window window)
+{
+	return details_shown(window) && !window.history.paned.commit_list_view.get_mapped() && !window.history.paned.refs_list.get_mapped();
 }
 
 private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths = {}) throws Error
@@ -150,6 +171,53 @@ private static string subjects_of(Gitree.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_back_arrow_steps_back_from_the_full_diff()
+{
+	try
+	{
+		var repo = two_files();
+		var window = opened(repo, {"refs/heads/master"});
+		Gtk.Button? back = null;
+
+		foreach (var widget in find_all(window, typeof(Gtk.Button)))
+		{
+			if (((Gtk.Button)widget).action_name == "win.dash")
+			{
+				back = (Gtk.Button)widget;
+			}
+		}
+
+		var tooltip = back.tooltip_text;
+
+		double_click(window, 0);
+		click_widget(label_with(window.history.diff_view, "b"));
+		settle(300);
+
+		assert_true(only_details_shown(window));
+		assert_cmpstr(back.tooltip_text, CompareOperator.EQ, "Show the refs and the list");
+
+		window.activate_action("dash", null);
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_true(window.history.paned.commit_list_view.get_mapped());
+		assert_nonnull(window.repository);
+		assert_cmpstr(back.tooltip_text, CompareOperator.EQ, tooltip);
+
+		window.activate_action("dash", null);
+		settle(100);
+
+		assert_null(window.repository);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_bottom_pane_is_hidden_at_the_start()
@@ -247,6 +315,84 @@ private static void test_bytes_that_are_not_utf8_show_as_replacements()
 
 		window.destroy();
 		message.delete();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_click_on_a_file_fills_the_window_and_escape_steps_back()
+{
+	try
+	{
+		var repo = two_files();
+		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".preferences.interface");
+
+		foreach (var orientation in new string[] { "vertical", "horizontal" })
+		{
+			settings.set_string("orientation", orientation);
+
+			var window = opened(repo, {"refs/heads/master"});
+			var paned = window.history.paned;
+
+			double_click(window, 0);
+			click_widget(label_with(window.history.diff_view, "two files"));
+			settle(300);
+
+			assert_true(details_shown(window));
+			assert_false(only_details_shown(window));
+
+			var name = label_with(window.history.diff_view, "b");
+
+			click_widget(name);
+			settle(300);
+
+			assert_true(only_details_shown(window));
+			assert_true(((Gtk.Expander)name.get_ancestor(typeof(Gtk.Expander))).expanded);
+			assert_cmpint(paned.box_details.get_allocated_width(), CompareOperator.EQ, paned.get_allocated_width());
+			assert_cmpint(paned.box_details.get_allocated_height(), CompareOperator.EQ, paned.get_allocated_height());
+
+			press_key("Escape");
+			settle(100);
+
+			assert_true(details_shown(window));
+			assert_true(paned.commit_list_view.get_mapped());
+			assert_true(paned.refs_list.get_mapped());
+
+			press_key("Escape");
+			settle(100);
+
+			assert_false(details_shown(window));
+
+			window.destroy();
+		}
+
+		settings.reset("orientation");
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_click_on_expand_all_fills_the_window()
+{
+	try
+	{
+		var repo = two_files();
+		var window = opened(repo, {"refs/heads/master"});
+
+		double_click(window, 0);
+		click_widget(label_with(window.history.diff_view, "Expand all"));
+		settle(300);
+
+		assert_true(only_details_shown(window));
+		assert_true(((Gtk.Expander)label_with(window.history.diff_view, "c").get_ancestor(typeof(Gtk.Expander))).expanded);
+
+		window.destroy();
 		repo.remove();
 	}
 	catch (Error e)
@@ -836,6 +982,18 @@ private static void test_window_with_nothing_ticked_shows_the_empty_notice()
 private static File ticks_file(Repo repo)
 {
 	return repo.path.get_child(".git").get_child("git-tree-ticks");
+}
+
+private static Repo two_files() throws Error
+{
+	var repo = Repo.create();
+
+	FileUtils.set_contents(repo.path.get_child("b").get_path(), "b\n");
+	FileUtils.set_contents(repo.path.get_child("c").get_path(), "c\n");
+	repo.git({"add", "--all"});
+	repo.git({"commit", "--quiet", "-m", "two files"});
+
+	return repo;
 }
 
 }

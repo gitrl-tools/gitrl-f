@@ -24,6 +24,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 {
 	private Gtk.Box d_box;
 	private Gitg.DiffView d_diff;
+	private Gtk.GestureMultiPress d_file_press;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
 	private HistoryPaned d_paned;
@@ -271,6 +272,19 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_diff.show();
 		d_paned.box_details.add(d_diff);
 
+		d_file_press = new Gtk.GestureMultiPress(d_diff);
+		d_file_press.button = Gdk.BUTTON_PRIMARY;
+		d_file_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
+		d_file_press.released.connect(() => {
+			if (opens_files(Gtk.get_event_widget(Gtk.get_current_event())))
+			{
+				Idle.add(() => {
+					d_paned.details_only = true;
+					return false;
+				});
+			}
+		});
+
 		var diff_settings = new Settings(Config.APPLICATION_ID + ".preferences.diff");
 
 		diff_settings.bind("ignore-whitespace", d_diff, "ignore-whitespace", SettingsBindFlags.GET | SettingsBindFlags.SET);
@@ -334,6 +348,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (d_search_bar.search_mode_enabled)
 		{
 			d_search_bar.search_mode_enabled = false;
+			return true;
+		}
+
+		if (d_paned.details_only)
+		{
+			d_paned.details_only = false;
 			return true;
 		}
 
@@ -475,6 +495,26 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_path_bar();
 		show_ticks();
+	}
+
+	private bool opens_files(Gtk.Widget? target)
+	{
+		var box = target as Gtk.EventBox;
+
+		if (box != null && box.get_child() is Gtk.Label)
+		{
+			return true;
+		}
+
+		for (var widget = target; widget != null && widget != d_diff; widget = widget.get_parent())
+		{
+			if (widget is Gtk.Expander)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private string[]? pathspec()

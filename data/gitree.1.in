@@ -28,7 +28,8 @@ a group ticks or unticks every ref in it, and also opens or folds the group.
 .PP
 A double-click on a commit, or Enter, shows its details and its diff below
 the refs and the list. A double-click on the same commit, Enter or Escape
-hides them again.
+hides them again. A click on a file, or on Expand all, fills the window
+with the diff. Escape or the back arrow brings back the refs and the list.
 .PP
 .B gitree
 is read only. It writes nothing to the repository: no ref is moved, no
@@ -84,6 +85,9 @@ ticks every local branch and
 .BR Double-click ", " Enter
 Show or hide the details and the diff of a commit.
 .TP
+.BR "Click a file" ", " "Expand all"
+Fill the window with the diff.
+.TP
 .B Ctrl+F
 Open or close the search bar.
 .TP
@@ -94,7 +98,8 @@ Go to the next commit that matches.
 Go to the commit before that matches.
 .TP
 .B Escape
-Close the search bar, or else the details of the commit.
+Close the search bar, or else the full diff, or else the details of the
+commit.
 .TP
 .B F5
 Read the repository again.

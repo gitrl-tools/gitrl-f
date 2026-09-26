@@ -12,7 +12,7 @@ A commit is drawn when a ticked ref reaches it. A commit that a ticked branch sh
 
 - **A checkbox for each ref.** The refs are on the left, in three groups: branches, remote branches under each remote, and tags. A name with slashes, such as `feature/lexer`, goes into a group `feature`, to any depth. The box of a group ticks every ref in it and opens the group, or unticks them all and folds it. At each level the refs come first, then the groups. Both follow the order of the graph: a ref whose commit is higher in the history comes first, and a group takes the place of its highest ref. Refs on the same commit are sorted by name.
 - **Every ref at the start.** With no ref and no option on the command line, every ref is ticked.
-- **The details on a double click.** The pane under the history is hidden until you double-click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A double-click on the same commit, Enter or Escape hides it again.
+- **The details on a double click.** The pane under the history is hidden until you double-click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A double-click on the same commit, Enter or Escape hides it again. A click on a file, or on Expand all, fills the window with the diff, and Escape or the back arrow brings back the refs and the list.
 - **A path limit.** `gitree -- src/parser.py` keeps only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does.
 - **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same scroll.
 
@@ -128,7 +128,8 @@ Outside a repository, `gitree` opens a list of the repositories that you opened 
 | Key | What it does |
 |-----|--------------|
 | Double click, `Enter` in the list | Shows or hides the details and the diff of a commit |
-| `Escape` | Closes the search bar, or else the details |
+| Click on a file or on Expand all | Fills the window with the diff |
+| `Escape` | Closes the search bar, or else the full diff, or else the details |
 | `Ctrl+F` | Opens or closes the search bar |
 | `Enter`, `Ctrl+G` | Goes to the next commit that matches |
 | `Shift+Enter`, `Ctrl+Shift+G` | Goes to the one before |
