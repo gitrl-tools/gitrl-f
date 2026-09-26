@@ -31,7 +31,8 @@ if [ -n "$series" ] || [ -n "$suffix" ]; then
         "$pkgdir/debian/changelog"
 fi
 
-tar --exclude=./debian -C "$pkgdir" -czf "$work/gitree_$version.orig.tar.gz" .
+tar --exclude=./debian --sort=name --mtime="@$(git -C "$src" log -1 --format=%ct)" \
+    --owner=0 --group=0 --numeric-owner -C "$pkgdir" -cf - . | gzip -n >"$work/gitree_$version.orig.tar.gz"
 
 cd "$pkgdir"
 

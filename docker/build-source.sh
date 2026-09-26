@@ -25,7 +25,8 @@ else
     saflag=-sa
     echo "generating orig $orig"
     git -C "$src" ls-files -z | tar -C "$src" --null -T - -cf - | tar -C "$pkgdir" -xf -
-    tar --exclude=./debian -C "$pkgdir" -czf "$work/$orig" .
+    tar --exclude=./debian --sort=name --mtime="@$(git -C "$src" log -1 --format=%ct)" \
+        --owner=0 --group=0 --numeric-owner -C "$pkgdir" -cf - . | gzip -n >"$work/$orig"
     cp "$work/$orig" "$src/_build/ppa/$orig"
 fi
 
