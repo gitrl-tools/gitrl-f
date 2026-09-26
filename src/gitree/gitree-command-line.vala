@@ -40,7 +40,7 @@ repository, it opens a list of the repositories you opened last.
     -l, --local     tick every local branch
     -r, --remotes   tick every remote branch
     -t, --tags      tick every tag
-    -h              print this help and exit
+    -h, --help      print this help and exit
     --version       print the version and exit
     --no-wd         open the chooser, not the repository of this
                     folder
@@ -56,10 +56,11 @@ selected and the same scroll. A new local branch comes in ticked.
 New remote branches and tags come in unticked.
 
 Keys
+    Double-click, Enter         show or hide the details of a commit
     Ctrl+F                      open or close the search bar
     Enter, Ctrl+G               go to the next commit that matches
     Shift+Enter, Ctrl+Shift+G   go to the one before
-    Escape                      close the search bar
+    Escape                      close the search bar, or else the details
     F5                          read the repository again
     Ctrl+Q                      quit
 

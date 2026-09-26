@@ -26,8 +26,9 @@ The refs are on the left, in three groups: branches, remote branches and
 tags. A name with slashes is divided into groups at each slash. The box of
 a group ticks or unticks every ref in it, and also opens or folds the group.
 .PP
-A double-click on a commit shows its details and its diff below the list.
-A double-click on the same commit, or Escape, hides them again.
+A double-click on a commit, or Enter, shows its details and its diff below
+the list. A double-click on the same commit, Enter or Escape hides them
+again.
 .PP
 .B gitree
 is read only. It writes nothing to the repository: no ref is moved, no
@@ -80,6 +81,9 @@ ticks every local branch and
 .BR origin/master .
 .SH KEYS
 .TP
+.BR Double-click ", " Enter
+Show or hide the details and the diff of a commit.
+.TP
 .B Ctrl+F
 Open or close the search bar.
 .TP
@@ -103,8 +107,8 @@ Quit.
 Normal run.
 .TP
 .B 1
-A ref matches nothing, a ref or a path is given outside a repository, or
-the display cannot be opened.
+A ref matches nothing, a ref, a path or a tick option is given outside a
+repository, or the display cannot be opened.
 .TP
 .B 2
 Usage error.
