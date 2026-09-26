@@ -27,8 +27,8 @@ tags. A name with slashes is divided into groups at each slash. The box of
 a group ticks or unticks every ref in it, and also opens or folds the group.
 .PP
 A double-click on a commit, or Enter, shows its details and its diff below
-the list. A double-click on the same commit, Enter or Escape hides them
-again.
+the refs and the list. A double-click on the same commit, Enter or Escape
+hides them again.
 .PP
 .B gitree
 is read only. It writes nothing to the repository: no ref is moved, no

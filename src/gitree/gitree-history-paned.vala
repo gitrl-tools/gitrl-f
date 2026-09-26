@@ -21,12 +21,14 @@ namespace Gitree
 {
 
 [GtkTemplate (ui = "/io/github/li9i/gitree/ui/gitree-history-paned.ui")]
-public class HistoryPaned : Gtk.Paned
+public class HistoryPaned : Gtk.Box
 {
 	[GtkChild]
 	private unowned Gtk.Button d_all;
 	[GtkChild]
 	private unowned Gtk.Box d_box_details;
+	[GtkChild]
+	private unowned Gtk.Box d_box_main;
 	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_author;
 	[GtkChild]
@@ -41,6 +43,8 @@ public class HistoryPaned : Gtk.Paned
 	private unowned Gtk.Label d_notice;
 	[GtkChild]
 	private unowned Gtk.Paned d_paned_panels;
+	[GtkChild]
+	private unowned Gtk.Paned d_paned_sidebar;
 	[GtkChild]
 	private unowned Gtk.InfoBar d_path_bar;
 	[GtkChild]
@@ -117,18 +121,24 @@ public class HistoryPaned : Gtk.Paned
 
 			d_paned_panels.orientation = value;
 
-			d_paned_panels.remove(d_stack_list);
-			d_paned_panels.remove(d_box_details);
+			foreach (var widget in new Gtk.Widget[] { d_paned_sidebar, d_paned_panels, d_box_details, d_stack_list })
+			{
+				((Gtk.Container)widget.get_parent()).remove(widget);
+			}
 
 			if (value == Gtk.Orientation.HORIZONTAL)
 			{
 				d_paned_panels.pack1(d_box_details, true, true);
 				d_paned_panels.pack2(d_stack_list, true, true);
+				d_box_main.pack_start(d_paned_panels, true, true, 0);
+				pack_start(d_paned_sidebar, true, true, 0);
 			}
 			else
 			{
-				d_paned_panels.pack1(d_stack_list, true, true);
+				d_paned_panels.pack1(d_paned_sidebar, true, true);
 				d_paned_panels.pack2(d_box_details, true, true);
+				d_box_main.pack_start(d_stack_list, true, true, 0);
+				pack_start(d_paned_panels, true, true, 0);
 			}
 		}
 	}
@@ -146,6 +156,11 @@ public class HistoryPaned : Gtk.Paned
 	public Gtk.Paned paned_panels
 	{
 		get { return d_paned_panels; }
+	}
+
+	public Gtk.Paned paned_sidebar
+	{
+		get { return d_paned_sidebar; }
 	}
 
 	public Gtk.InfoBar path_bar
@@ -199,10 +214,10 @@ public class HistoryPaned : Gtk.Paned
 	{
 		var state_settings = new Settings(Config.APPLICATION_ID + ".state.history");
 
-		position = state_settings.get_int("paned-sidebar-position");
+		d_paned_sidebar.position = state_settings.get_int("paned-sidebar-position");
 
-		notify["position"].connect(() => {
-			state_settings.set_int("paned-sidebar-position", position);
+		d_paned_sidebar.notify["position"].connect(() => {
+			state_settings.set_int("paned-sidebar-position", d_paned_sidebar.position);
 		});
 
 		var interface_settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");

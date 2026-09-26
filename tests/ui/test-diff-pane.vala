@@ -556,7 +556,7 @@ private static void test_orientation_follows_the_layout_setting()
 		var panels = window.history.paned.paned_panels;
 
 		assert_true(panels.orientation == Gtk.Orientation.VERTICAL);
-		assert_true(panels.get_child1() == window.history.paned.stack_list);
+		assert_true(panels.get_child2() == window.history.paned.box_details);
 
 		settings.set_string("orientation", "horizontal");
 		settle(50);

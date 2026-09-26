@@ -89,6 +89,7 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gitree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
+	Test.add_func("/gitree/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
@@ -163,6 +164,49 @@ private static void test_bottom_pane_is_hidden_at_the_start()
 		assert_false(details_shown(window));
 		assert_cmpint(panels.get_allocated_height(), CompareOperator.GT, 300);
 		assert_cmpint(window.history.paned.stack_list.get_allocated_height(), CompareOperator.GE, panels.get_allocated_height() - 2);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_bottom_pane_spans_the_refs_panel_and_the_list()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var refs = window.history.paned.refs_list.get_ancestor(typeof(Gtk.ScrolledWindow));
+		var list = window.history.paned.stack_list;
+		var pane = window.history.paned.box_details;
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		assert_true(details_shown(window));
+
+		int refs_x;
+		int refs_y;
+		int list_x;
+		int list_y;
+		int pane_x;
+		int pane_y;
+		refs.translate_coordinates(window, 0, 0, out refs_x, out refs_y);
+		list.translate_coordinates(window, 0, 0, out list_x, out list_y);
+		pane.translate_coordinates(window, 0, 0, out pane_x, out pane_y);
+
+		assert_cmpint(pane_x, CompareOperator.EQ, refs_x);
+		assert_cmpint(pane_x + pane.get_allocated_width(), CompareOperator.EQ, list_x + list.get_allocated_width());
+		assert_cmpint(pane_y, CompareOperator.GE, refs_y + refs.get_allocated_height());
+		assert_cmpint(pane_y, CompareOperator.GE, list_y + list.get_allocated_height());
 
 		window.destroy();
 		repo.remove();
@@ -452,7 +496,7 @@ private static void test_left_pane_is_never_cut_off()
 		repo.branched();
 
 		var window = opened(repo, {"refs/heads/master"});
-		window.history.paned.position = 40;
+		window.history.paned.paned_sidebar.position = 40;
 
 		for (var i = 0; i < 20; i++)
 		{
@@ -579,7 +623,7 @@ private static void test_sidebar_layout()
 		repo.commit("first");
 
 		var window = opened(repo, {"refs/heads/master"});
-		var sidebar = (Gtk.Box)window.history.paned.get_child1();
+		var sidebar = (Gtk.Box)window.history.paned.paned_sidebar.get_child1();
 		var kinds = new string[0];
 
 		foreach (var child in sidebar.get_children())
@@ -617,9 +661,9 @@ private static void test_sidebar_position_is_kept()
 
 		var window = opened(repo, {"refs/heads/master"});
 
-		assert_cmpint(window.history.paned.position, CompareOperator.EQ, 231);
+		assert_cmpint(window.history.paned.paned_sidebar.position, CompareOperator.EQ, 231);
 
-		window.history.paned.position = 250;
+		window.history.paned.paned_sidebar.position = 250;
 		assert_cmpint(settings.get_int("paned-sidebar-position"), CompareOperator.EQ, 250);
 
 		settings.reset("paned-sidebar-position");
