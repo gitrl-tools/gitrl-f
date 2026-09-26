@@ -104,6 +104,7 @@ public class RefsList : Gtk.ListBox
 				d_ticks.add_all(names);
 			}
 
+			header.expanded = !all;
 			changed_by_user();
 		});
 

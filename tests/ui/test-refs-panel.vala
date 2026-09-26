@@ -18,6 +18,20 @@
  */namespace GitreeTest
 {
 
+private static void click_centre(Gtk.Widget widget)
+{
+	int x;
+	int y;
+	int origin_x;
+	int origin_y;
+
+	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
+	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+
+	click_at(origin_x + x, origin_y + y, 1);
+	settle(700);
+}
+
 private static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 {
 	var found = new Gtk.Widget[0];
@@ -51,21 +65,6 @@ private static Repo fixture() throws Error
 	repo.git({"update-ref", "refs/remotes/backup/master", "master"});
 
 	return repo;
-}
-
-private static void click_name(Gitree.RefsHeader header)
-{
-	var name = find_all(header, typeof(Gtk.Label))[0];
-	int x;
-	int y;
-	int origin_x;
-	int origin_y;
-
-	name.translate_coordinates(name.get_toplevel(), name.get_allocated_width() / 2, name.get_allocated_height() / 2, out x, out y);
-	name.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
-
-	click_at(origin_x + x, origin_y + y, 1);
-	settle(700);
 }
 
 private static Gitree.RefsHeader header(Gitree.RefsList list, string key)
@@ -135,6 +134,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/refs-panel/filter-keeps-nested-groups-that-hold-a-match", test_filter_keeps_nested_groups_that_hold_a_match);
 	Test.add_func("/gitree/ui/refs-panel/folds-are-kept-across-a-reload", test_folds_are_kept_across_a_reload);
 	Test.add_func("/gitree/ui/refs-panel/group-checkbox-count-and-mixed-state", test_group_checkbox_count_and_mixed_state);
+	Test.add_func("/gitree/ui/refs-panel/group-checkbox-opens-when-it-ticks-and-folds-when-it-unticks", test_group_checkbox_opens_when_it_ticks_and_folds_when_it_unticks);
 	Test.add_func("/gitree/ui/refs-panel/group-name-click-folds-and-opens-it", test_group_name_click_folds_and_opens_it);
 	Test.add_func("/gitree/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
 	Test.add_func("/gitree/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
@@ -407,6 +407,71 @@ private static void test_group_checkbox_count_and_mixed_state()
 	}
 }
 
+private static void test_group_checkbox_opens_when_it_ticks_and_folds_when_it_unticks()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+		var b = header(list, "local:b");
+		var tags = header(list, "section:tags");
+		var b_check = (Gtk.CheckButton)find_all(b, typeof(Gtk.CheckButton))[0];
+		var tags_check = (Gtk.CheckButton)find_all(tags, typeof(Gtk.CheckButton))[0];
+
+		b_check.clicked();
+
+		assert_false(b.expanded);
+		assert_false(row(list, "b/a1").get_child_visible());
+
+		b_check.clicked();
+
+		assert_true(b.expanded);
+		assert_true(row(list, "b/a1").get_child_visible());
+
+		((Gtk.CheckButton)find_all(row(list, "b/a2"), typeof(Gtk.CheckButton))[0]).clicked();
+		b_check.clicked();
+
+		assert_true(b.expanded);
+		assert_cmpstr(label_of(b, 1), CompareOperator.EQ, "4/4");
+
+		assert_false(tags.expanded);
+		tags_check.clicked();
+		assert_false(tags.expanded);
+		tags_check.clicked();
+		assert_true(tags.expanded);
+		assert_true(row(list, "v1").get_child_visible());
+
+		settle(300);
+		click_centre(b_check);
+
+		assert_false(b.expanded);
+		assert_cmpstr(label_of(b, 1), CompareOperator.EQ, "0/4");
+
+		click_centre(b_check);
+
+		assert_true(b.expanded);
+		assert_cmpstr(label_of(b, 1), CompareOperator.EQ, "4/4");
+
+		list.tick_none();
+
+		assert_true(b.expanded);
+		assert_true(tags.expanded);
+
+		list.tick_all();
+		header(list, "local:b/c").expanded = false;
+		list.tick_all();
+
+		assert_false(header(list, "local:b/c").expanded);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_group_name_click_folds_and_opens_it()
 {
 	try
@@ -417,17 +482,17 @@ private static void test_group_name_click_folds_and_opens_it()
 
 		settle(300);
 
-		click_name(header(list, "local:b"));
+		click_centre(find_all(header(list, "local:b"), typeof(Gtk.Label))[0]);
 
 		assert_false(header(list, "local:b").expanded);
 		assert_false(row(list, "b/a1").get_child_visible());
 
-		click_name(header(list, "local:b"));
+		click_centre(find_all(header(list, "local:b"), typeof(Gtk.Label))[0]);
 
 		assert_true(header(list, "local:b").expanded);
 		assert_true(row(list, "b/a1").get_child_visible());
 
-		click_name(header(list, "section:local"));
+		click_centre(find_all(header(list, "section:local"), typeof(Gtk.Label))[0]);
 
 		assert_false(header(list, "section:local").expanded);
 
