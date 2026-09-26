@@ -230,6 +230,9 @@ private static void test_help_says_gitree_and_git_tree()
 	assert_true("\n    --version       print the version and exit\n" in Gitree.CommandLine.HELP);
 	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gitree.CommandLine.HELP);
 	assert_false("git tree [" in Gitree.CommandLine.HELP);
+	assert_true("\n    -h, --help      print this help and exit\n" in Gitree.CommandLine.HELP);
+	assert_true("\n    Double-click, Enter         show or hide the details of a commit\n" in Gitree.CommandLine.HELP);
+	assert_true("\n    Escape                      close the search bar, or else the details\n" in Gitree.CommandLine.HELP);
 }
 
 private static void test_long_only_options_parse_as_argparse()
@@ -402,7 +405,6 @@ private static void test_version_prints_the_name_and_the_version()
 	assert_cmpint(run(Environment.get_current_dir(), { "--version" }, out output, out errors), CompareOperator.EQ, 0);
 	assert_cmpstr(output, CompareOperator.EQ, "gitree %s\n".printf(Gitree.Config.PACKAGE_VERSION));
 	assert_cmpstr(errors, CompareOperator.EQ, "");
-	assert_cmpstr(Gitree.Config.PACKAGE_VERSION, CompareOperator.EQ, "0.1.0");
 }
 
 private static void test_wrong_option_prints_usage_and_exits_with_two()
