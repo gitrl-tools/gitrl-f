@@ -1,0 +1,9 @@
+gitree (0.1.0-1) noble; urgency=medium
+
+  * Initial release. gitree shows the history of the branches, remote
+    branches and tags that you tick, drawn the way gitg draws it. Names
+    with slashes fold into groups, a double click on a commit shows its
+    details and its diff, and a path keeps only the commits that change a
+    file or a folder. The command is gitree, and git tree runs it too.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Sat, 26 Sep 2026 12:37:45 +0200

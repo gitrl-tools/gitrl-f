@@ -14,3 +14,6 @@ tests/visual/output/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Built AppImages
+*.AppImage

@@ -1,0 +1,17 @@
+FROM gitree-build:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        fonts-dejavu-core \
+        gitg \
+        imagemagick \
+        python3-pil \
+        x11-apps \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN test "$(dpkg-query -W -f='${Version}' gitg)" = "44-1build2" \
+    || (echo "gitg is not 44-1build2, so the vendored source no longer matches it" >&2; exit 1)
+
+WORKDIR /src
+CMD ["/bin/bash"]

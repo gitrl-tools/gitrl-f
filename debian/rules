@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_test:
+	meson test -C obj-$(DEB_HOST_GNU_TYPE) --suite unit --suite data --print-errorlogs
