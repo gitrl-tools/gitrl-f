@@ -188,6 +188,8 @@ public class History : Object
 
 		if (input != null)
 		{
+			Posix.signal(Posix.Signal.PIPE, Posix.SIG_IGN);
+
 			try
 			{
 				process.get_stdin_pipe().write_all(input.data, null);

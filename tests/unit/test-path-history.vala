@@ -124,6 +124,8 @@ private static void test_a_failed_git_run_gives_its_message()
 
 private static void test_a_failed_git_run_with_a_long_input_gives_its_message()
 {
+	Posix.signal(Posix.Signal.PIPE, Posix.SIG_DFL);
+
 	try
 	{
 		var repo = Repo.create();

@@ -34,6 +34,7 @@ gitree_deps = [
 
 gitree_vala_flags = vala_flags + [
   '--pkg', 'gitree-config',
+  '--pkg', 'posix',
   '--gresources', join_paths(meson.current_source_dir(), 'resources/gitree.gresource.xml'),
   '--gresourcesdir', join_paths(meson.current_source_dir(), 'resources'),
 ]
