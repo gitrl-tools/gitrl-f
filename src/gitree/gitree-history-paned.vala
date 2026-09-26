@@ -83,6 +83,22 @@ public class HistoryPaned : Gtk.Paned
 		get { return d_commit_list_view; }
 	}
 
+	public bool details_visible
+	{
+		get { return d_box_details.visible; }
+
+		set
+		{
+			d_box_details.visible = value;
+
+			if (value)
+			{
+				var length = d_paned_panels.orientation == Gtk.Orientation.VERTICAL ? d_paned_panels.get_allocated_height() : d_paned_panels.get_allocated_width();
+				d_paned_panels.position = length / 2;
+			}
+		}
+	}
+
 	public Gtk.SearchEntry filter
 	{
 		get { return d_filter; }
@@ -185,31 +201,8 @@ public class HistoryPaned : Gtk.Paned
 
 		position = state_settings.get_int("paned-sidebar-position");
 
-		if (state_settings.get_user_value("paned-panels-position") != null)
-		{
-			d_paned_panels.position = state_settings.get_int("paned-panels-position");
-		}
-		else
-		{
-			ulong handler = 0;
-
-			handler = d_paned_panels.size_allocate.connect((allocation) => {
-				var length = d_paned_panels.orientation == Gtk.Orientation.VERTICAL ? allocation.height : allocation.width;
-
-				if (length > 1)
-				{
-					d_paned_panels.disconnect(handler);
-					d_paned_panels.position = length / 2;
-				}
-			});
-		}
-
 		notify["position"].connect(() => {
 			state_settings.set_int("paned-sidebar-position", position);
-		});
-
-		d_paned_panels.notify["position"].connect(() => {
-			state_settings.set_int("paned-panels-position", d_paned_panels.position);
 		});
 
 		var interface_settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");

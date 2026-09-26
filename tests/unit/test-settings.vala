@@ -45,7 +45,6 @@ private const string[] KEYS = {
 	"preferences.interface|style-scheme|'classic'",
 	"preferences.interface|use-default-font|true",
 	"preferences.interface|use-gravatar|false",
-	"state.history|paned-panels-position|450",
 	"state.history|paned-sidebar-position|200",
 	"state.window|size|(650, 500)",
 	"state.window|state|0",

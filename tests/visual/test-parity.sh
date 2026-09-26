@@ -14,7 +14,8 @@ GSETTINGS_SCHEMA_DIR=${GSETTINGS_SCHEMA_DIR:-$root/_build/data}
 export GSETTINGS_SCHEMA_DIR
 
 LIST=490x345+206+51
-PANE=1194x449+206+451
+PANE=1194x399+206+501
+FIRST_ROW="400 62"
 
 for tool in Xvfb xwd convert compare xdotool dbus-run-session gitg python3 setsid; do
 	if ! command -v "$tool" >/dev/null 2>&1; then
@@ -64,7 +65,7 @@ capture() {
 	cp "$here/settings.ini" "$home/.config/gtk-3.0/settings.ini"
 	cp "$here/keyfile" "$home/.config/glib-2.0/settings/keyfile"
 	"$here/fixture.sh" "$fixture"
-	(cd "$fixture" && "$here/capture.sh" "$out/$name.png" "$home" "$@")
+	(cd "$fixture" && GITREE_VISUAL_DOUBLE_CLICK="$click" "$here/capture.sh" "$out/$name.png" "$home" "$@")
 	echo "  captured $name"
 }
 
@@ -89,8 +90,10 @@ crop() {
 failed=0
 
 echo "--- capture ---"
+click=
 capture gitg-1 gitg "$fixture"
 capture gitg-2 gitg "$fixture"
+click=$FIRST_ROW
 capture gitree-1 "$binary" -a
 capture gitree-2 "$binary" -a
 

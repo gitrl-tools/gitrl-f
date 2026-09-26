@@ -237,7 +237,8 @@
             </child>
             <child>
               <object class="GtkBox" id="d_box_details">
-                <property name="visible">True</property>
+                <property name="visible">False</property>
+                <property name="no_show_all">True</property>
                 <property name="orientation">vertical</property>
               </object>
               <packing>

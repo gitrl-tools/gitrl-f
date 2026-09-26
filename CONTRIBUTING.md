@@ -8,7 +8,7 @@ Ubuntu 24.04 or equivalent is necessary:
 sudo apt-get install build-essential git gsettings-desktop-schemas-dev \
     libgee-0.8-dev libgit2-glib-1.0-dev libglib2.0-dev libgtk-3-dev \
     libgtksourceview-4-dev librsvg2-common meson pkgconf valac wget xauth \
-    xvfb
+    xdotool xvfb
 
 meson setup _build
 ninja -C _build

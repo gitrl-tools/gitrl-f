@@ -172,8 +172,5 @@
     <key name="paned-sidebar-position" type="i">
       <default>200</default>
     </key>
-    <key name="paned-panels-position" type="i">
-      <default>450</default>
-    </key>
   </schema>
 </schemalist>

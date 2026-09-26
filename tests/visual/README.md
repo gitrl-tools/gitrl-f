@@ -20,8 +20,8 @@ The suite needs Xvfb, xwd, ImageMagick, xdotool, dbus-run-session, gitg and pyth
 ## What it does
 
 1. `fixture.sh` makes a repository of 15 commits with five branches, three remote branches, two tags and two merges. The dates are in 2024, so the two programs do not write a relative date. HEAD is on `topic`, not on `master`, and the fixture sets `gitg.mainline` to `refs/heads/master`. Thus the two lanes that gitg keeps at the left are both in use.
-2. `test-parity.sh` starts its own Xvfb at 1400x900 on a free display. Each program runs with `capture.sh`, which gives it an empty environment: a new home folder, a new D-Bus session with no services that it can start, the Adwaita theme, DejaVu Sans 10, the C locale and UTC. The settings come from `keyfile` through the GSettings keyfile back end: gitg opens on **All commits**, and both windows are 1400x900 with the list pane 400 pixels high. gitree starts with `-a`. The two programs select the first row.
-3. `capture.sh` takes a capture every second, and stops when two captures in sequence are the same.
+2. `test-parity.sh` starts its own Xvfb at 1400x900 on a free display. Each program runs with `capture.sh`, which gives it an empty environment: a new home folder, a new D-Bus session with no services that it can start, the Adwaita theme, DejaVu Sans 10, the C locale and UTC. The settings come from `keyfile` through the GSettings keyfile back end: gitg opens on **All commits**, both windows are 1400x900, and the divider of gitg is at 450 pixels, where the middle of gitree falls in this window. gitree starts with `-a`. The two programs select the first row.
+3. `capture.sh` takes a capture every second, and stops when two captures in sequence are the same. gitree hides its pane until a row gets a double-click, so for gitree the script then double-clicks the first row with xdotool, puts the pointer back, and waits again until two captures in sequence are the same.
 4. The suite crops two regions from each capture and counts the pixels that differ with ImageMagick. The first region is the lanes, labels and subjects of the 15 rows. The second region is the whole pane under the list: the details of the selected commit and its diff. The commit only adds a line, so the two programs do not mark words.
 5. The suite also compares a capture of the whole gitree window with `reference/gitree-window.png`. This finds changes to the part that gitg does not draw: the refs panel with its checkboxes.
 6. `selfcheck.sh` changes one lane colour, and moves the region by one pixel. The comparison must find each change. A comparison that cannot fail is not a test.
@@ -29,7 +29,7 @@ The suite needs Xvfb, xwd, ImageMagick, xdotool, dbus-run-session, gitg and pyth
 
 ## Results
 
-Measured on 2026-09-25 with gitg 44-1build2 and GTK 3.24 on Ubuntu 24.04.
+Measured on 2026-09-26 with gitg 44-1build2 and GTK 3.24 on Ubuntu 24.04.
 
 | Comparison | Differing pixels |
 |---|---|
@@ -42,7 +42,7 @@ Measured on 2026-09-25 with gitg 44-1build2 and GTK 3.24 on Ubuntu 24.04.
 
 Both regimes are 0, so the bound is 0. There is no tolerance.
 
-The self check found each change: 835 pixels for the changed lane colour and 16910 for the shift in the list, 20198 and 10154 in the bottom pane.
+The self check found each change: 835 pixels for the changed lane colour and 16910 for the shift in the list, 20198 and 9904 in the bottom pane.
 
 `measure.py` read the same geometry from the two lists: lane spacing 16 px, dot radius 5.0 px, row height 23 px.
 
@@ -53,7 +53,7 @@ The regions in `test-parity.sh` are constants of the fixture, the window size an
 | Region | gitg | gitree |
 |---|---|---|
 | List | `490x345+206+51` | `490x345+206+51` |
-| Bottom pane | `1194x449+206+451` | `1194x449+206+451` |
+| Bottom pane | `1194x399+206+501` | `1194x399+206+501` |
 
 The list region stops at 490 pixels, before the end of the subject column of gitg, which is narrower because gitg shows two more columns. The suite fails if a region is nearly blank, because a wrong region can hold background only, and two backgrounds are the same.
 

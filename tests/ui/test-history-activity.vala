@@ -39,6 +39,35 @@ private static Gitree.Application application()
 	return app;
 }
 
+private static bool details_shown(Gitree.Window window)
+{
+	return window.history.paned.box_details.get_mapped();
+}
+
+private static void double_click(Gitree.Window window, int row)
+{
+	var view = window.history.paned.commit_list_view;
+	Gdk.Rectangle cell;
+	int x;
+	int y;
+	int status;
+
+	view.get_cell_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out cell);
+	view.get_bin_window().get_origin(out x, out y);
+
+	try
+	{
+		Process.spawn_sync(null, {"xdotool", "mousemove", "--sync", (x + cell.x + cell.width / 2).to_string(), (y + cell.y + cell.height / 2).to_string(), "click", "--repeat", "2", "--delay", "80", "1"}, null, SpawnFlags.SEARCH_PATH, null, null, null, out status);
+		Process.check_exit_status(status);
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("xdotool: %s", e.message);
+	}
+
+	settle(300);
+}
+
 private static void drain()
 {
 	while (Gtk.events_pending())
@@ -69,18 +98,21 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/history-activity/bottom-pane-starts-at-the-middle", test_bottom_pane_starts_at_the_middle);
+	Test.add_func("/gitree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
+	Test.add_func("/gitree/ui/history-activity/double-click-shows-the-pane-and-on-its-row-hides-it", test_double_click_shows_the_pane_and_on_its_row_hides_it);
+	Test.add_func("/gitree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
+	Test.add_func("/gitree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
 	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
-	Test.add_func("/gitree/ui/history-activity/pane-positions-are-kept", test_pane_positions_are_kept);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
 	Test.add_func("/gitree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
 	Test.add_func("/gitree/ui/history-activity/sidebar-layout", test_sidebar_layout);
+	Test.add_func("/gitree/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
 	Test.add_func("/gitree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
 	Test.add_func("/gitree/ui/history-activity/window-jump-ticks-an-unticked-ref-and-selects-its-tip", test_window_jump_ticks_an_unticked_ref_and_selects_its_tip);
@@ -107,6 +139,15 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 	return window;
 }
 
+private static void settle(int milliseconds)
+{
+	for (var i = 0; i < milliseconds / 10; i++)
+	{
+		drain();
+		Thread.usleep(10000);
+	}
+}
+
 private static string subjects_of(Gitree.Window window)
 {
 	var names = new string[0];
@@ -119,29 +160,20 @@ private static string subjects_of(Gitree.Window window)
 	return string.joinv(",", names);
 }
 
-private static void test_bottom_pane_starts_at_the_middle()
+private static void test_bottom_pane_is_hidden_at_the_start()
 {
 	try
 	{
 		var repo = Repo.create();
 		repo.commit("first");
 
-		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".state.history");
-		settings.reset("paned-panels-position");
-
-		var window = new Gitree.Window(application());
-		window.set_default_size(800, 600);
-		window.open_repository(Gitree.Application.discover_repository(repo.path));
-		window.show();
-		drain();
-
+		var window = opened(repo, {"refs/heads/master"});
 		var panels = window.history.paned.paned_panels;
-		var middle = panels.get_allocated_height() / 2;
 
+		assert_false(details_shown(window));
 		assert_cmpint(panels.get_allocated_height(), CompareOperator.GT, 300);
-		assert_cmpint((panels.position - middle).abs(), CompareOperator.LE, 4);
+		assert_cmpint(window.history.paned.stack_list.get_allocated_height(), CompareOperator.GE, panels.get_allocated_height() - 2);
 
-		settings.reset("paned-panels-position");
 		window.destroy();
 		repo.remove();
 	}
@@ -268,6 +300,120 @@ private static void test_detached_head_label_comes_first()
 	}
 }
 
+private static void test_double_click_shows_the_pane_and_on_its_row_hides_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.commit("second");
+		repo.commit("third");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		double_click(window, 0);
+		assert_true(details_shown(window));
+
+		double_click(window, 0);
+		assert_false(details_shown(window));
+
+		double_click(window, 1);
+		assert_true(details_shown(window));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "second");
+
+		double_click(window, 2);
+		assert_true(details_shown(window));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
+
+		double_click(window, 2);
+		assert_false(details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_enter_shows_the_pane_at_the_middle_and_hides_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var panels = window.history.paned.paned_panels;
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_cmpint((panels.position - panels.get_allocated_height() / 2).abs(), CompareOperator.LE, 4);
+
+		panels.position = 100;
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		assert_false(details_shown(window));
+
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_cmpint((panels.position - panels.get_allocated_height() / 2).abs(), CompareOperator.LE, 4);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_escape_closes_the_search_bar_then_the_pane()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		window.history.search_visible = true;
+		view.grab_focus();
+		settle(50);
+
+		Gtk.test_widget_send_key(view, Gdk.Key.Escape, 0);
+		settle(100);
+
+		assert_false(window.history.search_visible);
+		assert_true(details_shown(window));
+
+		Gtk.test_widget_send_key(view, Gdk.Key.Escape, 0);
+		settle(100);
+
+		assert_false(details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_history_settings_redraw_the_list()
 {
 	try
@@ -330,36 +476,6 @@ private static void test_left_pane_is_never_cut_off()
 
 		assert_cmpint(x, CompareOperator.GE, 0);
 
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_pane_positions_are_kept()
-{
-	try
-	{
-		var repo = Repo.create();
-		repo.commit("first");
-
-		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".state.history");
-		settings.set_int("paned-sidebar-position", 231);
-		settings.set_int("paned-panels-position", 123);
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		assert_cmpint(window.history.paned.position, CompareOperator.EQ, 231);
-		assert_cmpint(window.history.paned.paned_panels.position, CompareOperator.EQ, 123);
-
-		window.history.paned.paned_panels.position = 150;
-		assert_cmpint(settings.get_int("paned-panels-position"), CompareOperator.EQ, 150);
-
-		settings.reset("paned-sidebar-position");
-		settings.reset("paned-panels-position");
 		window.destroy();
 		repo.remove();
 	}
@@ -490,6 +606,33 @@ private static void test_sidebar_layout()
 		assert_cmpstr(((Gtk.Button)buttons.nth_data(0)).label, CompareOperator.EQ, "All");
 		assert_cmpstr(((Gtk.Button)buttons.nth_data(1)).label, CompareOperator.EQ, "None");
 
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_sidebar_position_is_kept()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".state.history");
+		settings.set_int("paned-sidebar-position", 231);
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		assert_cmpint(window.history.paned.position, CompareOperator.EQ, 231);
+
+		window.history.paned.position = 250;
+		assert_cmpint(settings.get_int("paned-sidebar-position"), CompareOperator.EQ, 250);
+
+		settings.reset("paned-sidebar-position");
 		window.destroy();
 		repo.remove();
 	}

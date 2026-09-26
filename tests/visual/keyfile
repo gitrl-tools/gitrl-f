@@ -1,6 +1,3 @@
-[io/github/li9i/gitree/state/history]
-paned-panels-position=400
-
 [io/github/li9i/gitree/state/window]
 size=(1400, 900)
 
@@ -12,7 +9,7 @@ monospace-font-name='DejaVu Sans Mono 10'
 default-selection='all-commits'
 
 [org/gnome/gitg/state/history]
-paned-panels-position=400
+paned-panels-position=450
 
 [org/gnome/gitg/state/window]
 size=(1400, 900)

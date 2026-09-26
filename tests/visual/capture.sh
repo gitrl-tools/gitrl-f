@@ -10,6 +10,7 @@ fi
 output=$1
 home=$2
 shift 2
+program=$1
 here=$(dirname "$(readlink -f "$0")")
 
 : "${DISPLAY:?capture.sh needs DISPLAY set to a private X server}"
@@ -51,31 +52,40 @@ stop() {
 	wait "$app" 2>/dev/null || true
 }
 
+settle() {
+	previous=
+	tries=0
+
+	while :; do
+		sleep 1
+		tries=$((tries + 1))
+
+		if ! kill -0 "$app" 2>/dev/null; then
+			echo "capture.sh: $program stopped before it drew a window; see $output.log" >&2
+			exit 1
+		fi
+
+		xwd -root -silent | convert xwd:- "$output"
+		current=$(md5sum <"$output")
+
+		if [ -n "$previous" ] && [ "$current" = "$previous" ] && [ "$(convert "$output" -format %k info:)" -gt 2 ]; then
+			break
+		fi
+
+		if [ "$tries" -ge 30 ]; then
+			echo "capture.sh: the screen did not settle in 30 s" >&2
+			exit 1
+		fi
+
+		previous=$current
+	done
+}
+
 trap stop EXIT
 
-previous=
-tries=0
+settle
 
-while :; do
-	sleep 1
-	tries=$((tries + 1))
-
-	if ! kill -0 "$app" 2>/dev/null; then
-		echo "capture.sh: $1 stopped before it drew a window; see $output.log" >&2
-		exit 1
-	fi
-
-	xwd -root -silent | convert xwd:- "$output"
-	current=$(md5sum <"$output")
-
-	if [ -n "$previous" ] && [ "$current" = "$previous" ] && [ "$(convert "$output" -format %k info:)" -gt 2 ]; then
-		break
-	fi
-
-	if [ "$tries" -ge 30 ]; then
-		echo "capture.sh: the screen did not settle in 30 s" >&2
-		exit 1
-	fi
-
-	previous=$current
-done
+if [ -n "${GITREE_VISUAL_DOUBLE_CLICK:-}" ]; then
+	xdotool mousemove $GITREE_VISUAL_DOUBLE_CLICK click --repeat 2 --delay 80 1 mousemove restore
+	settle
+fi

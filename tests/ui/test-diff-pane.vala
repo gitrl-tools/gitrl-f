@@ -174,6 +174,8 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 	window.open_repository(Gitree.Application.discover_repository(repo.path), ticks, paths, directory != null ? directory : repo.path);
 	window.show();
 	settle(300);
+	window.history.paned.details_visible = true;
+	settle(100);
 
 	return window;
 }
@@ -561,6 +563,13 @@ private static void test_orientation_follows_the_layout_setting()
 
 		assert_true(panels.orientation == Gtk.Orientation.HORIZONTAL);
 		assert_true(panels.get_child2() == window.history.paned.stack_list);
+
+		window.history.paned.details_visible = false;
+		settle(50);
+		window.history.paned.details_visible = true;
+		settle(50);
+
+		assert_cmpint((panels.position - panels.get_allocated_width() / 2).abs(), CompareOperator.LE, 4);
 
 		settings.reset("orientation");
 		window.destroy();
