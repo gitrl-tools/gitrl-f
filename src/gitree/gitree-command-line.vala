@@ -22,13 +22,15 @@ namespace Gitree
 
 public class CommandLine : Object
 {
-	public const string HELP = """usage: git tree [<options>] [<ref>...] [-- <path>...]
+	public const string HELP = """usage: gitree [<options>] [<ref>...] [-- <path>...]
 
 Shows the history of the repository in a window, with a checkbox
 for each branch, remote branch and tag. Only the commits that a
 ticked ref reaches are drawn, and only ticked refs are labelled.
 A commit that a ticked branch shares with an unticked one still
 shows, as part of the ticked branch.
+
+git tree runs it too.
 
 With no <ref> and no option, every ref is ticked. Outside a
 repository, it opens a list of the repositories you opened last.
@@ -39,10 +41,13 @@ repository, it opens a list of the repositories you opened last.
     -r, --remotes   tick every remote branch
     -t, --tags      tick every tag
     -h              print this help and exit
+    --version       print the version and exit
+    --no-wd         open the chooser, not the repository of this
+                    folder
     -- <path>...    draw only the commits that change these files
                     or folders
 
-Options add up: 'git tree -l origin/master' ticks every local
+Options add up: 'gitree -l origin/master' ticks every local
 branch and origin/master.
 
 The window follows the repository. A commit, a fetch, a checkout
@@ -62,9 +67,11 @@ Search ignores case and looks in the subject, the message, the
 author and the hash.
 """;
 
-	public const string USAGE = "usage: git tree [<options>] [<ref>...] [-- <path>...]\n";
+	public const string USAGE = "usage: gitree [<options>] [<ref>...] [-- <path>...]\n";
 
-	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "help" };
+	private const string LONG_KEYS = "alrthVW";
+
+	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "help", "version", "no-wd" };
 
 	private const string SHORT_NAMES = "alrth";
 
@@ -74,10 +81,12 @@ author and the hash.
 	public string? error { get; private set; }
 	public bool help { get; private set; }
 	public bool local { get; private set; }
+	public bool no_wd { get; private set; }
 	public string[] paths { get; private set; }
 	public string[] refs { get; private set; }
 	public bool remotes { get; private set; }
 	public bool tags { get; private set; }
+	public bool version { get; private set; }
 
 	public bool is_empty
 	{
@@ -94,11 +103,10 @@ author and the hash.
 
 	private void explicit_argument(char option, string argument)
 	{
-		var index = SHORT_NAMES.index_of_char(option);
+		var index = LONG_KEYS.index_of_char(option);
+		var names = is_short_name(option) ? "-%c/--%s".printf(option, LONG_NAMES[index]) : "--" + LONG_NAMES[index];
 
-		error = "argument -%c/--%s: ignored explicit argument %s".printf(option,
-		                                                                  LONG_NAMES[index],
-		                                                                  quoted(argument));
+		error = "argument %s: ignored explicit argument %s".printf(names, quoted(argument));
 	}
 
 	private static int index_of_long(string name)
@@ -236,7 +244,7 @@ author and the hash.
 			return true;
 		}
 
-		var option = SHORT_NAMES[index_of_long(matches[0])];
+		var option = LONG_KEYS[index_of_long(matches[0])];
 
 		if (explicit != null)
 		{
@@ -340,6 +348,12 @@ author and the hash.
 				break;
 			case 't':
 				tags = true;
+				break;
+			case 'V':
+				version = true;
+				break;
+			case 'W':
+				no_wd = true;
 				break;
 		}
 	}

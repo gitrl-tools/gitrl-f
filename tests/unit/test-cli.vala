@@ -74,7 +74,7 @@ private const string[] PROTOTYPE_PARSES = {
 	"--foo -- p||||unrecognized arguments: --foo|",
 	"-lx -y||||unrecognized arguments: -x -y|",
 	"-=x||||unrecognized arguments: -=x|",
-	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --help|",
+	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --help, --version, --no-wd|",
 	"-l-||||argument -l/--local: ignored explicit argument '-'|",
 	"-la=x||||argument -a/--all: ignored explicit argument 'x'|",
 	"-l origin/master|local|origin/master|||",
@@ -140,9 +140,13 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
 	Test.add_func("/gitree/cli/help-names-every-option", test_help_names_every_option);
+	Test.add_func("/gitree/cli/help-says-gitree-and-git-tree", test_help_says_gitree_and_git_tree);
+	Test.add_func("/gitree/cli/long-only-options-parse-as-argparse", test_long_only_options_parse_as_argparse);
 	Test.add_func("/gitree/cli/no-display-exits-with-one", test_no_display_exits_with_one);
+	Test.add_func("/gitree/cli/no-wd-refuses-refs-paths-and-tick-options", test_no_wd_refuses_refs_paths_and_tick_options);
 	Test.add_func("/gitree/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
 	Test.add_func("/gitree/cli/parses-as-the-prototype", test_parses_as_the_prototype);
+	Test.add_func("/gitree/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
 	Test.add_func("/gitree/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
 
 	return Test.run();
@@ -209,9 +213,47 @@ private static void test_help_names_every_option()
 
 	run(Environment.get_current_dir(), { "-h" }, out output, out errors);
 
-	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "-- <path>..." })
+	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--version", "--no-wd", "-- <path>..." })
 	{
 		assert_true(option in output);
+	}
+}
+
+private static void test_help_says_gitree_and_git_tree()
+{
+	var lines = Gitree.CommandLine.HELP.split("\n");
+
+	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gitree [<options>] [<ref>...] [-- <path>...]");
+	assert_cmpstr(Gitree.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
+	assert_true("\ngit tree runs it too.\n" in Gitree.CommandLine.HELP);
+	assert_true("\nOptions add up: 'gitree -l origin/master' ticks every local\n" in Gitree.CommandLine.HELP);
+	assert_true("\n    --version       print the version and exit\n" in Gitree.CommandLine.HELP);
+	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gitree.CommandLine.HELP);
+	assert_false("git tree [" in Gitree.CommandLine.HELP);
+}
+
+private static void test_long_only_options_parse_as_argparse()
+{
+	string[,] cases = {
+		{ "--version", "version", "" },
+		{ "--v", "version", "" },
+		{ "--no-wd", "no-wd", "" },
+		{ "--no", "no-wd", "" },
+		{ "--version=x", "", "argument --version: ignored explicit argument 'x'" },
+		{ "--no-wd=1", "", "argument --no-wd: ignored explicit argument '1'" },
+	};
+
+	for (var i = 0; i < cases.length[0]; i++)
+	{
+		var cli = new Gitree.CommandLine({ cases[i, 0] });
+		var flag = cli.version ? "version" : (cli.no_wd ? "no-wd" : "");
+
+		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, cases[i, 2]);
+
+		if (cases[i, 2] == "")
+		{
+			assert_cmpstr(flag, CompareOperator.EQ, cases[i, 1]);
+		}
 	}
 }
 
@@ -227,6 +269,55 @@ private static void test_no_display_exits_with_one()
 
 		assert_cmpint(run(repo.path.get_path(), {}, out output, out errors), CompareOperator.EQ, 1);
 		assert_true(errors != "");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_no_wd_refuses_refs_paths_and_tick_options()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		string[,] cases = {
+			{ "master", "" },
+			{ "-a", "" },
+			{ "-l", "" },
+			{ "--", "file" },
+		};
+
+		for (var i = 0; i < cases.length[0]; i++)
+		{
+			string[] arguments = { "--no-wd", cases[i, 0] };
+
+			if (cases[i, 1] != "")
+			{
+				arguments += cases[i, 1];
+			}
+
+			string output;
+			string errors;
+
+			assert_cmpint(run(repo.path.get_path(), arguments, out output, out errors), CompareOperator.EQ, 2);
+			assert_cmpstr(output, CompareOperator.EQ, "");
+			assert_cmpstr(errors, CompareOperator.EQ, Gitree.CommandLine.USAGE + "gitree: error: --no-wd takes no ref, no path and no tick option\n");
+		}
+
+		foreach (var option in new string[] { "-h", "--version" })
+		{
+			string output;
+			string errors;
+
+			assert_cmpint(run(repo.path.get_path(), { "--no-wd", option }, out output, out errors), CompareOperator.EQ, 0);
+			assert_cmpstr(errors, CompareOperator.EQ, "");
+			assert_true(output != "");
+		}
 
 		repo.remove();
 	}
@@ -270,7 +361,7 @@ private static void test_outside_a_repository_arguments_are_an_error()
 
 		assert_cmpint(run(outside, arguments, out output, out errors), CompareOperator.EQ, 1);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, "git tree: not a git repository\n");
+		assert_cmpstr(errors, CompareOperator.EQ, "gitree: not a git repository\n");
 	}
 
 	DirUtils.remove(outside);
@@ -303,6 +394,17 @@ private static void test_parses_as_the_prototype()
 	}
 }
 
+private static void test_version_prints_the_name_and_the_version()
+{
+	string output;
+	string errors;
+
+	assert_cmpint(run(Environment.get_current_dir(), { "--version" }, out output, out errors), CompareOperator.EQ, 0);
+	assert_cmpstr(output, CompareOperator.EQ, "gitree %s\n".printf(Gitree.Config.PACKAGE_VERSION));
+	assert_cmpstr(errors, CompareOperator.EQ, "");
+	assert_cmpstr(Gitree.Config.PACKAGE_VERSION, CompareOperator.EQ, "0.1.0");
+}
+
 private static void test_wrong_option_prints_usage_and_exits_with_two()
 {
 	try
@@ -315,7 +417,7 @@ private static void test_wrong_option_prints_usage_and_exits_with_two()
 
 		assert_cmpint(run(repo.path.get_path(), { "-x" }, out output, out errors), CompareOperator.EQ, 2);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, Gitree.CommandLine.USAGE + "git tree: error: unrecognized arguments: -x\n");
+		assert_cmpstr(errors, CompareOperator.EQ, Gitree.CommandLine.USAGE + "gitree: error: unrecognized arguments: -x\n");
 
 		repo.remove();
 	}

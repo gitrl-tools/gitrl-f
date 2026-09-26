@@ -78,7 +78,7 @@ public class Application : Gtk.Application
 
 		if (command_line.error != null)
 		{
-			stderr.printf("%sgit tree: error: %s\n", CommandLine.USAGE, command_line.error);
+			stderr.printf("%sgitree: error: %s\n", CommandLine.USAGE, command_line.error);
 			exit_status = 2;
 			return true;
 		}
@@ -90,14 +90,28 @@ public class Application : Gtk.Application
 			return true;
 		}
 
+		if (command_line.version)
+		{
+			stdout.printf("gitree %s\n", Config.PACKAGE_VERSION);
+			exit_status = 0;
+			return true;
+		}
+
+		if (command_line.no_wd && !command_line.is_empty)
+		{
+			stderr.printf("%sgitree: error: --no-wd takes no ref, no path and no tick option\n", CommandLine.USAGE);
+			exit_status = 2;
+			return true;
+		}
+
 		d_directory = File.new_for_path(Environment.get_current_dir());
 		d_paths = command_line.paths;
 
-		var location = discover_repository(d_directory);
+		var location = command_line.no_wd ? null : discover_repository(d_directory);
 
 		if (location == null && !command_line.is_empty)
 		{
-			stderr.printf("git tree: not a git repository\n");
+			stderr.printf("gitree: not a git repository\n");
 			exit_status = 1;
 			return true;
 		}
@@ -113,13 +127,13 @@ public class Application : Gtk.Application
 			}
 			catch (TicksError.NO_MATCH e)
 			{
-				stderr.printf("git tree: no ref matches '%s'\n", e.message);
+				stderr.printf("gitree: no ref matches '%s'\n", e.message);
 				exit_status = 1;
 				return true;
 			}
 			catch (Error e)
 			{
-				stderr.printf("git tree: %s\n", e.message);
+				stderr.printf("gitree: %s\n", e.message);
 				exit_status = 1;
 				return true;
 			}
@@ -133,7 +147,7 @@ public class Application : Gtk.Application
 		}
 		catch (Error e)
 		{
-			stderr.printf("git tree: %s\n", e.message);
+			stderr.printf("gitree: %s\n", e.message);
 			exit_status = 1;
 			return true;
 		}

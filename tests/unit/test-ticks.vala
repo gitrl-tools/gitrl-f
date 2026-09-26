@@ -193,7 +193,7 @@ private static void test_unknown_ref_stops_before_the_window_opens()
 		Process.spawn_sync(repo.path.get_path(), argv, env, 0, null, out output, out errors, out status);
 
 		assert_cmpint(Process.exit_status(status), CompareOperator.EQ, 1);
-		assert_cmpstr(errors, CompareOperator.EQ, "git tree: no ref matches 'nope'\n");
+		assert_cmpstr(errors, CompareOperator.EQ, "gitree: no ref matches 'nope'\n");
 
 		repo.remove();
 	}

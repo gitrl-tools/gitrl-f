@@ -19,11 +19,39 @@
 namespace GitreeTest
 {
 
+private static Gtk.Widget? find(Gtk.Widget widget, Type type)
+{
+	if (widget.get_type().is_a(type))
+	{
+		return widget;
+	}
+
+	var container = widget as Gtk.Container;
+
+	if (container == null)
+	{
+		return null;
+	}
+
+	foreach (var child in container.get_children())
+	{
+		var found = find(child, type);
+
+		if (found != null)
+		{
+			return found;
+		}
+	}
+
+	return null;
+}
+
 public static int main(string[] args)
 {
 	Test.init(ref args);
 
 	Test.add_func("/gitree/ui/startup/gitg-style-reaches-a-window-started-in-a-repository", test_gitg_style_reaches_a_window_started_in_a_repository);
+	Test.add_func("/gitree/ui/startup/no-wd-opens-the-chooser-in-a-repository", test_no_wd_opens_the_chooser_in_a_repository);
 
 	return Test.run();
 }
@@ -68,6 +96,45 @@ private static void test_gitg_style_reaches_a_window_started_in_a_repository()
 	Environment.set_current_dir(directory);
 
 	assert_cmpfloat(background.alpha, CompareOperator.EQ, 1.0);
+
+	repo.remove();
+}
+
+
+private static void test_no_wd_opens_the_chooser_in_a_repository()
+{
+	Repo repo;
+
+	try
+	{
+		repo = Repo.create();
+		repo.commit("first");
+	}
+	catch (Error e)
+	{
+		error("fixture failed: %s", e.message);
+	}
+
+	var app = new Gitree.Application();
+	var chooser = false;
+
+	app.window_added.connect((window) => {
+		Idle.add(() => {
+			var dash = find(window, typeof(Gitree.DashView));
+
+			chooser = dash != null && dash.get_mapped();
+			window.close();
+
+			return false;
+		});
+	});
+
+	var directory = Environment.get_current_dir();
+	Environment.set_current_dir(repo.path.get_path());
+	app.run({"gitree", "--no-wd"});
+	Environment.set_current_dir(directory);
+
+	assert_true(chooser);
 
 	repo.remove();
 }
