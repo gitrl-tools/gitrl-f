@@ -23,6 +23,8 @@ sort >"$dest/expected" <<'LIST'
 bin/git-tree
 bin/gitree
 share/glib-2.0/schemas/io.github.li9i.gitree.gschema.xml
+share/man/man1/git-tree.1
+share/man/man1/gitree.1
 LIST
 
 if ! diff -u "$dest/expected" "$dest/installed"; then
@@ -35,4 +37,17 @@ if [ "$(readlink bin/git-tree)" != "gitree" ]; then
 	exit 1
 fi
 
-echo "installed files match the list, and git-tree links to gitree"
+warnings=$(groff -man -ww -z share/man/man1/gitree.1 2>&1)
+
+if [ -n "$warnings" ]; then
+	echo "test-meson-install.sh: the manual page has warnings:" >&2
+	echo "$warnings" >&2
+	exit 1
+fi
+
+if ! MANPAGER=cat MANWIDTH=80 man -M "$dest$prefix/share/man" git-tree 2>/dev/null | grep -q "gitree - "; then
+	echo "test-meson-install.sh: man git-tree does not show the page of gitree" >&2
+	exit 1
+fi
+
+echo "installed files match the list, git-tree links to gitree, and man git-tree shows the page"

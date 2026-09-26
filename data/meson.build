@@ -33,3 +33,15 @@ test(
   suite: 'data',
   depends: gschemas_compiled,
 )
+
+man_conf = configuration_data()
+man_conf.set('VERSION', gitree_version)
+
+install_man(
+  configure_file(
+    input: 'gitree.1.in',
+    output: 'gitree.1',
+    configuration: man_conf,
+  ),
+  'git-tree.1',
+)
