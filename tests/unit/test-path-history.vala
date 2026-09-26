@@ -104,7 +104,11 @@ private static void test_a_failed_git_run_gives_its_message()
 		}
 		catch (Error e)
 		{
-			assert_true(e.message.has_prefix("fatal: not a git repository"));
+			if (!e.message.has_prefix("fatal: not a git repository"))
+			{
+				Test.fail_printf("git said: %s", e.message);
+			}
+
 			assert_false(e.message.has_suffix("\n"));
 		}
 
