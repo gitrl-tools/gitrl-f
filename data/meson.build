@@ -14,6 +14,35 @@ install_data(
   rename: '@0@-symbolic.svg'.format(application_id),
 )
 
+desktop_config = configuration_data()
+desktop_config.set('icon', application_id)
+desktop_config.set('binary', gitree_binary)
+
+desktop_in = configure_file(
+  input: 'io.github.li9i.gitree.desktop.in.in',
+  output: 'io.github.li9i.gitree.desktop.in',
+  configuration: desktop_config,
+)
+
+desktop_file = i18n.merge_file(
+  type: 'desktop',
+  input: desktop_in,
+  output: '@0@.desktop'.format(application_id),
+  po_dir: po_dir,
+  install: true,
+  install_dir: join_paths(gitree_datadir, 'applications'),
+)
+
+desktop_file_validate = find_program('desktop-file-validate', required: false)
+if desktop_file_validate.found()
+  test(
+    'desktop-file-validate',
+    desktop_file_validate,
+    args: [desktop_file],
+    suite: 'data',
+  )
+endif
+
 schema_conf = configuration_data()
 schema_conf.set('GETTEXT_PACKAGE', gitree_gettext)
 schema_conf.set('APPLICATION_ID', application_id)
@@ -49,6 +78,27 @@ test(
   suite: 'data',
   depends: gschemas_compiled,
 )
+
+metainfo_conf = configuration_data()
+metainfo_conf.set('APPLICATION_ID', application_id)
+
+metainfo_file = configure_file(
+  input: 'io.github.li9i.gitree.metainfo.xml.in',
+  output: '@0@.metainfo.xml'.format(application_id),
+  configuration: metainfo_conf,
+  install: true,
+  install_dir: join_paths(gitree_datadir, 'metainfo'),
+)
+
+appstreamcli = find_program('appstreamcli', required: false)
+if appstreamcli.found()
+  test(
+    'metainfo-validate',
+    appstreamcli,
+    args: ['validate', '--no-net', '--pedantic', metainfo_file],
+    suite: 'data',
+  )
+endif
 
 man_conf = configuration_data()
 man_conf.set('VERSION', gitree_version)

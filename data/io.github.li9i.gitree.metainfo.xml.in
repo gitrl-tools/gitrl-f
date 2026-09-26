@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APPLICATION_ID@</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+
+  <name>gitree</name>
+  <summary>The git history of the refs that you tick</summary>
+
+  <description>
+    <p>
+      Where gitg shows the history of one branch or of all of them, gitree
+      shows the history of the branches, remote branches and tags that you
+      tick, and draws it the way gitg draws it: the same lanes, labels and
+      diff.
+    </p>
+    <p>
+      Names with slashes fold into groups, and the box of a group ticks all
+      of it. A double click on a commit shows its details and its diff. A
+      path keeps only the commits that change a file or a folder.
+    </p>
+    <p>
+      Nothing is ever written to the repository. The window follows it as
+      you work: a commit, a fetch or a rebase redraws it in place.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">@APPLICATION_ID@.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Only the ticked branches are drawn, with the details of a commit below</caption>
+      <image>https://raw.githubusercontent.com/li9i/gitree/master/docs/screenshots/gitree.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/li9i/gitree</url>
+  <url type="bugtracker">https://github.com/li9i/gitree/issues</url>
+
+  <developer id="io.github.li9i">
+    <name>alexandros filotheou</name>
+  </developer>
+
+  <provides>
+    <binary>gitree</binary>
+    <binary>git-tree</binary>
+  </provides>
+
+  <categories>
+    <category>Development</category>
+    <category>RevisionControl</category>
+  </categories>
+
+  <keywords>
+    <keyword>git</keyword>
+    <keyword>history</keyword>
+    <keyword>branches</keyword>
+    <keyword>tags</keyword>
+    <keyword>refs</keyword>
+    <keyword>log</keyword>
+    <keyword>graph</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.1.0" date="2026-09-26">
+      <description>
+        <p>
+          The first release: the history of the refs that you tick, drawn as
+          gitg draws it, with groups for names with slashes and the details
+          of a commit on a double click.
+        </p>
+      </description>
+    </release>
+  </releases>
+</component>

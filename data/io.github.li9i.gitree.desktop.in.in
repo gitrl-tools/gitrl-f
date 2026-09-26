@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=gitree
+Comment=The git history of the refs that you tick
+Exec=@binary@ --no-wd
+TryExec=@binary@
+Terminal=false
+Type=Application
+Icon=@icon@
+Categories=GTK;Development;RevisionControl;
+Keywords=git;history;branches;tags;refs;log;graph;
+Actions=new-window;
+
+[Desktop Action new-window]
+Name=New Window
+Exec=@binary@ --no-wd
