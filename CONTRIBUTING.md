@@ -17,7 +17,7 @@ ninja -C _build
 
 When the `_build` directory is present, `meson configure _build --prefix="$HOME/.local"` sets the prefix before `meson install -C _build`.
 
-`scripts/dev.sh` contains the common tasks (`setup`, `build`, `test`, `run`, `clean`). `run` starts the built `git-tree` in the folder that you call it from, with the settings schema of the build.
+`scripts/dev.sh` contains the common tasks (`setup`, `build`, `test`, `run`, `clean`). `run` starts the built `gitree` in the folder that you call it from, with the settings schema of the build.
 
 ## Vendored gitg
 
@@ -38,7 +38,7 @@ The first command gets gitg 44 and verifies its SHA-256, which the script holds.
 ./scripts/dev.sh test ui
 ```
 
-The first command runs every suite: `data`, which validates the settings schema, `unit` and `ui`. Every test runs with a private home folder in the build directory. Thus no test reads your git configuration or writes to your list of recent files. The `unit` suite needs no display. The `ui` suite drives real widgets in Xvfb. The `visual` suite compares the window with the installed gitg, pixel by pixel. It is off by default (`-Dvisual_tests=true`), because it needs an X server and gitg.
+The first command runs every suite: `data`, which validates the settings schema, `install`, which installs the build into a temporary folder and compares the files with a list, `unit` and `ui`. Every test runs with a private home folder in the build directory. Thus no test reads your git configuration or writes to your list of recent files. The `unit` suite needs no display. The `ui` suite drives real widgets in Xvfb. The `visual` suite compares the window with the installed gitg, pixel by pixel. It is off by default (`-Dvisual_tests=true`), because it needs an X server and gitg.
 
 `tests/parity/compare.sh <repository> [<git tree arguments>]` compares the commits that gitree shows, with their parents and labels, with those of the Python prototype, which it reads from commit `5ccd222` of the dotfiles repository, `~/dotfiles` or the path in `GITREE_DOTFILES`.
 

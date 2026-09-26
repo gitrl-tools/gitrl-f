@@ -68,3 +68,9 @@ gitree_exe = executable(
   install: true,
   install_dir: gitree_bindir,
 )
+
+install_symlink(
+  'git-tree',
+  pointing_to: gitree_binary,
+  install_dir: gitree_bindir,
+)

@@ -13,7 +13,7 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-`~/.local/bin` must be on the `PATH`. Git then runs `git-tree` as `git tree`. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas` with no more configuration. `CONTRIBUTING.md` gives the packages that are necessary to build gitree.
+`~/.local/bin` must be on the `PATH`. The install puts `gitree` there, and `git-tree` as a second name for it, so `git tree` runs it too. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas` with no more configuration. `CONTRIBUTING.md` gives the packages that are necessary to build gitree.
 
 ## Licence
 

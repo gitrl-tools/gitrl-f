@@ -4,7 +4,7 @@ set -eu
 
 here=$(dirname "$(readlink -f "$0")")
 root=$(dirname "$(dirname "$here")")
-binary=${GITREE_BINARY:-$root/_build/src/gitree/git-tree}
+binary=${GITREE_BINARY:-$root/_build/src/gitree/gitree}
 out=${GITREE_VISUAL_OUT:-$here/output}
 home=$out/home
 fixture=$home/fixture

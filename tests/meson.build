@@ -68,6 +68,14 @@ test(
 )
 
 test(
+  'meson-install',
+  find_program('packaging/test-meson-install.sh'),
+  args: [meson.project_build_root()],
+  suite: 'install',
+  depends: [gitree_exe, gschemas_compiled],
+)
+
+test(
   'vendor-closure',
   find_program('vendor/check-closure.sh'),
   suite: 'unit',

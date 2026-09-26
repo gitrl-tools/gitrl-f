@@ -92,7 +92,7 @@ private static void test_gitg_style_reaches_a_window_started_in_a_repository()
 
 	var directory = Environment.get_current_dir();
 	Environment.set_current_dir(repo.path.get_path());
-	app.run({"git-tree"});
+	app.run({"gitree"});
 	Environment.set_current_dir(directory);
 
 	assert_cmpfloat(background.alpha, CompareOperator.EQ, 1.0);

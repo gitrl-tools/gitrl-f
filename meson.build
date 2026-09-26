@@ -3,12 +3,12 @@ project(
   version: '0.1.0',
   license: 'GPL-2.0-or-later',
   default_options: 'buildtype=debugoptimized',
-  meson_version: '>= 0.59.0',
+  meson_version: '>= 0.61.0',
 )
 
 application_id = 'io.github.li9i.gitree'
 gitree_name = meson.project_name()
-gitree_binary = 'git-tree'
+gitree_binary = 'gitree'
 gitree_version = meson.project_version()
 gitree_gettext = gitree_name
 
