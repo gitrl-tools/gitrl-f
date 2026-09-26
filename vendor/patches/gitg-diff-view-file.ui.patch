@@ -1,0 +1,11 @@
+--- a/libgitg/resources/ui/gitg-diff-view-file.ui
++++ b/libgitg/resources/ui/gitg-diff-view-file.ui
+@@ -76,7 +76,7 @@
+       <object class="GtkRevealer" id="revealer_content">
+         <property name="visible">True</property>
+         <property name="can_focus">False</property>
+-        <property name="transition_type">slide-down</property>
++        <property name="transition_type">none</property>
+         <child>
+           <object class="GtkStack" id="stack_file_renderer">
+             <property name="visible">True</property>

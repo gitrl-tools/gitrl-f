@@ -88,6 +88,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths-from-a-subfolder", test_diff_is_limited_to_the_paths_from_a_subfolder);
 	Test.add_func("/gitree/ui/diff-pane/diff-names-renames-and-binary-files", test_diff_names_renames_and_binary_files);
+	Test.add_func("/gitree/ui/diff-pane/file-folds-and-unfolds-at-once", test_file_folds_and_unfolds_at_once);
 	Test.add_func("/gitree/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
 	Test.add_func("/gitree/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
 	Test.add_func("/gitree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
@@ -181,6 +182,19 @@ private static void settle(int milliseconds)
 
 		Thread.usleep(10000);
 	}
+}
+
+private static bool shows_text(Gtk.Widget file)
+{
+	foreach (var widget in find_all(file, typeof(Gtk.SourceView)))
+	{
+		if (widget.get_mapped())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 private static string source_text(Gitree.Window window)
@@ -412,6 +426,38 @@ private static void test_diff_names_renames_and_binary_files()
 
 		select_subject(window, "binary");
 		assert_cmpint(find_named(window.history.diff_view, "GitgDiffViewFileRendererBinary").length, CompareOperator.EQ, 1);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_file_folds_and_unfolds_at_once()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first", "f", "one");
+		repo.commit("second", "f", "two");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "second");
+
+		var file = find_named(window.history.diff_view, "GitgDiffViewFile")[0];
+		var expander = (Gtk.Expander)find_all(file, typeof(Gtk.Expander))[0];
+
+		assert_true(shows_text(file));
+
+		expander.activate();
+		assert_false(shows_text(file));
+
+		expander.activate();
+		assert_true(shows_text(file));
 
 		window.destroy();
 		repo.remove();

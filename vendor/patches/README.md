@@ -9,7 +9,7 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Thirteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Twelve files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gitree takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
@@ -108,6 +108,14 @@ Removes `has_selection()`, `clear_selection()` and `get_selection()`, which aske
 **Why.** Their return type or their cast names `DiffSelectable` or `PatchSet`. Nothing calls them after `gitg-diff-view.patch`.
 
 gitrl-z's patch to this file also hides the Unif and Split switcher of each file. gitree keeps the switcher as gitg has it.
+
+## gitg-diff-view-file.ui.patch
+
+Removes the slide from the fold of each file. The revealer that holds the diff of a file has no transition.
+
+**Why.** gitg gives the last file of a commit all the free height of the pane, so that its diff fills the pane. The revealer gets that height too, and the slide only changes the height that the revealer asks for. Thus the slide does not show. When a file opens, its text shows at once. When a file closes, its text stays at full height for the 250 ms of the slide, and then goes. The operator saw this as a slow close. After a click on the arrow, the text went after 250 to 270 ms, and came back after 0.1 ms (measured under Xvfb, 2026-09-26). With no transition, the text goes on the click.
+
+**Cost.** No file of the pane slides open or shut.
 
 ## gitg-diff-view.patch
 
