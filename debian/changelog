@@ -1,3 +1,17 @@
+gitree (0.2.0-1) noble; urgency=medium
+
+  * The refs on the left follow the order of the graph. A ref whose
+    commit is higher in the history comes first, and a group takes the
+    place of its highest ref.
+  * The details pane opens below the refs and the list, and it is as wide
+    as the window.
+  * A click on a file, or on Expand all, fills the window with the diff.
+    Escape or the back arrow brings back the refs and the list.
+  * Escape closes the details also when no widget has the focus, for
+    example after the divider is dragged to the top.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Sat, 26 Sep 2026 15:12:13 +0200
+
 gitree (0.1.0-1) noble; urgency=medium
 
   * Initial release. gitree shows the history of the branches, remote

@@ -64,6 +64,29 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.2.0" date="2026-09-26">
+      <description>
+        <ul>
+          <li>
+            The refs on the left follow the order of the graph. A ref whose
+            commit is higher in the history comes first, and a group takes
+            the place of its highest ref.
+          </li>
+          <li>
+            The details pane opens below the refs and the list, and it is as
+            wide as the window.
+          </li>
+          <li>
+            A click on a file, or on Expand all, fills the window with the
+            diff. Escape or the back arrow brings back the refs and the list.
+          </li>
+          <li>
+            Escape closes the details also when no widget has the focus, for
+            example after the divider is dragged to the top.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-09-26">
       <description>
         <p>
