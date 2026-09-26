@@ -53,6 +53,21 @@ private static Repo fixture() throws Error
 	return repo;
 }
 
+private static void click_name(Gitree.RefsHeader header)
+{
+	var name = find_all(header, typeof(Gtk.Label))[0];
+	int x;
+	int y;
+	int origin_x;
+	int origin_y;
+
+	name.translate_coordinates(name.get_toplevel(), name.get_allocated_width() / 2, name.get_allocated_height() / 2, out x, out y);
+	name.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+
+	click_at(origin_x + x, origin_y + y, 1);
+	settle(700);
+}
+
 private static Gitree.RefsHeader header(Gitree.RefsList list, string key)
 {
 	foreach (var child in list.get_children())
@@ -120,6 +135,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/refs-panel/filter-keeps-nested-groups-that-hold-a-match", test_filter_keeps_nested_groups_that_hold_a_match);
 	Test.add_func("/gitree/ui/refs-panel/folds-are-kept-across-a-reload", test_folds_are_kept_across_a_reload);
 	Test.add_func("/gitree/ui/refs-panel/group-checkbox-count-and-mixed-state", test_group_checkbox_count_and_mixed_state);
+	Test.add_func("/gitree/ui/refs-panel/group-name-click-folds-and-opens-it", test_group_name_click_folds_and_opens_it);
 	Test.add_func("/gitree/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
 	Test.add_func("/gitree/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
 	Test.add_func("/gitree/ui/refs-panel/nested-groups-in-every-list", test_nested_groups_in_every_list);
@@ -180,6 +196,19 @@ private static Gitree.RefsRow row(Gitree.RefsList list, string short_name)
 	}
 
 	error("no row %s", short_name);
+}
+
+private static void settle(int milliseconds)
+{
+	for (var i = 0; i < milliseconds / 10; i++)
+	{
+		while (Gtk.events_pending())
+		{
+			Gtk.main_iteration();
+		}
+
+		Thread.usleep(10000);
+	}
 }
 
 private static string sorted(Gee.Set<string> names)
@@ -369,6 +398,38 @@ private static void test_group_checkbox_count_and_mixed_state()
 
 		check.clicked();
 		assert_cmpstr(label_of(remotes, 1), CompareOperator.EQ, "2/2");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_group_name_click_folds_and_opens_it()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+
+		settle(300);
+
+		click_name(header(list, "local:b"));
+
+		assert_false(header(list, "local:b").expanded);
+		assert_false(row(list, "b/a1").get_child_visible());
+
+		click_name(header(list, "local:b"));
+
+		assert_true(header(list, "local:b").expanded);
+		assert_true(row(list, "b/a1").get_child_visible());
+
+		click_name(header(list, "section:local"));
+
+		assert_false(header(list, "section:local").expanded);
 
 		repo.remove();
 	}

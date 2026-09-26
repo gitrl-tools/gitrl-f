@@ -1,4 +1,5 @@
 test_support_sources = files('support/gitree-test-repo.vala')
+ui_support_sources = files('support/gitree-test-pointer.vala')
 
 test_deps = [
   vendor_gitg_dep,
@@ -91,7 +92,7 @@ ui_tests = [
 foreach name : ui_tests
   exe = executable(
     'test-ui-' + name,
-    files('ui/test-' + name + '.vala') + test_support_sources + gitree_all_resources,
+    files('ui/test-' + name + '.vala') + test_support_sources + ui_support_sources + gitree_all_resources,
     include_directories: [top_inc, vendor_gitg_inc],
     dependencies: test_deps,
     vala_args: test_vala_flags,

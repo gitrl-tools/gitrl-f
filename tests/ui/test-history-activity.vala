@@ -50,21 +50,11 @@ private static void double_click(Gitree.Window window, int row)
 	Gdk.Rectangle cell;
 	int x;
 	int y;
-	int status;
 
 	view.get_cell_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out cell);
 	view.get_bin_window().get_origin(out x, out y);
 
-	try
-	{
-		Process.spawn_sync(null, {"xdotool", "mousemove", "--sync", (x + cell.x + cell.width / 2).to_string(), (y + cell.y + cell.height / 2).to_string(), "click", "--repeat", "2", "--delay", "80", "1"}, null, SpawnFlags.SEARCH_PATH, null, null, null, out status);
-		Process.check_exit_status(status);
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("xdotool: %s", e.message);
-	}
-
+	click_at(x + cell.x + cell.width / 2, y + cell.y + cell.height / 2, 2);
 	settle(300);
 }
 
