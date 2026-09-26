@@ -684,7 +684,7 @@ private static void test_ticks_are_not_kept_between_runs()
 		ticked.add_all(second.history.ticks);
 		ticked.sort();
 
-		assert_cmpstr(string.joinv(",", ticked.to_array()), CompareOperator.EQ, "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master");
+		assert_cmpstr(string.joinv(",", ticked.to_array()), CompareOperator.EQ, "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/origin/master,refs/tags/v1");
 
 		second.destroy();
 		repo.remove();

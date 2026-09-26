@@ -121,10 +121,7 @@ public class Ticks : Object
 		{
 			foreach (var reference in refs)
 			{
-				if (reference.kind == RefKind.LOCAL)
-				{
-					ticks.add(reference.name);
-				}
+				ticks.add(reference.name);
 			}
 
 			return ticks;

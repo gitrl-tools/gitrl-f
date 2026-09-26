@@ -178,6 +178,14 @@ public class RefsList : Gtk.ListBox
 	{
 		for (var i = 0; i < a.length && i < b.length; i++)
 		{
+			var a_group = i < a.length - 1;
+			var b_group = i < b.length - 1;
+
+			if (a_group != b_group)
+			{
+				return a_group ? 1 : -1;
+			}
+
 			var order = Refs.compare_natural(a[i], b[i]);
 
 			if (order == 0)

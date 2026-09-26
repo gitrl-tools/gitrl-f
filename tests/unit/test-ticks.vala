@@ -24,7 +24,7 @@ public static int main(string[] args)
 	Test.init(ref args);
 
 	Test.add_func("/gitree/ticks/detached-head-argument-ticks-the-head-row", test_detached_head_argument_ticks_the_head_row);
-	Test.add_func("/gitree/ticks/first-run-ticks-every-local-branch-and-nothing-else", test_first_run_ticks_every_local_branch_and_nothing_else);
+	Test.add_func("/gitree/ticks/first-run-ticks-every-ref", test_first_run_ticks_every_ref);
 	Test.add_func("/gitree/ticks/glob-ticks-every-matching-branch", test_glob_ticks_every_matching_branch);
 	Test.add_func("/gitree/ticks/globs-follow-python", test_globs_follow_python);
 	Test.add_func("/gitree/ticks/head-on-a-branch-ticks-that-branch", test_head_on_a_branch_ticks_that_branch);
@@ -76,14 +76,14 @@ private static void test_detached_head_argument_ticks_the_head_row()
 	}
 }
 
-private static void test_first_run_ticks_every_local_branch_and_nothing_else()
+private static void test_first_run_ticks_every_ref()
 {
 	try
 	{
 		var repo = Repo.create();
 		repo.branched();
 
-		assert_cmpstr(ticks_for(repo, {}), CompareOperator.EQ, "feature/scan,fix/stamp,master");
+		assert_cmpstr(ticks_for(repo, {}), CompareOperator.EQ, "feature/scan,fix/stamp,master,origin/master,v1");
 
 		repo.remove();
 	}

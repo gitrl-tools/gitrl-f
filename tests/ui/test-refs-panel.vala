@@ -221,7 +221,7 @@ private static void test_detached_head_row()
 		Gee.List<Gitree.Ref> refs;
 		var list = panel(repo, out refs);
 
-		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|H:feature:1/1|R:scan|"));
+		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|R:master|H:feature:1/1|R:scan|"));
 		assert_true(list.ticks.contains("HEAD"));
 
 		repo.remove();
@@ -269,10 +269,10 @@ private static void test_filter_keeps_matching_refs_and_unfolds()
 		list.filter_text = "ORIGIN/m";
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:3/3(hidden)", "H:feature:1/1(hidden)", "R:scan(hidden)", "H:fix:1/1(hidden)", "R:stamp(hidden)",
-			"R:master HEAD(hidden)",
-			"H:Remotes:0/2", "H:backup:0/1(hidden)", "R:master(hidden)", "H:origin:0/1", "R:master",
-			"H:Tags:0/1(hidden)", "R:v1(hidden)",
+			"H:Branches:3/3(hidden)", "R:master HEAD(hidden)", "H:feature:1/1(hidden)", "R:scan(hidden)", "H:fix:1/1(hidden)",
+			"R:stamp(hidden)",
+			"H:Remotes:2/2", "H:backup:1/1(hidden)", "R:master(hidden)", "H:origin:1/1", "R:master",
+			"H:Tags:1/1(hidden)", "R:v1(hidden)",
 		}));
 
 		list.filter_text = "v";
@@ -300,10 +300,10 @@ private static void test_filter_keeps_nested_groups_that_hold_a_match()
 		list.filter_text = "a1";
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:8/8", "R:Alpha(hidden)", "H:b:4/4", "R:a1", "R:a2(hidden)", "R:a10", "H:c:1/1(hidden)", "R:d(hidden)",
-			"R:backup(hidden)", "R:master HEAD(hidden)", "R:zed(hidden)",
-			"H:Remotes:0/2", "H:origin:0/2", "H:b:0/1", "R:a1", "R:master(hidden)",
-			"H:Tags:0/3(hidden)", "H:release:0/2(hidden)", "R:v2(hidden)", "R:v10(hidden)", "R:v1(hidden)",
+			"H:Branches:8/8", "R:Alpha(hidden)", "R:backup(hidden)", "R:master HEAD(hidden)", "R:zed(hidden)",
+			"H:b:4/4", "R:a1", "R:a2(hidden)", "R:a10", "H:c:1/1(hidden)", "R:d(hidden)",
+			"H:Remotes:2/2", "H:origin:2/2", "R:master(hidden)", "H:b:1/1", "R:a1",
+			"H:Tags:3/3(hidden)", "R:v1(hidden)", "H:release:2/2(hidden)", "R:v2(hidden)", "R:v10(hidden)",
 		}));
 
 		repo.remove();
@@ -348,13 +348,16 @@ private static void test_group_checkbox_count_and_mixed_state()
 		var remotes = header(list, "section:remotes");
 		var check = (Gtk.CheckButton)find_all(remotes, typeof(Gtk.CheckButton))[0];
 
-		check.clicked();
 		assert_cmpstr(label_of(remotes, 1), CompareOperator.EQ, "2/2");
 		assert_true(check.active);
-		assert_false(check.inconsistent);
 
 		check.clicked();
 		assert_cmpstr(label_of(remotes, 1), CompareOperator.EQ, "0/2");
+		assert_false(check.active);
+		assert_false(check.inconsistent);
+
+		check.clicked();
+		assert_cmpstr(label_of(remotes, 1), CompareOperator.EQ, "2/2");
 
 		var backup = (Gtk.CheckButton)find_all(row(list, "backup/master"), typeof(Gtk.CheckButton))[0];
 		backup.clicked();
@@ -362,7 +365,7 @@ private static void test_group_checkbox_count_and_mixed_state()
 		assert_cmpstr(label_of(remotes, 1), CompareOperator.EQ, "1/2");
 		assert_true(check.inconsistent);
 		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ,
-		              "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/backup/master");
+		              "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/origin/master,refs/tags/v1");
 
 		check.clicked();
 		assert_cmpstr(label_of(remotes, 1), CompareOperator.EQ, "2/2");
@@ -410,9 +413,9 @@ private static void test_groups_order_and_notes()
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:3/3", "H:feature:1/1", "R:scan", "H:fix:1/1", "R:stamp", "R:master HEAD",
-			"H:Remotes:0/2", "H:backup:0/1", "R:master", "H:origin:0/1", "R:master",
-			"H:Tags:0/1", "R:v1(hidden)",
+			"H:Branches:3/3", "R:master HEAD", "H:feature:1/1", "R:scan", "H:fix:1/1", "R:stamp",
+			"H:Remotes:2/2", "H:backup:1/1", "R:master", "H:origin:1/1", "R:master",
+			"H:Tags:1/1", "R:v1(hidden)",
 		}));
 
 		repo.remove();
@@ -432,9 +435,9 @@ private static void test_nested_groups_in_every_list()
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:8/8", "R:Alpha", "H:b:4/4", "R:a1", "R:a2", "R:a10", "H:c:1/1", "R:d", "R:backup", "R:master HEAD", "R:zed",
-			"H:Remotes:0/2", "H:origin:0/2", "H:b:0/1", "R:a1", "R:master",
-			"H:Tags:0/3", "H:release:0/2(hidden)", "R:v2(hidden)", "R:v10(hidden)", "R:v1(hidden)",
+			"H:Branches:8/8", "R:Alpha", "R:backup", "R:master HEAD", "R:zed", "H:b:4/4", "R:a1", "R:a2", "R:a10", "H:c:1/1", "R:d",
+			"H:Remotes:2/2", "H:origin:2/2", "R:master", "H:b:1/1", "R:a1",
+			"H:Tags:3/3", "R:v1(hidden)", "H:release:2/2(hidden)", "R:v2(hidden)", "R:v10(hidden)",
 		}));
 
 		header(list, "section:tags").expanded = true;
@@ -541,7 +544,11 @@ private static void test_subgroup_checkbox_ticks_everything_under_it()
 		assert_cmpstr(label_of(c, 1), CompareOperator.EQ, "0/1");
 		assert_cmpstr(label_of(branches, 1), CompareOperator.EQ, "4/8");
 		assert_true(((Gtk.CheckButton)find_all(branches, typeof(Gtk.CheckButton))[0]).inconsistent);
-		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ, "refs/heads/Alpha,refs/heads/backup,refs/heads/master,refs/heads/zed");
+		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ, string.joinv(",", {
+			"refs/heads/Alpha", "refs/heads/backup", "refs/heads/master", "refs/heads/zed",
+			"refs/remotes/origin/b/a1", "refs/remotes/origin/master",
+			"refs/tags/release/v10", "refs/tags/release/v2", "refs/tags/v1",
+		}));
 
 		((Gtk.CheckButton)find_all(row(list, "b/c/d"), typeof(Gtk.CheckButton))[0]).clicked();
 

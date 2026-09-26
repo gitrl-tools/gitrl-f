@@ -30,9 +30,8 @@ ticked ref reaches are drawn, and only ticked refs are labelled.
 A commit that a ticked branch shares with an unticked one still
 shows, as part of the ticked branch.
 
-With no <ref> and no option, every local branch is ticked and
-nothing else. Outside a repository, it opens a list of the
-repositories you opened last.
+With no <ref> and no option, every ref is ticked. Outside a
+repository, it opens a list of the repositories you opened last.
 
     <ref>...        tick only these; a glob such as 'feature/*' works
     -a, --all       tick every ref
