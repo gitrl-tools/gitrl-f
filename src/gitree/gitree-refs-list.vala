@@ -114,9 +114,9 @@ public class RefsList : Gtk.ListBox
 		return header;
 	}
 
-	private void add_row(Ref reference, RefsHeader group)
+	private void add_row(Ref reference, RefsHeader group, string label)
 	{
-		var row = new RefsRow(reference, group);
+		var row = new RefsRow(reference, group, label);
 
 		row.toggled.connect(() => {
 			if (row.ticked)
@@ -135,10 +135,63 @@ public class RefsList : Gtk.ListBox
 		add(row);
 	}
 
+	private void add_tree(Gee.List<Ref> refs, int skip, string key_prefix, RefsHeader group)
+	{
+		var sorted = new Gee.ArrayList<Ref>();
+		sorted.add_all(refs);
+		sorted.sort((a, b) => compare_paths(a.short_name.substring(skip).split("/"), b.short_name.substring(skip).split("/")));
+
+		var open = new Gee.ArrayList<RefsHeader>();
+
+		foreach (var reference in sorted)
+		{
+			var parts = reference.short_name.substring(skip).split("/");
+			var common = 0;
+
+			while (common < open.size && common < parts.length - 1 && open[common].title == parts[common])
+			{
+				common++;
+			}
+
+			while (open.size > common)
+			{
+				open.remove_at(open.size - 1);
+			}
+
+			for (var i = common; i < parts.length - 1; i++)
+			{
+				var parent = open.is_empty ? group : open.last();
+				open.add(add_header(key_prefix + string.joinv("/", parts[0:i + 1]), parts[i], parent));
+			}
+
+			add_row(reference, open.is_empty ? group : open.last(), parts[parts.length - 1]);
+		}
+	}
+
 	private void changed_by_user()
 	{
 		show_ticks();
 		ticks_changed();
+	}
+
+	private static int compare_paths(string[] a, string[] b)
+	{
+		for (var i = 0; i < a.length && i < b.length; i++)
+		{
+			var order = Refs.compare_natural(a[i], b[i]);
+
+			if (order == 0)
+			{
+				order = strcmp(a[i], b[i]);
+			}
+
+			if (order != 0)
+			{
+				return order;
+			}
+		}
+
+		return a.length - b.length;
 	}
 
 	private bool filter_row(Gtk.ListBoxRow row)
@@ -213,32 +266,44 @@ public class RefsList : Gtk.ListBox
 		d_ticks.clear();
 		d_ticks.add_all(ticks);
 
-		RefsHeader? branches = null;
 		RefsHeader? remotes = null;
-		RefsHeader? tags = null;
+		Ref? detached = null;
+		var locals = new Gee.ArrayList<Ref>();
 		var remote_names = new Gee.ArrayList<string>();
+		var tags = new Gee.ArrayList<Ref>();
 
 		foreach (var reference in refs)
 		{
-			if (reference.kind == RefKind.REMOTE && !remote_names.contains(reference.remote))
+			if (reference.kind == RefKind.LOCAL && reference.name == "HEAD")
+			{
+				detached = reference;
+			}
+			else if (reference.kind == RefKind.LOCAL)
+			{
+				locals.add(reference);
+			}
+			else if (reference.kind == RefKind.REMOTE && !remote_names.contains(reference.remote))
 			{
 				remote_names.add(reference.remote);
+			}
+			else if (reference.kind == RefKind.TAG)
+			{
+				tags.add(reference);
 			}
 		}
 
 		remote_names.sort(Refs.compare_natural);
 
-		foreach (var reference in refs)
+		if (detached != null || !locals.is_empty)
 		{
-			if (reference.kind == RefKind.LOCAL)
-			{
-				if (branches == null)
-				{
-					branches = add_header("section:local", _("Branches"), null);
-				}
+			var branches = add_header("section:local", _("Branches"), null);
 
-				add_row(reference, branches);
+			if (detached != null)
+			{
+				add_row(detached, branches, detached.short_name);
 			}
+
+			add_tree(locals, 0, "local:", branches);
 		}
 
 		foreach (var remote in remote_names)
@@ -249,27 +314,22 @@ public class RefsList : Gtk.ListBox
 			}
 
 			var group = add_header("remote:" + remote, remote, remotes);
+			var members = new Gee.ArrayList<Ref>();
 
 			foreach (var reference in refs)
 			{
 				if (reference.kind == RefKind.REMOTE && reference.remote == remote)
 				{
-					add_row(reference, group);
+					members.add(reference);
 				}
 			}
+
+			add_tree(members, remote.length + 1, "remote:" + remote + "/", group);
 		}
 
-		foreach (var reference in refs)
+		if (!tags.is_empty)
 		{
-			if (reference.kind == RefKind.TAG)
-			{
-				if (tags == null)
-				{
-					tags = add_header("section:tags", _("Tags"), null);
-				}
-
-				add_row(reference, tags);
-			}
+			add_tree(tags, 0, "tag:", add_header("section:tags", _("Tags"), null));
 		}
 
 		show_ticks();

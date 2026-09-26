@@ -34,6 +34,21 @@ public class RefsHeader : Gtk.ListBoxRow
 
 	private bool d_updating;
 
+	public int depth
+	{
+		get
+		{
+			var levels = 0;
+
+			for (var group = parent_group; group != null; group = group.parent_group)
+			{
+				levels++;
+			}
+
+			return levels;
+		}
+	}
+
 	public bool expanded { get; set; default = true; }
 	public string key { get; construct; }
 
@@ -74,10 +89,7 @@ public class RefsHeader : Gtk.ListBoxRow
 			return true;
 		});
 
-		if (parent_group != null)
-		{
-			d_check.margin_start += 12;
-		}
+		d_check.margin_start += 12 * depth;
 
 		d_check.toggled.connect(() => {
 			if (!d_updating)

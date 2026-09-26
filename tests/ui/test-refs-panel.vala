@@ -68,6 +68,17 @@ private static Gitree.RefsHeader header(Gitree.RefsList list, string key)
 	error("no header %s", key);
 }
 
+private static int indent_of(Gitree.RefsList list, Gtk.Widget row)
+{
+	var check = find_all(row, typeof(Gtk.CheckButton))[0];
+	int x;
+	int y;
+
+	check.translate_coordinates(list, 0, 0, out x, out y);
+
+	return x;
+}
+
 private static string label_of(Gtk.Widget row, int index)
 {
 	var labels = find_all(row, typeof(Gtk.Label));
@@ -104,15 +115,41 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/ui/refs-panel/all-ticks-every-ref-whatever-the-filter-shows", test_all_ticks_every_ref_whatever_the_filter_shows);
 	Test.add_func("/gitree/ui/refs-panel/detached-head-row", test_detached_head_row);
+	Test.add_func("/gitree/ui/refs-panel/each-level-is-indented-by-12-pixels", test_each_level_is_indented_by_12_pixels);
 	Test.add_func("/gitree/ui/refs-panel/filter-keeps-matching-refs-and-unfolds", test_filter_keeps_matching_refs_and_unfolds);
+	Test.add_func("/gitree/ui/refs-panel/filter-keeps-nested-groups-that-hold-a-match", test_filter_keeps_nested_groups_that_hold_a_match);
 	Test.add_func("/gitree/ui/refs-panel/folds-are-kept-across-a-reload", test_folds_are_kept_across_a_reload);
 	Test.add_func("/gitree/ui/refs-panel/group-checkbox-count-and-mixed-state", test_group_checkbox_count_and_mixed_state);
 	Test.add_func("/gitree/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
 	Test.add_func("/gitree/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
+	Test.add_func("/gitree/ui/refs-panel/nested-groups-in-every-list", test_nested_groups_in_every_list);
 	Test.add_func("/gitree/ui/refs-panel/none-unticks-every-ref", test_none_unticks_every_ref);
 	Test.add_func("/gitree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
 	Test.add_func("/gitree/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
+	Test.add_func("/gitree/ui/refs-panel/subgroup-checkbox-ticks-everything-under-it", test_subgroup_checkbox_ticks_everything_under_it);
+	Test.add_func("/gitree/ui/refs-panel/subgroup-name-folds-everything-under-it", test_subgroup_name_folds_everything_under_it);
 	return Test.run();
+}
+
+private static Repo nested_fixture() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("one");
+	repo.commit("two");
+
+	foreach (var name in new string[] { "zed", "b/a10", "backup", "b/a2", "Alpha", "b/c/d", "b/a1" })
+	{
+		repo.branch(name);
+	}
+
+	repo.git({"update-ref", "refs/remotes/origin/master", "master"});
+	repo.git({"update-ref", "refs/remotes/origin/b/a1", "master"});
+	repo.git({"tag", "v1"});
+	repo.git({"tag", "release/v10"});
+	repo.git({"tag", "release/v2"});
+
+	return repo;
 }
 
 private static Gitree.RefsList panel(Repo repo, out Gee.List<Gitree.Ref> refs) throws Error
@@ -184,8 +221,34 @@ private static void test_detached_head_row()
 		Gee.List<Gitree.Ref> refs;
 		var list = panel(repo, out refs);
 
-		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|R:feature/scan|"));
+		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|H:feature:1/1|R:scan|"));
 		assert_true(list.ticks.contains("HEAD"));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_each_level_is_indented_by_12_pixels()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+		var start = indent_of(list, header(list, "section:local"));
+
+		assert_cmpint(indent_of(list, header(list, "local:b")), CompareOperator.EQ, start + 12);
+		assert_cmpint(indent_of(list, row(list, "master")), CompareOperator.EQ, start + 12);
+		assert_cmpint(indent_of(list, row(list, "b/a1")), CompareOperator.EQ, start + 24);
+		assert_cmpint(indent_of(list, header(list, "local:b/c")), CompareOperator.EQ, start + 24);
+		assert_cmpint(indent_of(list, row(list, "b/c/d")), CompareOperator.EQ, start + 36);
+		assert_cmpint(indent_of(list, header(list, "remote:origin")), CompareOperator.EQ, start + 12);
+		assert_cmpint(indent_of(list, row(list, "origin/master")), CompareOperator.EQ, start + 24);
+		assert_cmpint(indent_of(list, row(list, "origin/b/a1")), CompareOperator.EQ, start + 36);
 
 		repo.remove();
 	}
@@ -206,7 +269,8 @@ private static void test_filter_keeps_matching_refs_and_unfolds()
 		list.filter_text = "ORIGIN/m";
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:3/3(hidden)", "R:master HEAD(hidden)", "R:feature/scan(hidden)", "R:fix/stamp(hidden)",
+			"H:Branches:3/3(hidden)", "H:feature:1/1(hidden)", "R:scan(hidden)", "H:fix:1/1(hidden)", "R:stamp(hidden)",
+			"R:master HEAD(hidden)",
 			"H:Remotes:0/2", "H:backup:0/1(hidden)", "R:master(hidden)", "H:origin:0/1", "R:master",
 			"H:Tags:0/1(hidden)", "R:v1(hidden)",
 		}));
@@ -215,6 +279,32 @@ private static void test_filter_keeps_matching_refs_and_unfolds()
 		list.filter_text = "";
 
 		assert_true(header(list, "section:tags").expanded);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_filter_keeps_nested_groups_that_hold_a_match()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+
+		header(list, "local:b").expanded = false;
+		list.filter_text = "a1";
+
+		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
+			"H:Branches:8/8", "R:Alpha(hidden)", "H:b:4/4", "R:a1", "R:a2(hidden)", "R:a10", "H:c:1/1(hidden)", "R:d(hidden)",
+			"R:backup(hidden)", "R:master HEAD(hidden)", "R:zed(hidden)",
+			"H:Remotes:0/2", "H:origin:0/2", "H:b:0/1", "R:a1", "R:master(hidden)",
+			"H:Tags:0/3(hidden)", "H:release:0/2(hidden)", "R:v2(hidden)", "R:v10(hidden)", "R:v1(hidden)",
+		}));
 
 		repo.remove();
 	}
@@ -320,10 +410,37 @@ private static void test_groups_order_and_notes()
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:3/3", "R:master HEAD", "R:feature/scan", "R:fix/stamp",
+			"H:Branches:3/3", "H:feature:1/1", "R:scan", "H:fix:1/1", "R:stamp", "R:master HEAD",
 			"H:Remotes:0/2", "H:backup:0/1", "R:master", "H:origin:0/1", "R:master",
 			"H:Tags:0/1", "R:v1(hidden)",
 		}));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_nested_groups_in_every_list()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+
+		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
+			"H:Branches:8/8", "R:Alpha", "H:b:4/4", "R:a1", "R:a2", "R:a10", "H:c:1/1", "R:d", "R:backup", "R:master HEAD", "R:zed",
+			"H:Remotes:0/2", "H:origin:0/2", "H:b:0/1", "R:a1", "R:master",
+			"H:Tags:0/3", "H:release:0/2(hidden)", "R:v2(hidden)", "R:v10(hidden)", "R:v1(hidden)",
+		}));
+
+		header(list, "section:tags").expanded = true;
+
+		assert_true(header(list, "tag:release").expanded);
+		assert_true(row(list, "release/v10").get_child_visible());
 
 		repo.remove();
 	}
@@ -396,6 +513,79 @@ private static void test_rows_offer_no_only_link()
 		{
 			assert_cmpstr(((Gtk.Label)widget).get_text(), CompareOperator.NE, "only");
 		}
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+
+private static void test_subgroup_checkbox_ticks_everything_under_it()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+		var branches = header(list, "section:local");
+		var b = header(list, "local:b");
+		var c = header(list, "local:b/c");
+		var check = (Gtk.CheckButton)find_all(b, typeof(Gtk.CheckButton))[0];
+
+		check.clicked();
+
+		assert_cmpstr(label_of(b, 1), CompareOperator.EQ, "0/4");
+		assert_cmpstr(label_of(c, 1), CompareOperator.EQ, "0/1");
+		assert_cmpstr(label_of(branches, 1), CompareOperator.EQ, "4/8");
+		assert_true(((Gtk.CheckButton)find_all(branches, typeof(Gtk.CheckButton))[0]).inconsistent);
+		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ, "refs/heads/Alpha,refs/heads/backup,refs/heads/master,refs/heads/zed");
+
+		((Gtk.CheckButton)find_all(row(list, "b/c/d"), typeof(Gtk.CheckButton))[0]).clicked();
+
+		assert_cmpstr(label_of(c, 1), CompareOperator.EQ, "1/1");
+		assert_cmpstr(label_of(b, 1), CompareOperator.EQ, "1/4");
+		assert_true(check.inconsistent);
+
+		check.clicked();
+
+		assert_cmpstr(label_of(b, 1), CompareOperator.EQ, "4/4");
+		assert_cmpstr(label_of(branches, 1), CompareOperator.EQ, "8/8");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_subgroup_name_folds_everything_under_it()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+
+		list.row_activated(header(list, "local:b/c"));
+
+		assert_false(row(list, "b/c/d").get_child_visible());
+		assert_true(row(list, "b/a1").get_child_visible());
+
+		list.row_activated(header(list, "local:b"));
+
+		assert_false(row(list, "b/a1").get_child_visible());
+		assert_false(header(list, "local:b/c").get_child_visible());
+		assert_true(row(list, "backup").get_child_visible());
+
+		list.set_refs(refs, list.ticks);
+		list.row_activated(header(list, "local:b"));
+
+		assert_true(row(list, "b/a1").get_child_visible());
+		assert_false(row(list, "b/c/d").get_child_visible());
 
 		repo.remove();
 	}

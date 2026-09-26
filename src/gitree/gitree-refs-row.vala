@@ -35,6 +35,7 @@ public class RefsRow : Gtk.ListBoxRow
 	private bool d_updating;
 
 	public RefsHeader group { get; construct; }
+	public string label { get; construct; }
 	public Ref reference { get; construct; }
 
 	public bool ticked
@@ -50,22 +51,15 @@ public class RefsRow : Gtk.ListBoxRow
 
 	public signal void toggled();
 
-	public RefsRow(Ref reference, RefsHeader group)
+	public RefsRow(Ref reference, RefsHeader group, string label)
 	{
-		Object(reference: reference, group: group);
+		Object(reference: reference, group: group, label: label);
 	}
 
 	construct
 	{
-		var name = reference.short_name;
-
-		if (reference.kind == RefKind.REMOTE)
-		{
-			name = name.substring(reference.remote.length + 1);
-			d_box.margin_start += 12;
-		}
-
-		d_label.label = name;
+		d_box.margin_start += 12 * group.depth;
+		d_label.label = label;
 
 		if (reference.head)
 		{
