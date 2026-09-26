@@ -281,13 +281,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_file_press.button = Gdk.BUTTON_PRIMARY;
 		d_file_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
 		d_file_press.released.connect(() => {
-			if (opens_files(Gtk.get_event_widget(Gtk.get_current_event())))
-			{
-				Idle.add(() => {
+			var target = Gtk.get_event_widget(Gtk.get_current_event());
+
+			Idle.add(() => {
+				if (opens_files(target))
+				{
 					d_paned.details_only = true;
-					return false;
-				});
-			}
+				}
+
+				return false;
+			});
 		});
 
 		var diff_settings = new Settings(Config.APPLICATION_ID + ".preferences.diff");
@@ -508,14 +511,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (box != null && box.get_child() is Gtk.Label)
 		{
-			return true;
+			foreach (var sibling in ((Gtk.Container)box.get_parent()).get_children())
+			{
+				if (sibling is Gtk.Expander)
+				{
+					return ((Gtk.Expander)sibling).expanded;
+				}
+			}
 		}
 
 		for (var widget = target; widget != null && widget != d_diff; widget = widget.get_parent())
 		{
 			if (widget is Gtk.Expander)
 			{
-				return true;
+				return ((Gtk.Expander)widget).expanded;
 			}
 		}
 

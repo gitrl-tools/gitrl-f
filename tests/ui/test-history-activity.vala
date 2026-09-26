@@ -113,6 +113,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitree/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
 	Test.add_func("/gitree/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
+	Test.add_func("/gitree/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
@@ -397,6 +398,68 @@ private static void test_click_on_expand_all_fills_the_window()
 
 		assert_true(only_details_shown(window));
 		assert_true(((Gtk.Expander)label_with(window.history.diff_view, "c").get_ancestor(typeof(Gtk.Expander))).expanded);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_click_that_closes_a_file_keeps_the_refs_and_the_list()
+{
+	try
+	{
+		var repo = two_files();
+		repo.commit("one file", "b", "more");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		double_click(window, 1);
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Up, 0);
+		settle(300);
+
+		var name = label_with(window.history.diff_view, "b");
+		var expander = (Gtk.Expander)name.get_ancestor(typeof(Gtk.Expander));
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one file");
+		assert_true(expander.expanded);
+		assert_false(only_details_shown(window));
+
+		click_widget(name);
+		settle(300);
+
+		assert_false(expander.expanded);
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
+
+		click_widget(name);
+		settle(300);
+
+		assert_true(expander.expanded);
+		assert_true(only_details_shown(window));
+
+		press_key("Escape");
+		settle(100);
+		Gtk.test_widget_send_key(view, Gdk.Key.Down, 0);
+		settle(300);
+		click_widget(label_with(window.history.diff_view, "Expand all"));
+		settle(300);
+
+		assert_true(only_details_shown(window));
+
+		press_key("Escape");
+		settle(100);
+		click_widget(label_with(window.history.diff_view, "Collapse all"));
+		settle(300);
+
+		assert_false(((Gtk.Expander)label_with(window.history.diff_view, "c").get_ancestor(typeof(Gtk.Expander))).expanded);
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
 
 		window.destroy();
 		repo.remove();

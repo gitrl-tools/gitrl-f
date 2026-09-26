@@ -28,8 +28,9 @@ a group ticks or unticks every ref in it, and also opens or folds the group.
 .PP
 A double-click on a commit, or Enter, shows its details and its diff below
 the refs and the list. A double-click on the same commit, Enter or Escape
-hides them again. A click on a file, or on Expand all, fills the window
-with the diff. When the commit changes only one file, the double-click or
+hides them again. A click that opens a file, or a click on Expand all,
+fills the window with the diff. A click that closes a file does not change
+the window. When the commit changes only one file, the double-click or
 Enter fills the window at once. Escape or the back arrow brings back the
 refs and the list.
 .PP
@@ -88,8 +89,8 @@ ticks every local branch and
 Show or hide the details and the diff of a commit. When the commit changes
 only one file, fill the window with the diff.
 .TP
-.BR "Click a file" ", " "Expand all"
-Fill the window with the diff.
+.BR "Open a file" ", " "Expand all"
+Fill the window with the diff. A click that closes a file does not.
 .TP
 .B Ctrl+F
 Open or close the search bar.
