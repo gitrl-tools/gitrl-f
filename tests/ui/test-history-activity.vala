@@ -114,6 +114,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
 	Test.add_func("/gitree/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
 	Test.add_func("/gitree/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
+	Test.add_func("/gitree/ui/history-activity/close-button-steps-back-from-the-full-diff", test_close_button_steps_back_from_the_full_diff);
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
@@ -460,6 +461,53 @@ private static void test_click_that_closes_a_file_keeps_the_refs_and_the_list()
 		assert_false(((Gtk.Expander)label_with(window.history.diff_view, "c").get_ancestor(typeof(Gtk.Expander))).expanded);
 		assert_true(details_shown(window));
 		assert_false(only_details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_close_button_steps_back_from_the_full_diff()
+{
+	try
+	{
+		var repo = two_files();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		Gtk.Button? close = null;
+
+		foreach (var widget in find_all(paned.box_details, typeof(Gtk.Button)))
+		{
+			if (((Gtk.Button)widget).tooltip_text == "Show the refs and the list (Escape)")
+			{
+				close = (Gtk.Button)widget;
+			}
+		}
+
+		assert_nonnull(close);
+
+		double_click(window, 0);
+
+		assert_true(details_shown(window));
+		assert_false(close.get_mapped());
+
+		click_widget(label_with(window.history.diff_view, "b"));
+		settle(300);
+
+		assert_true(only_details_shown(window));
+		assert_true(close.get_mapped());
+
+		click_widget(close);
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_true(paned.commit_list_view.get_mapped());
+		assert_true(paned.refs_list.get_mapped());
+		assert_false(close.get_mapped());
 
 		window.destroy();
 		repo.remove();
