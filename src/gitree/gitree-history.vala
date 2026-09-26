@@ -185,10 +185,22 @@ public class History : Object
 		launcher.set_cwd(directory.get_path());
 
 		var process = launcher.spawnv(argv);
+
+		if (input != null)
+		{
+			try
+			{
+				process.get_stdin_pipe().write_all(input.data, null);
+			}
+			catch (IOError.BROKEN_PIPE e)
+			{
+			}
+		}
+
 		Bytes output;
 		Bytes errors;
 
-		process.communicate(input != null ? new Bytes(input.data) : null, null, out output, out errors);
+		process.communicate(input != null ? new Bytes(null) : null, null, out output, out errors);
 
 		if (!process.get_successful())
 		{

@@ -64,6 +64,7 @@ public static int main(string[] args)
 	Test.init(ref args);
 
 	Test.add_func("/gitree/path-history/a-failed-git-run-gives-its-message", test_a_failed_git_run_gives_its_message);
+	Test.add_func("/gitree/path-history/a-failed-git-run-with-a-long-input-gives-its-message", test_a_failed_git_run_with_a_long_input_gives_its_message);
 	Test.add_func("/gitree/path-history/commits-and-parents-are-git-logs", test_commits_and_parents_are_git_logs);
 	Test.add_func("/gitree/path-history/history-with-a-path-is-freed", test_history_with_a_path_is_freed);
 	Test.add_func("/gitree/path-history/parent-link-under-a-path-limit-goes-to-a-shown-commit", test_parent_link_under_a_path_limit_goes_to_a_shown_commit);
@@ -110,6 +111,55 @@ private static void test_a_failed_git_run_gives_its_message()
 			}
 
 			assert_false(e.message.has_suffix("\n"));
+		}
+
+		DirUtils.remove(outside.get_path());
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_failed_git_run_with_a_long_input_gives_its_message()
+{
+	try
+	{
+		var repo = Repo.create();
+		var stream = new StringBuilder();
+
+		for (var i = 1; i <= 2000; i++)
+		{
+			stream.append("commit refs/heads/b%d\nmark :%d\ncommitter T <t@example.com> 1767225600 +0000\ndata 2\nc\n".printf(i, i));
+
+			if (i > 1)
+			{
+				stream.append("from :%d\n".printf(i - 1));
+			}
+		}
+
+		var import = new Subprocess.newv({"git", "-C", repo.path.get_path(), "fast-import", "--quiet"}, SubprocessFlags.STDIN_PIPE);
+		import.communicate_utf8(stream.str, null, null, null);
+		assert_true(import.get_successful());
+
+		var repository = Gitree.Repository.open(Gitree.Application.discover_repository(repo.path));
+		var refs = Gitree.Refs.read(repository);
+		var outside = File.new_for_path(DirUtils.make_tmp("gitree-outside-XXXXXX"));
+
+		assert_cmpint(refs.size, CompareOperator.EQ, 2000);
+
+		try
+		{
+			new Gitree.History.with_paths(repository, refs, {"a"}, outside, false);
+			Test.fail_printf("git ran outside a repository");
+		}
+		catch (Error e)
+		{
+			if (!e.message.has_prefix("fatal: not a git repository"))
+			{
+				Test.fail_printf("git said: %s", e.message);
+			}
 		}
 
 		DirUtils.remove(outside.get_path());
