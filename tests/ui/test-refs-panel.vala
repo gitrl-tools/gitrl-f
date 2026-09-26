@@ -141,6 +141,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/refs-panel/nested-groups-in-every-list", test_nested_groups_in_every_list);
 	Test.add_func("/gitree/ui/refs-panel/none-unticks-every-ref", test_none_unticks_every_ref);
 	Test.add_func("/gitree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
+	Test.add_func("/gitree/ui/refs-panel/rows-follow-the-graph-order", test_rows_follow_the_graph_order);
 	Test.add_func("/gitree/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
 	Test.add_func("/gitree/ui/refs-panel/subgroup-checkbox-ticks-everything-under-it", test_subgroup_checkbox_ticks_everything_under_it);
 	Test.add_func("/gitree/ui/refs-panel/subgroup-name-folds-everything-under-it", test_subgroup_name_folds_everything_under_it);
@@ -174,7 +175,7 @@ private static Gitree.RefsList panel(Repo repo, out Gee.List<Gitree.Ref> refs) t
 	var list = new Gitree.RefsList();
 
 	refs = Gitree.Refs.read(repository);
-	list.set_refs(refs, Gitree.Ticks.resolve(null, refs));
+	list.set_refs(refs, Gitree.Ticks.resolve(null, refs), new Gitree.History(repository, refs, false));
 
 	var window = new Gtk.Window();
 	window.add(list);
@@ -250,7 +251,7 @@ private static void test_detached_head_row()
 		Gee.List<Gitree.Ref> refs;
 		var list = panel(repo, out refs);
 
-		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|R:master|H:feature:1/1|R:scan|"));
+		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|R:master|H:fix:1/1|R:stamp|"));
 		assert_true(list.ticks.contains("HEAD"));
 
 		repo.remove();
@@ -298,8 +299,8 @@ private static void test_filter_keeps_matching_refs_and_unfolds()
 		list.filter_text = "ORIGIN/m";
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:3/3(hidden)", "R:master HEAD(hidden)", "H:feature:1/1(hidden)", "R:scan(hidden)", "H:fix:1/1(hidden)",
-			"R:stamp(hidden)",
+			"H:Branches:3/3(hidden)", "R:master HEAD(hidden)", "H:fix:1/1(hidden)", "R:stamp(hidden)", "H:feature:1/1(hidden)",
+			"R:scan(hidden)",
 			"H:Remotes:2/2", "H:backup:1/1(hidden)", "R:master(hidden)", "H:origin:1/1", "R:master",
 			"H:Tags:1/1(hidden)", "R:v1(hidden)",
 		}));
@@ -353,7 +354,7 @@ private static void test_folds_are_kept_across_a_reload()
 
 		header(list, "section:local").expanded = false;
 		header(list, "section:tags").expanded = true;
-		list.set_refs(refs, list.ticks);
+		list.set_refs(refs, list.ticks, null);
 
 		assert_false(header(list, "section:local").expanded);
 		assert_true(header(list, "section:tags").expanded);
@@ -539,7 +540,7 @@ private static void test_groups_order_and_notes()
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
-			"H:Branches:3/3", "R:master HEAD", "H:feature:1/1", "R:scan", "H:fix:1/1", "R:stamp",
+			"H:Branches:3/3", "R:master HEAD", "H:fix:1/1", "R:stamp", "H:feature:1/1", "R:scan",
 			"H:Remotes:2/2", "H:backup:1/1", "R:master", "H:origin:1/1", "R:master",
 			"H:Tags:1/1", "R:v1(hidden)",
 		}));
@@ -618,6 +619,46 @@ private static void test_ref_name_activates_the_ref()
 		list.row_activated(row(list, "fix/stamp"));
 
 		assert_cmpstr(activated, CompareOperator.EQ, "refs/heads/fix/stamp");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_rows_follow_the_graph_order()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("one");
+		repo.branch("a-old");
+		repo.branch("x/old");
+		repo.git({"update-ref", "refs/remotes/origin/old", "HEAD"});
+		repo.git({"tag", "v1"});
+		repo.commit("two");
+		repo.branch("m-mid");
+		repo.branch("x/mid");
+		repo.git({"tag", "v2"});
+		repo.commit("three");
+		repo.branch("z-new");
+		repo.branch("y/new");
+		repo.git({"update-ref", "refs/remotes/origin/new", "HEAD"});
+		repo.git({"tag", "v10"});
+		repo.commit("four");
+		repo.git({"update-ref", "refs/remotes/upstream/master", "HEAD"});
+
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+
+		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
+			"H:Branches:7/7", "R:master HEAD", "R:z-new", "R:m-mid", "R:a-old", "H:y:1/1", "R:new", "H:x:2/2", "R:mid", "R:old",
+			"H:Remotes:3/3", "H:upstream:1/1", "R:master", "H:origin:2/2", "R:new", "R:old",
+			"H:Tags:3/3", "R:v10(hidden)", "R:v2(hidden)", "R:v1(hidden)",
+		}));
 
 		repo.remove();
 	}
@@ -714,7 +755,7 @@ private static void test_subgroup_name_folds_everything_under_it()
 		assert_false(header(list, "local:b/c").get_child_visible());
 		assert_true(row(list, "backup").get_child_visible());
 
-		list.set_refs(refs, list.ticks);
+		list.set_refs(refs, list.ticks, null);
 		list.row_activated(header(list, "local:b"));
 
 		assert_true(row(list, "b/a1").get_child_visible());

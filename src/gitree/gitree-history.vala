@@ -359,6 +359,13 @@ public class History : Object
 		return ret;
 	}
 
+	public int position(Ggit.OId tip)
+	{
+		var id = start_of(tip);
+
+		return id != null ? d_index[id] : int.MAX;
+	}
+
 	private void reach(int[] starts, bool first_parent_only, bool[] reached)
 	{
 		var stack = starts;

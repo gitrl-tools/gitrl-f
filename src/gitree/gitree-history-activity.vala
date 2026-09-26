@@ -451,7 +451,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_history = null;
 			d_refs = new Gee.ArrayList<Ref>();
 			d_ticks = new Gee.HashSet<string>();
-			d_paned.refs_list.set_refs(d_refs, d_ticks);
+			d_paned.refs_list.set_refs(d_refs, d_ticks, null);
 			show_ticks();
 			show_error(_("Could not read the refs"), e.message);
 			return;
@@ -475,7 +475,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			show_error(_("Could not read the history"), e.message);
 		}
 
-		d_paned.refs_list.set_refs(d_refs, d_ticks);
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_path_bar();
 		show_ticks();
 	}
@@ -560,7 +560,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_refs = refs;
 		d_ticks = ticks;
 		d_history = history;
-		d_paned.refs_list.set_refs(d_refs, d_ticks);
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_ticks();
 
 		adjustment.value = scroll;

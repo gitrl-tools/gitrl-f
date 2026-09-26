@@ -136,17 +136,32 @@ public class RefsList : Gtk.ListBox
 		add(row);
 	}
 
-	private void add_tree(Gee.List<Ref> refs, int skip, string key_prefix, RefsHeader group)
+	private void add_tree(Gee.List<Ref> refs, string key_prefix, RefsHeader group, History? history)
 	{
+		var tops = new Gee.HashMap<string, int>();
+
+		foreach (var reference in refs)
+		{
+			var parts = reference.short_name.split("/");
+			var position = history != null ? history.position(reference.target) : int.MAX;
+
+			for (var i = 0; i < parts.length; i++)
+			{
+				var key = entry_key(parts, i);
+
+				tops[key] = tops.has_key(key) ? int.min(tops[key], position) : position;
+			}
+		}
+
 		var sorted = new Gee.ArrayList<Ref>();
 		sorted.add_all(refs);
-		sorted.sort((a, b) => compare_paths(a.short_name.substring(skip).split("/"), b.short_name.substring(skip).split("/")));
+		sorted.sort((a, b) => compare_paths(a.short_name.split("/"), b.short_name.split("/"), tops));
 
 		var open = new Gee.ArrayList<RefsHeader>();
 
 		foreach (var reference in sorted)
 		{
-			var parts = reference.short_name.substring(skip).split("/");
+			var parts = reference.short_name.split("/");
 			var common = 0;
 
 			while (common < open.size && common < parts.length - 1 && open[common].title == parts[common])
@@ -175,7 +190,7 @@ public class RefsList : Gtk.ListBox
 		ticks_changed();
 	}
 
-	private static int compare_paths(string[] a, string[] b)
+	private static int compare_paths(string[] a, string[] b, Gee.Map<string, int> tops)
 	{
 		for (var i = 0; i < a.length && i < b.length; i++)
 		{
@@ -187,7 +202,12 @@ public class RefsList : Gtk.ListBox
 				return a_group ? 1 : -1;
 			}
 
-			var order = Refs.compare_natural(a[i], b[i]);
+			var order = tops[entry_key(a, i)] - tops[entry_key(b, i)];
+
+			if (order == 0)
+			{
+				order = Refs.compare_natural(a[i], b[i]);
+			}
 
 			if (order == 0)
 			{
@@ -201,6 +221,11 @@ public class RefsList : Gtk.ListBox
 		}
 
 		return a.length - b.length;
+	}
+
+	private static string entry_key(string[] parts, int level)
+	{
+		return string.joinv("/", parts[0:level + 1]) + (level < parts.length - 1 ? "/" : "");
 	}
 
 	private bool filter_row(Gtk.ListBoxRow row)
@@ -263,7 +288,7 @@ public class RefsList : Gtk.ListBox
 		ref_activated(((RefsRow)row).reference);
 	}
 
-	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks)
+	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks, History? history)
 	{
 		foreach (var child in get_children())
 		{
@@ -275,10 +300,9 @@ public class RefsList : Gtk.ListBox
 		d_ticks.clear();
 		d_ticks.add_all(ticks);
 
-		RefsHeader? remotes = null;
 		Ref? detached = null;
 		var locals = new Gee.ArrayList<Ref>();
-		var remote_names = new Gee.ArrayList<string>();
+		var remotes = new Gee.ArrayList<Ref>();
 		var tags = new Gee.ArrayList<Ref>();
 
 		foreach (var reference in refs)
@@ -291,17 +315,15 @@ public class RefsList : Gtk.ListBox
 			{
 				locals.add(reference);
 			}
-			else if (reference.kind == RefKind.REMOTE && !remote_names.contains(reference.remote))
+			else if (reference.kind == RefKind.REMOTE)
 			{
-				remote_names.add(reference.remote);
+				remotes.add(reference);
 			}
 			else if (reference.kind == RefKind.TAG)
 			{
 				tags.add(reference);
 			}
 		}
-
-		remote_names.sort(Refs.compare_natural);
 
 		if (detached != null || !locals.is_empty)
 		{
@@ -312,33 +334,17 @@ public class RefsList : Gtk.ListBox
 				add_row(detached, branches, detached.short_name);
 			}
 
-			add_tree(locals, 0, "local:", branches);
+			add_tree(locals, "local:", branches, history);
 		}
 
-		foreach (var remote in remote_names)
+		if (!remotes.is_empty)
 		{
-			if (remotes == null)
-			{
-				remotes = add_header("section:remotes", _("Remotes"), null);
-			}
-
-			var group = add_header("remote:" + remote, remote, remotes);
-			var members = new Gee.ArrayList<Ref>();
-
-			foreach (var reference in refs)
-			{
-				if (reference.kind == RefKind.REMOTE && reference.remote == remote)
-				{
-					members.add(reference);
-				}
-			}
-
-			add_tree(members, remote.length + 1, "remote:" + remote + "/", group);
+			add_tree(remotes, "remote:", add_header("section:remotes", _("Remotes"), null), history);
 		}
 
 		if (!tags.is_empty)
 		{
-			add_tree(tags, 0, "tag:", add_header("section:tags", _("Tags"), null));
+			add_tree(tags, "tag:", add_header("section:tags", _("Tags"), null), history);
 		}
 
 		show_ticks();
