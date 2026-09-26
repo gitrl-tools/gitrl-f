@@ -265,6 +265,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			var on_shown = by_mouse ? d_press_on_shown : true;
 
 			d_paned.details_visible = !(d_paned.details_visible && on_shown);
+
+			if (d_paned.details_visible && d_diff.diff != null && d_diff.diff.get_num_deltas() == 1)
+			{
+				d_paned.details_only = true;
+			}
 		});
 
 		d_diff = new Gitg.DiffView();

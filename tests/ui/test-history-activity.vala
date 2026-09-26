@@ -39,6 +39,12 @@ private static Gitree.Application application()
 	return app;
 }
 
+private static void commit_two_files(Repo repo, string subject) throws Error
+{
+	FileUtils.set_contents(repo.path.get_child("c").get_path(), subject + "\n");
+	repo.commit_bytes(subject, "b", (subject + "\n").data);
+}
+
 private static bool details_shown(Gitree.Window window)
 {
 	return window.history.paned.box_details.get_mapped();
@@ -110,6 +116,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
+	Test.add_func("/gitree/ui/history-activity/double-click-or-enter-on-a-one-file-commit-fills-the-window", test_double_click_or_enter_on_a_one_file_commit_fills_the_window);
 	Test.add_func("/gitree/ui/history-activity/double-click-shows-the-pane-and-on-its-row-hides-it", test_double_click_shows_the_pane_and_on_its_row_hides_it);
 	Test.add_func("/gitree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
 	Test.add_func("/gitree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
@@ -247,8 +254,7 @@ private static void test_bottom_pane_spans_the_refs_panel_and_the_list()
 {
 	try
 	{
-		var repo = Repo.create();
-		repo.commit("first");
+		var repo = two_files();
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
@@ -481,14 +487,65 @@ private static void test_detached_head_label_comes_first()
 	}
 }
 
+private static void test_double_click_or_enter_on_a_one_file_commit_fills_the_window()
+{
+	try
+	{
+		var repo = two_files();
+		repo.commit("one file", "b", "more");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		double_click(window, 0);
+		assert_true(only_details_shown(window));
+
+		press_key("Escape");
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
+
+		double_click(window, 1);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two files");
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Up, 0);
+		settle(300);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one file");
+		assert_false(only_details_shown(window));
+
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		assert_false(details_shown(window));
+
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(300);
+
+		assert_true(only_details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_double_click_shows_the_pane_and_on_its_row_hides_it()
 {
 	try
 	{
 		var repo = Repo.create();
-		repo.commit("first");
-		repo.commit("second");
-		repo.commit("third");
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+		commit_two_files(repo, "third");
 
 		var window = opened(repo, {"refs/heads/master"});
 
@@ -522,8 +579,7 @@ private static void test_enter_shows_the_pane_at_the_middle_and_hides_it()
 {
 	try
 	{
-		var repo = Repo.create();
-		repo.commit("first");
+		var repo = two_files();
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
@@ -561,8 +617,7 @@ private static void test_escape_closes_the_pane_when_nothing_has_the_focus()
 {
 	try
 	{
-		var repo = Repo.create();
-		repo.commit("first");
+		var repo = two_files();
 
 		var window = opened(repo, {"refs/heads/master"});
 
@@ -591,8 +646,7 @@ private static void test_escape_closes_the_search_bar_then_the_pane()
 {
 	try
 	{
-		var repo = Repo.create();
-		repo.commit("first");
+		var repo = two_files();
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
@@ -987,11 +1041,7 @@ private static File ticks_file(Repo repo)
 private static Repo two_files() throws Error
 {
 	var repo = Repo.create();
-
-	FileUtils.set_contents(repo.path.get_child("b").get_path(), "b\n");
-	FileUtils.set_contents(repo.path.get_child("c").get_path(), "c\n");
-	repo.git({"add", "--all"});
-	repo.git({"commit", "--quiet", "-m", "two files"});
+	commit_two_files(repo, "two files");
 
 	return repo;
 }
