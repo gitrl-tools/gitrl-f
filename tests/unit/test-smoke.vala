@@ -91,10 +91,14 @@ private static void test_fixture_is_deterministic()
 private static void test_home_is_not_the_users()
 {
 	var home = Environment.get_variable("HOME");
-	var users = Posix.getpwuid(Posix.getuid()).pw_dir;
+	unowned Posix.Passwd? user = Posix.getpwuid(Posix.getuid());
 
 	assert_nonnull(home);
-	assert_cmpstr(home, CompareOperator.NE, users);
+
+	if (user != null)
+	{
+		assert_cmpstr(home, CompareOperator.NE, user.pw_dir);
+	}
 
 	foreach (var name in new string[] { "XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME" })
 	{
