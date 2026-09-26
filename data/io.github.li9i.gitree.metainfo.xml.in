@@ -64,6 +64,29 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.3.0" date="2026-09-26">
+      <description>
+        <ul>
+          <li>
+            While the diff fills the window, a close button shows at its top
+            right. A click on it brings back the refs and the list, and the
+            diff stays open.
+          </li>
+          <li>
+            A double click or Enter on a commit that changes one file fills
+            the window with the diff at once.
+          </li>
+          <li>
+            A click that closes a file, or a click on Collapse all, does not
+            fill the window. In 0.2.0 it did.
+          </li>
+          <li>
+            A file in the diff closes at once when you click it. Before, its
+            text stayed on the screen for a quarter of a second.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-09-26">
       <description>
         <ul>

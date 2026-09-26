@@ -1,3 +1,17 @@
+gitree (0.3.0-1) noble; urgency=medium
+
+  * While the diff fills the window, a close button shows at its top
+    right. A click on it brings back the refs and the list, and the diff
+    stays open.
+  * A double click or Enter on a commit that changes one file fills the
+    window with the diff at once.
+  * A click that closes a file, or a click on Collapse all, does not fill
+    the window. In 0.2.0 it did.
+  * A file in the diff closes at once when you click it. Before, its text
+    stayed on the screen for a quarter of a second.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Sat, 26 Sep 2026 16:35:16 +0200
+
 gitree (0.2.0-1) noble; urgency=medium
 
   * The refs on the left follow the order of the graph. A ref whose
