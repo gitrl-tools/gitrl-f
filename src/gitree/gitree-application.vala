@@ -163,13 +163,21 @@ public class Application : Gtk.Application
 
 		string[] authors = {"alexandros filotheou"};
 
+		string[] artists = {
+			"alexandros filotheou",
+			"Git logo by Jason Long, CC BY 3.0",
+		};
+
 		Gtk.show_about_dialog(app.get_active_window(),
 		                      "program-name", "gitree",
 		                      "version", Config.PACKAGE_VERSION,
 		                      "comments", _("The history of the refs you tick"),
 		                      "copyright", "Copyright \xc2\xa9 2026 alexandros filotheou",
 		                      "license-type", Gtk.License.GPL_2_0,
+		                      "logo-icon-name", Config.APPLICATION_ID,
 		                      "authors", authors,
+		                      "artists", artists,
+		                      "website", Config.PACKAGE_URL,
 		                      null);
 	}
 
@@ -217,6 +225,8 @@ public class Application : Gtk.Application
 			provider.load_from_resource("/io/github/li9i/gitree/ui/style.css");
 			Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
 		}
+
+		Gtk.Window.set_default_icon_name(Config.APPLICATION_ID);
 
 		add_action_entries(s_action_entries, this);
 

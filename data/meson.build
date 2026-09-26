@@ -1,3 +1,19 @@
+foreach size : ['128', '64', '48']
+  install_data(
+    'icons/io.github.li9i.gitree-@0@.png'.format(size),
+    install_dir: join_paths(
+      gitree_datadir, 'icons', 'hicolor', '@0@x@0@'.format(size), 'apps',
+    ),
+    rename: '@0@.png'.format(application_id),
+  )
+endforeach
+
+install_data(
+  'icons/io.github.li9i.gitree-symbolic.svg',
+  install_dir: join_paths(gitree_datadir, 'icons', 'hicolor', 'symbolic', 'apps'),
+  rename: '@0@-symbolic.svg'.format(application_id),
+)
+
 schema_conf = configuration_data()
 schema_conf.set('GETTEXT_PACKAGE', gitree_gettext)
 schema_conf.set('APPLICATION_ID', application_id)

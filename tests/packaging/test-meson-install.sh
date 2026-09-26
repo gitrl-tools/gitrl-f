@@ -23,6 +23,10 @@ sort >"$dest/expected" <<'LIST'
 bin/git-tree
 bin/gitree
 share/glib-2.0/schemas/io.github.li9i.gitree.gschema.xml
+share/icons/hicolor/128x128/apps/io.github.li9i.gitree.png
+share/icons/hicolor/48x48/apps/io.github.li9i.gitree.png
+share/icons/hicolor/64x64/apps/io.github.li9i.gitree.png
+share/icons/hicolor/symbolic/apps/io.github.li9i.gitree-symbolic.svg
 share/man/man1/git-tree.1
 share/man/man1/gitree.1
 LIST

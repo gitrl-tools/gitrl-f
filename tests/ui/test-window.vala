@@ -75,6 +75,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitree/ui/window/about-credits-the-logo-and-links-the-site", test_about_credits_the_logo_and_links_the_site);
 	Test.add_func("/gitree/ui/window/header-bar-order", test_header_bar_order);
 	Test.add_func("/gitree/ui/window/menu-entries", test_menu_entries);
 	Test.add_func("/gitree/ui/window/shortcuts", test_shortcuts);
@@ -97,6 +98,37 @@ private static Repo new_repository()
 	{
 		error("fixture failed: %s", e.message);
 	}
+}
+
+private static void test_about_credits_the_logo_and_links_the_site()
+{
+	var app = application();
+	var window = new Gitree.Window(app);
+
+	window.show();
+	drain();
+
+	app.activate_action("about", null);
+	drain();
+
+	Gtk.AboutDialog? about = null;
+
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		if (toplevel is Gtk.AboutDialog)
+		{
+			about = (Gtk.AboutDialog)toplevel;
+		}
+	}
+
+	assert_nonnull(about);
+	assert_cmpstr(about.logo_icon_name, CompareOperator.EQ, Gitree.Config.APPLICATION_ID);
+	assert_cmpstr(about.website, CompareOperator.EQ, "https://github.com/li9i/gitree");
+	assert_true("Git logo by Jason Long, CC BY 3.0" in string.joinv("|", about.artists));
+	assert_cmpstr(Gtk.Window.get_default_icon_name(), CompareOperator.EQ, Gitree.Config.APPLICATION_ID);
+
+	about.destroy();
+	window.destroy();
 }
 
 private static void test_header_bar_order()
