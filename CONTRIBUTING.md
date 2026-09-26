@@ -15,6 +15,8 @@ ninja -C _build
 ./scripts/dev.sh run
 ```
 
+When the `_build` directory is present, `meson configure _build --prefix="$HOME/.local"` sets the prefix before `meson install -C _build`.
+
 `scripts/dev.sh` contains the common tasks (`setup`, `build`, `test`, `run`, `clean`). `run` starts the built `git-tree` in the folder that you call it from, with the settings schema of the build.
 
 ## Vendored gitg
