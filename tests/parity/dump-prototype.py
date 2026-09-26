@@ -38,9 +38,15 @@ def main():
         print(__doc__.strip().splitlines()[-1].strip(), file=sys.stderr)
         return 2
 
+    repository = sys.argv[1]
+    arguments = sys.argv[2:]
     prototype = load()
-    os.chdir(sys.argv[1])
-    options, paths = prototype.parse_args(sys.argv[2:])
+    os.chdir(repository)
+    options, paths = prototype.parse_args(arguments)
+
+    if not (options.all or options.local or options.remotes or options.tags or options.refs):
+        options, paths = prototype.parse_args(["-a"] + arguments)
+
     common = prototype.git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
     refs = prototype.read_refs()
     stored = prototype.load_ticks(os.path.join(common, prototype.TICKS_FILE), refs)

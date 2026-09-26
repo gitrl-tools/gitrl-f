@@ -42,7 +42,7 @@ def main():
     os.chdir(sys.argv[1])
 
     start = time.perf_counter()
-    options, paths = prototype.parse_args([])
+    options, paths = prototype.parse_args(["-a"])
     top = prototype.git("rev-parse", "--show-toplevel").strip()
     common = prototype.git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
     refs = prototype.read_refs()
