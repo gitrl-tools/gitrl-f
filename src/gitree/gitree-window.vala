@@ -156,6 +156,16 @@ public class Window : Gtk.ApplicationWindow
 		return base.configure_event(event);
 	}
 
+	protected override bool key_press_event(Gdk.EventKey event)
+	{
+		if (base.key_press_event(event))
+		{
+			return true;
+		}
+
+		return event.keyval == Gdk.Key.Escape && d_main_stack.visible_child_name == "activities" && d_history.escape();
+	}
+
 	private void on_dash_activated(SimpleAction action, Variant? parameter)
 	{
 		show_dash();

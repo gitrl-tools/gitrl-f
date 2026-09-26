@@ -1,5 +1,5 @@
 test_support_sources = files('support/gitree-test-repo.vala')
-ui_support_sources = files('support/gitree-test-pointer.vala')
+ui_support_sources = files('support/gitree-test-pointer.vala', 'support/gitree-test-widgets.vala')
 
 test_deps = [
   vendor_gitg_dep,

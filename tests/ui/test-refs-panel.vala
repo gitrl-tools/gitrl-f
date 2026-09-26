@@ -20,41 +20,8 @@
 
 private static void click_centre(Gtk.Widget widget)
 {
-	int x;
-	int y;
-	int origin_x;
-	int origin_y;
-
-	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
-	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
-
-	click_at(origin_x + x, origin_y + y, 1);
+	click_widget(widget);
 	settle(700);
-}
-
-private static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
-{
-	var found = new Gtk.Widget[0];
-
-	if (widget.get_type().is_a(type))
-	{
-		found += widget;
-	}
-
-	var container = widget as Gtk.Container;
-
-	if (container != null)
-	{
-		foreach (var child in container.get_children())
-		{
-			foreach (var inner in find_all(child, type))
-			{
-				found += inner;
-			}
-		}
-	}
-
-	return found;
 }
 
 private static Repo fixture() throws Error

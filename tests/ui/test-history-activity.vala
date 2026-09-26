@@ -96,6 +96,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
 	Test.add_func("/gitree/ui/history-activity/double-click-shows-the-pane-and-on-its-row-hides-it", test_double_click_shows_the_pane_and_on_its_row_hides_it);
 	Test.add_func("/gitree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
+	Test.add_func("/gitree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
 	Test.add_func("/gitree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
 	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
@@ -400,6 +401,36 @@ private static void test_enter_shows_the_pane_at_the_middle_and_hides_it()
 
 		assert_true(details_shown(window));
 		assert_cmpint((panels.position - panels.get_allocated_height() / 2).abs(), CompareOperator.LE, 4);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_escape_closes_the_pane_when_nothing_has_the_focus()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		double_click(window, 0);
+		window.history.paned.paned_panels.position = 0;
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_null(window.get_focus());
+
+		press_key("Escape");
+		settle(100);
+
+		assert_false(details_shown(window));
 
 		window.destroy();
 		repo.remove();

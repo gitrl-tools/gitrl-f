@@ -39,31 +39,6 @@ private static Gitree.Application application()
 	return app;
 }
 
-private static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
-{
-	var found = new Gtk.Widget[0];
-
-	if (widget.get_type().is_a(type))
-	{
-		found += widget;
-	}
-
-	var container = widget as Gtk.Container;
-
-	if (container != null)
-	{
-		foreach (var child in container.get_children())
-		{
-			foreach (var inner in find_all(child, type))
-			{
-				found += inner;
-			}
-		}
-	}
-
-	return found;
-}
-
 private static Gtk.Widget[] find_named(Gtk.Widget widget, string type_name)
 {
 	var found = new Gtk.Widget[0];

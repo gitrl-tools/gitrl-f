@@ -22,11 +22,40 @@ namespace GitreeTest
 
 public static void click_at(int x, int y, int count)
 {
+	xdotool({"mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", "1"});
+}
+
+public static void click_widget(Gtk.Widget widget)
+{
+	int x;
+	int y;
+	int origin_x;
+	int origin_y;
+
+	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
+	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+
+	click_at(origin_x + x, origin_y + y, 1);
+}
+
+public static void press_key(string name)
+{
+	xdotool({"key", name});
+}
+
+private static void xdotool(string[] arguments)
+{
+	string[] argv = { "xdotool" };
 	int status;
+
+	foreach (var argument in arguments)
+	{
+		argv += argument;
+	}
 
 	try
 	{
-		Process.spawn_sync(null, {"xdotool", "mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", "1"}, null, SpawnFlags.SEARCH_PATH, null, null, null, out status);
+		Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, null, null, out status);
 		Process.check_exit_status(status);
 	}
 	catch (Error e)

@@ -238,27 +238,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_box.add(d_search_bar);
 		d_box.add(d_paned);
 		d_box.show_all();
-		d_box.key_press_event.connect((event) => {
-			if (event.keyval != Gdk.Key.Escape)
-			{
-				return false;
-			}
-
-			if (d_search_bar.search_mode_enabled)
-			{
-				d_search_bar.search_mode_enabled = false;
-				return true;
-			}
-
-			if (d_paned.details_visible)
-			{
-				d_paned.details_visible = false;
-				d_paned.commit_list_view.grab_focus();
-				return true;
-			}
-
-			return false;
-		});
 
 		d_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
 		d_press.button = Gdk.BUTTON_PRIMARY;
@@ -348,6 +327,24 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_needle);
 		}
+	}
+
+	public bool escape()
+	{
+		if (d_search_bar.search_mode_enabled)
+		{
+			d_search_bar.search_mode_enabled = false;
+			return true;
+		}
+
+		if (d_paned.details_visible)
+		{
+			d_paned.details_visible = false;
+			d_paned.commit_list_view.grab_focus();
+			return true;
+		}
+
+		return false;
 	}
 
 	private void find_matches()
