@@ -1,4 +1,4 @@
-FROM gitree-build:24.04
+FROM gitree-test:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 

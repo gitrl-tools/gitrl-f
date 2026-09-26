@@ -7,7 +7,7 @@ Everything up to the upload runs from a checkout. The upload needs a key and an 
 ## Current state
 
 - `debian/` is complete. Lintian shows one tag at `--pedantic --info`, `binary-nmu-debian-revision-in-source`, which the `~ubuntuNN.NN.1` suffix causes.
-- The `.deb` builds in a container that holds only the build dependencies that `debian/control` declares. A Launchpad builder makes the same check.
+- The `.deb` builds in the `build` stage of the container, which holds only the packaging tools and the build dependencies that `debian/control` declares. A Launchpad builder makes the same check.
 - Install, run, remove and purge are verified in unmodified `ubuntu:24.04` and `ubuntu:26.04` containers.
 - The package is `gitree`. The commands are `gitree` and `git-tree`. The version is `0.1.0-1`, built for **noble** (24.04) and **resolute** (26.04).
 
@@ -35,16 +35,16 @@ The maintainer address in `debian/control` and `debian/changelog` is `alexandros
 
 Work on a clean tree.
 
-1. Run the tests. The `ui` suite needs a display:
+1. Run the tests:
 
    ```bash
-   xvfb-run -a ./scripts/dev.sh test
+   ./scripts/dev.sh test
    ```
 
-2. Bump `version` in `meson.build`.
+2. Bump `version` in `meson.build`, and the date in the first line of `data/gitree.1.in`.
 3. Add a `<release>` entry at the top of the `<releases>` block in `data/io.github.li9i.gitree.metainfo.xml.in`. `meson test --suite data` validates it.
 4. Add an entry at the top of `debian/changelog`. Keep `noble` as the distribution and `-1` as the revision. `docker/build-deb.sh` and `docker/build-source.sh` write both for each release at build time.
-5. Commit the three files as `Release X.Y.Z`, tag the commit, and push both:
+5. Commit the four files as `Release X.Y.Z`, tag the commit, and push both:
 
    ```bash
    git tag -a vX.Y.Z
@@ -152,11 +152,11 @@ This uploads both releases. Give the version in the name, because `_build/ppa` a
 
 - **Launchpad never accepts a version twice**, also after a failed build. Raise the revision to `-2` and upload again.
 - **The `orig.tar.gz` is uploaded one time only.** Later Debian revisions of the same upstream version must not include it, or Launchpad refuses the upload for a file conflict. Keep `_build/ppa` between revisions: `docker/build-source.sh` then uses the kept tarball and does not pass `-sa`.
-- **`Distribution` in `debian/changelog` must agree with the PPA's release.** An upload for a release that the PPA does not build is discarded with no message. The build scripts write that line from their first argument, so pass the codename of the release.
+- **`Distribution` in `debian/changelog` must agree with the PPA's release.** An upload for a release that the PPA does not build is discarded with no message. `docker/build-deb.sh` and `docker/build-source.sh` write that line from their first argument, so pass them the codename (`noble`, `resolute`). `scripts/build-deb.sh` takes the version (`24.04`, `26.04`) and passes the codename itself.
 - **The source package holds only the tracked files**, with their contents from the working tree. A new file goes into it only after `git add`.
 
 ## Releases of Ubuntu
 
 The vendored source agrees with gitg 44 (`vendor/PROVENANCE`). Noble carries `44-1build2`. Before you add a release of Ubuntu, make sure it carries gitg 44 too. `Dockerfile.visual` asserts noble's exact version, so the pixel suite runs on the noble image only.
 
-To add a release, build its image with `./scripts/build-deb.sh <version>` after you add it to that script, enable it in the PPA settings, and upload the `.changes` that names it.
+To add a release, add its version and codename to `scripts/build-deb.sh`, build with `./scripts/build-deb.sh <version>`, enable it in the PPA settings, and upload the `.changes` that names it.

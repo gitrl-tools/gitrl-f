@@ -1,5 +1,5 @@
 ARG UBUNTU=24.04
-FROM ubuntu:${UBUNTU}
+FROM ubuntu:${UBUNTU} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -15,6 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         lintian \
     && apt-get build-dep -y /tmp/gitree \
     && rm -rf /var/lib/apt/lists/* /tmp/gitree
+
+WORKDIR /src
+CMD ["/bin/bash"]
+
+FROM build AS test
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         adwaita-icon-theme \

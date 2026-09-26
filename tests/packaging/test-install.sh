@@ -6,7 +6,7 @@ root=$(dirname "$(dirname "$(dirname "$(readlink -f "$0")")")")
 deb=${1:-$(ls "$root"/_build/deb/gitree_*_amd64.deb 2>/dev/null | head -1)}
 
 if [ ! -f "$deb" ]; then
-	echo "no .deb found; run docker/build-deb.sh first" >&2
+	echo "no .deb found; run scripts/build-deb.sh first" >&2
 	exit 1
 fi
 

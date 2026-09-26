@@ -6,7 +6,7 @@ root=$(dirname "$(dirname "$(dirname "$(readlink -f "$0")")")")
 orig=${1:-$(ls "$root"/_build/deb/gitree_*.orig.tar.gz 2>/dev/null | head -1)}
 
 if [ ! -f "$orig" ]; then
-	echo "no orig tarball found; run docker/build-deb.sh first" >&2
+	echo "no orig tarball found; run scripts/build-deb.sh first" >&2
 	exit 1
 fi
 

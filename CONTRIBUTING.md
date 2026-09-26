@@ -66,7 +66,7 @@ The script builds a repository with fixed names and dates with `scripts/demo-fix
 ./tests/packaging/test-install.sh _build/deb/gitree_<version>-1~ubuntu26.04.1_amd64.deb
 ```
 
-The container installs only the build dependencies that `debian/control` declares, so a build in it proves that the list is complete. A Launchpad builder makes the same check. `docker/README.md` says more. The source tarball holds only the files that git tracks: `test-orig.sh` compares the two. `test-lintian.sh` shows every lintian tag at `--pedantic`. The one tag to expect is `binary-nmu-debian-revision-in-source`, which the `~ubuntuNN.NN.1` suffix causes. `test-install.sh` installs the package in a clean container of its release, runs both names, checks every installed file, then removes and purges it.
+The packages build in the `build` stage of the container, which installs only the packaging tools and the build dependencies that `debian/control` declares, so a build in it proves that the list is complete. A Launchpad builder makes the same check. `docker/README.md` says more. The source tarball holds only the files that git tracks: `test-orig.sh` compares the two. `test-lintian.sh` shows every lintian tag at `--pedantic`. The one tag to expect is `binary-nmu-debian-revision-in-source`, which the `~ubuntuNN.NN.1` suffix causes. `test-install.sh` installs the package in a clean container of its release, runs both names, checks every installed file, then removes and purges it.
 
 ## AppImage
 
