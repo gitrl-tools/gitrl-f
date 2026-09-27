@@ -64,6 +64,32 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.3.1" date="2026-09-27">
+      <description>
+        <ul>
+          <li>
+            A click on a commit shows the row as selected at once. Before,
+            the row changed colour up to 0.4 s later, because gitree made the
+            diff first.
+          </li>
+          <li>
+            The diff of a commit with two or more files shows sooner. A file
+            makes its text only when you open it. On a commit with many
+            files, the first files show at once and the rest follow.
+          </li>
+          <li>
+            A diff with a Markdown file shows about 0.2 s sooner. gitree
+            keeps the syntax rules of each file type loaded, so it does not
+            load them again for each diff.
+          </li>
+          <li>
+            In the unified view, an added line can come after a removed line
+            with no newline at its end. The changed words on the added line
+            now have their mark. Before, the mark went to the next line.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-09-26">
       <description>
         <ul>
