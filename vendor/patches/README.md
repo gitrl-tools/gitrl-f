@@ -131,7 +131,7 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Two changes: the selection comes out, and a text view is bound when its file makes it.
+Three changes: the selection comes out, a text view is bound when its file makes it, and the rows of the files are added in batches.
 
 **1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
@@ -141,9 +141,15 @@ Two changes: the selection comes out, and a text view is bound when its file mak
 
 **Cost.** None. Selection only feeds staging, which gitree does not have.
 
-**2. Binds a text view when the file makes it.** The bindings of `highlight`, `wrap-lines` and `tab-width`, and the value of `maxlines`, move from the delta callback to `bind_renderer()`. The file calls it through `renderer_added`, because the file now makes its views later, as `gitg-diff-view-file.patch` gives. The file keeps the value of `maxlines` that gitg gives at that point, so each view gets the same value as in gitg.
+**2. Binds a text view when the file makes it.** The bindings of `highlight`, `wrap-lines` and `tab-width`, and the value of `maxlines`, move from the delta callback to `bind_renderer()`. The file calls it through `renderer_added`, because the file now makes its views later, as `gitg-diff-view-file.patch` gives. The plan of the file, from part 3, keeps the value of `maxlines` that gitg gives at that point. Thus each view gets the same value as in gitg.
 
 **Cost.** None. A view gets the same settings, at a later time.
+
+**3. Adds the rows of the files in batches.** The loop over the diff does not make a row for each file now. It keeps a `DiffViewFilePlan` for each file: the file info, the kinds of view, the value of `maxlines` and the hunks. `add_files()` makes the rows of the first 20 plans at once. It makes the next 20 in an idle call at low priority, and it continues until all the rows show. If the diff changes before all the rows are made, the cancellable of the old diff stops the rest.
+
+**Why.** Each row takes time to make, to add to the pane and to lay out. On a commit that adds 118 files, the diff showed after 536 to 575 ms, with all the rows at once. With batches, the first 20 rows showed after 102 to 149 ms, and all 118 rows were in the pane after 356 to 407 ms. A commit with 20 files or fewer shows as before. This was measured under Xvfb on a copy of this repository, on 2026-09-27.
+
+**Cost.** On a big commit, the rows after the first 20 come in after the first paint. The scroll bar grows while they come in.
 
 ## gitg-lanes.patch
 

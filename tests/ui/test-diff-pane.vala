@@ -39,6 +39,17 @@ private static Gitree.Application application()
 	return app;
 }
 
+private static void commit_many(Repo repo, string subject, int count) throws Error
+{
+	for (var i = 0; i < count; i++)
+	{
+		FileUtils.set_contents(repo.path.get_child("f%03d".printf(i)).get_path(), "line %d\n".printf(i));
+	}
+
+	repo.git({"add", "--all"});
+	repo.git({"commit", "--quiet", "-m", subject});
+}
+
 private static Gtk.Widget[] find_named(Gtk.Widget widget, string type_name)
 {
 	var found = new Gtk.Widget[0];
@@ -83,6 +94,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
 	Test.add_func("/gitree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
+	Test.add_func("/gitree/ui/diff-pane/another-commit-stops-the-rows-of-the-last", test_another_commit_stops_the_rows_of_the_last);
 	Test.add_func("/gitree/ui/diff-pane/details-are-gitgs", test_details_are_gitgs);
 	Test.add_func("/gitree/ui/diff-pane/details-survive-bytes-that-are-not-utf8", test_details_survive_bytes_that_are_not_utf8);
 	Test.add_func("/gitree/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
@@ -94,6 +106,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/diff-pane/folded-file-builds-no-text-until-it-opens", test_folded_file_builds_no_text_until_it_opens);
 	Test.add_func("/gitree/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
 	Test.add_func("/gitree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
+	Test.add_func("/gitree/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
 	Test.add_func("/gitree/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
 	Test.add_func("/gitree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
 	Test.add_func("/gitree/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
@@ -285,6 +298,39 @@ private static void test_an_image_uses_gitgs_image_view()
 		select_subject(window, "image");
 
 		assert_cmpint(find_named(window.history.diff_view, "GitgDiffViewFileRendererImage").length, CompareOperator.EQ, 1);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_another_commit_stops_the_rows_of_the_last()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("start");
+		commit_many(repo, "many", 80);
+		repo.commit("later", "late");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		view.get_selection().select_path(new Gtk.TreePath.from_indices(1));
+
+		for (var i = 0; i < 500 && find_named(window.history.diff_view, "GitgDiffViewFile").length < 2; i++)
+		{
+			Gtk.main_iteration();
+		}
+
+		view.get_selection().select_path(new Gtk.TreePath.from_indices(0));
+		settle(1000);
+
+		assert_cmpstr(string.joinv("|", headers(window)), CompareOperator.EQ, "late");
 
 		window.destroy();
 		repo.remove();
@@ -657,6 +703,45 @@ private static void test_line_numbers_follow_the_hunk_header()
 		select_subject(window, "change twenty");
 
 		assert_true("@@ -17,7 +17,7 @@" in source_text(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_many_files_show_their_first_rows_first()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("start");
+		commit_many(repo, "many", 80);
+		repo.commit("later", "late");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var first = 0;
+
+		window.history.diff_view.draw.connect_after(() => {
+			var rows = find_named(window.history.diff_view, "GitgDiffViewFile").length;
+
+			if (first == 0 && rows > 1)
+			{
+				first = rows;
+			}
+
+			return false;
+		});
+
+		select_subject(window, "many");
+		settle(1000);
+
+		assert_cmpint(first, CompareOperator.GT, 0);
+		assert_cmpint(first, CompareOperator.LT, 80);
+		assert_cmpint(find_named(window.history.diff_view, "GitgDiffViewFile").length, CompareOperator.EQ, 80);
 
 		window.destroy();
 		repo.remove();

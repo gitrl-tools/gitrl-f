@@ -1,6 +1,15 @@
 --- a/libgitg/gitg-diff-view.vala
 +++ b/libgitg/gitg-diff-view.vala
-@@ -72,11 +72,6 @@
+@@ -57,6 +57,8 @@
+ 	private uint d_reveal_options_timeout;
+ 	private uint d_unreveal_options_timeout;
+ 
++	private const int FILE_BATCH = 20;
++
+ 	private static Gee.HashSet<string> s_image_mime_types;
+ 
+ 	public Ggit.DiffOptions options
+@@ -72,11 +74,6 @@
  		}
  	}
  
@@ -12,7 +21,7 @@
  	public Ggit.Diff? diff
  	{
  		get { return d_diff; }
-@@ -639,25 +634,6 @@
+@@ -639,25 +636,6 @@
  		SignalHandler.unblock(d_commit_details, d_expanded_notify);
  	}
  
@@ -38,7 +47,7 @@
  	private string? primary_path(Ggit.DiffDelta delta)
  	{
  		var path = delta.get_old_file().get_path();
-@@ -730,6 +706,19 @@
+@@ -730,11 +708,92 @@
  		check_finish();
  	}
  
@@ -55,16 +64,112 @@
 +		}
 +	}
 +
++	private DiffViewFile make_file(DiffViewFilePlan plan)
++	{
++		var file = new DiffViewFile(plan.info);
++
++		if (plan.image)
++		{
++			file.add_image_renderer();
++		}
++
++		if (plan.text)
++		{
++			if (plan.bound)
++			{
++				file.maxlines = plan.maxlines;
++				file.renderer_added.connect(bind_renderer);
++			}
++
++			file.add_text_renderer(handle_selection);
++		}
++
++		if (plan.binary)
++		{
++			file.add_binary_renderer();
++		}
++
++		for (var i = 0; i < plan.hunks.size; i++)
++		{
++			file.add_hunk(plan.hunks[i], plan.lines[i]);
++		}
++
++		file.show();
++		return file;
++	}
++
++	private void add_files(Gee.List<DiffViewFilePlan> plans, int start, Gee.Set<string> was_expanded, Cancellable? cancellable)
++	{
++		var end = int.min(start + FILE_BATCH, plans.size);
++
++		for (var i = start; i < end; i++)
++		{
++			var file = make_file(plans[i]);
++			var path = primary_path(file.info.delta);
++
++			file.expanded = d_commit_details.expanded || (path != null && was_expanded.contains(path));
++
++			if (i == plans.size - 1)
++			{
++				file.vexpand = true;
++			}
++
++			d_grid_files.add(file);
++
++			file.notify["expanded"].connect(auto_update_expanded);
++		}
++
++		if (end < plans.size)
++		{
++			Idle.add(() => {
++				if (cancellable == null || !cancellable.is_cancelled())
++				{
++					add_files(plans, end, was_expanded, cancellable);
++				}
++
++				return false;
++			}, Priority.LOW);
++		}
++	}
++
  	private void update_diff_hunks(Ggit.Diff diff, bool preserve_expanded, Gee.HashMap<string, DiffViewFileInfo> infomap, Cancellable? cancellable)
  	{
- 		var files = new Gee.ArrayList<Gitg.DiffViewFile>();
-@@ -839,21 +828,9 @@
+-		var files = new Gee.ArrayList<Gitg.DiffViewFile>();
++		var files = new Gee.ArrayList<DiffViewFilePlan>();
+ 
+-		Gitg.DiffViewFile? current_file = null;
++		DiffViewFilePlan? current_file = null;
+ 		Ggit.DiffHunk? current_hunk = null;
+ 		Gee.ArrayList<Ggit.DiffLine>? current_lines = null;
+ 		var current_is_binary = false;
+@@ -756,8 +815,6 @@
+ 
+ 			if (current_file != null)
+ 			{
+-				current_file.show();
+-
+ 				files.add(current_file);
+ 
+ 				current_file = null;
+@@ -826,11 +883,11 @@
+ 					bool can_diff_as_image = mime_type_for_image != null && s_image_mime_types.contains(mime_type_for_image);
+ 					bool can_diff_as_text = ContentType.is_mime_type(mime_type_for_image, "text/plain");
+ 
+-					current_file = new Gitg.DiffViewFile(info);
++					current_file = new DiffViewFilePlan(info);
+ 
+ 					if (can_diff_as_image)
+ 					{
+-						current_file.add_image_renderer();
++						current_file.image = true;
+ 					}
+ 					if (!can_diff_as_image && !current_is_binary && !can_diff_as_text)
+ 					{
+@@ -839,21 +896,9 @@
  					}
  					if (can_diff_as_text)
  					{
-+						current_file.maxlines = maxlines;
-+						current_file.renderer_added.connect(bind_renderer);
- 						current_file.add_text_renderer(handle_selection);
+-						current_file.add_text_renderer(handle_selection);
 -						var renderer_list = current_file.renderer_list;
 -						foreach (DiffViewFileRenderer renderer in renderer_list)
 -						{
@@ -79,10 +184,57 @@
 -							}
 -						}
 -						on_selection_changed();
++						current_file.maxlines = maxlines;
++						current_file.bound = true;
++						current_file.text = true;
  					}
  					if (current_is_binary)
  					{
-@@ -1050,26 +1027,6 @@
+@@ -893,8 +938,8 @@
+ 											{
+ 												info = new DiffViewFileInfo(repository, delta, new_is_workdir);
+ 											}
+-												current_file = new Gitg.DiffViewFile(info);
+-												current_file.add_text_renderer(handle_selection);
++												current_file = new DiffViewFilePlan(info);
++												current_file.text = true;
+ 												return 0;
+ 											},
+ 									(delta, binary) => {
+@@ -941,7 +986,7 @@
+ 							stderr.printf (@"Error: $(error.message)\n");
+ 						}
+ 						if (current_is_binary)
+-							current_file.add_binary_renderer();
++							current_file.binary = true;
+ 					}
+ 					return 0;
+ 				},
+@@ -1018,22 +1063,7 @@
+ 		d_commit_details.expanded = (files.size <= 1 || !default_collapse_all);
+ 		d_commit_details.expander_visible = (files.size > 1);
+ 
+-		for (var i = 0; i < files.size; i++)
+-		{
+-			var file = files[i];
+-			var path = primary_path(file.info.delta);
+-
+-			file.expanded = d_commit_details.expanded || (path != null && was_expanded.contains(path));
+-
+-			if (i == files.size - 1)
+-			{
+-				file.vexpand = true;
+-			}
+-
+-			d_grid_files.add(file);
+-
+-			file.notify["expanded"].connect(auto_update_expanded);
+-		}
++		add_files(files, 0, was_expanded, cancellable);
+ 	}
+ 
+ 	private void auto_update_expanded()
+@@ -1050,26 +1080,6 @@
  		auto_change_expanded(true);
  	}
  
@@ -109,3 +261,33 @@
  	private void update_hide_show_options(Gdk.Window window, int ex, int ey)
  	{
  		void *data;
+@@ -1152,4 +1162,29 @@
+ 	}
+ }
+ 
++class Gitg.DiffViewFilePlan : Object
++{
++	public DiffViewFileInfo info { get; construct set; }
++
++	public bool image;
++	public bool text;
++	public bool bound;
++	public bool binary;
++	public int maxlines;
++
++	public Gee.ArrayList<Ggit.DiffHunk> hunks = new Gee.ArrayList<Ggit.DiffHunk>();
++	public Gee.ArrayList<Gee.ArrayList<Ggit.DiffLine>> lines = new Gee.ArrayList<Gee.ArrayList<Ggit.DiffLine>>();
++
++	public DiffViewFilePlan(DiffViewFileInfo info)
++	{
++		Object(info: info);
++	}
++
++	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
++	{
++		hunks.add(hunk);
++		this.lines.add(lines);
++	}
++}
++
+ // ex:ts=4 noet
