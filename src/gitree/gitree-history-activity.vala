@@ -23,6 +23,7 @@ namespace Gitree
 public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, GitgExt.Searchable
 {
 	private Gtk.Box d_box;
+	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
 	private Gtk.Label d_match_count;
@@ -289,6 +290,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			close.visible = d_paned.details_only;
 		});
 
+		d_paned.notify["details-visible"].connect(() => {
+			show_details();
+		});
+
 		var overlay = new Gtk.Overlay();
 		overlay.add(d_diff);
 		overlay.add_overlay(close);
@@ -325,7 +330,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		interface_settings.bind("enable-diff-highlighting", d_diff, "highlight", SettingsBindFlags.GET | SettingsBindFlags.SET);
 
 		d_paned.commit_list_view.get_selection().changed.connect(() => {
-			show_details();
+			queue_details();
 			show_match_count();
 		});
 
@@ -571,6 +576,35 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return ret;
 	}
 
+	private void queue_details()
+	{
+		var clock = d_paned.commit_list_view.get_frame_clock();
+
+		if (clock == null)
+		{
+			show_details();
+			return;
+		}
+
+		if (!d_details_queued)
+		{
+			d_details_queued = true;
+			ulong handler = 0;
+
+			handler = clock.after_paint.connect(() => {
+				clock.disconnect(handler);
+
+				Idle.add(() => {
+					d_details_queued = false;
+					show_details();
+					return false;
+				});
+			});
+		}
+
+		clock.request_phase(Gdk.FrameClockPhase.AFTER_PAINT);
+	}
+
 	private History read_history(Gee.List<Ref> refs) throws Error
 	{
 		d_repository.clear_refs_cache();
@@ -693,6 +727,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit == null || d_history == null)
 		{
 			d_diff.commit = null;
+			return;
+		}
+
+		if (!d_paned.details_visible || d_diff.commit == commit)
+		{
 			return;
 		}
 

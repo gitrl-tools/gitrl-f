@@ -127,7 +127,9 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
+	Test.add_func("/gitree/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
 	Test.add_func("/gitree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
+	Test.add_func("/gitree/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
 	Test.add_func("/gitree/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitree/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
@@ -922,6 +924,50 @@ private static void test_refs_that_cannot_be_read_leave_no_old_rows()
 	}
 }
 
+private static void test_row_is_drawn_before_its_diff_is_built()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(300);
+
+		assert_true(details_shown(window));
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "second");
+
+		string? shown_at_draw = null;
+
+		view.draw.connect_after(() => {
+			if (shown_at_draw == null)
+			{
+				shown_at_draw = window.history.diff_view.commit.get_subject();
+			}
+
+			return false;
+		});
+
+		view.set_cursor(new Gtk.TreePath.from_indices(1), null, false);
+		settle(300);
+
+		assert_cmpstr(shown_at_draw, CompareOperator.EQ, "second");
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "first");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_selection_is_kept_across_a_tick()
 {
 	try
@@ -947,6 +993,39 @@ private static void test_selection_is_kept_across_a_tick()
 		ticks.remove("refs/heads/feature/scan");
 		activity.set_ticks(ticks);
 		assert_cmpstr(activity.selected.get_subject(), CompareOperator.EQ, "master four");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_selection_with_the_pane_hidden_builds_no_diff()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		view.set_cursor(new Gtk.TreePath.from_indices(1), null, false);
+		settle(300);
+
+		assert_false(details_shown(window));
+		assert_null(window.history.diff_view.commit);
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(300);
+
+		assert_true(details_shown(window));
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "first");
 
 		window.destroy();
 		repo.remove();
