@@ -6,6 +6,7 @@ gitree_lib_sources = files(
   'gitree-history-model.vala',
   'gitree-history-paned.vala',
   'gitree-history.vala',
+  'gitree-languages.vala',
   'gitree-poll.vala',
   'gitree-preferences-dialog.vala',
   'gitree-ref.vala',

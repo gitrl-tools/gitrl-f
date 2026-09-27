@@ -510,6 +510,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		this.directory = directory;
 		d_diff.repository = repository;
 		d_diff.options.pathspec = pathspec();
+		Languages.warm(repository);
 		d_refs = refs;
 		d_ticks = resolved;
 
