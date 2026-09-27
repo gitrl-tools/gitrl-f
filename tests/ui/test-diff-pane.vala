@@ -184,6 +184,22 @@ private static void settle(int milliseconds)
 	}
 }
 
+private static void show_split(Gitree.Window window)
+{
+	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.ToggleButton)))
+	{
+		var toggle = (Gtk.ToggleButton)widget;
+		var label = toggle.get_child() as Gtk.Label;
+
+		if (label != null && label.label == "Split")
+		{
+			toggle.active = true;
+		}
+	}
+
+	settle(300);
+}
+
 private static bool shows_text(Gtk.Widget file)
 {
 	foreach (var widget in find_all(file, typeof(Gtk.SourceView)))
@@ -659,20 +675,12 @@ private static void test_split_sides_scroll_together()
 		var window = opened(repo, {"refs/heads/master"});
 
 		select_subject(window, "widen");
-
-		foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.ToggleButton)))
-		{
-			var toggle = (Gtk.ToggleButton)widget;
-
-			if (toggle.label == "Split")
-			{
-				toggle.active = true;
-			}
-		}
-
-		settle(300);
+		show_split(window);
 
 		var split = find_named(window.history.diff_view, "GitgDiffViewFileRendererTextSplit")[0];
+
+		assert_true(split.get_mapped());
+
 		var sides = find_all(split, typeof(Gtk.ScrolledWindow));
 		var left = ((Gtk.ScrolledWindow)sides[0]).hadjustment;
 		var right = ((Gtk.ScrolledWindow)sides[1]).hadjustment;
