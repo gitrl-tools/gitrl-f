@@ -706,6 +706,19 @@ public class Gitg.DiffView : Gtk.Grid
 		check_finish();
 	}
 
+	private void bind_renderer(DiffViewFile file, DiffViewFileRenderer renderer)
+	{
+		var renderer_text = renderer as DiffViewFileRendererTextable;
+
+		if (renderer_text != null)
+		{
+			bind_property("highlight", renderer_text, "highlight", BindingFlags.SYNC_CREATE);
+			bind_property("wrap-lines", renderer_text, "wrap-lines", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
+			bind_property("tab-width", renderer_text, "tab-width", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
+			renderer_text.maxlines = file.maxlines;
+		}
+	}
+
 	private void update_diff_hunks(Ggit.Diff diff, bool preserve_expanded, Gee.HashMap<string, DiffViewFileInfo> infomap, Cancellable? cancellable)
 	{
 		var files = new Gee.ArrayList<Gitg.DiffViewFile>();
@@ -815,19 +828,9 @@ public class Gitg.DiffView : Gtk.Grid
 					}
 					if (can_diff_as_text)
 					{
+						current_file.maxlines = maxlines;
+						current_file.renderer_added.connect(bind_renderer);
 						current_file.add_text_renderer(handle_selection);
-						var renderer_list = current_file.renderer_list;
-						foreach (DiffViewFileRenderer renderer in renderer_list)
-						{
-							var renderer_text = renderer as DiffViewFileRendererTextable;
-							if (renderer_text != null)
-							{
-								bind_property("highlight", renderer_text, "highlight", BindingFlags.SYNC_CREATE);
-								bind_property("wrap-lines", renderer_text, "wrap-lines", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
-								bind_property("tab-width", renderer_text, "tab-width", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
-								renderer_text.maxlines = maxlines;
-							}
-						}
 					}
 					if (current_is_binary)
 					{

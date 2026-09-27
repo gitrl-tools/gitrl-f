@@ -91,11 +91,13 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/diff-pane/file-folds-and-unfolds-at-once", test_file_folds_and_unfolds_at_once);
 	Test.add_func("/gitree/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
 	Test.add_func("/gitree/ui/diff-pane/file-types-of-the-repository-load-while-idle", test_file_types_of_the_repository_load_while_idle);
+	Test.add_func("/gitree/ui/diff-pane/folded-file-builds-no-text-until-it-opens", test_folded_file_builds_no_text_until_it_opens);
 	Test.add_func("/gitree/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
 	Test.add_func("/gitree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
 	Test.add_func("/gitree/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
 	Test.add_func("/gitree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
 	Test.add_func("/gitree/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
+	Test.add_func("/gitree/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
 	Test.add_func("/gitree/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
 	Test.add_func("/gitree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
 	Test.add_func("/gitree/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
@@ -539,6 +541,53 @@ private static void test_file_types_of_the_repository_load_while_idle()
 	}
 }
 
+private static void test_folded_file_builds_no_text_until_it_opens()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("start", "a");
+		FileUtils.set_contents(repo.path.get_child("b").get_path(), "one\ntwo\n");
+		FileUtils.set_contents(repo.path.get_child("c").get_path(), "three\n");
+		repo.git({"add", "--all"});
+		repo.git({"commit", "--quiet", "-m", "two files"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "two files");
+
+		var files = find_named(window.history.diff_view, "GitgDiffViewFile");
+
+		assert_cmpint(files.length, CompareOperator.EQ, 2);
+
+		var b = headers(window)[0] == "b" ? files[0] : files[1];
+		var c = b == files[0] ? files[1] : files[0];
+		uint added_b;
+		uint added_c;
+
+		find_named(b, "GitgDiffStat")[0].get("added", out added_b);
+		find_named(c, "GitgDiffStat")[0].get("added", out added_c);
+
+		assert_cmpuint(added_b, CompareOperator.EQ, 2);
+		assert_cmpuint(added_c, CompareOperator.EQ, 1);
+		assert_cmpint(find_all(window.history.diff_view, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 0);
+
+		((Gtk.Expander)find_all(b, typeof(Gtk.Expander))[0]).activate();
+		settle(100);
+
+		assert_cmpint(find_all(b, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 1);
+		assert_cmpint(find_all(c, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 0);
+		assert_true("two" in source_text(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_known_language_is_highlighted()
 {
 	try
@@ -744,6 +793,41 @@ private static void test_split_sides_scroll_together()
 	}
 }
 
+private static void test_split_view_is_built_only_when_chosen()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("start", "f", "alpha beta");
+		FileUtils.set_contents(repo.path.get_child("f").get_path(), "alpha gamma\n");
+		repo.git({"commit", "--quiet", "-am", "change"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "change");
+
+		assert_cmpint(find_named(window.history.diff_view, "GitgDiffViewFileRendererTextSplit").length, CompareOperator.EQ, 0);
+		assert_cmpint(find_all(window.history.diff_view, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 1);
+		assert_cmpstr(marked_words(window, "word-added"), CompareOperator.EQ, "gamma");
+
+		show_split(window);
+
+		var split = find_named(window.history.diff_view, "GitgDiffViewFileRendererTextSplit");
+
+		assert_cmpint(split.length, CompareOperator.EQ, 1);
+		assert_cmpint(find_all(split[0], typeof(Gtk.SourceView)).length, CompareOperator.EQ, 2);
+		assert_cmpstr(marked_words(window, "word-added"), CompareOperator.EQ, "gamma|gamma");
+		assert_cmpstr(marked_words(window, "word-removed"), CompareOperator.EQ, "beta|beta");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ticking_nothing_clears_the_details()
 {
 	try
@@ -823,6 +907,7 @@ private static void test_word_marks_in_both_views()
 		var window = opened(repo, {"refs/heads/master"});
 
 		select_subject(window, "recolour");
+		show_split(window);
 
 		var views = 0;
 

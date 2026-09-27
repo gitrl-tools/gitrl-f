@@ -38,18 +38,51 @@
  	private string? primary_path(Ggit.DiffDelta delta)
  	{
  		var path = delta.get_old_file().get_path();
-@@ -850,10 +826,8 @@
- 								bind_property("wrap-lines", renderer_text, "wrap-lines", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
- 								bind_property("tab-width", renderer_text, "tab-width", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
- 								renderer_text.maxlines = maxlines;
+@@ -730,6 +706,19 @@
+ 		check_finish();
+ 	}
+ 
++	private void bind_renderer(DiffViewFile file, DiffViewFileRenderer renderer)
++	{
++		var renderer_text = renderer as DiffViewFileRendererTextable;
++
++		if (renderer_text != null)
++		{
++			bind_property("highlight", renderer_text, "highlight", BindingFlags.SYNC_CREATE);
++			bind_property("wrap-lines", renderer_text, "wrap-lines", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
++			bind_property("tab-width", renderer_text, "tab-width", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
++			renderer_text.maxlines = file.maxlines;
++		}
++	}
++
+ 	private void update_diff_hunks(Ggit.Diff diff, bool preserve_expanded, Gee.HashMap<string, DiffViewFileInfo> infomap, Cancellable? cancellable)
+ 	{
+ 		var files = new Gee.ArrayList<Gitg.DiffViewFile>();
+@@ -839,21 +828,9 @@
+ 					}
+ 					if (can_diff_as_text)
+ 					{
++						current_file.maxlines = maxlines;
++						current_file.renderer_added.connect(bind_renderer);
+ 						current_file.add_text_renderer(handle_selection);
+-						var renderer_list = current_file.renderer_list;
+-						foreach (DiffViewFileRenderer renderer in renderer_list)
+-						{
+-							var renderer_text = renderer as DiffViewFileRendererTextable;
+-							if (renderer_text != null)
+-							{
+-								bind_property("highlight", renderer_text, "highlight", BindingFlags.SYNC_CREATE);
+-								bind_property("wrap-lines", renderer_text, "wrap-lines", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
+-								bind_property("tab-width", renderer_text, "tab-width", BindingFlags.DEFAULT | BindingFlags.SYNC_CREATE);
+-								renderer_text.maxlines = maxlines;
 -								renderer_text.notify["has-selection"].connect(on_selection_changed);
- 							}
- 						}
+-							}
+-						}
 -						on_selection_changed();
  					}
  					if (current_is_binary)
  					{
-@@ -1050,26 +1024,6 @@
+@@ -1050,26 +1027,6 @@
  		auto_change_expanded(true);
  	}
  

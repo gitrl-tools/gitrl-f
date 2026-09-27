@@ -66,7 +66,7 @@ Two changes: the selection comes out, and the word marks go in.
 
 Two things stay. `can_select` stays a construct property of the renderer, and `handle_selection` stays one of `Gitg.DiffView`. The two are constructor parameters, and their removal would spread the patch to each call. The two are false in gitree, as they are in the history of gitg.
 
-The `added` and `removed` counters, the regions and the source marks stay. The stat badge and the line tints read them, and they have no relation to the selection.
+The `added` and `removed` counters, the regions and the source marks stay, because they have no relation to the selection. The line tints come from the source marks. The stat badge of a file does not read the counters now, because `gitg-diff-view-file.patch` counts the lines in the file itself.
 
 **Cost.** No selection of lines or hunks in the pane. The history of gitg does not offer it either, because it makes `Gitg.DiffView` with `handle_selection` false. Only the Commit activity of gitg shows it, and that activity is out of scope.
 
@@ -105,11 +105,21 @@ Removes `DiffSelectable` from the base list of the interface, one line.
 
 ## gitg-diff-view-file.patch
 
-Removes `has_selection()`, `clear_selection()` and `get_selection()`, which asked each renderer of one file for its selection.
+Two changes: the selection comes out, and the text views of a file are made only when they show.
+
+**1. Removes `has_selection()`, `clear_selection()` and `get_selection()`**, which asked each renderer of one file for its selection.
 
 **Why.** Their return type or their cast names `DiffSelectable` or `PatchSet`. Nothing calls them after `gitg-diff-view.patch`.
 
 gitrl-z's patch to this file also hides the Unif and Split switcher of each file. gitree keeps the switcher as gitg has it.
+
+**2. Makes the text views of a file only when they show.** When a commit is selected, gitg makes three text views for each of its files. These are the unified view and the two halves of the split view. Each view loads the old file and the new file and colours them. A commit with more than one file starts with its files folded, so most of this work does not show.
+
+Now the file keeps its hunks. It makes the unified view when the file opens, and the split view when Split is chosen, and then gives the hunks to that view. Until then, the Unif and Split pages are empty boxes, so the switcher stays as gitg has it. The file counts the added and removed lines for its header from the hunks, because no view counts them before the file opens. For each view that it makes, the file sends `renderer_added`, and `gitg-diff-view.patch` binds the view there.
+
+**Why.** Before this change, a click on a commit with more than one file made the diff in 75 to 254 ms. The highlighting then kept the pane busy for up to 1.3 s after the click. After this change, the diff took 16 to 57 ms, with no busy time after it. This was measured under Xvfb on a copy of this repository at 0.3.0, in runs of twelve clicks, on 2026-09-27.
+
+**Cost.** A view is made when its file first opens, or when Split is first chosen. A commit with one file opens at once, and its diff took 20 to 81 ms.
 
 ## gitg-diff-view-file.ui.patch
 
@@ -121,13 +131,19 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Removes the `has_selection` property, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
+Two changes: the selection comes out, and a text view is bound when its file makes it.
+
+**1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
 **Why.** The same cause as the renderer. `get_selection()` returns `PatchSet[]`, and the rest keep that property in step with the renderers.
 
 `handle_selection` stays, as given above, and is false. gitrl-z's patch to this file also adds a property that sets the view of every file at once. gitree keeps the switcher of each file and does not take that property.
 
 **Cost.** None. Selection only feeds staging, which gitree does not have.
+
+**2. Binds a text view when the file makes it.** The bindings of `highlight`, `wrap-lines` and `tab-width`, and the value of `maxlines`, move from the delta callback to `bind_renderer()`. The file calls it through `renderer_added`, because the file now makes its views later, as `gitg-diff-view-file.patch` gives. The file keeps the value of `maxlines` that gitg gives at that point, so each view gets the same value as in gitg.
+
+**Cost.** None. A view gets the same settings, at a later time.
 
 ## gitg-lanes.patch
 

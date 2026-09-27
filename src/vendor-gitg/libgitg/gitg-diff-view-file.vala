@@ -39,8 +39,17 @@ class Gitg.DiffViewFile : Gtk.Grid
 	private unowned Gtk.Stack? d_stack_file_renderer;
 
 	private bool d_expanded;
+	private bool d_handle_selection;
+	private Gee.ArrayList<Ggit.DiffHunk> d_hunks;
+	private Gee.ArrayList<Gee.ArrayList<Ggit.DiffLine>> d_hunk_lines;
+	private Gtk.ScrolledWindow? d_text_page;
+	private Gtk.Box? d_split_page;
 
 	public Gee.ArrayList<DiffViewFileRenderer> renderer_list {get; private set;}
+
+	public int maxlines { get; set; }
+
+	public signal void renderer_added(DiffViewFileRenderer renderer);
 
 	public bool new_is_workdir { get; construct set; }
 
@@ -57,6 +66,7 @@ class Gitg.DiffViewFile : Gtk.Grid
 			{
 				d_expanded = value;
 				d_revealer_content.reveal_child = d_expanded;
+				build_visible_page();
 				bool visible = false;
 				if (d_expanded)
 				{
@@ -88,6 +98,8 @@ class Gitg.DiffViewFile : Gtk.Grid
 		bind_property("vexpand", d_stack_file_renderer, "vexpand", BindingFlags.SYNC_CREATE);
 		d_stack_file_renderer.notify["visible-child"].connect(page_changed);
 		renderer_list = new Gee.ArrayList<DiffViewFileRenderer>();
+		d_hunks = new Gee.ArrayList<Ggit.DiffHunk>();
+		d_hunk_lines = new Gee.ArrayList<Gee.ArrayList<Ggit.DiffLine>>();
 	}
 
 	private void page_changed()
@@ -95,33 +107,72 @@ class Gitg.DiffViewFile : Gtk.Grid
 		var visible_child = d_stack_file_renderer.get_visible_child();
 		var visible = d_diff_stat_visible_map.get(visible_child);
 		d_diff_stat_file.set_visible(visible);
+		build_visible_page();
+	}
+
+	private void add_page(Gtk.Widget widget, string name, string title, bool show_stats)
+	{
+		d_diff_stat_visible_map.set(widget, show_stats);
+		d_stack_file_renderer.add_titled(widget, name, title);
 	}
 
 	public void add_renderer(DiffViewFileRenderer renderer, Gtk.Widget widget, string name, string title, bool show_stats)
 	{
-		d_diff_stat_visible_map.set(widget, show_stats);
 		renderer_list.add(renderer);
-		d_stack_file_renderer.add_titled(widget, name, title);
+		add_page(widget, name, title, show_stats);
 	}
 
 	public void add_text_renderer(bool handle_selection)
 	{
-		var renderer = new DiffViewFileRendererText(info, handle_selection, DiffViewFileRendererText.Style.ONE);
-		renderer.show();
-		var scrolled_window = new Gtk.ScrolledWindow (null, null);
-		scrolled_window.set_policy (Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER);
-		scrolled_window.add(renderer);
-		scrolled_window.show();
+		d_handle_selection = handle_selection;
 
-		renderer.bind_property("added", d_diff_stat_file, "added");
-		renderer.bind_property("removed", d_diff_stat_file, "removed");
+		d_text_page = new Gtk.ScrolledWindow (null, null);
+		d_text_page.set_policy (Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER);
+		d_text_page.show();
+
 		// Translators: Unif stands for unified diff format
-		add_renderer(renderer, scrolled_window, "text", _("Unif"), true);
+		add_page(d_text_page, "text", _("Unif"), true);
 
-		var renderer_split = new DiffViewFileRendererTextSplit(info, handle_selection);
-		renderer_split.show();
+		d_split_page = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
+		d_split_page.show();
 		// Translators: Split stands for the noun
-		add_renderer(renderer_split, renderer_split, "splittext", _("Split"), true);
+		add_page(d_split_page, "splittext", _("Split"), true);
+	}
+
+	private void build_visible_page()
+	{
+		if (!d_expanded)
+		{
+			return;
+		}
+
+		var visible_child = d_stack_file_renderer.get_visible_child();
+
+		if (visible_child == d_text_page && d_text_page.get_child() == null)
+		{
+			var renderer = new DiffViewFileRendererText(info, d_handle_selection, DiffViewFileRendererText.Style.ONE);
+			renderer.show();
+			d_text_page.add(renderer);
+			fill(renderer);
+		}
+		else if (visible_child == d_split_page && d_split_page.get_children().length() == 0)
+		{
+			var renderer_split = new DiffViewFileRendererTextSplit(info, d_handle_selection);
+			renderer_split.show();
+			d_split_page.pack_start(renderer_split, true, true, 0);
+			fill(renderer_split);
+		}
+	}
+
+	private void fill(DiffViewFileRenderer renderer)
+	{
+		renderer_list.add(renderer);
+		renderer_added(renderer);
+
+		for (var i = 0; i < d_hunks.size; i++)
+		{
+			renderer.add_hunk(d_hunks[i], d_hunk_lines[i]);
+		}
 	}
 
 	public void add_binary_renderer()
@@ -266,6 +317,24 @@ class Gitg.DiffViewFile : Gtk.Grid
 
 	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
 	{
+		d_hunks.add(hunk);
+		d_hunk_lines.add(lines);
+
+		if (d_text_page != null)
+		{
+			foreach (var line in lines)
+			{
+				if (line.get_origin() == Ggit.DiffLineType.ADDITION)
+				{
+					d_diff_stat_file.added++;
+				}
+				else if (line.get_origin() == Ggit.DiffLineType.DELETION)
+				{
+					d_diff_stat_file.removed++;
+				}
+			}
+		}
+
 		foreach (DiffViewFileRenderer renderer in renderer_list)
 		{
 			renderer.add_hunk(hunk, lines);
