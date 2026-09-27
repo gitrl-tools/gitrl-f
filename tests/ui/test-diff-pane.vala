@@ -102,12 +102,17 @@ public static int main(string[] args)
 	return Test.run();
 }
 
-private static string marked_words(Gitree.Window window, string tag_name)
+private static string marked_words(Gitree.Window window, string tag_name, bool shown = false)
 {
 	var words = new string[0];
 
 	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.SourceView)))
 	{
+		if (shown && !widget.get_mapped())
+		{
+			continue;
+		}
+
 		var buffer = ((Gtk.SourceView)widget).buffer;
 		var tag = buffer.tag_table.lookup(tag_name);
 
@@ -832,8 +837,8 @@ private static void test_word_marks_reach_across_a_no_newline_marker()
 
 		select_subject(window, "new");
 
-		assert_true("new" in marked_words(window, "word-added"));
-		assert_true("old" in marked_words(window, "word-removed"));
+		assert_true("new" in marked_words(window, "word-added", true));
+		assert_true("old" in marked_words(window, "word-removed", true));
 
 		window.destroy();
 		repo.remove();

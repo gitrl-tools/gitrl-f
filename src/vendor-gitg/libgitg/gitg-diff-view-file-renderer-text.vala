@@ -887,7 +887,7 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 
 				var marked = MarkedLine() {
 					added = mark == "added",
-					buffer_line = buffer_line,
+					buffer_line = iter.get_line(),
 					text = text
 				};
 
@@ -941,7 +941,7 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 
 					marked_added.add(MarkedLine() {
 						added = true,
-						buffer_line = buffer_line,
+						buffer_line = iter.get_line(),
 						text = text
 					});
 

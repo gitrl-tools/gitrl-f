@@ -288,7 +288,7 @@
  
 +				var marked = MarkedLine() {
 +					added = mark == "added",
-+					buffer_line = buffer_line,
++					buffer_line = iter.get_line(),
 +					text = text
 +				};
 +
@@ -318,7 +318,7 @@
  
 +					marked_added.add(MarkedLine() {
 +						added = true,
-+						buffer_line = buffer_line,
++						buffer_line = iter.get_line(),
 +						text = text
 +					});
 +

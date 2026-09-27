@@ -81,6 +81,8 @@ The addition has four parts:
 
 A line of the kind "\ No newline at end of file" does not end the run. gitg reads it as a context line, and without this, a removed line and an added line at the end of a file, where each has no newline, do not pair. gitrl-z's patch ends the run there, and gitree does not.
 
+A marked line takes its buffer line from the place where its text goes in. It does not use the count of lines that the hunk loop keeps. In the unified view, a line with no newline and the marker after it share one buffer line, but the count adds two. Thus the added line after the marker took its marks on the next buffer line, which does not hold the added text. The split view did not show the fault, because each half shows only one of the two lines.
+
 The offsets are byte offsets because they index a string, but a text buffer counts characters. The two are different on the first line that holds a character outside ASCII. Thus each offset becomes a character offset before a tag is applied.
 
 ## gitg-diff-view-file-renderer-text-split.patch
