@@ -9,7 +9,7 @@ Everything up to the upload runs from a checkout. The upload needs a key and an 
 - `debian/` is complete. Lintian shows one tag at `--pedantic --info`, `binary-nmu-debian-revision-in-source`, which the `~ubuntuNN.NN.1` suffix causes.
 - The `.deb` builds in the `build` stage of the container, which holds only the packaging tools and the build dependencies that `debian/control` declares. A Launchpad builder makes the same check.
 - Install, run, remove and purge are verified in unmodified `ubuntu:24.04` and `ubuntu:26.04` containers.
-- The package is `gitree`. The commands are `gitree` and `git-tree`. The version is `0.1.0-1`, built for **noble** (24.04) and **resolute** (26.04).
+- The package is `gitree`. The commands are `gitree` and `git-tree`. It is built for **noble** (24.04) and **resolute** (26.04).
 
 ## Preliminary steps
 
