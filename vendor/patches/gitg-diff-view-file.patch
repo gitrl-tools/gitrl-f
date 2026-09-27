@@ -1,10 +1,11 @@
 --- a/libgitg/gitg-diff-view-file.vala
 +++ b/libgitg/gitg-diff-view-file.vala
-@@ -39,9 +39,18 @@
+@@ -39,9 +39,19 @@
  	private unowned Gtk.Stack? d_stack_file_renderer;
  
  	private bool d_expanded;
 +	private bool d_handle_selection;
++	private bool d_text;
 +	private Gee.ArrayList<Ggit.DiffHunk> d_hunks;
 +	private Gee.ArrayList<Gee.ArrayList<Ggit.DiffLine>> d_hunk_lines;
 +	private Gtk.ScrolledWindow? d_text_page;
@@ -19,7 +20,7 @@
  	public bool new_is_workdir { get; construct set; }
  
  	public bool expanded
-@@ -57,6 +66,7 @@
+@@ -57,6 +67,7 @@
  			{
  				d_expanded = value;
  				d_revealer_content.reveal_child = d_expanded;
@@ -27,7 +28,7 @@
  				bool visible = false;
  				if (d_expanded)
  				{
-@@ -82,53 +92,14 @@
+@@ -82,53 +93,14 @@
  	public DiffViewFileInfo? info {get; construct set;}
  	private Gee.HashMap<Gtk.Widget, bool> d_diff_stat_visible_map = new Gee.HashMap<Gtk.Widget, bool>();
  
@@ -83,7 +84,7 @@
  	}
  
  	private void page_changed()
-@@ -136,33 +107,72 @@
+@@ -136,33 +108,81 @@
  		var visible_child = d_stack_file_renderer.get_visible_child();
  		var visible = d_diff_stat_visible_map.get(visible_child);
  		d_diff_stat_file.set_visible(visible);
@@ -113,7 +114,11 @@
 -		scrolled_window.add(renderer);
 -		scrolled_window.show();
 +		d_handle_selection = handle_selection;
++		d_text = true;
++	}
 +
++	private void add_text_pages()
++	{
 +		d_text_page = new Gtk.ScrolledWindow (null, null);
 +		d_text_page.set_policy (Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER);
 +		d_text_page.show();
@@ -138,6 +143,11 @@
 +		if (!d_expanded)
 +		{
 +			return;
++		}
++
++		if (d_text && d_text_page == null)
++		{
++			add_text_pages();
 +		}
 +
 +		var visible_child = d_stack_file_renderer.get_visible_child();
@@ -170,14 +180,14 @@
  	}
  
  	public void add_binary_renderer()
-@@ -307,6 +317,24 @@
+@@ -307,6 +327,24 @@
  
  	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
  	{
 +		d_hunks.add(hunk);
 +		d_hunk_lines.add(lines);
 +
-+		if (d_text_page != null)
++		if (d_text)
 +		{
 +			foreach (var line in lines)
 +			{

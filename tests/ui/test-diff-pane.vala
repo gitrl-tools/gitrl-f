@@ -571,12 +571,15 @@ private static void test_folded_file_builds_no_text_until_it_opens()
 		assert_cmpuint(added_b, CompareOperator.EQ, 2);
 		assert_cmpuint(added_c, CompareOperator.EQ, 1);
 		assert_cmpint(find_all(window.history.diff_view, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 0);
+		assert_cmpint(find_all(window.history.diff_view, typeof(Gtk.ToggleButton)).length, CompareOperator.EQ, 0);
 
 		((Gtk.Expander)find_all(b, typeof(Gtk.Expander))[0]).activate();
 		settle(100);
 
 		assert_cmpint(find_all(b, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 1);
+		assert_cmpint(find_all(b, typeof(Gtk.ToggleButton)).length, CompareOperator.EQ, 2);
 		assert_cmpint(find_all(c, typeof(Gtk.SourceView)).length, CompareOperator.EQ, 0);
+		assert_cmpint(find_all(c, typeof(Gtk.ToggleButton)).length, CompareOperator.EQ, 0);
 		assert_true("two" in source_text(window));
 
 		window.destroy();

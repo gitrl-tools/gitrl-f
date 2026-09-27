@@ -40,6 +40,7 @@ class Gitg.DiffViewFile : Gtk.Grid
 
 	private bool d_expanded;
 	private bool d_handle_selection;
+	private bool d_text;
 	private Gee.ArrayList<Ggit.DiffHunk> d_hunks;
 	private Gee.ArrayList<Gee.ArrayList<Ggit.DiffLine>> d_hunk_lines;
 	private Gtk.ScrolledWindow? d_text_page;
@@ -125,7 +126,11 @@ class Gitg.DiffViewFile : Gtk.Grid
 	public void add_text_renderer(bool handle_selection)
 	{
 		d_handle_selection = handle_selection;
+		d_text = true;
+	}
 
+	private void add_text_pages()
+	{
 		d_text_page = new Gtk.ScrolledWindow (null, null);
 		d_text_page.set_policy (Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER);
 		d_text_page.show();
@@ -144,6 +149,11 @@ class Gitg.DiffViewFile : Gtk.Grid
 		if (!d_expanded)
 		{
 			return;
+		}
+
+		if (d_text && d_text_page == null)
+		{
+			add_text_pages();
 		}
 
 		var visible_child = d_stack_file_renderer.get_visible_child();
@@ -320,7 +330,7 @@ class Gitg.DiffViewFile : Gtk.Grid
 		d_hunks.add(hunk);
 		d_hunk_lines.add(lines);
 
-		if (d_text_page != null)
+		if (d_text)
 		{
 			foreach (var line in lines)
 			{
