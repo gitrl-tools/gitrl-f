@@ -30,6 +30,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private int[] d_matches;
 	private HistoryPaned d_paned;
 	private History? d_history;
+	private double d_hold;
+	private int d_hold_height;
 	private SList<Gitg.Ref> d_labels;
 	private HistoryModel d_model;
 	private string d_needle;
@@ -169,6 +171,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	construct
 	{
+		d_hold = -1;
 		d_model = new HistoryModel();
 		d_paths = new string[0];
 		d_refs = new Gee.ArrayList<Ref>();
@@ -333,6 +336,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			queue_details();
 			show_match_count();
 		});
+		d_paned.commit_list_view.size_allocate.connect_after((allocation) => {
+			if (d_hold >= 0)
+			{
+				d_paned.scrolled_window_commit_list.vadjustment.value = d_hold;
+				d_hold = -1;
+			}
+		});
 
 		d_paned.refs_list.ticks_changed.connect(() => {
 			set_ticks(d_paned.refs_list.ticks);
@@ -453,6 +463,37 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return names;
 	}
 
+	private void keep_top(Gitg.Commit[] before, double scroll, int height)
+	{
+		if (height == 0)
+		{
+			return;
+		}
+
+		d_hold = 0;
+		d_hold_height = height;
+
+		if (scroll <= 0)
+		{
+			return;
+		}
+
+		var top = (int)(scroll / height);
+
+		d_hold = d_model.size * height;
+
+		for (var i = top; i < before.length; i++)
+		{
+			var path = d_model.path_from_commit(before[i].get_id());
+
+			if (path != null)
+			{
+				d_hold = path.get_indices()[0] * height + (i == top ? scroll - top * height : 0);
+				return;
+			}
+		}
+	}
+
 	private void lanes_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var lanes = (Gitg.CellRendererLanes)cell;
@@ -500,7 +541,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_refs = new Gee.ArrayList<Ref>();
 			d_ticks = new Gee.HashSet<string>();
 			d_paned.refs_list.set_refs(d_refs, d_ticks, null);
-			show_ticks();
+			show_ticks(true);
 			show_error(_("Could not read the refs"), e.message);
 			return;
 		}
@@ -526,7 +567,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_path_bar();
-		show_ticks();
+		show_ticks(true);
 	}
 
 	private bool opens_files(Gtk.Widget? target)
@@ -658,20 +699,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		}
 
-		var adjustment = d_paned.scrolled_window_commit_list.vadjustment;
-		var scroll = adjustment.value;
-
 		d_refs = refs;
 		d_ticks = ticks;
 		d_history = history;
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_ticks();
-
-		adjustment.value = scroll;
-		Idle.add(() => {
-			adjustment.value = scroll;
-			return false;
-		});
 	}
 
 	public Gitg.Commit[] rows()
@@ -695,6 +727,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
+		d_hold = -1;
 		d_paned.commit_list_view.get_selection().select_path(path);
 		d_paned.commit_list_view.scroll_to_cell(path, null, false, 0, 0);
 	}
@@ -763,9 +796,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.path_bar.show();
 	}
 
-	private void show_ticks()
+	private void show_ticks(bool from_top = false)
 	{
 		var kept = selected != null ? selected.get_id() : null;
+		var before = this.rows();
+		var pending = d_hold >= 0;
+		Gdk.Rectangle area;
+
+		d_paned.commit_list_view.get_background_area(new Gtk.TreePath.first(), null, out area);
+
+		var height = pending ? d_hold_height : area.height;
+		var scroll = from_top ? 0 : (pending ? d_hold : d_paned.scrolled_window_commit_list.vadjustment.value);
+
+		d_hold = -1;
+
 		var rows = new Gitg.Commit[0];
 
 		if (d_history != null)
@@ -809,15 +853,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.stack_list.visible_child_name = "list";
 
-		if (kept != null && d_model.path_from_commit(kept) != null)
+		var path = kept != null ? d_model.path_from_commit(kept) : null;
+
+		if (d_model.size > 0)
 		{
-			select(kept);
-		}
-		else if (d_model.size > 0)
-		{
-			d_paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.first());
+			d_paned.commit_list_view.get_selection().select_path(path != null ? path : new Gtk.TreePath.first());
 		}
 
+		keep_top(before, scroll, height);
 		show_details();
 	}
 

@@ -151,21 +151,6 @@ private static Gitree.RefsList panel(Repo repo, out Gee.List<Gitree.Ref> refs) t
 	return list;
 }
 
-private static Gitree.RefsRow row(Gitree.RefsList list, string short_name)
-{
-	foreach (var child in list.get_children())
-	{
-		var candidate = child as Gitree.RefsRow;
-
-		if (candidate != null && candidate.reference.short_name == short_name)
-		{
-			return candidate;
-		}
-	}
-
-	error("no row %s", short_name);
-}
-
 private static void settle(int milliseconds)
 {
 	for (var i = 0; i < milliseconds / 10; i++)

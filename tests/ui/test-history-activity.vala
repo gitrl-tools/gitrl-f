@@ -39,6 +39,11 @@ private static Gitree.Application application()
 	return app;
 }
 
+private static Gtk.CheckButton check_of(Gitree.Window window, string short_name)
+{
+	return (Gtk.CheckButton)find_all(row(window.history.paned.refs_list, short_name), typeof(Gtk.CheckButton))[0];
+}
+
 private static void commit_two_files(Repo repo, string subject) throws Error
 {
 	FileUtils.set_contents(repo.path.get_child("c").get_path(), subject + "\n");
@@ -123,6 +128,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
 	Test.add_func("/gitree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
 	Test.add_func("/gitree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
+	Test.add_func("/gitree/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
@@ -133,7 +139,12 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitree/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
+	Test.add_func("/gitree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
+	Test.add_func("/gitree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
 	Test.add_func("/gitree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
+	Test.add_func("/gitree/ui/history-activity/two-quick-ticks-keep-the-top-row", test_two_quick_ticks_keep_the_top_row);
+	Test.add_func("/gitree/ui/history-activity/untick-of-the-top-row-puts-the-next-shown-row-at-the-top", test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top);
+	Test.add_func("/gitree/ui/history-activity/window-jump-shows-the-tip-in-a-scrolled-list", test_window_jump_shows_the_tip_in_a_scrolled_list);
 	Test.add_func("/gitree/ui/history-activity/window-jump-ticks-an-unticked-ref-and-selects-its-tip", test_window_jump_ticks_an_unticked_ref_and_selects_its_tip);
 	Test.add_func("/gitree/ui/history-activity/window-labels-only-ticked-refs", test_window_labels_only_ticked_refs);
 	Test.add_func("/gitree/ui/history-activity/window-with-nothing-ticked-shows-the-empty-notice", test_window_with_nothing_ticked_shows_the_empty_notice);
@@ -163,6 +174,17 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 	return window;
 }
 
+private static Gee.List<string> painted(Gitree.Window window, out ulong handler)
+{
+	var tops = new Gee.ArrayList<string>();
+
+	handler = window.history.paned.commit_list_view.get_frame_clock().after_paint.connect(() => {
+		tops.add(top_row(window));
+	});
+
+	return tops;
+}
+
 private static void settle(int milliseconds)
 {
 	for (var i = 0; i < milliseconds / 10; i++)
@@ -170,6 +192,41 @@ private static void settle(int milliseconds)
 		drain();
 		Thread.usleep(10000);
 	}
+}
+
+private static Repo side_branch() throws Error
+{
+	var repo = Repo.create();
+
+	for (var i = 0; i < 50; i++)
+	{
+		repo.commit("base %d".printf(i));
+	}
+
+	repo.git({"checkout", "--quiet", "-b", "side"});
+
+	for (var i = 0; i < 10; i++)
+	{
+		repo.commit("side %d".printf(i), "side");
+	}
+
+	repo.checkout("master");
+
+	for (var i = 0; i < 10; i++)
+	{
+		repo.commit("tail %d".printf(i));
+	}
+
+	repo.git({"checkout", "--quiet", "-b", "newer"});
+
+	for (var i = 0; i < 3; i++)
+	{
+		repo.commit("newer %d".printf(i), "newer");
+	}
+
+	repo.checkout("master");
+
+	return repo;
 }
 
 private static string subjects_of(Gitree.Window window)
@@ -792,6 +849,37 @@ private static void test_escape_closes_the_search_bar_then_the_pane()
 	}
 }
 
+private static void test_history_settings_keep_the_top_row()
+{
+	try
+	{
+		var repo = side_branch();
+		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".preferences.history");
+		var window = opened(repo, {"refs/heads/master"});
+
+		scroll_to_row(window, "base 30", 10);
+		settle(100);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
+
+		settings.set_boolean("mainline-head", false);
+		settle(100);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
+
+		settings.set_boolean("topological-order", true);
+		settle(100);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
+
+		settings.reset("mainline-head");
+		settings.reset("topological-order");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_history_settings_redraw_the_list()
 {
 	try
@@ -1117,6 +1205,64 @@ private static void test_summary_counts_rows_of_commits()
 	}
 }
 
+private static void test_tick_at_the_very_top_stays_at_the_top()
+{
+	try
+	{
+		var repo = side_branch();
+		var window = opened(repo, {"refs/heads/master"});
+
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "tail 9 0");
+
+		check_of(window, "newer").clicked();
+		settle(100);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "newer 2 0");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_tick_keeps_the_top_row_in_place()
+{
+	try
+	{
+		var repo = side_branch();
+		var window = opened(repo, {"refs/heads/master"});
+
+		scroll_to_row(window, "base 30", 10);
+		settle(100);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
+
+		ulong handler;
+		var tops = painted(window, out handler);
+
+		check_of(window, "side").clicked();
+		settle(100);
+		window.history.paned.commit_list_view.get_frame_clock().disconnect(handler);
+
+		assert_true(window.history.ticks.contains("refs/heads/side"));
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
+		assert_false(tops.is_empty);
+
+		foreach (var top in tops)
+		{
+			assert_cmpstr(top, CompareOperator.EQ, "base 30 -10");
+		}
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ticks_are_not_kept_between_runs()
 {
 	try
@@ -1142,6 +1288,92 @@ private static void test_ticks_are_not_kept_between_runs()
 		assert_cmpstr(string.joinv(",", ticked.to_array()), CompareOperator.EQ, "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/origin/master,refs/tags/v1");
 
 		second.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_two_quick_ticks_keep_the_top_row()
+{
+	try
+	{
+		var repo = side_branch();
+		var window = opened(repo, {"refs/heads/master"});
+
+		scroll_to_row(window, "base 30", 10);
+		settle(100);
+
+		check_of(window, "side").clicked();
+		check_of(window, "newer").clicked();
+		settle(100);
+
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top()
+{
+	try
+	{
+		var repo = side_branch();
+		var window = opened(repo, {"refs/heads/master", "refs/heads/side"});
+
+		scroll_to_row(window, "side 5", 10);
+		settle(100);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "side 5 -10");
+
+		ulong handler;
+		var tops = painted(window, out handler);
+
+		check_of(window, "side").clicked();
+		settle(100);
+		window.history.paned.commit_list_view.get_frame_clock().disconnect(handler);
+
+		assert_false(window.history.ticks.contains("refs/heads/side"));
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 49 0");
+		assert_false(tops.is_empty);
+
+		foreach (var top in tops)
+		{
+			assert_cmpstr(top, CompareOperator.EQ, "base 49 0");
+		}
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_window_jump_shows_the_tip_in_a_scrolled_list()
+{
+	try
+	{
+		var repo = side_branch();
+		var window = opened(repo, {"refs/heads/master"});
+
+		scroll_to_row(window, "base 30", 10);
+		settle(100);
+
+		window.history.jump("refs/heads/newer");
+		settle(100);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "newer 2");
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "newer 2 0");
+
+		window.destroy();
 		repo.remove();
 	}
 	catch (Error e)

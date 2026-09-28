@@ -12,7 +12,7 @@
 - **Every ref at the start.** With no ref and no option on the command line, every ref is ticked.
 - **The details on a double click.** The pane under the history is hidden until you double-click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A double-click on the same commit, Enter or Escape hides it again. A click that opens a file, or a click on Expand all, fills the window with the diff. A click that closes a file does not change the window. When the commit changes only one file, the double-click or Enter fills the window at once. Escape, the back arrow or the close button at the top right of the diff brings back the refs and the list.
 - **A path limit.** `gitree -- src/parser.py` keeps only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does.
-- **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same scroll.
+- **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same commit at the top of the list.
 
 ![A double click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
 

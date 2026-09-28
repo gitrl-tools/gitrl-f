@@ -46,6 +46,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/follow/deleted-repository-shows-an-error-and-keeps-the-history", test_deleted_repository_shows_an_error_and_keeps_the_history);
 	Test.add_func("/gitree/ui/follow/f5-reloads-at-once", test_f5_reloads_at_once);
 	Test.add_func("/gitree/ui/follow/monitoring-off-stops-the-poll", test_monitoring_off_stops_the_poll);
+	Test.add_func("/gitree/ui/follow/new-commit-keeps-the-top-row-in-place", test_new_commit_keeps_the_top_row_in_place);
 	Test.add_func("/gitree/ui/follow/poll-finds-a-new-commit", test_poll_finds_a_new_commit);
 	Test.add_func("/gitree/ui/follow/selection-and-scroll-are-kept", test_selection_and_scroll_are_kept);
 	Test.add_func("/gitree/ui/follow/snapshot-changes-when-a-branch-appears", test_snapshot_changes_when_a_branch_appears);
@@ -157,6 +158,38 @@ private static void test_monitoring_off_stops_the_poll()
 		settings.reset("enable-monitoring");
 		settle(20);
 		assert_true(window.polling);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_new_commit_keeps_the_top_row_in_place()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		for (var i = 0; i < 80; i++)
+		{
+			repo.commit("commit %d".printf(i));
+		}
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		scroll_to_row(window, "commit 30", 10);
+		settle(50);
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "commit 30 -10");
+
+		repo.commit("commit 80");
+		window.activate_action("reload", null);
+		settle(100);
+
+		assert_cmpstr(top_row(window), CompareOperator.EQ, "commit 30 -10");
 
 		window.destroy();
 		repo.remove();

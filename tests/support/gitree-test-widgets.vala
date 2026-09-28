@@ -45,4 +45,56 @@ public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 	return found;
 }
 
+public static Gitree.RefsRow row(Gitree.RefsList list, string short_name)
+{
+	foreach (var child in list.get_children())
+	{
+		var candidate = child as Gitree.RefsRow;
+
+		if (candidate != null && candidate.reference.short_name == short_name)
+		{
+			return candidate;
+		}
+	}
+
+	error("no row %s", short_name);
+}
+
+public static void scroll_to_row(Gitree.Window window, string subject, int hidden)
+{
+	var rows = window.history.rows();
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		if (rows[i].get_subject() == subject)
+		{
+			Gdk.Rectangle area;
+			window.history.paned.commit_list_view.get_background_area(new Gtk.TreePath.from_indices(i), null, out area);
+			window.history.paned.scrolled_window_commit_list.vadjustment.value = i * area.height + hidden;
+			return;
+		}
+	}
+
+	error("no row %s", subject);
+}
+
+public static string top_row(Gitree.Window window)
+{
+	var view = window.history.paned.commit_list_view;
+	Gtk.TreePath start;
+	Gtk.TreePath end;
+	Gdk.Rectangle area;
+
+	assert_true(view.get_visible_range(out start, out end));
+	view.get_background_area(start, null, out area);
+
+	if (area.y + area.height <= 0)
+	{
+		start.next();
+		view.get_background_area(start, null, out area);
+	}
+
+	return "%s %d".printf(window.history.rows()[start.get_indices()[0]].get_subject(), area.y);
+}
+
 }
