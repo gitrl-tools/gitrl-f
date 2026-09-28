@@ -1,3 +1,19 @@
+gitree (0.3.2-1) noble; urgency=medium
+
+  * A tick or an untick on the left does not move the list. The commit
+    at the top of the list stays at the top. If that commit goes, the
+    next commit below it takes its position. Before, the list went back
+    to the first row. A change to a history setting also keeps the list
+    in position.
+  * At the first row, the list stays at the first row. Thus a tick of a
+    branch with newer commits shows these commits. Before, they stayed
+    above the visible rows.
+  * A reload keeps the same commit at the top of the list. Before, a
+    reload kept only the distance from the top, thus each new commit
+    moved the rows down.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Mon, 28 Sep 2026 09:15:00 +0200
+
 gitree (0.3.1-1) noble; urgency=medium
 
   * A click on a commit shows the row as selected at once. Before, the
