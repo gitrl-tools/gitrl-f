@@ -64,6 +64,24 @@ private static void commit_two_files(Repo repo, string subject) throws Error
 	repo.commit_bytes(subject, "b", (subject + "\n").data);
 }
 
+private static Gtk.MenuItem? copy_item()
+{
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		foreach (var widget in find_all(toplevel, typeof(Gtk.MenuItem)))
+		{
+			var item = (Gtk.MenuItem)widget;
+
+			if (item.get_mapped() && item.label.has_prefix("Copy"))
+			{
+				return item;
+			}
+		}
+	}
+
+	return null;
+}
+
 private static bool details_shown(Gitree.Window window)
 {
 	return window.history.paned.box_details.get_mapped();
@@ -88,6 +106,35 @@ private static Gtk.Label label_with(Gtk.Widget root, string text)
 	}
 
 	error("no label %s", text);
+}
+
+private static int label_x(Gitree.Window window, int row, string name)
+{
+	var view = window.history.paned.commit_list_view;
+	var column = view.get_column(0);
+	var width = column.get_width();
+	var first = -1;
+	var last = -1;
+	Gtk.TreeIter iter;
+	int hot_x;
+
+	assert_true(view.model.iter_nth_child(out iter, null, row));
+	column.cell_set_cell_data(view.model, iter, false, false);
+
+	for (var x = 0; x < width; x++)
+	{
+		var label = window.history.paned.renderer_subject.get_ref_at_pos(view, x, width, out hot_x);
+
+		if (label != null && label.parsed_name.shortname == name)
+		{
+			first = first < 0 ? x : first;
+			last = x;
+		}
+	}
+
+	assert_cmpint(first, CompareOperator.GE, 0);
+
+	return (first + last) / 2;
 }
 
 private static string labels(Gitree.HistoryActivity activity, int row)
@@ -135,6 +182,8 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
 	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
+	Test.add_func("/gitree/ui/history-activity/right-click-on-a-label-copies-its-name", test_right_click_on_a_label_copies_its_name);
+	Test.add_func("/gitree/ui/history-activity/right-click-on-the-hash-copies-the-full-hash", test_right_click_on_the_hash_copies_the_full_hash);
 	Test.add_func("/gitree/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
 	Test.add_func("/gitree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
 	Test.add_func("/gitree/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
@@ -185,6 +234,20 @@ private static Gee.List<string> painted(Gitree.Window window, out ulong handler)
 	});
 
 	return tops;
+}
+
+private static void right_click(Gitree.Window window, int row, int column, int x)
+{
+	var view = window.history.paned.commit_list_view;
+	Gdk.Rectangle cell;
+	int origin_x;
+	int origin_y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(column), out cell);
+	view.get_bin_window().get_origin(out origin_x, out origin_y);
+
+	click_at(origin_x + cell.x + x, origin_y + cell.y + cell.height / 2, 1, 3);
+	settle(300);
 }
 
 private static void settle(int milliseconds)
@@ -1060,6 +1123,77 @@ private static void test_refs_that_cannot_be_read_leave_no_old_rows()
 		window.destroy();
 		first.remove();
 		broken.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_right_click_on_a_label_copies_its_name()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("feature/scan");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature/scan"});
+		var clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+		var width = window.history.paned.commit_list_view.get_column(0).get_width();
+
+		right_click(window, 0, 0, width - 10);
+		assert_null(copy_item());
+
+		right_click(window, 0, 0, label_x(window, 0, "feature/scan"));
+
+		var item = copy_item();
+		assert_nonnull(item);
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy name");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+
+		assert_cmpstr(clipboard.wait_for_text(), CompareOperator.EQ, "feature/scan");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_right_click_on_the_hash_copies_the_full_hash()
+{
+	try
+	{
+		var repo = Repo.create();
+		var sha = repo.commit("first");
+		repo.commit("second");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "second");
+
+		right_click(window, 1, 1, 20);
+
+		var item = copy_item();
+		assert_nonnull(item);
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy hash");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+
+		assert_cmpstr(clipboard.wait_for_text(), CompareOperator.EQ, sha);
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "second");
+		assert_false(details_shown(window));
+
+		window.destroy();
+		repo.remove();
 	}
 	catch (Error e)
 	{

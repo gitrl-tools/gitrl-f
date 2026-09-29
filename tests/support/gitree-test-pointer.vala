@@ -20,9 +20,9 @@
 namespace GitreeTest
 {
 
-public static void click_at(int x, int y, int count)
+public static void click_at(int x, int y, int count, int button = 1)
 {
-	xdotool({"mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", "1"});
+	xdotool({"mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", button.to_string()});
 }
 
 public static void click_widget(Gtk.Widget widget)

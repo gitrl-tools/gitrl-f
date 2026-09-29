@@ -23,11 +23,15 @@ namespace Gitree
 public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, GitgExt.Searchable
 {
 	private Gtk.Box d_box;
+	private Gtk.MenuItem d_copy;
+	private Gtk.Menu d_copy_menu;
+	private string d_copy_text;
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
+	private Gtk.GestureMultiPress d_menu_press;
 	private HistoryPaned d_paned;
 	private History? d_history;
 	private double d_hold;
@@ -264,6 +268,28 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			if (d_press_on_row)
 			{
 				d_paned.details_visible = !d_press_on_shown;
+			}
+		});
+
+		d_copy_text = "";
+		d_copy = new Gtk.MenuItem();
+		d_copy.activate.connect(() => {
+			d_paned.commit_list_view.get_clipboard(Gdk.SELECTION_CLIPBOARD).set_text(d_copy_text, -1);
+		});
+		d_copy.show();
+
+		d_copy_menu = new Gtk.Menu();
+		d_copy_menu.add(d_copy);
+		d_copy_menu.attach_to_widget(d_paned.commit_list_view, null);
+
+		d_menu_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
+		d_menu_press.button = Gdk.BUTTON_SECONDARY;
+		d_menu_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
+		d_menu_press.pressed.connect((presses, x, y) => {
+			if (prepare_copy(x, y))
+			{
+				d_menu_press.set_state(Gtk.EventSequenceState.CLAIMED);
+				d_copy_menu.popup_at_pointer(d_menu_press.get_last_event(d_menu_press.get_current_sequence()));
 			}
 		});
 
@@ -634,6 +660,54 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return ret;
+	}
+
+	private bool prepare_copy(double x, double y)
+	{
+		var view = d_paned.commit_list_view;
+		int bin_x;
+		int bin_y;
+		int cell_x;
+		int cell_width;
+		int hot_x;
+		Gtk.TreePath? path;
+		Gtk.TreeViewColumn? column;
+		Gtk.TreeIter iter;
+
+		view.convert_widget_to_bin_window_coords((int)x, (int)y, out bin_x, out bin_y);
+
+		if (!view.get_path_at_pos(bin_x, bin_y, out path, out column, out cell_x, null))
+		{
+			return false;
+		}
+
+		d_model.get_iter(out iter, path);
+
+		var commit = d_model.commit_from_iter(iter);
+
+		if (commit != null && column == d_paned.column_hash)
+		{
+			d_copy.label = _("Copy hash");
+			d_copy_text = commit.get_id().to_string();
+			return true;
+		}
+
+		if (commit == null || column != d_paned.column_subject)
+		{
+			return false;
+		}
+
+		var lanes = (Gitg.CellRendererLanes)view.find_cell_at_pos(column, path, cell_x, out cell_width);
+		var label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
+
+		if (label == null)
+		{
+			return false;
+		}
+
+		d_copy.label = _("Copy name");
+		d_copy_text = label.parsed_name.shortname;
+		return true;
 	}
 
 	private void queue_details()
