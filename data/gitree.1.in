@@ -1,4 +1,4 @@
-.TH GITREE 1 "2026-09-28" "gitree @VERSION@" "User Commands"
+.TH GITREE 1 "2026-09-29" "gitree @VERSION@" "User Commands"
 .SH NAME
 gitree \- the history of the git refs that you tick
 .SH SYNOPSIS

@@ -1,3 +1,14 @@
+gitree (0.3.3-1) noble; urgency=medium
+
+  * A click on a commit shows its details and its diff. Before, only a
+    double click did this. A click on the same commit hides them again.
+    Each click counts, thus a double click shows the pane and then hides
+    it.
+  * Enter continues to fill the window with the diff when the commit
+    changes only one file. A click does not.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Tue, 29 Sep 2026 11:53:31 +0200
+
 gitree (0.3.2-1) noble; urgency=medium
 
   * A tick or an untick on the left does not move the list. The commit
