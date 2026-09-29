@@ -97,6 +97,7 @@ Built in a container of the Ubuntu release that the package is for, so that it l
 The packages go to `_build/deb/`. Install one with `apt`, so that you also get its dependencies:
 
 ```bash
+sudo apt-get remove --purge gitree
 sudo apt-get install ./_build/deb/gitree_*~ubuntu24.04.1_amd64.deb
 ```
 
