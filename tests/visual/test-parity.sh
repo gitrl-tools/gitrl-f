@@ -64,7 +64,7 @@ capture() {
 	cp "$here/settings.ini" "$home/.config/gtk-3.0/settings.ini"
 	cp "$here/keyfile" "$home/.config/glib-2.0/settings/keyfile"
 	"$here/fixture.sh" "$fixture"
-	(cd "$fixture" && GITREE_VISUAL_DOUBLE_CLICK="$click" "$here/capture.sh" "$out/$name.png" "$home" "$@")
+	(cd "$fixture" && GITREE_VISUAL_CLICK="$click" "$here/capture.sh" "$out/$name.png" "$home" "$@")
 	echo "  captured $name"
 }
 

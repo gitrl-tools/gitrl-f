@@ -231,7 +231,7 @@ private static void test_help_says_gitree_and_git_tree()
 	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gitree.CommandLine.HELP);
 	assert_false("git tree [" in Gitree.CommandLine.HELP);
 	assert_true("\n    -h, --help      print this help and exit\n" in Gitree.CommandLine.HELP);
-	assert_true("\n    Double-click, Enter         show or hide the details of a commit\n" in Gitree.CommandLine.HELP);
+	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gitree.CommandLine.HELP);
 	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gitree.CommandLine.HELP);
 	assert_true("\n    Escape                      close the search bar, full diff or details\n" in Gitree.CommandLine.HELP);
 }

@@ -37,6 +37,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string d_needle;
 	private string[] d_paths;
 	private Gtk.GestureMultiPress d_press;
+	private bool d_press_on_row;
 	private bool d_press_on_shown;
 	private Gee.List<Ref> d_refs;
 	private Gitg.Repository? d_repository;
@@ -248,11 +249,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_press.button = Gdk.BUTTON_PRIMARY;
 		d_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
 		d_press.pressed.connect((presses, x, y) => {
-			if (presses != 1)
-			{
-				return;
-			}
-
 			int bin_x;
 			int bin_y;
 			Gtk.TreePath? path;
@@ -260,15 +256,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_paned.commit_list_view.convert_widget_to_bin_window_coords((int)x, (int)y, out bin_x, out bin_y);
 			d_paned.commit_list_view.get_path_at_pos(bin_x, bin_y, out path, null, null, null);
 
+			d_press_on_row = path != null;
 			d_press_on_shown = d_paned.details_visible && path != null && d_paned.commit_list_view.get_selection().path_is_selected(path);
+		});
+		d_press.released.connect(() => {
+			if (d_press_on_row)
+			{
+				d_paned.details_visible = !d_press_on_shown;
+			}
 		});
 
 		d_paned.commit_list_view.row_activated.connect(() => {
 			var event = Gtk.get_current_event();
-			var by_mouse = event != null && event.type != Gdk.EventType.KEY_PRESS;
-			var on_shown = by_mouse ? d_press_on_shown : true;
 
-			d_paned.details_visible = !(d_paned.details_visible && on_shown);
+			if (event != null && event.type != Gdk.EventType.KEY_PRESS)
+			{
+				return;
+			}
+
+			d_paned.details_visible = !d_paned.details_visible;
 
 			if (d_paned.details_visible && d_diff.diff != null && d_diff.diff.get_num_deltas() == 1)
 			{

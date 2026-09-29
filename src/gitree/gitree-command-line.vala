@@ -56,7 +56,7 @@ selected and the same scroll. A new local branch comes in ticked.
 New remote branches and tags come in unticked.
 
 Keys
-    Double-click, Enter         show or hide the details of a commit
+    Click, Enter                show or hide the details of a commit
     Open a file, Expand all     fill the window with the diff
     Ctrl+F                      open or close the search bar
     Enter, Ctrl+G               go to the next commit that matches

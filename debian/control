@@ -31,7 +31,7 @@ Description: git history of the refs that you tick
  commits that a ticked ref reaches are drawn, and only the ticked refs are
  labelled.
  .
- Names with slashes fold into groups, a double click on a commit shows its
+ Names with slashes fold into groups, a click on a commit shows its
  details and its diff, and a path keeps only the commits that change a file
  or a folder. The window follows the repository as it changes.
  .

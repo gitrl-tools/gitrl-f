@@ -77,7 +77,7 @@ record() {
 		sleep 2
 
 		if [ "$scene" = still ]; then
-			xdotool mousemove 700 113 click --repeat 2 --delay 80 1
+			xdotool mousemove 700 113 click 1
 			sleep 1
 			xdotool mousemove 1200 20
 			sleep 2
@@ -117,11 +117,11 @@ record() {
 			;;
 		pane)
 			glide 700 700 700 113
-			xdotool click --repeat 2 --delay 80 1
+			xdotool click 1
 			sleep 3.0
 
 			glide 700 113 700 213
-			xdotool click --repeat 2 --delay 80 1
+			xdotool click 1
 			sleep 3.0
 
 			xdotool key Escape
