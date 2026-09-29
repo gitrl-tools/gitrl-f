@@ -1,3 +1,14 @@
+gitree (0.3.4-1) noble; urgency=medium
+
+  * The commit list shows the short hash of each commit, in a column to
+    the left of the author. A search marks the part of the hash that
+    matches.
+  * A right-click on a hash opens a menu that copies the full hash. A
+    right-click on a ref label opens a menu that copies the name of the
+    ref. The right-click does not change the selection.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Tue, 29 Sep 2026 15:11:00 +0200
+
 gitree (0.3.3-1) noble; urgency=medium
 
   * A click on a commit shows its details and its diff. Before, only a

@@ -64,6 +64,22 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.3.4" date="2026-09-29">
+      <description>
+        <ul>
+          <li>
+            The commit list shows the short hash of each commit, in a column
+            to the left of the author. A search marks the part of the hash
+            that matches.
+          </li>
+          <li>
+            A right-click on a hash opens a menu that copies the full hash. A
+            right-click on a ref label opens a menu that copies the name of
+            the ref. The right-click does not change the selection.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.3" date="2026-09-29">
       <description>
         <ul>
