@@ -122,13 +122,14 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/history-activity/click-shows-the-pane-and-on-its-row-hides-it", test_click_shows_the_pane_and_on_its_row_hides_it);
 	Test.add_func("/gitree/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
 	Test.add_func("/gitree/ui/history-activity/close-button-steps-back-from-the-full-diff", test_close_button_steps_back_from_the_full_diff);
-	Test.add_func("/gitree/ui/history-activity/columns-are-subject-author-and-date", test_columns_are_subject_author_and_date);
+	Test.add_func("/gitree/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
 	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
 	Test.add_func("/gitree/ui/history-activity/double-click-shows-and-hides-the-pane", test_double_click_shows_and_hides_the_pane);
 	Test.add_func("/gitree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
 	Test.add_func("/gitree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
 	Test.add_func("/gitree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
+	Test.add_func("/gitree/ui/history-activity/hash-column-shows-the-short-hash", test_hash_column_shows_the_short_hash);
 	Test.add_func("/gitree/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
@@ -663,7 +664,7 @@ private static void test_close_button_steps_back_from_the_full_diff()
 	}
 }
 
-private static void test_columns_are_subject_author_and_date()
+private static void test_columns_are_subject_hash_author_and_date()
 {
 	try
 	{
@@ -678,7 +679,7 @@ private static void test_columns_are_subject_author_and_date()
 			titles += column.title;
 		}
 
-		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Author,Date");
+		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Hash,Author,Date");
 		assert_false(window.history.paned.commit_list_view.headers_visible);
 
 		window.destroy();
@@ -866,6 +867,33 @@ private static void test_escape_closes_the_search_bar_then_the_pane()
 		settle(100);
 
 		assert_false(details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_hash_column_shows_the_short_hash()
+{
+	try
+	{
+		var repo = Repo.create();
+		var sha = repo.commit("first");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var column = view.get_column(1);
+		var cell = (Gtk.CellRendererText)column.get_cells().data;
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+		column.cell_set_cell_data(view.model, iter, false, false);
+
+		assert_cmpstr(cell.text, CompareOperator.EQ, sha.substring(0, 7));
 
 		window.destroy();
 		repo.remove();

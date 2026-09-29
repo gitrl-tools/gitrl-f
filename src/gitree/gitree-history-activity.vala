@@ -186,6 +186,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.model = d_model;
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
+		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.width_chars = 40;
@@ -432,6 +433,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		show_match_count();
 		d_paned.commit_list_view.queue_draw();
+	}
+
+	private void hash_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
+	{
+		var commit = d_model.commit_from_iter(iter);
+
+		if (commit != null)
+		{
+			var hash = commit.get_id().to_string().substring(0, 7);
+			((Gtk.CellRendererText)cell).markup = Search.marked(hash, d_needle);
+		}
 	}
 
 	public void jump(string name)

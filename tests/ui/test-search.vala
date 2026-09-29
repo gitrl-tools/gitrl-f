@@ -58,7 +58,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gitree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
 	Test.add_func("/gitree/ui/search/escape-closes-clears-and-gives-the-focus-back", test_escape_closes_clears_and_gives_the_focus_back);
-	Test.add_func("/gitree/ui/search/marks-show-in-the-subject-and-author-columns", test_marks_show_in_the_subject_and_author_columns);
+	Test.add_func("/gitree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gitree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gitree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
 	Test.add_func("/gitree/ui/search/tick-searches-again", test_tick_searches_again);
@@ -107,6 +107,7 @@ private static Gitree.Window opened(Repo repo) throws Error
 
 	var window = new Gitree.Window(application());
 	window.open_repository(Gitree.Application.discover_repository(repo.path), ticks, {}, repo.path);
+	window.set_default_size(1000, 600);
 	window.show();
 	settle(100);
 
@@ -197,7 +198,7 @@ private static void test_escape_closes_clears_and_gives_the_focus_back()
 	}
 }
 
-private static void test_marks_show_in_the_subject_and_author_columns()
+private static void test_marks_show_in_the_subject_hash_and_author_columns()
 {
 	try
 	{
@@ -205,17 +206,26 @@ private static void test_marks_show_in_the_subject_and_author_columns()
 		repo.branched();
 
 		var window = opened(repo);
+		var sha = window.history.rows()[0].get_id().to_string();
 
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
 
 		type_text(window, "fix");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.GT, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
+
+		type_text(window, sha.substring(0, 7));
+		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 1), CompareOperator.GT, 0);
+		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
 
 		type_text(window, "tester");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
-		assert_cmpint(marked_pixels(window, 1), CompareOperator.GT, 0);
+		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 2), CompareOperator.GT, 0);
 
 		window.destroy();
 		repo.remove();

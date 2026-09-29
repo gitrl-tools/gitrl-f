@@ -184,6 +184,19 @@
                               </object>
                             </child>
                             <child>
+                              <object class="GtkTreeViewColumn" id="d_column_hash">
+                                <property name="title" translatable="yes">Hash</property>
+                                <property name="sizing">fixed</property>
+                                <property name="resizable">True</property>
+                                <property name="fixed-width">80</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="d_renderer_hash">
+                                    <property name="family">monospace</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
                               <object class="GtkTreeViewColumn" id="d_column_author">
                                 <property name="title" translatable="yes">Author</property>
                                 <property name="sizing">fixed</property>
