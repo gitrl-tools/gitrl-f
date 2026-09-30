@@ -1,3 +1,11 @@
+gitree (0.3.5-1) noble; urgency=medium
+
+  * In bash, TAB completes gitree and git tree: the options, then the
+    names of the refs, and after -- the paths. The package installs the
+    completion. The AppImage has no completion.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Wed, 30 Sep 2026 13:13:21 +0200
+
 gitree (0.3.4-1) noble; urgency=medium
 
   * The commit list shows the short hash of each commit, in a column to
