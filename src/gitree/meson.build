@@ -1,6 +1,7 @@
 gitree_lib_sources = files(
   'gitree-application.vala',
   'gitree-command-line.vala',
+  'gitree-copy-menu.vala',
   'gitree-dash-view.vala',
   'gitree-history-activity.vala',
   'gitree-history-model.vala',

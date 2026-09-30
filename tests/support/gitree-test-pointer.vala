@@ -25,7 +25,7 @@ public static void click_at(int x, int y, int count, int button = 1)
 	xdotool({"mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", button.to_string()});
 }
 
-public static void click_widget(Gtk.Widget widget)
+public static void click_widget(Gtk.Widget widget, int button = 1)
 {
 	int x;
 	int y;
@@ -35,7 +35,7 @@ public static void click_widget(Gtk.Widget widget)
 	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
 	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
 
-	click_at(origin_x + x, origin_y + y, 1);
+	click_at(origin_x + x, origin_y + y, 1, button);
 }
 
 public static void press_key(string name)

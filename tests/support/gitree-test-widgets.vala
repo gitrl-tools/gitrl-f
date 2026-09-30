@@ -20,6 +20,24 @@
 namespace GitreeTest
 {
 
+public static Gtk.MenuItem? copy_item()
+{
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		foreach (var widget in find_all(toplevel, typeof(Gtk.MenuItem)))
+		{
+			var item = (Gtk.MenuItem)widget;
+
+			if (item.get_mapped() && item.label.has_prefix("Copy"))
+			{
+				return item;
+			}
+		}
+	}
+
+	return null;
+}
+
 public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 {
 	var found = new Gtk.Widget[0];

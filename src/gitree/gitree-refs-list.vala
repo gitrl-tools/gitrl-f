@@ -22,6 +22,7 @@ namespace Gitree
 
 public class RefsList : Gtk.ListBox
 {
+	private CopyMenu d_copy_menu;
 	private Gee.HashMap<string, bool> d_folds;
 	private Gee.ArrayList<RefsHeader> d_headers;
 	private string d_needle;
@@ -75,6 +76,9 @@ public class RefsList : Gtk.ListBox
 
 		set_filter_func(filter_row);
 		row_activated.connect(on_row_activated);
+
+		d_copy_menu = new CopyMenu(this);
+		d_copy_menu.find.connect(find_copy);
 	}
 
 	private RefsHeader add_header(string key, string title, RefsHeader? parent_group)
@@ -258,6 +262,23 @@ public class RefsList : Gtk.ListBox
 		var group = ((RefsRow)row).group;
 
 		return group.expanded && group.is_shown_by_folds;
+	}
+
+	private bool find_copy(double x, double y, out string caption, out string text)
+	{
+		var row = get_row_at_y((int)y) as RefsRow;
+
+		caption = "";
+		text = "";
+
+		if (row == null)
+		{
+			return false;
+		}
+
+		caption = _("Copy name");
+		text = row.reference.short_name;
+		return true;
 	}
 
 	private Gee.List<string> leaves(RefsHeader header)

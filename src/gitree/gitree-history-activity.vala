@@ -23,15 +23,12 @@ namespace Gitree
 public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, GitgExt.Searchable
 {
 	private Gtk.Box d_box;
-	private Gtk.MenuItem d_copy;
-	private Gtk.Menu d_copy_menu;
-	private string d_copy_text;
+	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
-	private Gtk.GestureMultiPress d_menu_press;
 	private HistoryPaned d_paned;
 	private History? d_history;
 	private double d_hold;
@@ -271,27 +268,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		});
 
-		d_copy_text = "";
-		d_copy = new Gtk.MenuItem();
-		d_copy.activate.connect(() => {
-			d_paned.commit_list_view.get_clipboard(Gdk.SELECTION_CLIPBOARD).set_text(d_copy_text, -1);
-		});
-		d_copy.show();
-
-		d_copy_menu = new Gtk.Menu();
-		d_copy_menu.add(d_copy);
-		d_copy_menu.attach_to_widget(d_paned.commit_list_view, null);
-
-		d_menu_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
-		d_menu_press.button = Gdk.BUTTON_SECONDARY;
-		d_menu_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
-		d_menu_press.pressed.connect((presses, x, y) => {
-			if (prepare_copy(x, y))
-			{
-				d_menu_press.set_state(Gtk.EventSequenceState.CLAIMED);
-				d_copy_menu.popup_at_pointer(d_menu_press.get_last_event(d_menu_press.get_current_sequence()));
-			}
-		});
+		d_copy_menu = new CopyMenu(d_paned.commit_list_view);
+		d_copy_menu.find.connect(prepare_copy);
 
 		d_paned.commit_list_view.row_activated.connect(() => {
 			var event = Gtk.get_current_event();
@@ -662,7 +640,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return ret;
 	}
 
-	private bool prepare_copy(double x, double y)
+	private bool prepare_copy(double x, double y, out string caption, out string text)
 	{
 		var view = d_paned.commit_list_view;
 		int bin_x;
@@ -673,6 +651,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		Gtk.TreePath? path;
 		Gtk.TreeViewColumn? column;
 		Gtk.TreeIter iter;
+
+		caption = "";
+		text = "";
 
 		view.convert_widget_to_bin_window_coords((int)x, (int)y, out bin_x, out bin_y);
 
@@ -687,8 +668,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (commit != null && column == d_paned.column_hash)
 		{
-			d_copy.label = _("Copy hash");
-			d_copy_text = commit.get_id().to_string();
+			caption = _("Copy hash");
+			text = commit.get_id().to_string();
 			return true;
 		}
 
@@ -705,8 +686,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return false;
 		}
 
-		d_copy.label = _("Copy name");
-		d_copy_text = label.parsed_name.shortname;
+		caption = _("Copy name");
+		text = label.parsed_name.shortname;
 		return true;
 	}
 

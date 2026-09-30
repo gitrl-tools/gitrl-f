@@ -108,6 +108,7 @@ public static int main(string[] args)
 	Test.add_func("/gitree/ui/refs-panel/nested-groups-in-every-list", test_nested_groups_in_every_list);
 	Test.add_func("/gitree/ui/refs-panel/none-unticks-every-ref", test_none_unticks_every_ref);
 	Test.add_func("/gitree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
+	Test.add_func("/gitree/ui/refs-panel/right-click-on-a-ref-copies-its-name", test_right_click_on_a_ref_copies_its_name);
 	Test.add_func("/gitree/ui/refs-panel/rows-follow-the-graph-order", test_rows_follow_the_graph_order);
 	Test.add_func("/gitree/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
 	Test.add_func("/gitree/ui/refs-panel/subgroup-checkbox-ticks-everything-under-it", test_subgroup_checkbox_ticks_everything_under_it);
@@ -571,6 +572,48 @@ private static void test_ref_name_activates_the_ref()
 		list.row_activated(row(list, "fix/stamp"));
 
 		assert_cmpstr(activated, CompareOperator.EQ, "refs/heads/fix/stamp");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_right_click_on_a_ref_copies_its_name()
+{
+	try
+	{
+		var repo = fixture();
+		Gee.List<Gitree.Ref> refs;
+		var list = panel(repo, out refs);
+		var clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+		var ticks = sorted(list.ticks);
+		string? activated = null;
+
+		list.ref_activated.connect((reference) => {
+			activated = reference.name;
+		});
+
+		click_widget(header(list, "section:remotes"), 3);
+		settle(300);
+		assert_null(copy_item());
+
+		click_widget(row(list, "backup/master"), 3);
+		settle(300);
+
+		var item = copy_item();
+		assert_nonnull(item);
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy name");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+
+		assert_cmpstr(clipboard.wait_for_text(), CompareOperator.EQ, "backup/master");
+		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ, ticks);
+		assert_null(activated);
 
 		repo.remove();
 	}
