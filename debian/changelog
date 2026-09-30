@@ -1,3 +1,11 @@
+gitree (0.3.6-1) noble; urgency=medium
+
+  * A right-click on a ref in the refs panel opens a menu that copies the
+    name of the ref. The name of a remote branch includes the remote, for
+    example origin/master. The right-click does not change the ticks.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Wed, 30 Sep 2026 14:35:57 +0200
+
 gitree (0.3.5-1) noble; urgency=medium
 
   * In bash, TAB completes gitree and git tree: the options, then the

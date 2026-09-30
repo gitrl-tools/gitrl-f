@@ -1,6 +1,6 @@
 project(
   'gitree', ['c', 'vala'],
-  version: '0.3.5',
+  version: '0.3.6',
   license: 'GPL-2.0-or-later',
   default_options: 'buildtype=debugoptimized',
   meson_version: '>= 0.61.0',
