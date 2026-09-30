@@ -68,6 +68,16 @@ test(
 )
 
 test(
+  'completion',
+  find_program('unit/test-completion.sh'),
+  args: [
+    gitree_exe,
+    join_paths(meson.project_source_root(), 'data', 'gitree.bash-completion'),
+  ],
+  suite: 'unit',
+)
+
+test(
   'meson-install',
   find_program('packaging/test-meson-install.sh'),
   args: [meson.project_build_root()],

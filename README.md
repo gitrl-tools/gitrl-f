@@ -29,7 +29,7 @@ sudo add-apt-repository ppa:li9i/gitree
 sudo apt-get install gitree
 ```
 
-The package is `gitree`. The command is `gitree`, and `git tree` runs it too.
+The package is `gitree`. The command is `gitree`, and `git tree` runs it too. In bash, TAB completes the options of both, then the names of the refs, and after `--` the paths.
 
 ### `.deb` package
 
@@ -43,6 +43,7 @@ If you installed gitree into `~/.local` from source before, remove that copy fir
 
 ```bash
 rm -f ~/.local/bin/gitree ~/.local/bin/git-tree
+rm -f ~/.local/share/bash-completion/completions/gitree ~/.local/share/bash-completion/completions/git-tree
 ```
 
 ### AppImage
@@ -67,6 +68,8 @@ ln -s "$PWD"/gitree-*-x86_64.AppImage ~/.local/bin/gitree
 ln -s "$PWD"/gitree-*-x86_64.AppImage ~/.local/bin/git-tree
 ```
 
+The AppImage has no TAB completion. The package and a build from source have it.
+
 ## Build from source
 
 ```bash
@@ -83,7 +86,7 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-`~/.local/bin` must be on the `PATH`. The install puts `gitree` there, and `git-tree` as a second name for it. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas` with no more configuration.
+`~/.local/bin` must be on the `PATH`. The install puts `gitree` there, and `git-tree` as a second name for it. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas`, and bash finds the TAB completion in `~/.local/share/bash-completion/completions`, with no more configuration.
 
 ### `.deb` package
 

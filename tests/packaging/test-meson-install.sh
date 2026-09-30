@@ -23,6 +23,8 @@ sort >"$dest/expected" <<'LIST'
 bin/git-tree
 bin/gitree
 share/applications/io.github.li9i.gitree.desktop
+share/bash-completion/completions/git-tree
+share/bash-completion/completions/gitree
 share/glib-2.0/schemas/io.github.li9i.gitree.gschema.xml
 share/icons/hicolor/128x128/apps/io.github.li9i.gitree.png
 share/icons/hicolor/48x48/apps/io.github.li9i.gitree.png
@@ -40,6 +42,11 @@ fi
 
 if [ "$(readlink bin/git-tree)" != "gitree" ]; then
 	echo "test-meson-install.sh: bin/git-tree is not a link to gitree" >&2
+	exit 1
+fi
+
+if [ "$(readlink share/bash-completion/completions/git-tree)" != "gitree" ]; then
+	echo "test-meson-install.sh: the completion of git-tree is not a link to that of gitree" >&2
 	exit 1
 fi
 

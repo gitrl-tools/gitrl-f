@@ -48,6 +48,8 @@ docker run --rm -e GITREE_VERSION="$upstream" \
 		test -f "/usr/share/icons/hicolor/${size}x${size}/apps/io.github.li9i.gitree.png"
 	done
 	test -f /usr/share/icons/hicolor/symbolic/apps/io.github.li9i.gitree-symbolic.svg
+	test -f /usr/share/bash-completion/completions/gitree
+	test "$(readlink /usr/share/bash-completion/completions/git-tree)" = "gitree"
 
 	echo "--- the schema was compiled on install ---"
 	for schema in preferences.interface preferences.history state.window state.history; do
@@ -61,6 +63,8 @@ docker run --rm -e GITREE_VERSION="$upstream" \
 	apt-get remove -y -qq gitree >/dev/null
 	test ! -e /usr/bin/gitree
 	test ! -e /usr/bin/git-tree
+	test ! -e /usr/share/bash-completion/completions/gitree
+	test ! -e /usr/share/bash-completion/completions/git-tree
 
 	echo "--- purge ---"
 	dpkg --purge gitree

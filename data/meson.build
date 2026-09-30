@@ -111,3 +111,17 @@ install_man(
   ),
   'git-tree.1',
 )
+
+bash_completion_dir = join_paths(gitree_datadir, 'bash-completion', 'completions')
+
+install_data(
+  'gitree.bash-completion',
+  install_dir: bash_completion_dir,
+  rename: gitree_binary,
+)
+
+install_symlink(
+  'git-tree',
+  pointing_to: gitree_binary,
+  install_dir: bash_completion_dir,
+)
