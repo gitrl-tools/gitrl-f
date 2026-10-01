@@ -18,6 +18,19 @@
  */namespace GittreeTest
 {
 
+private static void activate(string prefix)
+{
+	var item = menu_item_starting(prefix);
+
+	if (item != null)
+	{
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+	}
+
+	settle(800);
+}
+
 private static Gittree.Application application()
 {
 	var app = GLib.Application.get_default() as Gittree.Application;
@@ -64,6 +77,61 @@ public static int main(string[] args)
 	return Test.run();
 }
 
+private static void right_click_row(Gittree.Window window, int row)
+{
+	var view = window.history.paned.commit_list_view;
+	Gdk.Rectangle cell;
+	int origin_x;
+	int origin_y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(1), out cell);
+	view.get_bin_window().get_origin(out origin_x, out origin_y);
+	click_at(origin_x + cell.x + 10, origin_y + cell.y + cell.height / 2, 1, 3);
+	settle(600);
+}
+
+private static void right_click_text(Gittree.Window window, string text)
+{
+	foreach (var file in window.history.diff_view.get_files())
+	{
+		file.expanded = true;
+	}
+
+	settle(400);
+
+	foreach (var file in window.history.diff_view.get_files())
+	{
+		foreach (var view in file.get_text_views())
+		{
+			Gtk.TextIter start;
+			Gtk.TextIter found;
+			Gtk.TextIter end;
+			Gdk.Rectangle location;
+			int x;
+			int y;
+			int top_x;
+			int top_y;
+			int origin_x;
+			int origin_y;
+
+			view.buffer.get_start_iter(out start);
+
+			if (!start.forward_search(text, 0, out found, out end, null))
+			{
+				continue;
+			}
+
+			view.get_iter_location(found, out location);
+			view.buffer_to_window_coords(Gtk.TextWindowType.WIDGET, location.x + 1, location.y + location.height / 2, out x, out y);
+			view.translate_coordinates(view.get_toplevel(), x, y, out top_x, out top_y);
+			view.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+			click_at(origin_x + top_x, origin_y + top_y, 1, 3);
+			settle(300);
+			return;
+		}
+	}
+}
+
 private static string run(string[] argv) throws Error
 {
 	string output;
@@ -86,6 +154,122 @@ private static void settle(int milliseconds)
 
 		Thread.usleep(10000);
 	}
+}
+
+private static void stage_four(File location, Repo repo)
+{
+	var window = new Gittree.Window(application());
+	var history = window.history;
+	var bar = history.search_field.get_parent();
+
+	window.set_default_size(1000, 800);
+	window.open_repository(location, null, {}, repo.path);
+	window.show();
+	settle(300);
+
+	history.search_visible = true;
+
+	foreach (var label in new string[] { "Match case", "Whole word", "Regular expression", "Only matches" })
+	{
+		check_labelled(bar, label).active = true;
+		history.search_field.text = "f[a-z]+";
+		settle(300);
+		check_labelled(bar, label).active = false;
+	}
+
+	history.search_field.text = "author:tester after:2026-01 fix";
+	settle(300);
+
+	var ticks = new Gee.HashSet<string>();
+	ticks.add("refs/heads/feature/scan");
+	history.set_ticks(ticks);
+	history.search_field.text = "fix two";
+	settle(300);
+
+	foreach (var widget in find_all(bar, typeof(Gtk.Button)))
+	{
+		if (((Gtk.Button)widget).label == "Tick and show")
+		{
+			((Gtk.Button)widget).clicked();
+		}
+	}
+
+	settle(300);
+	history.search_visible = false;
+	history.paned.refs_list.tick_all();
+	settle(200);
+
+	history.apply("fix|base", true, true, {}, "");
+	settle(800);
+	history.apply("", true, false, { "fix" }, "");
+	settle(800);
+	history.apply("", true, false, {}, "A");
+	settle(800);
+	history.apply("", true, false, {}, "D");
+	settle(800);
+	history.apply("", true, false, { "fix" }, "R");
+	settle(800);
+	history.lift_filter();
+	settle(300);
+
+	var rows = history.rows();
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		if (rows[i].get_subject() == "fix two")
+		{
+			history.paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.from_indices(i));
+			right_click_row(window, i);
+			activate("Merged into");
+			right_click_row(window, i);
+			activate("First tag");
+		}
+	}
+
+	rows = history.rows();
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		if (rows[i].get_subject() == "fix two")
+		{
+			history.paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.from_indices(i));
+		}
+	}
+
+	history.paned.details_visible = true;
+	history.paned.details_only = true;
+	settle(600);
+	right_click_text(window, "fix one");
+	activate("Go to the commit");
+	right_click_text(window, "fix");
+	activate("Show history of");
+	history.paned.path_bar.response(Gtk.ResponseType.CLOSE);
+	history.paned.details_only = false;
+	settle(300);
+
+	click_widget(row(history.paned.refs_list, "feature/scan"), 3);
+	settle(300);
+
+	var split = menu_item("Go to where it splits from");
+
+	if (split != null)
+	{
+		foreach (var child in ((Gtk.Menu)split.submenu).get_children())
+		{
+			if (((Gtk.MenuItem)child).label == "master")
+			{
+				((Gtk.MenuItem)child).activate();
+			}
+		}
+
+		((Gtk.Menu)split.get_parent()).popdown();
+	}
+
+	settle(500);
+	window.activate_action("reload", null);
+	settle(500);
+	window.close();
+	settle(100);
 }
 
 private static void test_a_session_changes_nothing()
@@ -163,6 +347,8 @@ private static void test_a_session_changes_nothing()
 			filtered.close();
 			settle(100);
 		}
+
+		stage_four(location, repo);
 
 		assert_cmpstr(differences(copy, repo.path), CompareOperator.EQ, "");
 
