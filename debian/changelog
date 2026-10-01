@@ -1,3 +1,14 @@
+gittree (0.4.0-1) noble; urgency=medium
+
+  * The name of the program changes from gitree to gittree. The command is
+    gittree, and git tree runs it too. When you install the package
+    gittree, it removes the package gitree.
+  * The PPA is ppa:li9i/gittree. If you added ppa:li9i/gitree, remove it.
+  * The settings of gitree do not move to gittree. Set your preferences
+    again.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Thu, 01 Oct 2026 10:37:55 +0200
+
 gitree (0.3.6-1) noble; urgency=medium
 
   * A right-click on a ref in the refs panel opens a menu that copies the

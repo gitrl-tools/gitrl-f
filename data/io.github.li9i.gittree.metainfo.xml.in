@@ -64,6 +64,25 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.4.0" date="2026-10-01">
+      <description>
+        <ul>
+          <li>
+            The name of the program changes from gitree to gittree. The
+            command is gittree, and git tree runs it too. When you install
+            the package gittree, it removes the package gitree.
+          </li>
+          <li>
+            The PPA is ppa:li9i/gittree. If you added ppa:li9i/gitree,
+            remove it.
+          </li>
+          <li>
+            The settings of gitree do not move to gittree. Set your
+            preferences again.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.6" date="2026-09-30">
       <description>
         <ul>
