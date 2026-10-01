@@ -44,6 +44,27 @@ private static Gtk.CheckButton check_of(Gittree.Window window, string short_name
 	return (Gtk.CheckButton)find_all(row(window.history.paned.refs_list, short_name), typeof(Gtk.CheckButton))[0];
 }
 
+private static void choose_split(Gittree.Window window, string from, string other)
+{
+	click_widget(row(window.history.paned.refs_list, from), 3);
+	settle(300);
+
+	var item = menu_item("Go to where it splits from");
+
+	assert_nonnull(item);
+
+	foreach (var child in ((Gtk.Menu)item.submenu).get_children())
+	{
+		if (((Gtk.MenuItem)child).label == other)
+		{
+			((Gtk.MenuItem)child).activate();
+		}
+	}
+
+	((Gtk.Menu)item.get_parent()).popdown();
+	settle(500);
+}
+
 private static void click_row(Gittree.Window window, int row, int count = 1)
 {
 	var view = window.history.paned.commit_list_view;
@@ -137,6 +158,19 @@ private static uint lane_of(Gittree.Window window, string subject)
 	assert_not_reached();
 }
 
+private static void lift_hidden(Gittree.Window window)
+{
+	foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
+	{
+		if (((Gtk.Button)widget).label == "Lift the filter" && widget.get_mapped())
+		{
+			((Gtk.Button)widget).clicked();
+		}
+	}
+
+	settle(400);
+}
+
 public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
@@ -176,11 +210,14 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/the-commit-menu-names-the-first-tag", test_the_commit_menu_names_the_first_tag);
 	Test.add_func("/gittree/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
 	Test.add_func("/gittree/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
+	Test.add_func("/gittree/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gittree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
 	Test.add_func("/gittree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
 	Test.add_func("/gittree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
 	Test.add_func("/gittree/ui/history-activity/two-quick-ticks-keep-the-top-row", test_two_quick_ticks_keep_the_top_row);
+	Test.add_func("/gittree/ui/history-activity/two-refs-that-share-no-commit-say-so", test_two_refs_that_share_no_commit_say_so);
 	Test.add_func("/gittree/ui/history-activity/untick-of-the-top-row-puts-the-next-shown-row-at-the-top", test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top);
+	Test.add_func("/gittree/ui/history-activity/where-two-refs-split-can-be-hidden-by-the-filter", test_where_two_refs_split_can_be_hidden_by_the_filter);
 	Test.add_func("/gittree/ui/history-activity/window-jump-shows-the-tip-in-a-scrolled-list", test_window_jump_shows_the_tip_in_a_scrolled_list);
 	Test.add_func("/gittree/ui/history-activity/window-jump-ticks-an-unticked-ref-and-selects-its-tip", test_window_jump_ticks_an_unticked_ref_and_selects_its_tip);
 	Test.add_func("/gittree/ui/history-activity/window-labels-only-ticked-refs", test_window_labels_only_ticked_refs);
@@ -1566,6 +1603,51 @@ private static void test_the_commit_menu_opens_on_every_column()
 	}
 }
 
+private static void test_the_ref_menu_goes_to_where_two_refs_split()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature/scan", "refs/heads/fix/stamp", "refs/remotes/origin/master"});
+		var expected = new string[0];
+
+		foreach (var child in window.history.paned.refs_list.get_children())
+		{
+			var candidate = child as Gittree.RefsRow;
+
+			if (candidate != null && candidate.ticked && candidate.reference.short_name != "feature/scan")
+			{
+				expected += candidate.reference.short_name;
+			}
+		}
+
+		click_widget(row(window.history.paned.refs_list, "feature/scan"), 3);
+		settle(300);
+
+		var item = menu_item("Go to where it splits from");
+
+		assert_nonnull(item);
+		assert_cmpstr(submenu_labels(item), CompareOperator.EQ, string.joinv(",", expected));
+		assert_true("master" in expected);
+		assert_false("v1" in expected);
+
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+		choose_split(window, "feature/scan", "master");
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "base two");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_tick_at_the_very_top_stays_at_the_top()
 {
 	try
@@ -1682,6 +1764,40 @@ private static void test_two_quick_ticks_keep_the_top_row()
 	}
 }
 
+private static void test_two_refs_that_share_no_commit_say_so()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.git({"checkout", "--quiet", "--orphan", "lonely"});
+		repo.git({"rm", "--quiet", "-rf", "."});
+		repo.commit("alone", "other");
+		repo.checkout("master");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/lonely"});
+
+		choose_split(window, "lonely", "master");
+
+		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "lonely and master share no commit.");
+
+		foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
+		{
+			if (((Gtk.Button)widget).label == "Lift the filter")
+			{
+				assert_false(widget.get_mapped());
+			}
+		}
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top()
 {
 	try
@@ -1708,6 +1824,36 @@ private static void test_untick_of_the_top_row_puts_the_next_shown_row_at_the_to
 		{
 			assert_cmpstr(top, CompareOperator.EQ, "base 49 0");
 		}
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_where_two_refs_split_can_be_hidden_by_the_filter()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature/scan"});
+		var base_two = repo.git({"rev-parse", "--short", "v1"}).strip();
+
+		window.history.apply_filter("fix", false);
+		settle(800);
+		choose_split(window, "feature/scan", "master");
+
+		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "%s is where they split. The filter hides it.".printf(base_two));
+
+		lift_hidden(window);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "base two");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();

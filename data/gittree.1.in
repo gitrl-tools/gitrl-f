@@ -150,6 +150,12 @@ choice ticks or unticks it. First tag with this commit names the tag that
 gives, and a choice selects it. Merged into names the merge that brought
 the commit into the branch of HEAD, or says that the commit was made on
 that branch.
+.PP
+A right click on a ref in the panel offers Copy name and Go to where it
+splits from, with the other ticked refs. A choice selects the newest
+commit that the two refs share, as
+.B git merge-base
+finds it.
 .SH THE HISTORY OF LINES
 A right click on a line of the diff, or on lines that you selected, offers
 Show history of this line or Show history of the selected lines. The list

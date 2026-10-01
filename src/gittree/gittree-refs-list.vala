@@ -58,6 +58,7 @@ public class RefsList : Gtk.ListBox
 		}
 	}
 
+	public signal void menu_opening(Ref reference, CopyMenu menu);
 	public signal void ref_activated(Ref reference);
 	public signal void ticks_changed();
 
@@ -274,6 +275,7 @@ public class RefsList : Gtk.ListBox
 		}
 
 		d_copy_menu.add_copy(_("Copy name"), row.reference.short_name);
+		menu_opening(row.reference, d_copy_menu);
 		return true;
 	}
 
@@ -303,6 +305,18 @@ public class RefsList : Gtk.ListBox
 		}
 
 		ref_activated(((RefsRow)row).reference);
+	}
+
+	public Gee.List<Ref> refs_in_order()
+	{
+		var refs = new Gee.ArrayList<Ref>();
+
+		foreach (var row in d_rows)
+		{
+			refs.add(row.reference);
+		}
+
+		return refs;
 	}
 
 	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks, History? history)

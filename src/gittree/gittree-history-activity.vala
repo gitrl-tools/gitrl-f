@@ -59,6 +59,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private History? d_narrowed;
 	private Gtk.InfoBar d_hidden_bar;
 	private Gtk.Label d_hidden_label;
+	private Gtk.Widget d_lift_button;
 	private Ggit.OId? d_hidden_target;
 	private Gee.Map<Ggit.OId, Gee.List<string>>? d_names;
 	private Gtk.CheckButton d_only_matches;
@@ -313,7 +314,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_hidden_bar.show_close_button = true;
 		d_hidden_bar.no_show_all = true;
 		d_hidden_bar.get_content_area().add(d_hidden_label);
-		d_hidden_bar.add_button(_("Lift the filter"), Gtk.ResponseType.ACCEPT);
+		d_lift_button = d_hidden_bar.add_button(_("Lift the filter"), Gtk.ResponseType.ACCEPT);
 		d_hidden_bar.response.connect((response) => {
 			d_hidden_bar.hide();
 
@@ -485,6 +486,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.refs_list.ticks_changed.connect(() => {
 			set_ticks(d_paned.refs_list.ticks);
 		});
+		d_paned.refs_list.menu_opening.connect(add_split_item);
 		d_paned.refs_list.ref_activated.connect((reference) => {
 			jump(reference.name);
 		});
@@ -821,6 +823,32 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
+	private void add_split_item(Ref reference, CopyMenu menu)
+	{
+		var item = new Gtk.MenuItem.with_label(_("Go to where it splits from"));
+		var submenu = new Gtk.Menu();
+
+		foreach (var other in d_paned.refs_list.refs_in_order())
+		{
+			if (other.name == reference.name || !d_ticks.contains(other.name))
+			{
+				continue;
+			}
+
+			var entry = new Gtk.MenuItem.with_label(other.short_name);
+
+			entry.activate.connect(() => go_to_split(reference, other));
+			entry.show();
+			submenu.add(entry);
+		}
+
+		item.submenu = submenu;
+		item.sensitive = submenu.get_children() != null;
+		item.show();
+		menu.add_separator();
+		menu.add(item);
+	}
+
 	private void author_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var commit = d_model.commit_from_iter(iter);
@@ -1109,6 +1137,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return d_repository.get_location();
 	}
 
+	private void go_to(Ggit.OId id, string hidden)
+	{
+		if (d_model.path_from_commit(id) != null)
+		{
+			select(id);
+			return;
+		}
+
+		d_hidden_target = id;
+		show_hint(hidden, true);
+	}
+
 	private void go_to_blame(Ggit.OId parent, string path, int line)
 	{
 		var cancellable = new Cancellable();
@@ -1146,16 +1186,55 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_blame = null;
 			d_unfold_commit = found;
 			d_unfold_path = name != null ? name : path;
+			go_to(found, _("%s last changed this line. The filter hides it.").printf(found.to_string().substring(0, 7)));
+		});
+	}
 
-			if (d_model.path_from_commit(found) != null)
+	private void go_to_split(Ref from, Ref other)
+	{
+		var cancellable = new Cancellable();
+		var names = "%s and %s".printf(from.short_name, other.short_name);
+
+		if (d_blame != null)
+		{
+			d_blame.cancel();
+		}
+
+		d_blame = cancellable;
+
+		History.git_async.begin(git_directory(), { "merge-base", from.target.to_string(), other.target.to_string() }, null, cancellable, (obj, res) => {
+			string[] records;
+
+			try
 			{
-				select(found);
+				records = History.git_async.end(res);
+			}
+			catch (Error e)
+			{
+				if (!cancellable.is_cancelled())
+				{
+					show_hint(_("%s share no commit.").printf(names), false);
+				}
+
 				return;
 			}
 
-			d_hidden_target = found;
-			d_hidden_label.label = _("%s last changed this line. The filter hides it.").printf(found.to_string().substring(0, 7));
-			d_hidden_bar.show();
+			if (cancellable.is_cancelled())
+			{
+				return;
+			}
+
+			d_blame = null;
+
+			if (records.length == 0 || records[0] == "")
+			{
+				show_hint(_("%s share no commit.").printf(names), false);
+				return;
+			}
+
+			var found = new Ggit.OId.from_string(records[0]);
+
+			go_to(found, _("%s is where they split. The filter hides it.").printf(records[0].substring(0, 7)));
 		});
 	}
 
@@ -1967,6 +2046,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_filter_bar.set_paths({ wanted });
 		filter_visible = true;
 		apply("", !d_filter_bar.match_case, d_filter_bar.regex, { wanted });
+	}
+
+	private void show_hint(string text, bool lift)
+	{
+		d_hidden_label.label = text;
+		d_lift_button.visible = lift;
+		d_hidden_bar.show();
 	}
 
 	private void show_line_history(LineHistory lines, string path, Ggit.OId commit)
