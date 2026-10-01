@@ -16,6 +16,7 @@ gittree takes these patches from gitrl-z, which vendors the same source. The dif
 - gittree does not take gitrl-z's patch to `gitg-lanes.vala`, which changes the settings schema that the lanes read. gittree has a history, and it reads gitg's own `preferences.history` settings. Its own patch to that file is a different one, below.
 - gittree does not take gitrl-z's patch to `gitg-color.vala`, which adds `Color.from_index()`. Nothing in gittree needs it.
 - The diff pane keeps gitg's Unif and Split switcher on each file, which gitrl-z hides.
+- The parts of four patches that give the find bar of the diff its view of the pane, and all of `gitg-diff-view-file-info.patch`, are gittree's own. gitrl-z has no find in the diff.
 - The patches add no comments to gitg's code. The reasons are here.
 
 ## gitg-repository.patch

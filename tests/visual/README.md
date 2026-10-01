@@ -29,7 +29,7 @@ The suite needs Xvfb, xwd, ImageMagick, xdotool, dbus-run-session, gitg and pyth
 
 ## Results
 
-Measured on 2026-09-26 with gitg 44-1build2 and GTK 3.24 on Ubuntu 24.04.
+Measured on 2026-10-01 with gitg 44-1build2 and GTK 3.24 on Ubuntu 24.04.
 
 | Comparison | Differing pixels |
 |---|---|

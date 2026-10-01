@@ -461,6 +461,16 @@ private static void test_next_and_previous_cross_files_and_wrap()
 
 		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 2");
 
+		Gtk.test_widget_send_key(bar.field, Gdk.Key.g, Gdk.ModifierType.CONTROL_MASK);
+		settle(100);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "2 of 2");
+
+		Gtk.test_widget_send_key(bar.field, Gdk.Key.G, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK);
+		settle(100);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 2");
+
 		window.destroy();
 		repo.remove();
 	}

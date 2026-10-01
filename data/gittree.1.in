@@ -80,7 +80,8 @@ a file the commit changes goes up or down, as in
 .BR "git log \-S" .
 A merge never does. The graph joins across the commits that it leaves out.
 The search runs in the background, and the filter bar changes the text
-later.
+later. Enter on an empty field of the filter bar, or the close button of the
+yellow bar above the list, lifts the filter.
 .TP
 .BR \-i ", " \-\-ignore\-case
 With
@@ -126,7 +127,8 @@ Go to the next commit that matches. In the find bar of the diff, go to the
 next match, and open its file.
 .TP
 .BR Shift+Enter ", " Ctrl+Shift+G
-Go to the commit before that matches.
+Go to the commit before that matches. In the find bar of the diff, go to
+the match before.
 .TP
 .B Escape
 Close the bar whose field has the focus. With the focus elsewhere, close
@@ -145,8 +147,8 @@ Quit.
 Normal run.
 .TP
 .B 1
-A ref matches nothing, a ref, a path or a tick option is given outside a
-repository, or the display cannot be opened.
+A ref matches nothing, a ref, a path, a text or a tick option is given
+outside a repository, or the display cannot be opened.
 .TP
 .B 2
 Usage error.

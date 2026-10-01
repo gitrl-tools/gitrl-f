@@ -67,7 +67,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s [--window] <repository> [--text <text>] [<full ref name>...]\n", args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -240,13 +240,13 @@ public class Bench : Object
 		drain();
 
 		stdout.printf("window reload %.3f s\n", timer.elapsed());
+		stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
 
 		if (text != null)
 		{
 			filtered(window, text, every, only, path);
+			stdout.printf("peak resident memory after the filter %.0f MiB\n", peak_memory());
 		}
-
-		stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
 
 		window.destroy();
 

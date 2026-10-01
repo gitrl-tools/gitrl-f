@@ -13,7 +13,7 @@
 - **The details on a click.** The pane under the history is hidden until you click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A click on the same commit, Enter or Escape hides it again. A double-click is two clicks: it shows the pane and hides it again. A click that opens a file, or a click on Expand all, fills the window with the diff. A click that closes a file does not change the window. When the commit changes only one file, Enter fills the window at once. Escape, the back arrow or the close button at the top right of the diff brings back the refs and the list.
 - **A path limit.** `gittree -- src/parser.py` keeps only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does.
 - **Find in the diff.** Ctrl+F in the pane opens a find bar above the details. It marks every match in every file of the commit, folded files too, and Enter goes to the next match and opens its file. It matches case unless you turn **Match case** off.
-- **A text filter.** `gittree -S parse_args` keeps only the commits that add or remove `parse_args`, as `git log -S` does, and the graph joins across the other commits. Ctrl+Shift+F, or the funnel button, sets or changes the filter in the window. The search runs in the background, so the window stays in use while git reads the history. Under a filter, the find bar of the diff opens with the same text.
+- **A text filter.** `gittree -S parse_args` keeps only the commits that add or remove `parse_args`, as `git log -S` does, and the graph joins across the other commits. Ctrl+Shift+F, or the funnel button, sets or changes the filter in the window. Enter on an empty field of the filter bar, or the close button of the yellow bar, lifts it. The search runs in the background, so the window stays in use while git reads the history. Under a filter, the find bar of the diff opens with the same text.
 - **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same commit at the top of the list.
 
 ![A click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
@@ -148,7 +148,7 @@ Outside a repository, `gittree` opens a list of the repositories that you opened
 | `Ctrl+F` | Opens or closes the search bar, or the find bar of the diff when the diff has the focus or fills the window |
 | `Ctrl+Shift+F` | Opens or closes the filter bar |
 | `Enter`, `Ctrl+G` | Goes to the next commit that matches, or in the find bar of the diff, to the next match |
-| `Shift+Enter`, `Ctrl+Shift+G` | Goes to the one before |
+| `Shift+Enter`, `Ctrl+Shift+G` | Goes to the one before, in the list or in the find bar of the diff |
 | `F5` | Reads the repository again |
 | `Ctrl+Q` | Quits |
 
