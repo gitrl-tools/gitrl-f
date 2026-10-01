@@ -27,7 +27,7 @@ public class History : Object
 	private Gitg.Lanes d_lanes;
 	private int[] d_parents;
 	private int[] d_parents_start;
-	private Gee.HashMap<Ggit.OId, Ggit.OId?> d_starts;
+	private Gee.HashMap<Ggit.OId, Gee.List<Ggit.OId>> d_starts;
 
 	public int size
 	{
@@ -72,6 +72,149 @@ public class History : Object
 
 		index_parents(parents, counts);
 		d_lanes = new Gitg.Lanes();
+	}
+
+	public History.filtered(History history, Gee.Set<Ggit.OId> matches, Gee.List<Ref> refs)
+	{
+		var count = history.d_commits.length;
+		var shown = new bool[count];
+		var near = new int[0];
+		var near_start = new int[count];
+		var near_end = new int[count];
+
+		for (var i = 0; i < count; i++)
+		{
+			shown[i] = matches.contains(history.d_commits[i].get_id());
+		}
+
+		for (var i = count - 1; i >= 0; i--)
+		{
+			near_start[i] = near.length;
+
+			if (shown[i])
+			{
+				near += i;
+				near_end[i] = near.length;
+				continue;
+			}
+
+			for (var p = history.d_parents_start[i]; p < history.d_parents_start[i + 1]; p++)
+			{
+				var parent = history.d_parents[p];
+
+				for (var n = near_start[parent]; n < near_end[parent]; n++)
+				{
+					var found = near[n];
+					var seen = false;
+
+					for (var k = near_start[i]; k < near.length && !seen; k++)
+					{
+						seen = near[k] == found;
+					}
+
+					if (!seen)
+					{
+						near += found;
+					}
+				}
+			}
+
+			near_end[i] = near.length;
+		}
+
+		var through = new int[0];
+		var through_start = new int[count];
+		var through_end = new int[count];
+
+		for (var i = 0; i < count; i++)
+		{
+			through_start[i] = through.length;
+
+			if (shown[i])
+			{
+				var parents = new int[0];
+
+				for (var p = history.d_parents_start[i]; p < history.d_parents_start[i + 1]; p++)
+				{
+					parents += history.d_parents[p];
+				}
+
+				foreach (var found in nearest(parents, near, near_start, near_end))
+				{
+					through += found;
+				}
+			}
+
+			through_end[i] = through.length;
+		}
+
+		begin();
+
+		var marks = new int[count];
+		var stamp = 0;
+		var parent_ids = new Ggit.OId[0];
+		var counts = new int[0];
+
+		for (var i = 0; i < count; i++)
+		{
+			if (!shown[i])
+			{
+				continue;
+			}
+
+			add(history.d_commits[i]);
+
+			var kept = uncovered(through[through_start[i]:through_end[i]], through, through_start, through_end, marks, ref stamp);
+
+			foreach (var parent in kept)
+			{
+				parent_ids += history.d_commits[parent].get_id();
+			}
+
+			counts += kept.length;
+		}
+
+		index_parents(parent_ids, counts);
+
+		var tips = id_set();
+
+		foreach (var reference in refs)
+		{
+			if (d_index.has_key(reference.target) || !tips.add(reference.target))
+			{
+				continue;
+			}
+
+			var starts = new int[0];
+
+			foreach (var id in history.starts_of(reference.target))
+			{
+				starts += history.d_index[id];
+			}
+
+			var kept = uncovered(nearest(starts, near, near_start, near_end), through, through_start, through_end, marks, ref stamp);
+			var list = new Gee.ArrayList<Ggit.OId>();
+
+			for (var k = 1; k < kept.length; k++)
+			{
+				for (var j = k; j > 0 && kept[j - 1] > kept[j]; j--)
+				{
+					var swap = kept[j];
+					kept[j] = kept[j - 1];
+					kept[j - 1] = swap;
+				}
+			}
+
+			foreach (var start in kept)
+			{
+				list.add(history.d_commits[start].get_id());
+			}
+
+			d_starts[reference.target] = list;
+		}
+
+		d_lanes = new Gitg.Lanes();
+		d_lanes.set_parents_func(parents_of);
 	}
 
 	public History.with_paths(Gitg.Repository repository, Gee.List<Ref> refs, string[] paths, File directory, bool topological) throws Error
@@ -145,7 +288,14 @@ public class History : Object
 			}
 
 			var found = git(directory, rev_list, null);
-			d_starts[id] = found.length > 0 && found[0] != "" ? new Ggit.OId.from_string(found[0]) : null;
+			var list = new Gee.ArrayList<Ggit.OId>();
+
+			if (found.length > 0 && found[0] != "")
+			{
+				list.add(new Ggit.OId.from_string(found[0]));
+			}
+
+			d_starts[id] = list;
 		}
 
 		d_lanes = new Gitg.Lanes();
@@ -162,7 +312,7 @@ public class History : Object
 	{
 		d_commits = new Gitg.Commit[0];
 		d_index = id_map<int>();
-		d_starts = id_map<Ggit.OId?>();
+		d_starts = id_map<Gee.List<Ggit.OId>>();
 	}
 
 	private static string[] git(File directory, string[] arguments, string? input) throws Error
@@ -340,6 +490,32 @@ public class History : Object
 		return ret;
 	}
 
+	private static int[] nearest(int[] commits, int[] near, int[] near_start, int[] near_end)
+	{
+		var list = new int[0];
+
+		foreach (var commit in commits)
+		{
+			for (var n = near_start[commit]; n < near_end[commit]; n++)
+			{
+				var found = near[n];
+				var seen = false;
+
+				foreach (var listed in list)
+				{
+					seen = seen || listed == found;
+				}
+
+				if (!seen)
+				{
+					list += found;
+				}
+			}
+		}
+
+		return list;
+	}
+
 	public Ggit.OId[] parents_of(Gitg.Commit commit)
 	{
 		var ret = new Ggit.OId[0];
@@ -397,12 +573,29 @@ public class History : Object
 
 	public Ggit.OId? start_of(Ggit.OId tip)
 	{
+		var starts = starts_of(tip);
+
+		return starts.length > 0 ? starts[0] : null;
+	}
+
+	public Ggit.OId[] starts_of(Ggit.OId tip)
+	{
 		if (d_index.has_key(tip))
 		{
-			return tip;
+			return { tip };
 		}
 
-		return d_starts.has_key(tip) ? d_starts[tip] : null;
+		var starts = new Ggit.OId[0];
+
+		if (d_starts.has_key(tip))
+		{
+			foreach (var id in d_starts[tip])
+			{
+				starts += id;
+			}
+		}
+
+		return starts;
 	}
 
 	private static Ggit.OId? target_of(Ggit.Ref reference) throws Error
@@ -427,9 +620,7 @@ public class History : Object
 
 		foreach (var tip in tips)
 		{
-			var id = start_of(tip);
-
-			if (id != null)
+			foreach (var id in starts_of(tip))
 			{
 				starts += d_index[id];
 				roots.add(id);
@@ -496,6 +687,59 @@ public class History : Object
 		}
 
 		return rows;
+	}
+
+	private static int[] uncovered(int[] candidates, int[] through, int[] through_start, int[] through_end, int[] marks, ref int stamp)
+	{
+		var covered = new bool[candidates.length];
+		var limit = 0;
+
+		foreach (var candidate in candidates)
+		{
+			limit = int.max(limit, candidate);
+		}
+
+		for (var b = 0; b < candidates.length && candidates.length > 1; b++)
+		{
+			var stack = new int[0];
+
+			stamp++;
+			stack += candidates[b];
+
+			while (stack.length > 0)
+			{
+				var commit = stack[stack.length - 1];
+				stack.length--;
+
+				for (var t = through_start[commit]; t < through_end[commit]; t++)
+				{
+					var next = through[t];
+
+					if (next <= limit && marks[next] != stamp)
+					{
+						marks[next] = stamp;
+						stack += next;
+					}
+				}
+			}
+
+			for (var a = 0; a < candidates.length; a++)
+			{
+				covered[a] = covered[a] || (a != b && marks[candidates[a]] == stamp);
+			}
+		}
+
+		var kept = new int[0];
+
+		for (var a = 0; a < candidates.length; a++)
+		{
+			if (!covered[a])
+			{
+				kept += candidates[a];
+			}
+		}
+
+		return kept;
 	}
 }
 
