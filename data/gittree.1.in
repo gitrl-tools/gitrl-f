@@ -5,12 +5,18 @@ gittree \- the history of the git refs that you tick
 .B gittree
 .RI [ OPTION ...]
 .RI [ REF ...]
+.RB [ \-S
+.I TEXT
+.RB [ \-i ]]
 .RB [ \-\-
 .IR PATH ...]
 .br
 .B git tree
 .RI [ OPTION ...]
 .RI [ REF ...]
+.RB [ \-S
+.I TEXT
+.RB [ \-i ]]
 .RB [ \-\-
 .IR PATH ...]
 .SH DESCRIPTION
@@ -66,6 +72,21 @@ Tick every remote branch.
 .BR \-t ", " \-\-tags
 Tick every tag.
 .TP
+.BR \-S ", " \-\-text " \fITEXT\fR"
+Draw only the commits that add or remove
+.IR TEXT .
+A commit adds or removes the text when the number of times it appears in
+a file the commit changes goes up or down, as in
+.BR "git log \-S" .
+A merge never does. The graph joins across the commits that it leaves out.
+The search runs in the background, and the filter bar changes the text
+later.
+.TP
+.BR \-i ", " \-\-ignore\-case
+With
+.BR \-S ,
+ignore case.
+.TP
 .BI "\-\- " PATH
 Draw only the commits that change these files or folders.
 .TP
@@ -101,7 +122,8 @@ window, open or close the find bar of the diff instead.
 Open or close the filter bar.
 .TP
 .BR Enter ", " Ctrl+G
-Go to the next commit that matches.
+Go to the next commit that matches. In the find bar of the diff, go to the
+next match, and open its file.
 .TP
 .BR Shift+Enter ", " Ctrl+Shift+G
 Go to the commit before that matches.
