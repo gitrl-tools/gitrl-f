@@ -197,7 +197,7 @@ public class Window : Gtk.ApplicationWindow
 	{
 		if (d_search_button.visible)
 		{
-			d_search_button.active = !d_search_button.active;
+			d_history.toggle_search();
 		}
 	}
 

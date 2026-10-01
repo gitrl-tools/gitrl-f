@@ -140,7 +140,7 @@ Outside a repository, `gittree` opens a list of the repositories that you opened
 | Click, `Enter` in the list | Shows or hides the details and the diff of a commit. `Enter` also fills the window when the commit changes one file |
 | Click that opens a file, or on Expand all | Fills the window with the diff |
 | `Escape` | Closes the search bar, or else the full diff, or else the details |
-| `Ctrl+F` | Opens or closes the search bar |
+| `Ctrl+F` | Opens or closes the search bar, or the find bar of the diff when the diff has the focus or fills the window |
 | `Enter`, `Ctrl+G` | Goes to the next commit that matches |
 | `Shift+Enter`, `Ctrl+Shift+G` | Goes to the one before |
 | `F5` | Reads the repository again |

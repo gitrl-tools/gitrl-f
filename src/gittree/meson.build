@@ -3,6 +3,7 @@ gittree_lib_sources = files(
   'gittree-command-line.vala',
   'gittree-copy-menu.vala',
   'gittree-dash-view.vala',
+  'gittree-diff-find-bar.vala',
   'gittree-diff-find.vala',
   'gittree-history-activity.vala',
   'gittree-history-model.vala',

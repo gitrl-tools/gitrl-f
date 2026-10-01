@@ -96,6 +96,7 @@ xvfb_wrapper = find_program('ui/run-xvfb.sh')
 
 ui_tests = [
   'dash',
+  'diff-find',
   'diff-pane',
   'follow',
   'history-activity',

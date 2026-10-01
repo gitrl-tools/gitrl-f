@@ -27,6 +27,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
+	private DiffFindBar d_find_bar;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
 	private HistoryPaned d_paned;
@@ -64,6 +65,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public string display_name
 	{
 		owned get { return _("History"); }
+	}
+
+	public DiffFindBar find_bar
+	{
+		get { return d_find_bar; }
 	}
 
 	public string id
@@ -305,8 +311,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		d_paned.notify["details-visible"].connect(() => {
+			if (!d_paned.details_visible)
+			{
+				d_find_bar.search_mode_enabled = false;
+			}
+
 			show_details();
 		});
+
+		d_find_bar = new DiffFindBar(d_diff);
+		d_paned.box_details.add(d_find_bar);
 
 		var overlay = new Gtk.Overlay();
 		overlay.add(d_diff);
@@ -437,6 +451,24 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		show_match_count();
 		d_paned.commit_list_view.queue_draw();
+	}
+
+	private bool finds_in_diff()
+	{
+		if (!d_paned.details_visible)
+		{
+			return false;
+		}
+
+		if (d_paned.details_only)
+		{
+			return true;
+		}
+
+		var window = d_box.get_toplevel() as Gtk.Window;
+		var focus = window != null ? window.get_focus() : null;
+
+		return focus != null && focus.is_ancestor(d_paned.box_details);
 	}
 
 	private void hash_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
@@ -972,6 +1004,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return labels;
+	}
+
+	public void toggle_search()
+	{
+		if (finds_in_diff())
+		{
+			d_find_bar.search_mode_enabled = !d_find_bar.search_mode_enabled;
+			return;
+		}
+
+		search_visible = !search_visible;
 	}
 }
 

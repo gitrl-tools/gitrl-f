@@ -93,7 +93,8 @@ only one file, Enter fills the window with the diff.
 Fill the window with the diff. A click that closes a file does not.
 .TP
 .B Ctrl+F
-Open or close the search bar.
+Open or close the search bar. When the diff has the focus or fills the
+window, open or close the find bar of the diff instead.
 .TP
 .BR Enter ", " Ctrl+G
 Go to the next commit that matches.

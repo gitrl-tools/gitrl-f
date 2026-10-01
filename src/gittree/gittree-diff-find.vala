@@ -36,7 +36,7 @@ public class DiffFind : Object
 	private unichar[] d_needle;
 	private string d_text;
 
-	public int current { get; private set; default = -1; }
+	public int current { get; set; default = -1; }
 
 	public int length
 	{
