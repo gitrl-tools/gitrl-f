@@ -14,9 +14,15 @@ __gittree()
 		fi
 	done
 
+	case $prev in
+	-S | --text)
+		return
+		;;
+	esac
+
 	if [[ $cur == -* ]]; then
 		COMPREPLY=($(compgen -W '-a --all -l --local -r --remotes -t --tags
-			-h --help --version --no-wd --' -- "$cur"))
+			-S --text -i --ignore-case -h --help --version --no-wd --' -- "$cur"))
 		return
 	fi
 

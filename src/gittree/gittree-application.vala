@@ -99,7 +99,21 @@ public class Application : Gtk.Application
 
 		if (command_line.no_wd && !command_line.is_empty)
 		{
-			stderr.printf("%sgittree: error: --no-wd takes no ref, no path and no tick option\n", CommandLine.USAGE);
+			stderr.printf("%sgittree: error: --no-wd takes no ref, no path, no text and no tick option\n", CommandLine.USAGE);
+			exit_status = 2;
+			return true;
+		}
+
+		if (command_line.text == "")
+		{
+			stderr.printf("%sgittree: error: argument -S/--text: the text is empty\n", CommandLine.USAGE);
+			exit_status = 2;
+			return true;
+		}
+
+		if (command_line.ignore_case && command_line.text == null)
+		{
+			stderr.printf("%sgittree: error: argument -i/--ignore-case: needs -S\n", CommandLine.USAGE);
 			exit_status = 2;
 			return true;
 		}

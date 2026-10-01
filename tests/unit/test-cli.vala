@@ -28,7 +28,7 @@ private const string[] PROTOTYPE_PARSES = {
 	"-alrt|all,local,remotes,tags||||",
 	"--loc|local||||",
 	"--rem|remotes||||",
-	"--t|tags||||",
+	"--t||||ambiguous option: --t could match --tags, --text|",
 	"--h|||||help",
 	"-x||||unrecognized arguments: -x|",
 	"--foo||||unrecognized arguments: --foo|",
@@ -74,7 +74,7 @@ private const string[] PROTOTYPE_PARSES = {
 	"--foo -- p||||unrecognized arguments: --foo|",
 	"-lx -y||||unrecognized arguments: -x -y|",
 	"-=x||||unrecognized arguments: -=x|",
-	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --help, --version, --no-wd|",
+	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd|",
 	"-l-||||argument -l/--local: ignored explicit argument '-'|",
 	"-la=x||||argument -a/--all: ignored explicit argument 'x'|",
 	"-l origin/master|local|origin/master|||",
@@ -82,6 +82,65 @@ private const string[] PROTOTYPE_PARSES = {
 	"feature/* refs/tags/v1.*||feature/*,refs/tags/v1.*|||",
 	"-.5||-.5|||",
 	"-1.5x||||unrecognized arguments: -1.5x|",
+};
+
+private const string[] TEXT_PARSES = {
+	"-S\tfoo||||foo||",
+	"-Sfoo||||foo||",
+	"-S=foo||||foo||",
+	"-S=-x||||-x||",
+	"-S-x||||-x||",
+	"-S\t-1||||-1||",
+	"--text\tfoo||||foo||",
+	"--text=foo||||foo||",
+	"--te\tfoo||||foo||",
+	"--te=foo||||foo||",
+	"--t\tfoo||||||ambiguous option: --t could match --tags, --text",
+	"-S\ta\t-S\tb||||b||",
+	"-S||||||argument -S/--text: expected one argument",
+	"-S\t-x||||||argument -S/--text: expected one argument",
+	"-S\t--all||||||argument -S/--text: expected one argument",
+	"--text||||||argument -S/--text: expected one argument",
+	"-S\tfoo\tmaster||master||foo||",
+	"master\t-S\tfoo||master||foo||",
+	"master\t-S\tfoo\tdev||||||unrecognized arguments: dev",
+	"-S\tfoo\t--\tsrc|||src|foo||",
+	"-S\t--\tsrc||||||argument -S/--text: expected one argument",
+	"-lS\tfoo|local|||foo||",
+	"-lSfoo|local|||foo||",
+	"-Sl||||l||",
+	"-iS\tfoo||||foo|i|",
+	"-S\tfoo\t-i||||foo|i|",
+	"-i||||None|i|",
+	"--ignore-case||||None|i|",
+	"--ig||||None|i|",
+	"--i||||None|i|",
+	"-i=x||||||argument -i/--ignore-case: ignored explicit argument 'x'",
+	"-S\t||||||",
+	"-S=||||||",
+	"-S\tfoo bar||||foo bar||",
+	"-S\t-foo||||||argument -S/--text: expected one argument",
+	"-S-foo||||-foo||",
+	"--text\t-x||||||argument -S/--text: expected one argument",
+	"--text=-x||||-x||",
+	"-S\tfoo\t-x||||||unrecognized arguments: -x",
+	"-ia|all|||None|i|",
+	"-ai|all|||None|i|",
+	"--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"--ta|tags|||None||",
+	"--tex\tfoo||||foo||",
+	"-lS=foo|local|||foo||",
+	"-S\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-S\t--zzz||||||argument -S/--text: expected one argument",
+	"-S\t-a b||||||argument -S/--text: expected one argument",
+	"-S\t-x y||||-x y||",
+	"-S\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"-S\t-||||-||",
+	"-S\t--no||||||argument -S/--text: expected one argument",
+	"-S\t--text=x||||||argument -S/--text: expected one argument",
+	"-S\ta b||||a b||",
+	"-x\t-S\tfoo||||||unrecognized arguments: -x",
+	"-S\tfoo\t--t||||||ambiguous option: --t could match --tags, --text",
 };
 
 private static string[] arguments_of(string row)
@@ -138,14 +197,19 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gittree/cli/a-text-alone-ticks-every-ref", test_a_text_alone_ticks_every_ref);
+	Test.add_func("/gittree/cli/an-empty-text-is-refused", test_an_empty_text_is_refused);
 	Test.add_func("/gittree/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
 	Test.add_func("/gittree/cli/help-names-every-option", test_help_names_every_option);
 	Test.add_func("/gittree/cli/help-says-gittree-and-git-tree", test_help_says_gittree_and_git_tree);
+	Test.add_func("/gittree/cli/help-says-what-adds-or-removes-a-text", test_help_says_what_adds_or_removes_a_text);
+	Test.add_func("/gittree/cli/ignore-case-needs-a-text", test_ignore_case_needs_a_text);
 	Test.add_func("/gittree/cli/long-only-options-parse-as-argparse", test_long_only_options_parse_as_argparse);
 	Test.add_func("/gittree/cli/no-display-exits-with-one", test_no_display_exits_with_one);
-	Test.add_func("/gittree/cli/no-wd-refuses-refs-paths-and-tick-options", test_no_wd_refuses_refs_paths_and_tick_options);
+	Test.add_func("/gittree/cli/no-wd-refuses-refs-paths-texts-and-tick-options", test_no_wd_refuses_refs_paths_texts_and_tick_options);
 	Test.add_func("/gittree/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
 	Test.add_func("/gittree/cli/parses-as-the-prototype", test_parses_as_the_prototype);
+	Test.add_func("/gittree/cli/text-and-ignore-case-parse-as-argparse", test_text_and_ignore_case_parse_as_argparse);
 	Test.add_func("/gittree/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
 	Test.add_func("/gittree/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
 
@@ -175,6 +239,58 @@ private static int run(string directory, string[] arguments, out string output, 
 	}
 
 	return Process.if_exited(status) ? Process.exit_status(status) : -1;
+}
+
+private static void test_a_text_alone_ticks_every_ref()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("side");
+		repo.git({"tag", "v1"});
+
+		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
+		var refs = Gittree.Refs.read(repository);
+		var all = Gittree.Ticks.resolve(new Gittree.CommandLine({ "-S", "foo" }), refs);
+		var local = Gittree.Ticks.resolve(new Gittree.CommandLine({ "-S", "foo", "-l" }), refs);
+
+		assert_cmpint(all.size, CompareOperator.EQ, refs.size);
+		assert_true(all.contains("refs/tags/v1"));
+		assert_true(local.contains("refs/heads/side"));
+		assert_false(local.contains("refs/tags/v1"));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_an_empty_text_is_refused()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		foreach (var arguments in new string[] { "-S\t", "-S=", "--text=" })
+		{
+			string output;
+			string errors;
+
+			assert_cmpint(run(repo.path.get_path(), arguments.split("\t"), out output, out errors), CompareOperator.EQ, 2);
+			assert_cmpstr(output, CompareOperator.EQ, "");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -S/--text: the text is empty\n");
+		}
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_help_is_printed_anywhere()
@@ -213,7 +329,7 @@ private static void test_help_names_every_option()
 
 	run(Environment.get_current_dir(), { "-h" }, out output, out errors);
 
-	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--version", "--no-wd", "-- <path>..." })
+	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--text <text>", "--ignore-case", "--version", "--no-wd", "-- <path>..." })
 	{
 		assert_true(option in output);
 	}
@@ -223,7 +339,7 @@ private static void test_help_says_gittree_and_git_tree()
 {
 	var lines = Gittree.CommandLine.HELP.split("\n");
 
-	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gittree [<options>] [<ref>...] [-- <path>...]");
+	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gittree [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]");
 	assert_cmpstr(Gittree.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
 	assert_true("\ngit tree runs it too.\n" in Gittree.CommandLine.HELP);
 	assert_true("\nOptions add up: 'gittree -l origin/master' ticks every local\n" in Gittree.CommandLine.HELP);
@@ -235,6 +351,39 @@ private static void test_help_says_gittree_and_git_tree()
 	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gittree.CommandLine.HELP);
 	assert_true("\n    Escape                      close the search bar, full diff or details\n" in Gittree.CommandLine.HELP);
 	assert_true("\n    Ctrl+F                      open or close the search bar, or the\n                                diff's find bar when the diff has the\n                                focus\n" in Gittree.CommandLine.HELP);
+}
+
+private static void test_help_says_what_adds_or_removes_a_text()
+{
+	var help = Gittree.CommandLine.HELP;
+
+	assert_true("\n    -t, --tags      tick every tag\n    -S, --text <text>\n                    draw only the commits that add or remove <text>\n    -i, --ignore-case\n                    with -S, ignore case\n    -h, --help" in help);
+	assert_true("\nSearch ignores case and looks in the subject, the message, the\nauthor and the hash.\n\nA commit adds or removes the text when the number of times it\nappears in a file the commit changes goes up or down, as in git\nlog -S. A merge never does.\n" in help);
+}
+
+private static void test_ignore_case_needs_a_text()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		foreach (var option in new string[] { "-i", "--ignore-case" })
+		{
+			string output;
+			string errors;
+
+			assert_cmpint(run(repo.path.get_path(), { option }, out output, out errors), CompareOperator.EQ, 2);
+			assert_cmpstr(output, CompareOperator.EQ, "");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -i/--ignore-case: needs -S\n");
+		}
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_long_only_options_parse_as_argparse()
@@ -283,7 +432,7 @@ private static void test_no_display_exits_with_one()
 	}
 }
 
-private static void test_no_wd_refuses_refs_paths_and_tick_options()
+private static void test_no_wd_refuses_refs_paths_texts_and_tick_options()
 {
 	try
 	{
@@ -295,6 +444,8 @@ private static void test_no_wd_refuses_refs_paths_and_tick_options()
 			{ "-a", "" },
 			{ "-l", "" },
 			{ "--", "file" },
+			{ "-S", "foo" },
+			{ "-i", "" },
 		};
 
 		for (var i = 0; i < cases.length[0]; i++)
@@ -311,7 +462,7 @@ private static void test_no_wd_refuses_refs_paths_and_tick_options()
 
 			assert_cmpint(run(repo.path.get_path(), arguments, out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: --no-wd takes no ref, no path and no tick option\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: --no-wd takes no ref, no path, no text and no tick option\n");
 		}
 
 		foreach (var option in new string[] { "-h", "--version" })
@@ -350,6 +501,7 @@ private static void test_outside_a_repository_arguments_are_an_error()
 		{ "master", "" },
 		{ "-a", "" },
 		{ "--", "file" },
+		{ "-S", "foo" },
 	};
 
 	for (var i = 0; i < cases.length[0]; i++)
@@ -396,6 +548,29 @@ private static void test_parses_as_the_prototype()
 		assert_cmpstr(flags_of(cli), CompareOperator.EQ, expected[1]);
 		assert_cmpstr(string.joinv(",", cli.refs), CompareOperator.EQ, expected[2]);
 		assert_cmpstr(string.joinv(",", cli.paths), CompareOperator.EQ, expected[3]);
+	}
+}
+
+private static void test_text_and_ignore_case_parse_as_argparse()
+{
+	foreach (var row in TEXT_PARSES)
+	{
+		var expected = row.split("|");
+		var arguments = expected[0] == "" ? new string[0] : expected[0].split("\t");
+		var cli = new Gittree.CommandLine(arguments);
+
+		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, expected[6]);
+
+		if (expected[6] != "")
+		{
+			continue;
+		}
+
+		assert_cmpstr(flags_of(cli), CompareOperator.EQ, expected[1]);
+		assert_cmpstr(string.joinv(",", cli.refs), CompareOperator.EQ, expected[2]);
+		assert_cmpstr(string.joinv(",", cli.paths), CompareOperator.EQ, expected[3]);
+		assert_cmpstr(cli.text != null ? cli.text : "None", CompareOperator.EQ, expected[4]);
+		assert_true(cli.ignore_case == (expected[5] == "i"));
 	}
 }
 

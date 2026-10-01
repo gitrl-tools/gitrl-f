@@ -71,7 +71,8 @@ Draw only the commits that change these files or folders.
 .TP
 .B \-\-no\-wd
 Open the list of repositories, not the repository of the current folder.
-The desktop entry uses it. It takes no ref, no path and no tick option.
+The desktop entry uses it. It takes no ref, no path, no text and no tick
+option.
 .TP
 .B \-\-version
 Print the version and exit.

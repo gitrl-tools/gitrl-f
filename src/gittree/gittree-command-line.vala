@@ -22,7 +22,7 @@ namespace Gittree
 
 public class CommandLine : Object
 {
-	public const string HELP = """usage: gittree [<options>] [<ref>...] [-- <path>...]
+	public const string HELP = """usage: gittree [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]
 
 Shows the history of the repository in a window, with a checkbox
 for each branch, remote branch and tag. Only the commits that a
@@ -40,6 +40,10 @@ repository, it opens a list of the repositories you opened last.
     -l, --local     tick every local branch
     -r, --remotes   tick every remote branch
     -t, --tags      tick every tag
+    -S, --text <text>
+                    draw only the commits that add or remove <text>
+    -i, --ignore-case
+                    with -S, ignore case
     -h, --help      print this help and exit
     --version       print the version and exit
     --no-wd         open the chooser, not the repository of this
@@ -69,34 +73,43 @@ Keys
 
 Search ignores case and looks in the subject, the message, the
 author and the hash.
+
+A commit adds or removes the text when the number of times it
+appears in a file the commit changes goes up or down, as in git
+log -S. A merge never does.
 """;
 
-	public const string USAGE = "usage: gittree [<options>] [<ref>...] [-- <path>...]\n";
+	public const string USAGE = "usage: gittree [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]\n";
 
-	private const string LONG_KEYS = "alrthVW";
+	private const string EXPECTED_TEXT = "argument -S/--text: expected one argument";
 
-	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "help", "version", "no-wd" };
+	private const string LONG_KEYS = "alrtSihVW";
 
-	private const string SHORT_NAMES = "alrth";
+	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "text", "ignore-case", "help", "version", "no-wd" };
+
+	private const string SHORT_NAMES = "alrtSih";
 
 	private string[] d_extras;
+	private bool d_wants_text;
 
 	public bool all { get; private set; }
 	public string? error { get; private set; }
 	public bool help { get; private set; }
+	public bool ignore_case { get; private set; }
 	public bool local { get; private set; }
 	public bool no_wd { get; private set; }
 	public string[] paths { get; private set; }
 	public string[] refs { get; private set; }
 	public bool remotes { get; private set; }
 	public bool tags { get; private set; }
+	public string? text { get; private set; }
 	public bool version { get; private set; }
 
 	public bool is_empty
 	{
 		get
 		{
-			return !all && !local && !remotes && !tags && refs.length == 0 && paths.length == 0;
+			return !all && !local && !remotes && !tags && text == null && !ignore_case && refs.length == 0 && paths.length == 0;
 		}
 	}
 
@@ -131,9 +144,58 @@ author and the hash.
 		return Regex.match_simple("^-\\d+$|^-\\d*\\.\\d+$", argument);
 	}
 
+	private static bool is_option_like(string argument)
+	{
+		if (!argument.has_prefix("-") || argument == "-")
+		{
+			return false;
+		}
+
+		if (argument.has_prefix("--"))
+		{
+			if (long_matches(long_name(argument)).length > 0)
+			{
+				return true;
+			}
+		}
+		else if (is_short_name(argument[1]))
+		{
+			return true;
+		}
+
+		return !is_negative_number(argument) && !(" " in argument);
+	}
+
 	private static bool is_short_name(char c)
 	{
 		return c != 0 && SHORT_NAMES.index_of_char(c) >= 0;
+	}
+
+	private static string[] long_matches(string name)
+	{
+		var matches = new string[0];
+
+		foreach (var candidate in LONG_NAMES)
+		{
+			if (candidate == name)
+			{
+				return { candidate };
+			}
+
+			if (candidate.has_prefix(name))
+			{
+				matches += candidate;
+			}
+		}
+
+		return matches;
+	}
+
+	private static string long_name(string argument)
+	{
+		var equals = argument.index_of_char('=');
+
+		return (equals >= 0 ? argument.substring(0, equals) : argument).substring(2);
 	}
 
 	private void parse(string[] arguments)
@@ -150,6 +212,28 @@ author and the hash.
 			{
 				after += argument;
 				continue;
+			}
+
+			if (d_wants_text)
+			{
+				d_wants_text = false;
+
+				if (argument != "--" && !is_option_like(argument))
+				{
+					text = argument;
+					continue;
+				}
+
+				if (argument != "--" && argument.has_prefix("--") && long_matches(long_name(argument)).length > 1)
+				{
+					parse_long(argument);
+				}
+				else
+				{
+					error = EXPECTED_TEXT;
+				}
+
+				break;
 			}
 
 			if (argument == "--")
@@ -189,6 +273,11 @@ author and the hash.
 		refs = positional;
 		paths = after;
 
+		if (error == null && d_wants_text)
+		{
+			error = EXPECTED_TEXT;
+		}
+
 		if (error == null && d_extras.length > 0)
 		{
 			error = "unrecognized arguments: " + string.joinv(" ", d_extras);
@@ -207,22 +296,7 @@ author and the hash.
 			explicit = argument.substring(equals + 1);
 		}
 
-		var name = head.substring(2);
-		var matches = new string[0];
-
-		foreach (var candidate in LONG_NAMES)
-		{
-			if (candidate == name)
-			{
-				matches = { candidate };
-				break;
-			}
-
-			if (candidate.has_prefix(name))
-			{
-				matches += candidate;
-			}
-		}
+		var matches = long_matches(head.substring(2));
 
 		if (matches.length > 1)
 		{
@@ -250,7 +324,11 @@ author and the hash.
 
 		var option = LONG_KEYS[index_of_long(matches[0])];
 
-		if (explicit != null)
+		if (option == 'S')
+		{
+			take_text(explicit);
+		}
+		else if (explicit != null)
 		{
 			explicit_argument(option, explicit);
 		}
@@ -292,9 +370,15 @@ author and the hash.
 			return true;
 		}
 
-		set_option(option);
-
 		var rest = argument.substring(2);
+
+		if (option == 'S')
+		{
+			take_text(rest.has_prefix("=") ? rest.substring(1) : rest, !rest.has_prefix("="));
+			return true;
+		}
+
+		set_option(option);
 
 		while (rest.length > 0)
 		{
@@ -317,8 +401,15 @@ author and the hash.
 			}
 
 			option = rest[0];
-			set_option(option);
 			rest = rest.substring(1);
+
+			if (option == 'S')
+			{
+				take_text(rest.has_prefix("=") ? rest.substring(1) : rest, !rest.has_prefix("="));
+				return true;
+			}
+
+			set_option(option);
 		}
 
 		return true;
@@ -344,6 +435,9 @@ author and the hash.
 			case 'h':
 				help = true;
 				break;
+			case 'i':
+				ignore_case = true;
+				break;
 			case 'l':
 				local = true;
 				break;
@@ -360,6 +454,17 @@ author and the hash.
 				no_wd = true;
 				break;
 		}
+	}
+
+	private void take_text(string? attached, bool attached_or_next = false)
+	{
+		if (attached != null && (attached != "" || !attached_or_next))
+		{
+			text = attached;
+			return;
+		}
+
+		d_wants_text = true;
 	}
 }
 
