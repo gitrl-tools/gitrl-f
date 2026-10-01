@@ -135,8 +135,8 @@ ticks every local branch and
 .SH SEARCH
 Ctrl+F opens the search bar of the list. It looks in the subject, the
 message, the author and the hash of each commit in the list. Match case
-and Regular expression narrow the search, and Only matches hides the
-commits that do not match. Words narrow it further:
+and Regular expression narrow the search, and Display matches only hides
+the commits that do not match. Words narrow it further:
 .BI author: TEXT
 looks in the name and the email of the author,
 .BI message: TEXT

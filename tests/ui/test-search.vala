@@ -357,7 +357,7 @@ private static void test_closing_the_bar_shows_every_commit_and_keeps_only_match
 		var window = opened(repo);
 
 		type_text(window, "parser");
-		check_labelled(list_bar(window), "Only matches").active = true;
+		check_labelled(list_bar(window), "Display matches only").active = true;
 		settle(200);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
@@ -370,7 +370,7 @@ private static void test_closing_the_bar_shows_every_commit_and_keeps_only_match
 		window.history.search_visible = true;
 		settle(200);
 
-		assert_true(check_labelled(list_bar(window), "Only matches").active);
+		assert_true(check_labelled(list_bar(window), "Display matches only").active);
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
 
 		window.destroy();
@@ -532,7 +532,7 @@ private static void test_only_matches_and_a_filter_both_hold()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
 
 		type_text(window, "parser");
-		check_labelled(list_bar(window), "Only matches").active = true;
+		check_labelled(list_bar(window), "Display matches only").active = true;
 		settle(200);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "Parser fix");
@@ -558,7 +558,7 @@ private static void test_only_matches_keeps_the_selection_out_of_the_list()
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "issue 42");
 
-		check_labelled(list_bar(window), "Only matches").active = true;
+		check_labelled(list_bar(window), "Display matches only").active = true;
 		type_text(window, "parser");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
@@ -591,7 +591,7 @@ private static void test_only_matches_narrows_as_you_type()
 	{
 		var repo = four_subjects();
 		var window = opened(repo);
-		var toggle = check_labelled(list_bar(window), "Only matches");
+		var toggle = check_labelled(list_bar(window), "Display matches only");
 
 		assert_cmpstr(toggle.tooltip_text, CompareOperator.EQ, "Hide the commits that do not match");
 
@@ -632,7 +632,7 @@ private static void test_only_matches_with_nothing_shows_a_notice()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		check_labelled(list_bar(window), "Only matches").active = true;
+		check_labelled(list_bar(window), "Display matches only").active = true;
 		type_text(window, "zzz");
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
@@ -712,7 +712,7 @@ private static void test_search_words_narrow_the_list()
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad date");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 
-		check_labelled(list_bar(window), "Only matches").active = true;
+		check_labelled(list_bar(window), "Display matches only").active = true;
 		type_text(window, "author:tester fix before:2027");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");

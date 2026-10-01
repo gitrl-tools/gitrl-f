@@ -164,7 +164,7 @@ public class Bench : Object
 		{
 			var check = widget as Gtk.CheckButton;
 
-			if (check != null && check.label == "Only matches")
+			if (check != null && check.label == "Display matches only")
 			{
 				narrow = check;
 			}

@@ -262,7 +262,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search_switches = new SearchSwitches(search_box);
 		d_search_switches.changed.connect(find_matches);
 
-		d_only_matches = new Gtk.CheckButton.with_label(_("Only matches"));
+		d_only_matches = new Gtk.CheckButton.with_label(_("Display matches only"));
 		d_only_matches.tooltip_text = _("Hide the commits that do not match");
 		d_only_matches.toggled.connect(find_matches);
 		search_box.add(d_only_matches);
