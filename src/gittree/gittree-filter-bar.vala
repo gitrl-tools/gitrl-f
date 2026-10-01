@@ -22,16 +22,10 @@ namespace Gittree
 
 public class FilterBar : Gtk.SearchBar
 {
-	private Gtk.ComboBoxText d_change;
 	private Gtk.SearchEntry d_field;
 	private Gtk.Entry d_paths;
 	private Gtk.Label d_problem;
 	private SearchSwitches d_switches;
-
-	public string change
-	{
-		owned get { return d_change.active_id != null ? d_change.active_id : ""; }
-	}
 
 	public Gtk.SearchEntry field
 	{
@@ -60,7 +54,7 @@ public class FilterBar : Gtk.SearchBar
 		set { d_switches.regex = value; }
 	}
 
-	public signal void applied(string text, bool match_case, bool regex, string[] paths, string change);
+	public signal void applied(string text, bool match_case, bool regex, string[] paths);
 
 	public FilterBar()
 	{
@@ -79,14 +73,6 @@ public class FilterBar : Gtk.SearchBar
 		d_paths.activate.connect(apply);
 		d_paths.changed.connect(() => check());
 
-		d_change = new Gtk.ComboBoxText();
-		d_change.append("", _("Any change"));
-		d_change.append("A", _("Added"));
-		d_change.append("D", _("Deleted"));
-		d_change.append("R", _("Renamed"));
-		d_change.active_id = "";
-		d_change.tooltip_text = _("Only commits that added, deleted or renamed a file");
-
 		d_problem = new Gtk.Label(null);
 
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
@@ -99,7 +85,6 @@ public class FilterBar : Gtk.SearchBar
 		filter.clicked.connect(apply);
 
 		box.add(d_paths);
-		box.add(d_change);
 		box.add(filter);
 		box.add(d_problem);
 		box.show_all();
@@ -122,7 +107,7 @@ public class FilterBar : Gtk.SearchBar
 
 		if (check() && whole)
 		{
-			applied(d_field.text, d_switches.match_case, d_switches.regex, paths, change);
+			applied(d_field.text, d_switches.match_case, d_switches.regex, paths);
 		}
 	}
 

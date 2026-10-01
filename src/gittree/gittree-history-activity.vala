@@ -27,7 +27,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.Button d_beyond_button;
 	private Cancellable? d_blame;
 	private Gtk.Box d_box;
-	private string d_change;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
@@ -240,7 +239,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_beyond = new Ggit.OId[0];
 		d_query = new SearchQuery("", false, false, false);
 		d_matches = new int[0];
-		d_change = "";
 		d_narrow_key = "";
 
 		d_paned = new HistoryPaned();
@@ -301,8 +299,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		d_filter_bar = new FilterBar();
-		d_filter_bar.applied.connect((text, match_case, regex, paths, change) => {
-			apply(text, !match_case, regex, paths, change);
+		d_filter_bar.applied.connect((text, match_case, regex, paths) => {
+			apply(text, !match_case, regex, paths);
 		});
 		d_filter_bar.notify["search-mode-enabled"].connect(() => {
 			notify_property("filter-visible");
@@ -801,10 +799,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		menu.add(item);
 	}
 
-	public void apply(string text, bool ignore_case, bool regex, string[] paths, string change = "")
+	public void apply(string text, bool ignore_case, bool regex, string[] paths)
 	{
 		drop_lines();
-		d_change = change;
 
 		if (string.joinv("\n", paths) != string.joinv("\n", d_paths))
 		{
@@ -818,7 +815,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		if (d_paths.length == 0 && d_change == "")
+		if (d_paths.length == 0)
 		{
 			lift_filter();
 			return;
@@ -1364,7 +1361,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public void lift_filter()
 	{
 		stop_search();
-		d_change = "";
 		d_text = null;
 		d_regex = false;
 
@@ -1688,18 +1684,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (paths.length == 0)
 		{
-			var change = d_change;
-
 			lift_filter();
-			d_change = change;
 
 			if (text != null)
 			{
 				apply_filter(text, ignore_case, regex);
-			}
-			else if (d_change != "")
-			{
-				show_base();
 			}
 
 			return;
@@ -1778,12 +1767,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				return;
 			}
 
-			if (d_change != "")
-			{
-				show_base();
-				return;
-			}
-
 			show_path_bar();
 			show_ticks();
 		});
@@ -1832,7 +1815,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_full = history;
 		d_all = null;
 
-		if (d_text != null || d_change != "" || follows())
+		if (d_text != null || follows())
 		{
 			search(d_waiting);
 		}
@@ -1894,7 +1877,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search = cancellable;
 		d_waiting = waiting;
 
-		var filter = new Filter(d_text, d_ignore_case, d_regex, d_paths, follows(), d_change);
+		var filter = new Filter(d_text, d_ignore_case, d_regex, d_paths, follows());
 
 		TextSearch.run.begin(start, tips, filter, cancellable, (obj, res) => {
 			Gee.Set<Ggit.OId> matches;
@@ -2017,7 +2000,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_base()
 	{
-		if (follows() || d_change != "")
+		if (follows())
 		{
 			search(false);
 			show_path_bar();
@@ -2135,9 +2118,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.path_spinner.visible = searching;
 		d_paned.path_spinner.active = searching;
-		d_paned.path_bar.show_close_button = d_text != null || d_paths.length > 0 || d_change != "";
+		d_paned.path_bar.show_close_button = d_text != null || d_paths.length > 0;
 
-		if (d_paths.length == 0 && d_text == null && d_reading == null && d_change == "")
+		if (d_paths.length == 0 && d_text == null && d_reading == null)
 		{
 			d_paned.path_bar.hide();
 			return;
@@ -2151,10 +2134,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			markup = _("Reading the history of %s...").printf(bold_list(d_reading));
 		}
-		else if (searching && d_text == null && d_paths.length == 0)
-		{
-			markup = Markup.escape_text(_("Searching the changes..."));
-		}
 		else if (searching && d_text == null)
 		{
 			markup = _("Reading the history of %s...").printf(paths);
@@ -2162,22 +2141,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		else if (searching)
 		{
 			markup = _("Searching the changes for %s...").printf(text);
-		}
-		else if (d_change != "")
-		{
-			var verb = d_change == "A" ? _("add files") : (d_change == "D" ? _("delete files") : _("rename files"));
-
-			markup = _("Only commits that %s").printf(verb);
-
-			if (d_paths.length > 0)
-			{
-				markup += _(" under %s").printf(paths);
-			}
-
-			if (d_text != null)
-			{
-				markup += d_regex ? _(" and whose added or removed lines match %s").printf(text) : _(" and add or remove %s").printf(text);
-			}
 		}
 		else if (d_text == null)
 		{
@@ -2271,12 +2234,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			d_kept = kept;
 			show_notice(_("No commit in the ticked refs matches %s.").printf("<b>%s</b>".printf(Markup.escape_text(d_search_entry.text.strip()))));
-			return;
-		}
-
-		if (d_model.size == 0 && d_change != "")
-		{
-			show_notice(Markup.escape_text(_("No ticked ref reaches a commit that the filter keeps.")));
 			return;
 		}
 

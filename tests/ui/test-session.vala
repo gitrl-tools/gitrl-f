@@ -199,15 +199,9 @@ private static void stage_four(File location, Repo repo)
 	history.paned.refs_list.tick_all();
 	settle(200);
 
-	history.apply("fix|base", true, true, {}, "");
+	history.apply("fix|base", true, true, {});
 	settle(800);
-	history.apply("", true, false, { "fix" }, "");
-	settle(800);
-	history.apply("", true, false, {}, "A");
-	settle(800);
-	history.apply("", true, false, {}, "D");
-	settle(800);
-	history.apply("", true, false, { "fix" }, "R");
+	history.apply("", true, false, { "fix" });
 	settle(800);
 	history.lift_filter();
 	settle(300);
