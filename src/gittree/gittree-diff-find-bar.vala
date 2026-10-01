@@ -106,9 +106,6 @@ public class DiffFindBar : Gtk.SearchBar
 		no_show_all = true;
 
 		d_field.search_changed.connect(search);
-		d_field.stop_search.connect(() => {
-			search_mode_enabled = false;
-		});
 
 		notify["search-mode-enabled"].connect(search_mode_changed);
 		d_diff.files_changed.connect(() => {
@@ -432,7 +429,9 @@ public class DiffFindBar : Gtk.SearchBar
 
 		search();
 
-		if (!d_diff.get_mapped())
+		var window = get_toplevel() as Gtk.Window;
+
+		if (!d_diff.get_mapped() || (window != null && window.get_focus() != null))
 		{
 			return;
 		}

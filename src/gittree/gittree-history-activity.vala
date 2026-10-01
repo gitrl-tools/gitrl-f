@@ -299,10 +299,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			find_matches();
 			notify_property("search-visible");
 		});
-		d_search_entry.stop_search.connect(() => {
-			d_search_bar.search_mode_enabled = false;
-		});
-
 		d_search_entry.search_changed.connect(() => {
 			find_matches();
 		});
@@ -429,6 +425,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		});
 		d_paned.box_details.add(d_find_bar);
+
+		foreach (var field in new Gtk.SearchEntry[] { d_search_entry, d_filter_bar.field, d_find_bar.field })
+		{
+			field.stop_search.connect(() => {
+				escape();
+			});
+		}
 
 		var overlay = new Gtk.Overlay();
 		overlay.add(d_diff);
@@ -935,13 +938,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	public bool escape()
 	{
-		foreach (var bar in new Gtk.SearchBar[] { d_search_bar, d_find_bar, d_filter_bar })
+		if (d_find_bar.search_mode_enabled)
 		{
-			if (bar.search_mode_enabled)
-			{
-				bar.search_mode_enabled = false;
-				return true;
-			}
+			d_find_bar.search_mode_enabled = false;
+			return true;
 		}
 
 		if (d_paned.details_only)
@@ -952,9 +952,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_paned.details_visible)
 		{
+			var window = d_paned.get_toplevel() as Gtk.Window;
+
 			d_paned.details_visible = false;
-			d_paned.commit_list_view.grab_focus();
+
+			if (window == null || window.get_focus() == null)
+			{
+				d_paned.commit_list_view.grab_focus();
+			}
+
 			return true;
+		}
+
+		foreach (var bar in new Gtk.SearchBar[] { d_filter_bar, d_search_bar })
+		{
+			if (bar.search_mode_enabled)
+			{
+				bar.search_mode_enabled = false;
+				return true;
+			}
 		}
 
 		return false;

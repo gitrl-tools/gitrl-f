@@ -195,6 +195,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/enter-and-the-button-apply-and-typing-does-not", test_enter_and_the_button_apply_and_typing_does_not);
 	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
 	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-never-lifts-the-filter", test_escape_closes_in_order_and_never_lifts_the_filter);
+	Test.add_func("/gittree/ui/filter/escape-in-a-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_a_field_closes_from_the_bottom_up_and_keeps_the_focus);
 	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
 	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
 	Test.add_func("/gittree/ui/filter/the-close-button-lifts-the-filter-and-the-paths", test_the_close_button_lifts_the_filter_and_the_paths);
@@ -1108,15 +1109,7 @@ private static void test_escape_closes_in_order_and_never_lifts_the_filter()
 		history.paned.commit_list_view.grab_focus();
 
 		assert_true(history.escape());
-		assert_false(history.search_visible);
-		assert_true(history.find_bar.search_mode_enabled);
-
-		assert_true(history.escape());
 		assert_false(history.find_bar.search_mode_enabled);
-		assert_true(history.filter_visible);
-
-		assert_true(history.escape());
-		assert_false(history.filter_visible);
 		assert_true(history.paned.details_only);
 
 		assert_true(history.escape());
@@ -1125,8 +1118,63 @@ private static void test_escape_closes_in_order_and_never_lifts_the_filter()
 
 		assert_true(history.escape());
 		assert_false(history.paned.details_visible);
+		assert_true(history.filter_visible);
+
+		assert_true(history.escape());
+		assert_false(history.filter_visible);
+		assert_true(history.search_visible);
+
+		assert_true(history.escape());
+		assert_false(history.search_visible);
 
 		assert_false(history.escape());
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_escape_in_a_field_closes_from_the_bottom_up_and_keeps_the_focus()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
+		var history = window.history;
+
+		settle(800);
+
+		foreach (var field in new Gtk.Entry[] { history.search_field, history.filter_bar.field, history.filter_bar.paths_field })
+		{
+			history.paned.details_visible = true;
+			history.filter_visible = true;
+			history.search_visible = true;
+			history.find_bar.search_mode_enabled = true;
+			settle(200);
+			field.grab_focus();
+			settle(50);
+
+			Gtk.test_widget_send_key(field, Gdk.Key.Escape, 0);
+			settle(100);
+
+			assert_false(history.find_bar.search_mode_enabled);
+			assert_true(history.paned.details_visible);
+			assert_true(field.has_focus);
+
+			Gtk.test_widget_send_key(field, Gdk.Key.Escape, 0);
+			settle(100);
+
+			assert_false(history.paned.details_visible);
+			assert_true(history.filter_visible);
+			assert_true(history.search_visible);
+			assert_true(field.has_focus);
+		}
+
 		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle");
 
 		window.destroy();

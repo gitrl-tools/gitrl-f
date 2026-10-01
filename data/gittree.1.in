@@ -213,10 +213,10 @@ Go to the commit before that matches. In the find bar of the diff, go to
 the match before.
 .TP
 .B Escape
-Close the bar whose field has the focus. With the focus elsewhere, close
-the first that is open of: the search bar, the find bar of the diff, the
-filter bar, the full diff and the details of the commit. Escape never
-lifts the filter.
+Close one thing, from the bottom of the window up: the find bar of the
+diff, then the full diff, then the details of the commit, then the filter
+bar, then the search bar. A field that has the focus does not change this
+order. Escape never lifts the filter.
 .TP
 .B F5
 Read the repository again.

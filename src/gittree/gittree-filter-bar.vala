@@ -63,9 +63,6 @@ public class FilterBar : Gtk.SearchBar
 		d_field.tooltip_text = _("Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regular expression");
 		d_field.activate.connect(apply);
 		d_field.search_changed.connect(() => check());
-		d_field.stop_search.connect(() => {
-			search_mode_enabled = false;
-		});
 
 		d_paths = new Gtk.Entry();
 		d_paths.width_chars = 30;

@@ -190,8 +190,8 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
 	Test.add_func("/gittree/ui/history-activity/double-click-shows-and-hides-the-pane", test_double_click_shows_and_hides_the_pane);
 	Test.add_func("/gittree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
+	Test.add_func("/gittree/ui/history-activity/escape-closes-the-pane-then-the-search-bar", test_escape_closes_the_pane_then_the_search_bar);
 	Test.add_func("/gittree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
-	Test.add_func("/gittree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
 	Test.add_func("/gittree/ui/history-activity/hash-column-shows-the-short-hash", test_hash_column_shows_the_short_hash);
 	Test.add_func("/gittree/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gittree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
@@ -912,36 +912,7 @@ private static void test_enter_shows_the_pane_at_the_middle_and_hides_it()
 	}
 }
 
-private static void test_escape_closes_the_pane_when_nothing_has_the_focus()
-{
-	try
-	{
-		var repo = two_files();
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		click_row(window, 0);
-		window.history.paned.paned_panels.position = 0;
-		settle(100);
-
-		assert_true(details_shown(window));
-		assert_null(window.get_focus());
-
-		press_key("Escape");
-		settle(100);
-
-		assert_false(details_shown(window));
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_escape_closes_the_search_bar_then_the_pane()
+private static void test_escape_closes_the_pane_then_the_search_bar()
 {
 	try
 	{
@@ -961,10 +932,39 @@ private static void test_escape_closes_the_search_bar_then_the_pane()
 		Gtk.test_widget_send_key(view, Gdk.Key.Escape, 0);
 		settle(100);
 
-		assert_false(window.history.search_visible);
-		assert_true(details_shown(window));
+		assert_false(details_shown(window));
+		assert_true(window.history.search_visible);
 
 		Gtk.test_widget_send_key(view, Gdk.Key.Escape, 0);
+		settle(100);
+
+		assert_false(window.history.search_visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_escape_closes_the_pane_when_nothing_has_the_focus()
+{
+	try
+	{
+		var repo = two_files();
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, 0);
+		window.history.paned.paned_panels.position = 0;
+		settle(100);
+
+		assert_true(details_shown(window));
+		assert_null(window.get_focus());
+
+		press_key("Escape");
 		settle(100);
 
 		assert_false(details_shown(window));
