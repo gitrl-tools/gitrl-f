@@ -136,6 +136,34 @@ private static void test_a_session_changes_nothing()
 		limited.close();
 		settle(100);
 
+		foreach (var path in new string[] { "", "fix" })
+		{
+			var filtered = new Gittree.Window(application());
+			filtered.set_default_size(1000, 800);
+			filtered.open_repository(location, null, path != "" ? new string[] { path } : new string[0], repo.path, "fix", false);
+			filtered.show();
+			settle(800);
+
+			assert_true("add or remove fix" in filtered.history.path_bar_text);
+			assert_cmpint(filtered.history.rows().length, CompareOperator.GT, 0);
+
+			filtered.history.paned.details_visible = true;
+			every_row(filtered);
+			filtered.history.find_bar.search_mode_enabled = true;
+			filtered.history.find_bar.field.text = "fix";
+			settle(300);
+			filtered.history.find_bar.step(1);
+			filtered.history.find_bar.step(-1);
+			filtered.history.apply_filter("FIX", true);
+			settle(800);
+			filtered.activate_action("reload", null);
+			settle(800);
+			filtered.history.lift_filter();
+			settle(200);
+			filtered.close();
+			settle(100);
+		}
+
 		assert_cmpstr(differences(copy, repo.path), CompareOperator.EQ, "");
 
 		run({ "rm", "-rf", copy.get_path() });
