@@ -1,6 +1,15 @@
 --- a/libgitg/gitg-diff-view-file.vala
 +++ b/libgitg/gitg-diff-view-file.vala
-@@ -39,9 +39,19 @@
+@@ -18,7 +18,7 @@
+  */
+ 
+ [GtkTemplate (ui = "/org/gnome/gitg/ui/gitg-diff-view-file.ui")]
+-class Gitg.DiffViewFile : Gtk.Grid
++public class Gitg.DiffViewFile : Gtk.Grid
+ {
+ 	[GtkChild( name = "expander" )]
+ 	private unowned Gtk.Expander d_expander;
+@@ -39,8 +39,20 @@
  	private unowned Gtk.Stack? d_stack_file_renderer;
  
  	private bool d_expanded;
@@ -11,16 +20,18 @@
 +	private Gtk.ScrolledWindow? d_text_page;
 +	private Gtk.Box? d_split_page;
  
- 	public Gee.ArrayList<DiffViewFileRenderer> renderer_list {get; private set;}
- 
+-	public Gee.ArrayList<DiffViewFileRenderer> renderer_list {get; private set;}
++	internal Gee.ArrayList<DiffViewFileRenderer> renderer_list {get; private set;}
++
 +	public int maxlines { get; set; }
 +
-+	public signal void renderer_added(DiffViewFileRenderer renderer);
++	internal signal void renderer_added(DiffViewFileRenderer renderer);
 +
++	public signal void page_shown();
+ 
  	public bool new_is_workdir { get; construct set; }
  
- 	public bool expanded
-@@ -57,6 +67,7 @@
+@@ -57,6 +69,7 @@
  			{
  				d_expanded = value;
  				d_revealer_content.reveal_child = d_expanded;
@@ -28,7 +39,7 @@
  				bool visible = false;
  				if (d_expanded)
  				{
-@@ -82,53 +93,14 @@
+@@ -82,53 +95,14 @@
  	public DiffViewFileInfo? info {get; construct set;}
  	private Gee.HashMap<Gtk.Widget, bool> d_diff_stat_visible_map = new Gee.HashMap<Gtk.Widget, bool>();
  
@@ -84,11 +95,12 @@
  	}
  
  	private void page_changed()
-@@ -136,33 +108,81 @@
+@@ -136,33 +110,82 @@
  		var visible_child = d_stack_file_renderer.get_visible_child();
  		var visible = d_diff_stat_visible_map.get(visible_child);
  		d_diff_stat_file.set_visible(visible);
 +		build_visible_page();
++		page_shown();
  	}
  
 -	public void add_renderer(DiffViewFileRenderer renderer, Gtk.Widget widget, string name, string title, bool show_stats)
@@ -99,7 +111,7 @@
  		d_stack_file_renderer.add_titled(widget, name, title);
  	}
  
-+	public void add_renderer(DiffViewFileRenderer renderer, Gtk.Widget widget, string name, string title, bool show_stats)
++	internal void add_renderer(DiffViewFileRenderer renderer, Gtk.Widget widget, string name, string title, bool show_stats)
 +	{
 +		renderer_list.add(renderer);
 +		add_page(widget, name, title, show_stats);
@@ -180,7 +192,7 @@
  	}
  
  	public void add_binary_renderer()
-@@ -307,6 +327,24 @@
+@@ -307,11 +330,82 @@
  
  	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
  	{
@@ -205,3 +217,61 @@
  		foreach (DiffViewFileRenderer renderer in renderer_list)
  		{
  			renderer.add_hunk(hunk, lines);
+ 		}
+ 	}
++
++	public Gee.List<Ggit.DiffLine> get_lines()
++	{
++		var lines = new Gee.ArrayList<Ggit.DiffLine>();
++		var visible_child = d_stack_file_renderer.get_visible_child();
++
++		if (d_text && (visible_child == null || visible_child == d_text_page || visible_child == d_split_page))
++		{
++			foreach (var hunk_lines in d_hunk_lines)
++			{
++				lines.add_all(hunk_lines);
++			}
++		}
++
++		return lines;
++	}
++
++	public int get_line_offset(Gtk.TextView view, int line)
++	{
++		var renderer = view as DiffViewFileRendererText;
++
++		return renderer != null ? renderer.get_line_offset(line) : -1;
++	}
++
++	public Gtk.TextView[] get_text_views()
++	{
++		var visible_child = d_stack_file_renderer.get_visible_child();
++
++		if (visible_child == null)
++		{
++			return {};
++		}
++
++		if (visible_child == d_text_page && d_text_page.get_child() != null)
++		{
++			return { (Gtk.TextView) d_text_page.get_child() };
++		}
++
++		if (visible_child == d_split_page && d_split_page.get_children() != null)
++		{
++			return ((DiffViewFileRendererTextSplit) d_split_page.get_children().data).get_text_views();
++		}
++
++		return {};
++	}
++
++	public bool split
++	{
++		get
++		{
++			return d_split_page != null && d_stack_file_renderer.get_visible_child() == d_split_page;
++		}
++	}
+ }
+ 
+ // ex:ts=4 noet

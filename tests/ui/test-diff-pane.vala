@@ -65,27 +65,48 @@ private static Gtk.Widget[] find_named(Gtk.Widget widget, string type_name)
 	return found;
 }
 
+private static string? header_of(Gtk.Widget file)
+{
+	foreach (var widget in find_all(file, typeof(Gtk.Label)))
+	{
+		var label = (Gtk.Label)widget;
+
+		if (label.get_name() == "label_file_header" || label.label.contains("/") || label.label.contains("."))
+		{
+			return label.label;
+		}
+	}
+
+	return null;
+}
+
 private static string[] headers(Gittree.Window window)
 {
 	var names = new string[0];
 
 	foreach (var file in find_named(window.history.diff_view, "GitgDiffViewFile"))
 	{
-		var labels = find_all(file, typeof(Gtk.Label));
+		var name = header_of(file);
 
-		foreach (var widget in labels)
+		if (name != null)
 		{
-			var label = (Gtk.Label)widget;
-
-			if (label.get_name() == "label_file_header" || label.label.contains("/") || label.label.contains("."))
-			{
-				names += label.label;
-				break;
-			}
+			names += name;
 		}
 	}
 
 	return names;
+}
+
+private static string lines_of(Gitg.DiffViewFile file)
+{
+	var lines = new string[0];
+
+	foreach (var line in file.get_lines())
+	{
+		lines += "%c%s".printf((char)line.get_origin(), line.get_text().replace("\n", ""));
+	}
+
+	return string.joinv("|", lines);
 }
 
 public static int main(string[] args)
@@ -104,10 +125,13 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
 	Test.add_func("/gittree/ui/diff-pane/file-types-of-the-repository-load-while-idle", test_file_types_of_the_repository_load_while_idle);
 	Test.add_func("/gittree/ui/diff-pane/folded-file-builds-no-text-until-it-opens", test_folded_file_builds_no_text_until_it_opens);
+	Test.add_func("/gittree/ui/diff-pane/folded-section-gives-a-text-view-once-it-unfolds", test_folded_section_gives_a_text_view_once_it_unfolds);
 	Test.add_func("/gittree/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
 	Test.add_func("/gittree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
+	Test.add_func("/gittree/ui/diff-pane/line-offsets-point-at-the-text-of-each-line", test_line_offsets_point_at_the_text_of_each_line);
 	Test.add_func("/gittree/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
 	Test.add_func("/gittree/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
+	Test.add_func("/gittree/ui/diff-pane/sections-list-the-files-in-order-with-their-lines", test_sections_list_the_files_in_order_with_their_lines);
 	Test.add_func("/gittree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
 	Test.add_func("/gittree/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
 	Test.add_func("/gittree/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
@@ -157,6 +181,39 @@ private static string marked_words(Gittree.Window window, string tag_name, bool 
 	return string.joinv("|", words);
 }
 
+private static string offsets_in(Gitg.DiffViewFile file, Gtk.TextView view)
+{
+	var texts = new string[0];
+	var lines = file.get_lines();
+
+	for (var i = 0; i < lines.size; i++)
+	{
+		var offset = file.get_line_offset(view, i);
+
+		if (offset < 0)
+		{
+			texts += "~";
+			continue;
+		}
+
+		var text = lines[i].get_text();
+
+		if (text.has_suffix("\n"))
+		{
+			text = text.substring(0, text.length - 1);
+		}
+
+		Gtk.TextIter start;
+		Gtk.TextIter end;
+
+		view.buffer.get_iter_at_offset(out start, offset);
+		view.buffer.get_iter_at_offset(out end, offset + text.char_count());
+		texts += start.get_text(end);
+	}
+
+	return string.joinv("|", texts);
+}
+
 private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths = {}, File? directory = null) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
@@ -175,6 +232,25 @@ private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths 
 	settle(100);
 
 	return window;
+}
+
+private static Repo seam_repo() throws Error
+{
+	var repo = Repo.create();
+
+	FileUtils.set_contents(repo.path.get_child("a.txt").get_path(), "keep\nold one\nstay\n");
+	FileUtils.set_contents(repo.path.get_child("c.txt").get_path(), "first\nlast");
+	repo.git({"add", "--all"});
+	repo.git({"commit", "--quiet", "-m", "start"});
+
+	FileUtils.set_contents(repo.path.get_child("a.txt").get_path(), "keep\nnew one\nstay\n");
+	FileUtils.set_contents(repo.path.get_child("b.txt").get_path(), "fresh\n");
+	FileUtils.set_contents(repo.path.get_child("c.txt").get_path(), "first\nfinal");
+	repo.path.get_child("d.bin").replace_contents({0x00, 0x01, 0x02, 0x00, 0xff}, null, false, FileCreateFlags.REPLACE_DESTINATION, null, null);
+	repo.git({"add", "--all"});
+	repo.git({"commit", "--quiet", "-m", "change"});
+
+	return repo;
 }
 
 private static void select_subject(Gittree.Window window, string subject)
@@ -637,6 +713,52 @@ private static void test_folded_file_builds_no_text_until_it_opens()
 	}
 }
 
+private static void test_folded_section_gives_a_text_view_once_it_unfolds()
+{
+	try
+	{
+		var repo = seam_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "change");
+
+		var file = window.history.diff_view.get_files()[0];
+		var shown = 0;
+
+		file.page_shown.connect(() => { shown++; });
+
+		assert_false(file.expanded);
+		assert_cmpint(file.get_lines().size, CompareOperator.EQ, 4);
+		assert_cmpint(file.get_text_views().length, CompareOperator.EQ, 0);
+		assert_false(file.split);
+
+		file.expanded = true;
+		settle(300);
+
+		assert_cmpint(shown, CompareOperator.EQ, 1);
+		assert_cmpint(file.get_text_views().length, CompareOperator.EQ, 1);
+		assert_false(file.split);
+		assert_cmpstr(offsets_in(file, file.get_text_views()[0]), CompareOperator.EQ, "keep|old one|new one|stay");
+
+		show_split(window);
+
+		var views = file.get_text_views();
+
+		assert_cmpint(shown, CompareOperator.EQ, 2);
+		assert_cmpint(views.length, CompareOperator.EQ, 2);
+		assert_true(file.split);
+		assert_cmpstr(offsets_in(file, views[0]), CompareOperator.EQ, "keep|old one|~|stay");
+		assert_cmpstr(offsets_in(file, views[1]), CompareOperator.EQ, "keep|~|new one|stay");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_known_language_is_highlighted()
 {
 	try
@@ -703,6 +825,38 @@ private static void test_line_numbers_follow_the_hunk_header()
 		select_subject(window, "change twenty");
 
 		assert_true("@@ -17,7 +17,7 @@" in source_text(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_line_offsets_point_at_the_text_of_each_line()
+{
+	try
+	{
+		var repo = seam_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "change");
+
+		var file = window.history.diff_view.get_files()[2];
+
+		file.expanded = true;
+		settle(300);
+
+		assert_cmpstr(offsets_in(file, file.get_text_views()[0]), CompareOperator.EQ, "first|last|~|final|~");
+
+		show_split(window);
+
+		var views = file.get_text_views();
+
+		assert_cmpstr(offsets_in(file, views[0]), CompareOperator.EQ, "first|last|~|~|~");
+		assert_cmpstr(offsets_in(file, views[1]), CompareOperator.EQ, "first|~|~|final|~");
 
 		window.destroy();
 		repo.remove();
@@ -780,6 +934,46 @@ private static void test_orientation_follows_the_layout_setting()
 		assert_cmpint((panels.position - panels.get_allocated_width() / 2).abs(), CompareOperator.LE, 4);
 
 		settings.reset("orientation");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_sections_list_the_files_in_order_with_their_lines()
+{
+	try
+	{
+		var repo = seam_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var changed = 0;
+
+		window.history.diff_view.files_changed.connect(() => { changed++; });
+		select_subject(window, "start");
+
+		assert_cmpint(changed, CompareOperator.EQ, 1);
+		assert_cmpint(window.history.diff_view.get_files().size, CompareOperator.EQ, 2);
+
+		select_subject(window, "change");
+
+		var files = window.history.diff_view.get_files();
+		var names = new string[0];
+
+		foreach (var file in files)
+		{
+			names += header_of(file);
+		}
+
+		assert_cmpint(changed, CompareOperator.EQ, 2);
+		assert_cmpstr(string.joinv("|", names), CompareOperator.EQ, "a.txt|b.txt|c.txt|d.bin");
+		assert_cmpstr(lines_of(files[0]), CompareOperator.EQ, " keep|-old one|+new one| stay");
+		assert_cmpstr(lines_of(files[1]), CompareOperator.EQ, "+fresh");
+		assert_cmpstr(lines_of(files[2]), CompareOperator.EQ, " first|-last|>\\ No newline at end of file|+final|<\\ No newline at end of file");
+		assert_cmpstr(lines_of(files[3]), CompareOperator.EQ, "");
+
 		window.destroy();
 		repo.remove();
 	}

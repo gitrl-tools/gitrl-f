@@ -104,6 +104,8 @@ public class Gitg.DiffView : Gtk.Grid
 		}
 	}
 
+	public signal void files_changed();
+
 	public virtual signal void options_changed()
 	{
 		if (d_commit != null)
@@ -244,6 +246,18 @@ public class Gitg.DiffView : Gtk.Grid
 		{
 			((Gitg.DiffViewFile) file).expanded = expanded;
 		}
+	}
+
+	public Gee.List<DiffViewFile> get_files()
+	{
+		var files = new Gee.ArrayList<DiffViewFile>();
+
+		for (var i = 0; d_grid_files.get_child_at(0, i) != null; i++)
+		{
+			files.add((DiffViewFile) d_grid_files.get_child_at(0, i));
+		}
+
+		return files;
 	}
 
 	private static Regex s_message_regexp;
@@ -775,6 +789,8 @@ public class Gitg.DiffView : Gtk.Grid
 
 			file.notify["expanded"].connect(auto_update_expanded);
 		}
+
+		files_changed();
 
 		if (end < plans.size)
 		{

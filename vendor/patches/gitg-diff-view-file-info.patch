@@ -1,0 +1,8 @@
+--- a/libgitg/gitg-diff-view-file-info.vala
++++ b/libgitg/gitg-diff-view-file-info.vala
+@@ -1,4 +1,4 @@
+-class Gitg.DiffViewFileInfo : Object
++public class Gitg.DiffViewFileInfo : Object
+ {
+ 	public Ggit.DiffDelta delta { get; construct set; }
+ 	public bool from_workdir { get; construct set; }

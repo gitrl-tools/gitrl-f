@@ -9,7 +9,7 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Twelve files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Thirteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gittree takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
@@ -58,7 +58,7 @@ This patch only removes lines. gitrl-z's patch to this file also indents the lin
 
 ## gitg-diff-view-file-renderer-text.patch
 
-Two changes: the selection comes out, and the word marks go in.
+Three changes: the selection comes out, the word marks go in, and the view records where the text of each line starts.
 
 **1. Removes the line selection** from the diff renderer of gitg. It removes the `DiffSelectable` interface from the class declaration, and the fields `d_selectable`, `d_lines`, `d_has_selection` and `d_doffset`. It also removes the `has_selection` property, `clear_selection()`, the `selection` property, and the `PatchSet.Patch` that the hunk loop made for each added and removed line.
 
@@ -85,9 +85,15 @@ A marked line takes its buffer line from the place where its text goes in. It do
 
 The offsets are byte offsets because they index a string, but a text buffer counts characters. The two are different on the first line that holds a character outside ASCII. Thus each offset becomes a character offset before a tag is applied.
 
+**3. Records where the text of each line starts.** For each line of each hunk, in the order of the hunks, the view keeps the character offset in its buffer where the text of that line goes in. `get_line_offset()` gives it, or -1 for a line that the view does not show. The halves of the split view do not show the lines of the other side. No view shows the "\ No newline at end of file" lines as lines of their own.
+
+**Why.** The find bar of the diff marks a text in the lines of a file, and it must put each mark at the correct place in the buffer. A search of the buffer text does not give the same result. The marker line goes into the buffer on the same line as the line before it. The unified view of a file whose last line changes and has no newline shows `old end\ No newline at end of file` on one buffer line (measured in the UI test, 2026-10-01). A search of the buffer then finds text in the marker, and text across the join, that is in no line of the diff. The split view adds empty lines where one side has more lines than the other. With the offsets, a mark goes on the text of its line and nowhere else.
+
+**Cost.** One integer for each line of each hunk.
+
 ## gitg-diff-view-file-renderer-text-split.patch
 
-Two changes.
+Three changes.
 
 **1. The same removal in the split renderer:** the `DiffSelectable` interface, the `has_selection` property, `clear_selection()` and the `selection` property. Upstream had already put the bodies of the three in comments. The split view gave no selection and returned an empty `PatchSet`. So what goes is three members that only named a type from `gitg-stage.vala`. `can_select` stays, for the cause given above.
 
@@ -97,6 +103,8 @@ Two changes.
 
 **Cost.** Two handlers and a flag. The vertical scroll is not changed: the two sides are in one scrolled pane for that already.
 
+**3. Gives its two text views, left then right, through `get_text_views()`.** `gitg-diff-view-file.patch` gives them to gittree. The cause is given there.
+
 ## gitg-diff-view-file-renderer-textable.patch
 
 Removes `DiffSelectable` from the base list of the interface, one line.
@@ -105,7 +113,7 @@ Removes `DiffSelectable` from the base list of the interface, one line.
 
 ## gitg-diff-view-file.patch
 
-Two changes: the selection comes out, and the text views of a file are made only when they show.
+Three changes: the selection comes out, the text views of a file are made only when they show, and gittree can read the lines and the views of a file.
 
 **1. Removes `has_selection()`, `clear_selection()` and `get_selection()`**, which asked each renderer of one file for its selection.
 
@@ -121,6 +129,30 @@ Now the file keeps its hunks. It makes the unified view when the file opens, and
 
 **Cost.** A view is made when its file first opens, or when Split is first chosen. A commit with one file opens at once, and its diff took 20 to 81 ms.
 
+**3. Makes the class public, with five members for the find bar of the diff.**
+
+- `get_lines()` gives the lines of all the hunks of the file, in order, when the file shows its diff as text. It gives no lines for a binary file, and for a file that shows another page, such as an image.
+- `split` is true when the Split page shows.
+- `get_text_views()` gives the text views of the page that shows: one for Unif, two for Split, left then right. It gives none before the page is made.
+- `get_line_offset()` gives where the text of a line starts in one of those views, from `gitg-diff-view-file-renderer-text.patch`.
+- `page_shown` is sent when the file shows another page. The first open of a file is one of these, because it adds the Unif page. The view of a page is made before the signal is sent.
+
+`expanded` was already a property. gittree sets it to open a folded file.
+
+`renderer_list`, `renderer_added` and `add_renderer()` become internal. Their types are internal to this library, and a public class cannot have public members of such a type. `info` stays public, because a construct property must be public. Thus `gitg-diff-view-file-info.patch` makes its class public.
+
+**Why.** The find bar of the diff searches every file of the commit, folded files included. It must know the lines of a file before its views are made, open a folded file, and mark the views when they are made. gitg keeps the lines of a file in a private field and has no public type for a file. A search of the widget tree gives the views, but not the lines of a folded file, or the buffer place of a line.
+
+**Cost.** The class is public, so it is in the interface file of the library. The five members only read state or send a signal. `expanded` changes nothing that a click on the arrow does not.
+
+## gitg-diff-view-file-info.patch
+
+Makes the class `Gitg.DiffViewFileInfo` public. One word.
+
+**Why.** `gitg-diff-view-file.patch` makes `Gitg.DiffViewFile` public, and its `info` is a construct property. The compiler refuses an internal construct property: "construct properties must be public". A public property cannot have an internal type, so the type of `info` becomes public too. Its members name only public types.
+
+**Cost.** None. gittree does not use the class.
+
 ## gitg-diff-view-file.ui.patch
 
 Removes the slide from the fold of each file. The revealer that holds the diff of a file has no transition.
@@ -131,7 +163,7 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Three changes: the selection comes out, a text view is bound when its file makes it, and the rows of the files are added in batches.
+Four changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, and gittree can read the rows.
 
 **1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
@@ -150,6 +182,12 @@ Three changes: the selection comes out, a text view is bound when its file makes
 **Why.** Each row takes time to make, to add to the pane and to lay out. On a commit that adds 118 files, the diff showed after 536 to 575 ms, with all the rows at once. With batches, the first 20 rows showed after 102 to 149 ms, and all 118 rows were in the pane after 356 to 407 ms. A commit with 20 files or fewer shows as before. This was measured under Xvfb on a copy of this repository, on 2026-09-27.
 
 **Cost.** On a big commit, the rows after the first 20 come in after the first paint. The scroll bar grows while they come in.
+
+**4. Gives the rows of the files, and a signal when they change.** `get_files()` gives the row of each file, in the order of the pane. `files_changed` is sent after each batch of rows from part 3. The first batch of a new diff comes after the rows of the old diff are removed. Thus the signal also tells that the rows were replaced.
+
+**Why.** The find bar of the diff searches the files of the commit that shows, and it must search again when more files come in. The grid that holds the rows is private. A `Gtk.Grid` gives its children in the reverse of the order in which they were added. For a commit of `a.txt` to `d.bin`, it gave `d.bin` first (measured in the UI test, 2026-10-01). Thus the rows are read by their place in the grid.
+
+**Cost.** One signal for each batch, and nothing when nothing listens.
 
 ## gitg-lanes.patch
 

@@ -40,7 +40,13 @@
  	private DiffViewLinesRenderer d_old_lines;
  	private DiffViewLinesRenderer d_new_lines;
  	private DiffViewLinesRenderer d_sym_lines;
-@@ -68,7 +80,6 @@
+@@ -63,12 +75,12 @@
+ 	private bool d_new_highlight_ready;
+ 
+ 	private Region[] d_regions;
++	private int[] d_line_offsets;
+ 	private bool d_constructed;
+ 
  	private Settings? d_stylesettings;
  
  	private FontManager d_font_manager;
@@ -48,7 +54,7 @@
  
  	public Style d_style { get; construct set; }
  
-@@ -124,65 +135,8 @@
+@@ -124,65 +136,8 @@
  		}
  	}
  
@@ -114,7 +120,7 @@
  	public DiffViewFileRendererText(DiffViewFileInfo info, bool can_select, Style style)
  	{
  		Object(info: info, can_select: can_select, d_style: style);
-@@ -245,18 +199,6 @@
+@@ -245,18 +200,6 @@
  
  		update_theme();
  
@@ -133,7 +139,7 @@
  		highlight = true;
  	}
  
-@@ -671,6 +613,24 @@
+@@ -671,6 +614,24 @@
  		this.set_mark_attributes("header", header_attributes, 0);
  		this.set_mark_attributes("added", added_attributes, 0);
  		this.set_mark_attributes("removed", removed_attributes, 0);
@@ -158,7 +164,7 @@
  	}
  
  	protected override void constructed()
-@@ -681,6 +641,66 @@
+@@ -681,6 +642,71 @@
  		update_highlight();
  	}
  
@@ -222,10 +228,15 @@
 +		return text.substring(0, bytes).char_count();
 +	}
 +
++	public int get_line_offset(int line)
++	{
++		return line >= 0 && line < d_line_offsets.length ? d_line_offsets[line] : -1;
++	}
++
  	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
  	{
  		var buffer = this.buffer as Gtk.SourceBuffer;
-@@ -726,6 +746,10 @@
+@@ -726,6 +752,10 @@
  		var add_line_num = 0;
  		var remove_line_num = 0;
  		var in_change_line = false;
@@ -236,7 +247,7 @@
  		for (var i = 0; i < lines.size; i++)
  		{
  			var line = lines[i];
-@@ -791,31 +815,6 @@
+@@ -791,31 +821,6 @@
  			if (d_style == Style.ONE)
  				region.length++;
  
@@ -268,7 +279,7 @@
  			if (i == lines.size - 1 && text.length > 0 && text[text.length - 1] == '\n')
  			{
  				text = text.slice(0, text.length - 1);
-@@ -823,6 +822,13 @@
+@@ -823,6 +828,13 @@
  
  			if (rtype == RegionType.CONTEXT)
  			{
@@ -282,7 +293,15 @@
  				if (d_style == Style.OLD || d_style == Style.NEW)
  				{
  					if (in_change_line == true)
-@@ -879,6 +885,14 @@
+@@ -850,6 +862,7 @@
+ 					in_change_line = false;
+ 				}
+ 
++				d_line_offsets += (origin == Ggit.DiffLineType.CONTEXT ? iter.get_offset() : -1);
+ 				buffer.insert(ref iter, text, -1);
+ 				buffer_line++;
+ 				if (d_style == Style.OLD || d_style == Style.NEW)
+@@ -879,6 +892,15 @@
  				buffer.get_end_iter(out t_iter);
  				buffer.create_source_mark(null, mark, t_iter);
  
@@ -294,10 +313,11 @@
 +
 +				(marked.added ? marked_added : marked_removed).add(marked);
 +
++				d_line_offsets += iter.get_offset();
  				buffer.insert(ref iter, text, -1);
  				buffer_line++;
  				if (d_style == Style.OLD || d_style == Style.NEW)
-@@ -907,6 +921,14 @@
+@@ -907,6 +929,16 @@
  			{
  				if (d_style == Style.OLD || d_style == Style.NEW)
  				{
@@ -309,10 +329,12 @@
 +
 +					(marked.added ? marked_added : marked_removed).add(marked);
 +
++					d_line_offsets += -1;
++
  					if (d_style == Style.OLD)
  						add_line_num++;
  					else
-@@ -917,12 +939,20 @@
+@@ -917,12 +949,21 @@
  					buffer.get_end_iter(out t_iter);
  					buffer.create_source_mark(null, "added", t_iter);
  
@@ -322,6 +344,7 @@
 +						text = text
 +					});
 +
++					d_line_offsets += iter.get_offset();
  					buffer.insert(ref iter, text, -1);
  					buffer_line++;
  				}

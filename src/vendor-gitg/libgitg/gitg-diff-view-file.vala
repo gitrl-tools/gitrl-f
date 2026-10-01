@@ -18,7 +18,7 @@
  */
 
 [GtkTemplate (ui = "/org/gnome/gitg/ui/gitg-diff-view-file.ui")]
-class Gitg.DiffViewFile : Gtk.Grid
+public class Gitg.DiffViewFile : Gtk.Grid
 {
 	[GtkChild( name = "expander" )]
 	private unowned Gtk.Expander d_expander;
@@ -46,11 +46,13 @@ class Gitg.DiffViewFile : Gtk.Grid
 	private Gtk.ScrolledWindow? d_text_page;
 	private Gtk.Box? d_split_page;
 
-	public Gee.ArrayList<DiffViewFileRenderer> renderer_list {get; private set;}
+	internal Gee.ArrayList<DiffViewFileRenderer> renderer_list {get; private set;}
 
 	public int maxlines { get; set; }
 
-	public signal void renderer_added(DiffViewFileRenderer renderer);
+	internal signal void renderer_added(DiffViewFileRenderer renderer);
+
+	public signal void page_shown();
 
 	public bool new_is_workdir { get; construct set; }
 
@@ -109,6 +111,7 @@ class Gitg.DiffViewFile : Gtk.Grid
 		var visible = d_diff_stat_visible_map.get(visible_child);
 		d_diff_stat_file.set_visible(visible);
 		build_visible_page();
+		page_shown();
 	}
 
 	private void add_page(Gtk.Widget widget, string name, string title, bool show_stats)
@@ -117,7 +120,7 @@ class Gitg.DiffViewFile : Gtk.Grid
 		d_stack_file_renderer.add_titled(widget, name, title);
 	}
 
-	public void add_renderer(DiffViewFileRenderer renderer, Gtk.Widget widget, string name, string title, bool show_stats)
+	internal void add_renderer(DiffViewFileRenderer renderer, Gtk.Widget widget, string name, string title, bool show_stats)
 	{
 		renderer_list.add(renderer);
 		add_page(widget, name, title, show_stats);
@@ -348,6 +351,59 @@ class Gitg.DiffViewFile : Gtk.Grid
 		foreach (DiffViewFileRenderer renderer in renderer_list)
 		{
 			renderer.add_hunk(hunk, lines);
+		}
+	}
+
+	public Gee.List<Ggit.DiffLine> get_lines()
+	{
+		var lines = new Gee.ArrayList<Ggit.DiffLine>();
+		var visible_child = d_stack_file_renderer.get_visible_child();
+
+		if (d_text && (visible_child == null || visible_child == d_text_page || visible_child == d_split_page))
+		{
+			foreach (var hunk_lines in d_hunk_lines)
+			{
+				lines.add_all(hunk_lines);
+			}
+		}
+
+		return lines;
+	}
+
+	public int get_line_offset(Gtk.TextView view, int line)
+	{
+		var renderer = view as DiffViewFileRendererText;
+
+		return renderer != null ? renderer.get_line_offset(line) : -1;
+	}
+
+	public Gtk.TextView[] get_text_views()
+	{
+		var visible_child = d_stack_file_renderer.get_visible_child();
+
+		if (visible_child == null)
+		{
+			return {};
+		}
+
+		if (visible_child == d_text_page && d_text_page.get_child() != null)
+		{
+			return { (Gtk.TextView) d_text_page.get_child() };
+		}
+
+		if (visible_child == d_split_page && d_split_page.get_children() != null)
+		{
+			return ((DiffViewFileRendererTextSplit) d_split_page.get_children().data).get_text_views();
+		}
+
+		return {};
+	}
+
+	public bool split
+	{
+		get
+		{
+			return d_split_page != null && d_stack_file_renderer.get_visible_child() == d_split_page;
 		}
 	}
 }

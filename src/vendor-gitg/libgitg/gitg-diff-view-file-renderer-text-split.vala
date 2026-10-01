@@ -140,5 +140,10 @@ class Gitg.DiffViewFileRendererTextSplit : Gtk.Box, DiffViewFileRenderer, DiffVi
 		d_renderer_right.add_hunk(hunk, lines);
 	}
 
+	public Gtk.TextView[] get_text_views()
+	{
+		return { d_renderer_left, d_renderer_right };
+	}
+
 	public bool can_select { get; construct set; }
 }

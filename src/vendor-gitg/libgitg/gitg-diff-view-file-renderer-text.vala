@@ -75,6 +75,7 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 	private bool d_new_highlight_ready;
 
 	private Region[] d_regions;
+	private int[] d_line_offsets;
 	private bool d_constructed;
 
 	private Settings? d_stylesettings;
@@ -701,6 +702,11 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 		return text.substring(0, bytes).char_count();
 	}
 
+	public int get_line_offset(int line)
+	{
+		return line >= 0 && line < d_line_offsets.length ? d_line_offsets[line] : -1;
+	}
+
 	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
 	{
 		var buffer = this.buffer as Gtk.SourceBuffer;
@@ -856,6 +862,7 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 					in_change_line = false;
 				}
 
+				d_line_offsets += (origin == Ggit.DiffLineType.CONTEXT ? iter.get_offset() : -1);
 				buffer.insert(ref iter, text, -1);
 				buffer_line++;
 				if (d_style == Style.OLD || d_style == Style.NEW)
@@ -893,6 +900,7 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 
 				(marked.added ? marked_added : marked_removed).add(marked);
 
+				d_line_offsets += iter.get_offset();
 				buffer.insert(ref iter, text, -1);
 				buffer_line++;
 				if (d_style == Style.OLD || d_style == Style.NEW)
@@ -929,6 +937,8 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 
 					(marked.added ? marked_added : marked_removed).add(marked);
 
+					d_line_offsets += -1;
+
 					if (d_style == Style.OLD)
 						add_line_num++;
 					else
@@ -945,6 +955,7 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 						text = text
 					});
 
+					d_line_offsets += iter.get_offset();
 					buffer.insert(ref iter, text, -1);
 					buffer_line++;
 				}
