@@ -29,6 +29,7 @@ unit_tests = [
   'path-history',
   'refs',
   'search',
+  'search-words',
   'settings',
   'smoke',
   'text-match',

@@ -76,7 +76,8 @@ Keys
     Ctrl+Q                      quit
 
 Search looks in the subject, the message, the author and the
-hash.
+hash. Words narrow it: author:, message:, hash:, before: and
+after:, as in author:"Jane Doe" after:2026-01.
 
 A commit adds or removes the text when the number of times it
 appears in a file the commit changes goes up or down, as in git

@@ -119,6 +119,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/only-matches-narrows-as-you-type", test_only_matches_narrows_as_you_type);
 	Test.add_func("/gittree/ui/search/only-matches-with-nothing-shows-a-notice", test_only_matches_with_nothing_shows_a_notice);
 	Test.add_func("/gittree/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
+	Test.add_func("/gittree/ui/search/search-words-narrow-the-list", test_search_words_narrow_the_list);
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
@@ -675,6 +676,46 @@ private static void test_opening_again_selects_the_kept_text()
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, count);
 		assert_cmpstr(count, CompareOperator.EQ, "3 matches");
 		assert_true(marked_pixels(window, 0) > 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_search_words_narrow_the_list()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Narrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
+
+		type_text(window, "author:tester parser");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
+
+		type_text(window, "author:nobody parser");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+
+		type_text(window, "message:tidy");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
+
+		type_text(window, "parser after:2026-13");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad date");
+		assert_true(window.history.search_field.get_style_context().has_class("error"));
+
+		check_labelled(list_bar(window), "Only matches").active = true;
+		type_text(window, "author:tester fix before:2027");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
 
 		window.destroy();
 		repo.remove();

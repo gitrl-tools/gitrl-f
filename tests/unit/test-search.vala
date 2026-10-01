@@ -39,13 +39,13 @@ private static Gittree.TextMatch plain(string text)
 
 private static void test_count_wording()
 {
-	assert_cmpstr(Gittree.Search.count_text({}, 0, plain("")), CompareOperator.EQ, "");
-	assert_cmpstr(Gittree.Search.count_text({}, 0, plain("x")), CompareOperator.EQ, "No match");
-	assert_cmpstr(Gittree.Search.count_text({ 3 }, 0, plain("x")), CompareOperator.EQ, "1 match");
-	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 0, plain("x")), CompareOperator.EQ, "2 matches");
-	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 5, plain("x")), CompareOperator.EQ, "2 of 2");
-	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 3, plain("x")), CompareOperator.EQ, "1 of 2");
-	assert_cmpstr(Gittree.Search.count_text({}, 0, new Gittree.TextMatch("(", false, false, true)), CompareOperator.EQ, "Bad regular expression");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, true, null), CompareOperator.EQ, "");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, false, null), CompareOperator.EQ, "No match");
+	assert_cmpstr(Gittree.Search.count_text({ 3 }, 0, false, null), CompareOperator.EQ, "1 match");
+	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 0, false, null), CompareOperator.EQ, "2 matches");
+	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 5, false, null), CompareOperator.EQ, "2 of 2");
+	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 3, false, null), CompareOperator.EQ, "1 of 2");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, false, "Bad regular expression"), CompareOperator.EQ, "Bad regular expression");
 }
 
 private static void test_each_field_matches_without_regard_to_case()
@@ -78,21 +78,21 @@ private static void test_marks_follow_the_switches()
 {
 	var mark = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
 
-	assert_cmpstr(Gittree.Search.marked("a1 <b22>", new Gittree.TextMatch("[0-9]+", true, false, true)), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("a1 <b22>", { new Gittree.TextMatch("[0-9]+", true, false, true) }), CompareOperator.EQ,
 	              "a" + mark.printf("1") + " &lt;b" + mark.printf("22") + "&gt;");
-	assert_cmpstr(Gittree.Search.marked("café fix prefix", new Gittree.TextMatch("fix", true, true, false)), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("café fix prefix", { new Gittree.TextMatch("fix", true, true, false) }), CompareOperator.EQ,
 	              "café " + mark.printf("fix") + " prefix");
-	assert_cmpstr(Gittree.Search.marked("Fix fix", new Gittree.TextMatch("fix", true, false, false)), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("Fix fix", { new Gittree.TextMatch("fix", true, false, false) }), CompareOperator.EQ,
 	              "Fix " + mark.printf("fix"));
 }
 
 private static void test_marks_keep_the_case_of_the_text()
 {
-	assert_cmpstr(Gittree.Search.marked("Fix the FIX & fix", plain("fix")), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("Fix the FIX & fix", { plain("fix") }), CompareOperator.EQ,
 	              "<span background=\"#fce94f\" foreground=\"#1a1a1a\">Fix</span> the "
 	              + "<span background=\"#fce94f\" foreground=\"#1a1a1a\">FIX</span> &amp; "
 	              + "<span background=\"#fce94f\" foreground=\"#1a1a1a\">fix</span>");
-	assert_cmpstr(Gittree.Search.marked("a <b>", plain("")), CompareOperator.EQ, "a &lt;b&gt;");
+	assert_cmpstr(Gittree.Search.marked("a <b>", { plain("") }), CompareOperator.EQ, "a &lt;b&gt;");
 }
 
 private static void test_next_and_previous_wrap()

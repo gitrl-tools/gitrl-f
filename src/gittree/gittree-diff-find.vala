@@ -82,7 +82,7 @@ public class DiffFind : Object
 
 	public string count_text()
 	{
-		return Search.count_text(numbers(), current, d_match);
+		return Search.count_text(numbers(), current, d_match.is_empty, d_match.error != null ? _("Bad regular expression") : null);
 	}
 
 	public DiffMatch get_match(int index)

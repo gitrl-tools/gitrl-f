@@ -24,16 +24,16 @@ public class Search : Object
 {
 	private const string MARK = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
 
-	public static string count_text(int[] matches, int selected, TextMatch match)
+	public static string count_text(int[] matches, int selected, bool empty, string? problem)
 	{
-		if (match.is_empty)
+		if (empty)
 		{
 			return "";
 		}
 
-		if (match.error != null)
+		if (problem != null)
 		{
-			return _("Bad regular expression");
+			return problem;
 		}
 
 		if (matches.length == 0)
@@ -52,18 +52,18 @@ public class Search : Object
 		return ngettext("%d match", "%d matches", matches.length).printf(matches.length);
 	}
 
-	public static int[] find(Gitg.Commit[] rows, TextMatch match)
+	public static int[] find(Gitg.Commit[] rows, SearchQuery query)
 	{
 		var found = new int[0];
 
-		if (match.is_empty)
+		if (query.is_empty)
 		{
 			return found;
 		}
 
 		for (var i = 0; i < rows.length; i++)
 		{
-			if (matches(rows[i], match))
+			if (query.matches(rows[i]))
 			{
 				found += i;
 			}
@@ -72,19 +72,40 @@ public class Search : Object
 		return found;
 	}
 
-	public static string marked(string text, TextMatch match)
+	public static string marked(string text, TextMatch[] matches)
 	{
 		var result = new StringBuilder();
+		var spans = new Gee.ArrayList<TextSpan?>();
 		var start = 0;
+		var reach = 0;
 
-		foreach (var span in match.find(text))
+		foreach (var match in matches)
 		{
-			var from = text.index_of_nth_char(span.start);
-			var to = text.index_of_nth_char(span.start + span.length);
+			foreach (var span in match.find(text))
+			{
+				spans.add(span);
+			}
+		}
+
+		spans.sort((a, b) => a.start - b.start);
+
+		foreach (var span in spans)
+		{
+			var first = int.max(span.start, reach);
+			var last = span.start + span.length;
+
+			if (last <= first)
+			{
+				continue;
+			}
+
+			var from = text.index_of_nth_char(first);
+			var to = text.index_of_nth_char(last);
 
 			result.append(Markup.escape_text(text.substring(start, from - start)));
 			result.append(MARK.printf(Markup.escape_text(text.substring(from, to - from))));
 			start = to;
+			reach = last;
 		}
 
 		result.append(Markup.escape_text(text.substring(start)));

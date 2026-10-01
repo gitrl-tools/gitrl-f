@@ -136,7 +136,20 @@ ticks every local branch and
 Ctrl+F opens the search bar of the list. It looks in the subject, the
 message, the author and the hash of each commit in the list. Match case,
 Whole word and Regular expression narrow the search, and Only matches hides
-the commits that do not match. The bar keeps its text when it closes. When
+the commits that do not match. Words narrow it further:
+.BI author: TEXT
+looks in the name and the email of the author,
+.BI message: TEXT
+in the subject and the message,
+.BI hash: TEXT
+in the hash, and
+.BI before: DATE
+and
+.BI after: DATE
+keep the commits whose author date is before, or on or after, the start of
+a year, a month or a day, given as YYYY, YYYY\-MM or YYYY\-MM\-DD in local
+time. A value with spaces goes in double quotes. Every part must hold.
+The bar keeps its text when it closes. When
 no commit of the ticked refs matches, the bar counts the matches on the
 other refs, and Tick and show ticks a ref that holds the newest of them and
 selects it: the branch of HEAD, else the first local branch by name, then

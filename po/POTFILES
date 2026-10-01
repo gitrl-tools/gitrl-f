@@ -9,6 +9,7 @@ src/gittree/gittree-preferences-dialog.vala
 src/gittree/gittree-refs-list.vala
 src/gittree/gittree-refs-row.vala
 src/gittree/gittree-search-keys.vala
+src/gittree/gittree-search-query.vala
 src/gittree/gittree-search-switches.vala
 src/gittree/gittree-search.vala
 src/gittree/gittree-window.vala

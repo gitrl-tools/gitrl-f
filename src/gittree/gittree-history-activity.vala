@@ -36,7 +36,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_find_closed;
 	private bool d_find_with_pane;
 	private History? d_full;
-	private TextMatch d_match;
+	private SearchQuery d_query;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
 	private HistoryPaned d_paned;
@@ -237,7 +237,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
 
 		d_beyond = new Ggit.OId[0];
-		d_match = new TextMatch("", false, false, false);
+		d_query = new SearchQuery("", false, false, false);
 		d_matches = new int[0];
 		d_narrow_key = "";
 
@@ -250,6 +250,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.width_chars = 40;
 		d_search_entry.placeholder_text = _("Subject, message, author or hash");
+		d_search_entry.tooltip_text = _("Narrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
 
 		d_match_count = new Gtk.Label(null);
 		d_match_count.width_chars = 12;
@@ -853,9 +854,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		var commit = d_model.commit_from_iter(iter);
 
-		if (commit != null && !d_match.is_empty)
+		if (commit != null && !d_query.is_empty)
 		{
-			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_match);
+			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_query.author_marks());
 		}
 	}
 
@@ -1029,7 +1030,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var source = d_line_history != null ? d_line_history : d_history;
 		var found = new Ggit.OId[0];
 
-		if (source == null || d_match.is_empty || d_match.error != null)
+		if (source == null || d_query.is_empty || d_query.problem != null)
 		{
 			return found;
 		}
@@ -1045,7 +1046,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			var commit = source.at(i);
 
-			if (!shown.contains(commit.get_id()) && Search.matches(commit, d_match))
+			if (!shown.contains(commit.get_id()) && d_query.matches(commit))
 			{
 				found += commit.get_id();
 			}
@@ -1056,7 +1057,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void find_matches()
 	{
-		d_match = d_search_switches.match(d_search_bar.search_mode_enabled ? d_search_entry.text.strip() : "");
+		d_query = d_search_switches.query(d_search_bar.search_mode_enabled ? d_search_entry.text.strip() : "");
 
 		if (narrow_key() != d_narrow_key)
 		{
@@ -1245,7 +1246,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit != null)
 		{
 			var hash = commit.get_id().to_string().substring(0, 7);
-			((Gtk.CellRendererText)cell).markup = Search.marked(hash, d_match);
+			((Gtk.CellRendererText)cell).markup = Search.marked(hash, d_query.hash_marks());
 		}
 	}
 
@@ -1339,9 +1340,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		lanes.next_commit = next_commit;
 		lanes.labels = d_labels;
 
-		if (!d_match.is_empty)
+		if (!d_query.is_empty)
 		{
-			lanes.markup = Search.marked(commit.get_subject(), d_match);
+			lanes.markup = Search.marked(commit.get_subject(), d_query.subject_marks());
 		}
 	}
 
@@ -1384,13 +1385,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void mark_matches()
 	{
-		d_matches = Search.find(rows(), d_match);
+		d_matches = Search.find(rows(), d_query);
 		d_beyond = d_matches.length == 0 ? find_beyond() : new Ggit.OId[0];
 		d_beyond_button.visible = d_beyond.length > 0;
 
 		var style = d_search_entry.get_style_context();
 
-		if (!d_match.is_empty && d_matches.length == 0)
+		if (!d_query.is_empty && d_matches.length == 0)
 		{
 			style.add_class("error");
 		}
@@ -1415,7 +1416,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private string narrow_key()
 	{
-		if (!d_only_matches.active || d_match.is_empty || d_match.error != null)
+		if (!d_only_matches.active || d_query.is_empty || d_query.problem != null)
 		{
 			return "";
 		}
@@ -2077,7 +2078,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		d_match_count.label = Search.count_text(d_matches, selected_row(), d_match);
+		d_match_count.label = Search.count_text(d_matches, selected_row(), d_query.is_empty, d_query.problem);
 	}
 
 	private void show_notice(string markup)
@@ -2282,7 +2283,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			{
 				var commit = source.at(i);
 
-				if (Search.matches(commit, d_match))
+				if (d_query.matches(commit))
 				{
 					found.add(commit.get_id());
 				}

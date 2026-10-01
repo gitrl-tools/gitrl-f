@@ -79,6 +79,11 @@ public class SearchSwitches : Object
 	{
 		return new TextMatch(text, match_case, whole_word, regex);
 	}
+
+	public SearchQuery query(string text)
+	{
+		return new SearchQuery(text, match_case, whole_word, regex);
+	}
 }
 
 }

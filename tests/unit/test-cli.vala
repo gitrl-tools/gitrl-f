@@ -471,7 +471,7 @@ private static void test_help_says_what_adds_or_removes_a_text()
 	var help = Gittree.CommandLine.HELP;
 
 	assert_true("\n    -t, --tags      tick every tag\n    -S, --text <text>\n                    draw only the commits that add or remove <text>\n    -G, --regex <regex>\n                    draw only the commits whose added or removed\n                    lines match <regex>\n    -i, --ignore-case\n                    with -S or -G, ignore case\n    -h, --help" in help);
-	assert_true("\nSearch looks in the subject, the message, the author and the\nhash.\n\nA commit adds or removes the text when the number of times it\nappears in a file the commit changes goes up or down, as in git\nlog -S. A merge never does.\n\nA regex is a POSIX extended regular expression, as in git log -G.\nOne file after -- is followed through its renames, as in git log\n--follow.\n" in help);
+	assert_true("\nSearch looks in the subject, the message, the author and the\nhash. Words narrow it: author:, message:, hash:, before: and\nafter:, as in author:\"Jane Doe\" after:2026-01.\n\nA commit adds or removes the text when the number of times it\nappears in a file the commit changes goes up or down, as in git\nlog -S. A merge never does.\n\nA regex is a POSIX extended regular expression, as in git log -G.\nOne file after -- is followed through its renames, as in git log\n--follow.\n" in help);
 }
 
 private static void test_ignore_case_needs_a_text()
