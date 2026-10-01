@@ -76,6 +76,19 @@ public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 	return found;
 }
 
+public static Gtk.Label label_with(Gtk.Widget root, string text)
+{
+	foreach (var widget in find_all(root, typeof(Gtk.Label)))
+	{
+		if (((Gtk.Label)widget).get_text() == text)
+		{
+			return (Gtk.Label)widget;
+		}
+	}
+
+	error("no label %s", text);
+}
+
 public static Gtk.MenuItem? menu_item(string label)
 {
 	foreach (var toplevel in Gtk.Window.list_toplevels())

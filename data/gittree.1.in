@@ -85,8 +85,8 @@ A commit adds or removes the text when the number of times it appears in
 a file the commit changes goes up or down, as in
 .BR "git log \-S" .
 A merge never does. The graph joins across the commits that it leaves out.
-The search runs in the background, and the filter bar changes the text
-later. The filter bar ignores case unless its Match case switch is on.
+The search runs in the background, and the Changed lines field of the
+filter bar changes the text later. The filter bar ignores case unless its Match case switch is on.
 Enter with both fields of the filter bar empty, or the close button of
 the yellow bar above the list, lifts the filter and the path limit.
 .TP
@@ -110,7 +110,7 @@ ignore case.
 Draw only the commits that change these files or folders. With one file,
 the history follows it through its earlier names, as
 .B git log \-\-follow
-does, and shows no merges. The paths field
+does, and shows no merges. The In files field
 of the filter bar changes them in the window. It splits paths at spaces,
 as the shell does, and takes globs such as
 .BR '*.yaml' .

@@ -192,6 +192,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
 	Test.add_func("/gittree/ui/filter/ctrl-shift-f-and-the-toggle-open-the-bar", test_ctrl_shift_f_and_the_toggle_open_the_bar);
 	Test.add_func("/gittree/ui/filter/ctrl-shift-f-takes-a-selection-and-applies-nothing", test_ctrl_shift_f_takes_a_selection_and_applies_nothing);
+	Test.add_func("/gittree/ui/filter/each-field-has-a-label-and-the-switches-come-before-filter", test_each_field_has_a_label_and_the_switches_come_before_filter);
 	Test.add_func("/gittree/ui/filter/enter-and-the-button-apply-and-typing-does-not", test_enter_and_the_button_apply_and_typing_does_not);
 	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
 	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-never-lifts-the-filter", test_escape_closes_in_order_and_never_lifts_the_filter);
@@ -1011,6 +1012,44 @@ private static void test_ctrl_shift_f_and_the_toggle_open_the_bar()
 
 		assert_false(window.history.filter_visible);
 		assert_cmpstr(window.history.filter_bar.field.text, CompareOperator.EQ, "kept");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_each_field_has_a_label_and_the_switches_come_before_filter()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var bar = window.history.filter_bar;
+		var text = label_with(bar, "Changed lines:");
+		var paths = label_with(bar, "In files:");
+		var row = new Gtk.Widget[] { text, bar.field, paths, bar.paths_field, check_labelled(bar, "Match case"), check_labelled(bar, "Regular expression"), button_labelled(bar, "Filter") };
+		var before = -1;
+		int x;
+		int y;
+
+		window.history.filter_visible = true;
+		settle(300);
+
+		foreach (var widget in row)
+		{
+			widget.translate_coordinates(bar.field.get_parent(), 0, 0, out x, out y);
+
+			assert_cmpint(x, CompareOperator.GT, before);
+
+			before = x;
+		}
+
+		assert_true(text.mnemonic_widget == bar.field);
+		assert_true(paths.mnemonic_widget == bar.paths_field);
 
 		window.destroy();
 		repo.remove();

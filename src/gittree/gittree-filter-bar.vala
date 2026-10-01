@@ -74,7 +74,8 @@ public class FilterBar : Gtk.SearchBar
 		d_problem = new Gtk.Label(null);
 
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-		box.add(d_field);
+		add_labelled(box, _("Changed lines:"), d_field);
+		add_labelled(box, _("In files:"), d_paths);
 
 		d_switches = new SearchSwitches(box);
 		d_switches.changed.connect(() => check());
@@ -82,7 +83,6 @@ public class FilterBar : Gtk.SearchBar
 		var filter = new Gtk.Button.with_label(_("Filter"));
 		filter.clicked.connect(apply);
 
-		box.add(d_paths);
 		box.add(filter);
 		box.add(d_problem);
 		var row = new BarRow(box);
@@ -97,6 +97,15 @@ public class FilterBar : Gtk.SearchBar
 				d_field.grab_focus();
 			}
 		});
+	}
+
+	private static void add_labelled(Gtk.Box box, string text, Gtk.Widget field)
+	{
+		var label = new Gtk.Label(text);
+
+		label.mnemonic_widget = field;
+		box.add(label);
+		box.add(field);
 	}
 
 	private void apply()

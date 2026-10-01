@@ -98,19 +98,6 @@ private static void drain()
 	}
 }
 
-private static Gtk.Label label_with(Gtk.Widget root, string text)
-{
-	foreach (var widget in find_all(root, typeof(Gtk.Label)))
-	{
-		if (((Gtk.Label)widget).get_text() == text)
-		{
-			return (Gtk.Label)widget;
-		}
-	}
-
-	error("no label %s", text);
-}
-
 private static int label_x(Gittree.Window window, int row, string name)
 {
 	var view = window.history.paned.commit_list_view;
