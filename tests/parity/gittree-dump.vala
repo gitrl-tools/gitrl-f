@@ -22,6 +22,41 @@ namespace Gittree
 
 public class Dump : Object
 {
+	private static History filtered(History history, Gee.List<Ref> refs, File directory, CommandLine command_line) throws Error
+	{
+		var loop = new MainLoop();
+		var tips = new Ggit.OId[0];
+		Gee.Set<Ggit.OId>? matches = null;
+		Error? failure = null;
+
+		foreach (var reference in refs)
+		{
+			tips += reference.target;
+		}
+
+		TextSearch.run.begin(directory, tips, command_line.text, command_line.ignore_case, command_line.paths, new Cancellable(), (obj, res) => {
+			try
+			{
+				matches = TextSearch.run.end(res);
+			}
+			catch (Error e)
+			{
+				failure = e;
+			}
+
+			loop.quit();
+		});
+
+		loop.run();
+
+		if (failure != null)
+		{
+			throw failure;
+		}
+
+		return new History.filtered(history, matches, refs);
+	}
+
 	private static string labels_at(Gitg.Commit commit, Gee.List<Ref> refs, Gee.Set<string> ticks)
 	{
 		var names = new Gee.ArrayList<string>();
@@ -43,7 +78,7 @@ public class Dump : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<options>] [<ref>...] [-- <path>...]\n", args[0]);
+			stderr.printf("usage: %s <repository> [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]\n", args[0]);
 			return 2;
 		}
 
@@ -72,6 +107,11 @@ public class Dump : Object
 			var history = command_line.paths.length > 0
 				? new History.with_paths(repository, refs, command_line.paths, directory, false)
 				: new History(repository, refs, false);
+
+			if (command_line.text != null)
+			{
+				history = filtered(history, refs, directory, command_line);
+			}
 			var tips = new Ggit.OId[0];
 
 			foreach (var reference in refs)

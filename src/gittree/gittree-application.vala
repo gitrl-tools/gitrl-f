@@ -29,8 +29,10 @@ public class Application : Gtk.Application
 	};
 
 	private File? d_directory;
+	private bool d_ignore_case;
 	private File? d_location;
 	private string[] d_paths;
+	private string? d_text;
 	private Gee.Set<string>? d_ticks;
 
 	public Application()
@@ -41,18 +43,18 @@ public class Application : Gtk.Application
 
 	protected override void activate()
 	{
-		create_window(d_location, d_ticks, d_paths, d_directory);
+		create_window(d_location, d_ticks, d_paths, d_directory, d_text, d_ignore_case);
 
 		base.activate();
 	}
 
-	public void create_window(File? location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null)
+	public void create_window(File? location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null, string? text = null, bool ignore_case = false)
 	{
 		var window = new Window(this);
 
 		if (location != null)
 		{
-			window.open_repository(location, ticks, paths, directory);
+			window.open_repository(location, ticks, paths, directory, text, ignore_case);
 		}
 
 		window.present();
@@ -120,6 +122,8 @@ public class Application : Gtk.Application
 
 		d_directory = File.new_for_path(Environment.get_current_dir());
 		d_paths = command_line.paths;
+		d_text = command_line.text;
+		d_ignore_case = command_line.ignore_case;
 
 		var location = command_line.no_wd ? null : discover_repository(d_directory);
 

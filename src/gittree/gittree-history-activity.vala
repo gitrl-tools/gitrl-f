@@ -28,12 +28,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
 	private DiffFindBar d_find_bar;
+	private History? d_full;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
 	private HistoryPaned d_paned;
 	private History? d_history;
 	private double d_hold;
 	private int d_hold_height;
+	private bool d_ignore_case;
 	private SList<Gitg.Ref> d_labels;
 	private HistoryModel d_model;
 	private string d_needle;
@@ -43,10 +45,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_press_on_shown;
 	private Gee.List<Ref> d_refs;
 	private Gitg.Repository? d_repository;
+	private Cancellable? d_search;
 	private Settings d_settings;
 	private Gtk.SearchBar d_search_bar;
 	private Gtk.SearchEntry d_search_entry;
+	private string? d_text;
 	private Gee.Set<string> d_ticks;
+	private bool d_waiting;
 
 	public GitgExt.Application? application { owned get; construct set; }
 
@@ -84,7 +89,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	public string notice_text
 	{
-		owned get { return d_paned.notice.label; }
+		owned get { return d_paned.notice.get_text(); }
 	}
 
 	public HistoryPaned paned
@@ -252,6 +257,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_box.add(d_search_bar);
 		d_box.add(d_paned);
 		d_box.show_all();
+		d_box.destroy.connect(stop_search);
 
 		d_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
 		d_press.button = Gdk.BUTTON_PRIMARY;
@@ -578,10 +584,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
-	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory)
+	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false)
 	{
 		Gee.List<Ref> refs;
 		Gee.Set<string> resolved;
+
+		stop_search();
+		d_text = null;
 
 		try
 		{
@@ -619,7 +628,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			show_error(_("Could not read the history"), e.message);
 		}
 
+		d_full = d_history;
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+
+		if (text != null && d_history != null)
+		{
+			d_text = text;
+			d_ignore_case = ignore_case;
+			search(true);
+		}
+
 		show_path_bar();
 		show_ticks(true);
 	}
@@ -806,7 +824,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_refs = refs;
 		d_ticks = ticks;
-		d_history = history;
+		d_full = history;
+
+		if (d_text != null)
+		{
+			search(false);
+		}
+		else
+		{
+			d_history = history;
+		}
+
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_ticks();
 	}
@@ -821,6 +849,64 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return ret;
+	}
+
+	private void search(bool waiting)
+	{
+		stop_search();
+
+		var cancellable = new Cancellable();
+		var tips = new Ggit.OId[0];
+		var seen = History.id_set();
+		var start = directory != null ? directory : (d_repository.get_workdir() != null ? d_repository.get_workdir() : d_repository.get_location());
+
+		foreach (var reference in d_refs)
+		{
+			if (seen.add(reference.target))
+			{
+				tips += reference.target;
+			}
+		}
+
+		d_search = cancellable;
+		d_waiting = waiting;
+
+		TextSearch.run.begin(start, tips, d_text, d_ignore_case, d_paths, cancellable, (obj, res) => {
+			Gee.Set<Ggit.OId> matches;
+
+			try
+			{
+				matches = TextSearch.run.end(res);
+			}
+			catch (Error e)
+			{
+				if (!cancellable.is_cancelled())
+				{
+					d_search = null;
+					d_waiting = false;
+					d_text = null;
+					d_history = d_full;
+					d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+					show_error(_("Could not search the changes"), e.message);
+					show_path_bar();
+					show_ticks();
+				}
+
+				return;
+			}
+
+			if (cancellable.is_cancelled())
+			{
+				return;
+			}
+
+			d_search = null;
+			d_waiting = false;
+			d_history = new History.filtered(d_full, matches, d_refs);
+			d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+			show_path_bar();
+			show_ticks();
+		});
 	}
 
 	private void select(Ggit.OId id)
@@ -882,9 +968,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_match_count.label = Search.count_text(d_matches, selected_row(), d_needle);
 	}
 
+	private void show_notice(string markup)
+	{
+		d_paned.notice.set_markup(markup);
+		d_paned.stack_list.visible_child_name = "notice";
+		show_details();
+	}
+
 	private void show_path_bar()
 	{
-		if (d_paths.length == 0)
+		var searching = d_search != null;
+
+		d_paned.path_spinner.visible = searching;
+		d_paned.path_spinner.active = searching;
+
+		if (d_paths.length == 0 && d_text == null)
 		{
 			d_paned.path_bar.hide();
 			return;
@@ -897,7 +995,33 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			names += "<b>%s</b>".printf(Markup.escape_text(path));
 		}
 
-		d_paned.path_label.set_markup(_("Only commits that change %s").printf(string.joinv(", ", names)));
+		var paths = string.joinv(", ", names);
+		var text = d_text != null ? "<b>%s</b>".printf(Markup.escape_text(d_text)) : "";
+		string markup;
+
+		if (searching)
+		{
+			markup = _("Searching the changes for %s...").printf(text);
+		}
+		else if (d_text == null)
+		{
+			markup = _("Only commits that change %s").printf(paths);
+		}
+		else if (d_paths.length == 0)
+		{
+			markup = _("Only commits that add or remove %s").printf(text);
+		}
+		else
+		{
+			markup = _("Only commits that change %s and add or remove %s").printf(paths, text);
+		}
+
+		if (!searching && d_text != null && d_ignore_case)
+		{
+			markup += _(", ignoring case");
+		}
+
+		d_paned.path_label.set_markup(markup);
 		d_paned.path_bar.show();
 	}
 
@@ -917,7 +1041,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		var rows = new Gitg.Commit[0];
 
-		if (d_history != null)
+		if (d_history != null && !d_waiting)
 		{
 			var tips = new Ggit.OId[0];
 
@@ -938,21 +1062,33 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		find_matches();
 
 		var total = d_history != null ? d_history.size : 0;
-		d_paned.summary.label = _("Showing %u of %d commits").printf(d_model.size, total);
+		d_paned.summary.label = d_waiting ? "" : _("Showing %u of %d commits").printf(d_model.size, total);
+
+		if (d_waiting)
+		{
+			show_notice(_("Searching the changes for %s...").printf("<b>%s</b>".printf(Markup.escape_text(d_text))));
+			return;
+		}
 
 		if (d_ticks.size == 0)
 		{
-			d_paned.notice.label = _("Nothing is ticked. Tick a branch, a remote branch or a tag on the left.");
-			d_paned.stack_list.visible_child_name = "notice";
-			show_details();
+			show_notice(Markup.escape_text(_("Nothing is ticked. Tick a branch, a remote branch or a tag on the left.")));
+			return;
+		}
+
+		if (d_model.size == 0 && d_text != null)
+		{
+			var text = "<b>%s</b>".printf(Markup.escape_text(d_text));
+			var paths = Markup.escape_text(string.joinv(", ", d_paths));
+
+			show_notice(d_paths.length == 0 ? _("No ticked ref reaches a commit that adds or removes %s.").printf(text)
+			                                : _("No ticked ref reaches a commit that adds or removes %s in %s.").printf(text, paths));
 			return;
 		}
 
 		if (d_model.size == 0 && d_paths.length > 0)
 		{
-			d_paned.notice.label = _("No ticked ref reaches a commit that changes %s.").printf(string.joinv(", ", d_paths));
-			d_paned.stack_list.visible_child_name = "notice";
-			show_details();
+			show_notice(Markup.escape_text(_("No ticked ref reaches a commit that changes %s.").printf(string.joinv(", ", d_paths))));
 			return;
 		}
 
@@ -977,6 +1113,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			select(d_model.get_row(target).get_id());
 		}
+	}
+
+	private void stop_search()
+	{
+		if (d_search != null)
+		{
+			d_search.cancel();
+			d_search = null;
+		}
+
+		d_waiting = false;
 	}
 
 	private SList<Gitg.Ref> ticked_labels(Gitg.Commit commit)

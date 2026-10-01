@@ -54,6 +54,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Label d_path_label;
 	[GtkChild]
+	private unowned Gtk.Spinner d_path_spinner;
+	[GtkChild]
 	private unowned RefsList d_refs_list;
 	[GtkChild]
 	private unowned Gtk.CellRendererText d_renderer_author;
@@ -201,6 +203,11 @@ public class HistoryPaned : Gtk.Box
 	public Gtk.Label path_label
 	{
 		get { return d_path_label; }
+	}
+
+	public Gtk.Spinner path_spinner
+	{
+		get { return d_path_spinner; }
 	}
 
 	public RefsList refs_list

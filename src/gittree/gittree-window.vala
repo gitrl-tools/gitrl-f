@@ -63,6 +63,11 @@ public class Window : Gtk.ApplicationWindow
 		get { return d_infobar.visible; }
 	}
 
+	public string error_text
+	{
+		owned get { return d_infobar_secondary_label.label; }
+	}
+
 	public HistoryActivity history
 	{
 		get { return d_history; }
@@ -201,11 +206,11 @@ public class Window : Gtk.ApplicationWindow
 		}
 	}
 
-	public void open_repository(File location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null)
+	public void open_repository(File location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null, string? text = null, bool ignore_case = false)
 	{
 		try
 		{
-			set_repository(Repository.open(location), ticks, paths, directory);
+			set_repository(Repository.open(location), ticks, paths, directory, text, ignore_case);
 		}
 		catch (Error e)
 		{
@@ -233,10 +238,10 @@ public class Window : Gtk.ApplicationWindow
 		}
 	}
 
-	private void set_repository(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory)
+	private void set_repository(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false)
 	{
 		d_repository = repository;
-		d_history.open(repository, ticks, paths, directory);
+		d_history.open(repository, ticks, paths, directory, text, ignore_case);
 		d_poll.repository = repository;
 		update_poll();
 		d_dash.add_repository(d_repository);

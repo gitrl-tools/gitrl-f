@@ -315,6 +315,14 @@ public class History : Object
 		d_starts = id_map<Gee.List<Ggit.OId>>();
 	}
 
+	public static Error failure(Bytes errors)
+	{
+		var data = errors.get_data();
+		var message = data.length > 0 ? ((string)data).ndup(data.length).strip() : "";
+
+		return new IOError.FAILED("%s", message != "" ? message : _("git failed"));
+	}
+
 	private static string[] git(File directory, string[] arguments, string? input) throws Error
 	{
 		string[] argv = { "git" };
@@ -356,34 +364,10 @@ public class History : Object
 
 		if (!process.get_successful())
 		{
-			var data = errors.get_data();
-			var message = data.length > 0 ? ((string)data).ndup(data.length).strip() : "";
-
-			throw new IOError.FAILED("%s", message != "" ? message : _("git failed"));
+			throw failure(errors);
 		}
 
-		var records = new string[0];
-		var record = new StringBuilder();
-
-		foreach (var b in output.get_data())
-		{
-			if (b == 0 || b == '\n')
-			{
-				records += record.str;
-				record.truncate();
-			}
-			else
-			{
-				record.append_c((char)b);
-			}
-		}
-
-		if (record.len > 0)
-		{
-			records += record.str;
-		}
-
-		return records;
+		return records(output);
 	}
 
 	public static Gee.HashMap<Ggit.OId, V> id_map<V>()
@@ -569,6 +553,32 @@ public class History : Object
 				}
 			}
 		}
+	}
+
+	public static string[] records(Bytes output)
+	{
+		var records = new string[0];
+		var record = new StringBuilder();
+
+		foreach (var b in output.get_data())
+		{
+			if (b == 0 || b == '\n')
+			{
+				records += record.str;
+				record.truncate();
+			}
+			else
+			{
+				record.append_c((char)b);
+			}
+		}
+
+		if (record.len > 0)
+		{
+			records += record.str;
+		}
+
+		return records;
 	}
 
 	public Ggit.OId? start_of(Ggit.OId tip)

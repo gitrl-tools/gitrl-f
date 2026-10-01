@@ -99,6 +99,7 @@ ui_tests = [
   'dash',
   'diff-find',
   'diff-pane',
+  'filter',
   'follow',
   'history-activity',
   'preferences',
