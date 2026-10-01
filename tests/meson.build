@@ -22,6 +22,7 @@ test_env_base = {
 
 unit_tests = [
   'cli',
+  'diff-find',
   'history',
   'path-history',
   'refs',
