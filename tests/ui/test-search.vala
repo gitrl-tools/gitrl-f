@@ -735,14 +735,12 @@ private static void test_switches_keep_their_state_when_the_bar_closes()
 
 		type_text(window, "parser");
 		check_labelled(list_bar(window), "Match case").active = true;
-		check_labelled(list_bar(window), "Whole word").active = true;
 		window.history.search_visible = false;
 		settle(100);
 		window.history.search_visible = true;
 		settle(100);
 
 		assert_true(check_labelled(list_bar(window), "Match case").active);
-		assert_true(check_labelled(list_bar(window), "Whole word").active);
 		assert_false(check_labelled(list_bar(window), "Regular expression").active);
 
 		window.destroy();
@@ -772,16 +770,6 @@ private static void test_switches_narrow_the_matches()
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
 
 		check_labelled(bar, "Match case").active = false;
-		type_text(window, "fix");
-
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
-
-		check_labelled(bar, "Whole word").active = true;
-		settle(100);
-
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
-
-		check_labelled(bar, "Whole word").active = false;
 		type_text(window, "issue [0-9]+");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
@@ -810,7 +798,6 @@ private static void test_switches_say_what_they_do()
 		var bar = list_bar(window);
 
 		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
-		assert_cmpstr(check_labelled(bar, "Whole word").tooltip_text, CompareOperator.EQ, "Match only whole words");
 		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
 
 		window.destroy();

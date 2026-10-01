@@ -671,7 +671,6 @@ private static void test_a_regex_filter_fills_the_diff_bar_with_its_switch()
 		var find_bar = window.history.find_bar;
 
 		settle(300);
-		find_bar.whole_word = true;
 		filter_with(window, "need+le", true);
 		window.history.paned.details_visible = true;
 		settle(400);
@@ -679,7 +678,6 @@ private static void test_a_regex_filter_fills_the_diff_bar_with_its_switch()
 		assert_true(find_bar.search_mode_enabled);
 		assert_cmpstr(find_bar.field.text, CompareOperator.EQ, "need+le");
 		assert_true(find_bar.regex);
-		assert_false(find_bar.whole_word);
 		assert_false(find_bar.match_case);
 		assert_cmpstr(find_bar.count, CompareOperator.EQ, "1 of 2");
 

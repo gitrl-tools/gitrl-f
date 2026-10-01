@@ -169,7 +169,7 @@ private static void stage_four(File location, Repo repo)
 
 	history.search_visible = true;
 
-	foreach (var label in new string[] { "Match case", "Whole word", "Regular expression", "Only matches" })
+	foreach (var label in new string[] { "Match case", "Regular expression", "Only matches" })
 	{
 		check_labelled(bar, label).active = true;
 		history.search_field.text = "f[a-z]+";

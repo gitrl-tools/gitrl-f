@@ -24,7 +24,6 @@ public class SearchSwitches : Object
 {
 	private Gtk.CheckButton d_case;
 	private Gtk.CheckButton d_regex;
-	private Gtk.CheckButton? d_word;
 
 	public bool match_case
 	{
@@ -38,29 +37,11 @@ public class SearchSwitches : Object
 		set { d_regex.active = value; }
 	}
 
-	public bool whole_word
-	{
-		get { return d_word != null && d_word.active; }
-		set
-		{
-			if (d_word != null)
-			{
-				d_word.active = value;
-			}
-		}
-	}
-
 	public signal void changed();
 
-	public SearchSwitches(Gtk.Box box, bool with_whole_word)
+	public SearchSwitches(Gtk.Box box)
 	{
 		d_case = add(box, _("Match case"), _("Tell capital and small letters apart"));
-
-		if (with_whole_word)
-		{
-			d_word = add(box, _("Whole word"), _("Match only whole words"));
-		}
-
 		d_regex = add(box, _("Regular expression"), _("Read the text as a regular expression, as git log -G does"));
 	}
 
@@ -77,12 +58,12 @@ public class SearchSwitches : Object
 
 	public TextMatch match(string text)
 	{
-		return new TextMatch(text, match_case, whole_word, regex);
+		return new TextMatch(text, match_case, regex);
 	}
 
 	public SearchQuery query(string text)
 	{
-		return new SearchQuery(text, match_case, whole_word, regex);
+		return new SearchQuery(text, match_case, regex);
 	}
 }
 

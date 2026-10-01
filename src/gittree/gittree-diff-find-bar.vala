@@ -66,12 +66,6 @@ public class DiffFindBar : Gtk.SearchBar
 		set { d_switches.regex = value; }
 	}
 
-	public bool whole_word
-	{
-		get { return d_switches.whole_word; }
-		set { d_switches.whole_word = value; }
-	}
-
 	public DiffFindBar(Gitg.DiffView diff)
 	{
 		d_diff = diff;
@@ -92,7 +86,7 @@ public class DiffFindBar : Gtk.SearchBar
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);
 		SearchKeys.attach(d_field, box, step);
-		d_switches = new SearchSwitches(box, true);
+		d_switches = new SearchSwitches(box);
 		d_switches.changed.connect(search);
 		box.add(d_count);
 
@@ -167,7 +161,6 @@ public class DiffFindBar : Gtk.SearchBar
 		d_field.text = text;
 		d_switches.match_case = match_case;
 		d_switches.regex = regex;
-		d_switches.whole_word = false;
 		search();
 	}
 
@@ -368,7 +361,7 @@ public class DiffFindBar : Gtk.SearchBar
 			d_watched.clear();
 		}
 
-		d_find = new DiffFind(text, d_switches.match_case, d_switches.whole_word, d_switches.regex);
+		d_find = new DiffFind(text, d_switches.match_case, d_switches.regex);
 		d_indexes = new Gee.HashMap<Gitg.DiffViewFile, int>();
 		d_sizes = new int[files.size];
 		d_split = new bool[files.size];

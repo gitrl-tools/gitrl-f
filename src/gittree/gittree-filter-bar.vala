@@ -78,7 +78,7 @@ public class FilterBar : Gtk.SearchBar
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);
 
-		d_switches = new SearchSwitches(box, false);
+		d_switches = new SearchSwitches(box);
 		d_switches.changed.connect(() => check());
 
 		var filter = new Gtk.Button.with_label(_("Filter"));

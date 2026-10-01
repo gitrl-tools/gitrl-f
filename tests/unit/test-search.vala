@@ -34,7 +34,7 @@ public static int main(string[] args)
 
 private static Gittree.TextMatch plain(string text)
 {
-	return new Gittree.TextMatch(text, false, false, false);
+	return new Gittree.TextMatch(text, false, false);
 }
 
 private static void test_count_wording()
@@ -78,11 +78,9 @@ private static void test_marks_follow_the_switches()
 {
 	var mark = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
 
-	assert_cmpstr(Gittree.Search.marked("a1 <b22>", { new Gittree.TextMatch("[0-9]+", true, false, true) }), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("a1 <b22>", { new Gittree.TextMatch("[0-9]+", true, true) }), CompareOperator.EQ,
 	              "a" + mark.printf("1") + " &lt;b" + mark.printf("22") + "&gt;");
-	assert_cmpstr(Gittree.Search.marked("café fix prefix", { new Gittree.TextMatch("fix", true, true, false) }), CompareOperator.EQ,
-	              "café " + mark.printf("fix") + " prefix");
-	assert_cmpstr(Gittree.Search.marked("Fix fix", { new Gittree.TextMatch("fix", true, false, false) }), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("Fix fix", { new Gittree.TextMatch("fix", true, false) }), CompareOperator.EQ,
 	              "Fix " + mark.printf("fix"));
 }
 
@@ -118,12 +116,10 @@ private static void test_the_switches_narrow_the_fields()
 		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
 		var commit = repository.lookup<Gitg.Commit>(new Ggit.OId.from_string(repo.git({"rev-parse", "HEAD"}).strip()));
 
-		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("Analytical", true, false, false)));
-		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("analytical", true, false, false)));
-		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("analytic", false, true, false)));
-		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("ada", false, true, false)));
-		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("^the body", false, false, true)));
-		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("subject.the", false, false, true)));
+		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("Analytical", true, false)));
+		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("analytical", true, false)));
+		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("^the body", false, true)));
+		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("subject.the", false, true)));
 
 		repo.remove();
 	}

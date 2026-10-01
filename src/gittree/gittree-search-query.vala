@@ -37,7 +37,7 @@ public class SearchQuery : Object
 
 	public string? problem { get; private set; }
 
-	public SearchQuery(string text, bool match_case, bool whole_word, bool regex)
+	public SearchQuery(string text, bool match_case, bool regex)
 	{
 		var words = /(?<![^\s])(author|message|hash|before|after):("([^"]*)"|(\S*))/;
 		var plain = new StringBuilder();
@@ -80,7 +80,7 @@ public class SearchQuery : Object
 				continue;
 			}
 
-			var match = new TextMatch(value != null ? value : "", match_case, whole_word, regex);
+			var match = new TextMatch(value != null ? value : "", match_case, regex);
 
 			if (key == "author")
 			{
@@ -105,7 +105,7 @@ public class SearchQuery : Object
 
 		var rest = start == 0 ? text : string.joinv(" ", Regex.split_simple("\\s+", plain.str.strip()));
 
-		d_plain = new TextMatch(rest, match_case, whole_word, regex);
+		d_plain = new TextMatch(rest, match_case, regex);
 
 		if (d_plain.error != null && problem == null)
 		{

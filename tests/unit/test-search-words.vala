@@ -24,9 +24,9 @@ private static Gitg.Commit s_commit;
 
 private static Repo s_repo;
 
-private static bool holds(string text, bool match_case = false, bool whole_word = false, bool regex = false)
+private static bool holds(string text, bool match_case = false, bool regex = false)
 {
-	return new Gittree.SearchQuery(text, match_case, whole_word, regex).matches(s_commit);
+	return new Gittree.SearchQuery(text, match_case, regex).matches(s_commit);
 }
 
 public static int main(string[] args)
@@ -68,14 +68,14 @@ private static void test_a_bad_date_is_a_problem()
 {
 	foreach (var text in new string[] { "after:2026-13", "before:yesterday", "after:2026-02-30", "before:26" })
 	{
-		var query = new Gittree.SearchQuery(text, false, false, false);
+		var query = new Gittree.SearchQuery(text, false, false);
 
 		assert_cmpstr(query.problem, CompareOperator.EQ, "Bad date");
 		assert_false(query.matches(s_commit));
 	}
 
-	assert_cmpstr(new Gittree.SearchQuery("(", false, false, true).problem, CompareOperator.EQ, "Bad regular expression");
-	assert_null(new Gittree.SearchQuery("after:2026-01", false, false, false).problem);
+	assert_cmpstr(new Gittree.SearchQuery("(", false, true).problem, CompareOperator.EQ, "Bad regular expression");
+	assert_null(new Gittree.SearchQuery("after:2026-01", false, false).problem);
 }
 
 private static void test_dates_keep_the_start_of_a_year_month_or_day()
@@ -103,25 +103,25 @@ private static void test_every_part_must_hold()
 
 private static void test_marks_go_to_their_columns()
 {
-	var query = new Gittree.SearchQuery("author:love message:body Analytic", false, false, false);
+	var query = new Gittree.SearchQuery("author:love message:body Analytic", false, false);
 	var mark = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
 
 	assert_cmpstr(Gittree.Search.marked("Ada Lovelace", query.author_marks()), CompareOperator.EQ, "Ada " + mark.printf("Love") + "lace");
 	assert_cmpstr(Gittree.Search.marked("Analytical subject", query.subject_marks()), CompareOperator.EQ, mark.printf("Analytic") + "al subject");
 	assert_cmpstr(Gittree.Search.marked("Analytical body", query.subject_marks()), CompareOperator.EQ, mark.printf("Analytic") + "al " + mark.printf("body"));
-	assert_cmpstr(Gittree.Search.marked("abc", new Gittree.SearchQuery("hash:abc", false, false, false).hash_marks()), CompareOperator.EQ, "abc");
+	assert_cmpstr(Gittree.Search.marked("abc", new Gittree.SearchQuery("hash:abc", false, false).hash_marks()), CompareOperator.EQ, "abc");
 }
 
 private static void test_text_with_no_word_is_plain()
 {
-	var query = new Gittree.SearchQuery("analytical  subject", false, false, false);
+	var query = new Gittree.SearchQuery("analytical  subject", false, false);
 
 	assert_false(query.is_empty);
 	assert_false(query.matches(s_commit));
 	assert_true(holds("analytical subject"));
-	assert_true(new Gittree.SearchQuery("", false, false, false).is_empty);
-	assert_true(new Gittree.SearchQuery("   ", false, false, false).is_empty);
-	assert_false(new Gittree.SearchQuery("after:2026", false, false, false).is_empty);
+	assert_true(new Gittree.SearchQuery("", false, false).is_empty);
+	assert_true(new Gittree.SearchQuery("   ", false, false).is_empty);
+	assert_false(new Gittree.SearchQuery("after:2026", false, false).is_empty);
 }
 
 private static void test_the_switches_apply_to_the_values()
@@ -129,9 +129,7 @@ private static void test_the_switches_apply_to_the_values()
 	assert_true(holds("author:lovelace"));
 	assert_false(holds("author:lovelace", true));
 	assert_true(holds("author:Lovelace", true));
-	assert_false(holds("author:Lov", false, true));
-	assert_true(holds("author:Lovelace", false, true));
-	assert_true(holds("message:\"^the body\"", false, false, true));
+	assert_true(holds("message:\"^the body\"", false, true));
 	assert_true(holds("author:\"Ada Lovelace\""));
 }
 
@@ -139,9 +137,9 @@ private static void test_unknown_words_are_plain_text()
 {
 	assert_false(holds("foo:bar"));
 	assert_true(holds("subject"));
-	assert_true(new Gittree.SearchQuery("http://example.org", false, false, false).author_marks().length == 1);
+	assert_true(new Gittree.SearchQuery("http://example.org", false, false).author_marks().length == 1);
 
-	var colon = new Gittree.SearchQuery("ada@engine.org", false, false, false);
+	var colon = new Gittree.SearchQuery("ada@engine.org", false, false);
 
 	assert_true(colon.matches(s_commit));
 }

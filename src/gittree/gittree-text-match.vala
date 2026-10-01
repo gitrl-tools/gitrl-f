@@ -32,7 +32,6 @@ public class TextMatch : Object
 	private unichar[] d_needle;
 	private Posix.Regex d_regex;
 	private bool d_regex_ready;
-	private bool d_whole_word;
 
 	public string? error { get; private set; }
 
@@ -41,11 +40,10 @@ public class TextMatch : Object
 		get { return d_needle.length == 0; }
 	}
 
-	public TextMatch(string text, bool match_case, bool whole_word, bool regex)
+	public TextMatch(string text, bool match_case, bool regex)
 	{
 		d_match_case = match_case;
 		d_needle = characters(text, match_case);
-		d_whole_word = whole_word;
 
 		if (!regex || text == "")
 		{
@@ -112,7 +110,7 @@ public class TextMatch : Object
 			var from = offset + (int)found[0].so;
 			var to = offset + (int)found[0].eo;
 
-			if (to > from && whole_at(haystack, from, to))
+			if (to > from)
 			{
 				spans += TextSpan() {
 					start = haystack.char_count(from),
@@ -145,7 +143,7 @@ public class TextMatch : Object
 
 		while (start + d_needle.length <= characters.length)
 		{
-			if (!matches_at(characters, start) || !whole_between(characters, start, start + d_needle.length))
+			if (!matches_at(characters, start))
 			{
 				start++;
 				continue;
@@ -160,11 +158,6 @@ public class TextMatch : Object
 		}
 
 		return spans;
-	}
-
-	private static bool is_word(unichar c)
-	{
-		return c.isalnum() || c == '_';
 	}
 
 	public bool matches(string haystack)
@@ -183,34 +176,6 @@ public class TextMatch : Object
 		}
 
 		return true;
-	}
-
-	private bool whole_at(string haystack, int from, int to)
-	{
-		if (!d_whole_word)
-		{
-			return true;
-		}
-
-		var before = from;
-		var after = to;
-		unichar previous;
-		unichar next;
-
-		haystack.get_prev_char(ref before, out previous);
-		haystack.get_next_char(ref after, out next);
-
-		return !is_word(previous) && !is_word(next);
-	}
-
-	private bool whole_between(unichar[] haystack, int from, int to)
-	{
-		if (!d_whole_word)
-		{
-			return true;
-		}
-
-		return (from == 0 || !is_word(haystack[from - 1])) && (to == haystack.length || !is_word(haystack[to]));
 	}
 }
 

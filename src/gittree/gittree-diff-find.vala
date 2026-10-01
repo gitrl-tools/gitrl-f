@@ -41,9 +41,9 @@ public class DiffFind : Object
 		get { return d_matches.length; }
 	}
 
-	public DiffFind(string text, bool match_case, bool whole_word = false, bool regex = false)
+	public DiffFind(string text, bool match_case, bool regex = false)
 	{
-		d_match = new TextMatch(text, match_case, whole_word, regex);
+		d_match = new TextMatch(text, match_case, regex);
 		d_matches = new DiffMatch[0];
 	}
 

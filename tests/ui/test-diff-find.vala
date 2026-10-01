@@ -65,6 +65,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/ui/diff-find/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gittree/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
+	Test.add_func("/gittree/ui/diff-find/a-regular-expression-narrows-the-marks", test_a_regular_expression_narrows_the_marks);
 	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-list-opens-the-list-bar", test_ctrl_f_in_the_list_opens_the_list_bar);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
@@ -78,7 +79,6 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
 	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
-	Test.add_func("/gittree/ui/diff-find/whole-word-and-regular-expression-narrow-the-marks", test_whole_word_and_regular_expression_narrow_the_marks);
 
 	return Test.run();
 }
@@ -293,6 +293,34 @@ private static void test_a_match_in_a_folded_file_unfolds_it_and_shows()
 		assert_true(outer.vadjustment.value > 0);
 		assert_cmpint(shown_y, CompareOperator.GE, 0);
 		assert_cmpint(shown_y + location.height, CompareOperator.LE, outer.get_allocated_height());
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_regular_expression_narrows_the_marks()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		unfold_all(window);
+		check_labelled(bar, "Regular expression").active = true;
+		search_for(window, "^needle in [a-z]");
+
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle in a|2:needle in c");
+
+		bar.match_case = true;
+		settle(200);
+
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "2:needle in c");
 
 		window.destroy();
 		repo.remove();
@@ -655,7 +683,6 @@ private static void test_the_switches_say_what_they_do()
 		var bar = window.history.find_bar;
 
 		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
-		assert_cmpstr(check_labelled(bar, "Whole word").tooltip_text, CompareOperator.EQ, "Match only whole words");
 		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
 
 		window.destroy();
@@ -731,44 +758,6 @@ private static void test_typing_marks_every_match_and_moves_nothing()
 		assert_cmpstr(tag.foreground_rgba.to_string(), CompareOperator.EQ, "rgb(26,26,26)");
 		assert_cmpstr(current.background_rgba.to_string(), CompareOperator.EQ, "rgb(245,121,0)");
 		assert_cmpstr(current.foreground_rgba.to_string(), CompareOperator.EQ, "rgb(26,26,26)");
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_whole_word_and_regular_expression_narrow_the_marks()
-{
-	try
-	{
-		var repo = three_files();
-		var window = opened(repo, "change");
-		var bar = window.history.find_bar;
-
-		search_for(window, "need");
-		unfold_all(window);
-
-		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Need|2:need");
-
-		check_labelled(bar, "Whole word").active = true;
-		settle(200);
-
-		assert_cmpstr(bar.count, CompareOperator.EQ, "No match");
-
-		check_labelled(bar, "Whole word").active = false;
-		check_labelled(bar, "Regular expression").active = true;
-		search_for(window, "^needle in [a-z]");
-
-		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle in a|2:needle in c");
-
-		bar.match_case = true;
-		settle(200);
-
-		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "2:needle in c");
 
 		window.destroy();
 		repo.remove();

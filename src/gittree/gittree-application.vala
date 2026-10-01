@@ -121,7 +121,7 @@ public class Application : Gtk.Application
 			return true;
 		}
 
-		var expression = new TextMatch(command_line.regex != null ? command_line.regex : "", true, false, true);
+		var expression = new TextMatch(command_line.regex != null ? command_line.regex : "", true, true);
 
 		if (expression.error != null)
 		{

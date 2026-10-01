@@ -237,7 +237,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
 
 		d_beyond = new Ggit.OId[0];
-		d_query = new SearchQuery("", false, false, false);
+		d_query = new SearchQuery("", false, false);
 		d_matches = new int[0];
 		d_narrow_key = "";
 
@@ -259,7 +259,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		search_box.add(d_search_entry);
 		SearchKeys.attach(d_search_entry, search_box, step);
-		d_search_switches = new SearchSwitches(search_box, true);
+		d_search_switches = new SearchSwitches(search_box);
 		d_search_switches.changed.connect(find_matches);
 
 		d_only_matches = new Gtk.CheckButton.with_label(_("Only matches"));
@@ -1433,7 +1433,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return "";
 		}
 
-		return "%s\n%d%d%d".printf(d_search_entry.text.strip(), (int)d_search_switches.match_case, (int)d_search_switches.whole_word, (int)d_search_switches.regex);
+		return "%s\n%d%d".printf(d_search_entry.text.strip(), (int)d_search_switches.match_case, (int)d_search_switches.regex);
 	}
 
 	private void offer_file_history()
