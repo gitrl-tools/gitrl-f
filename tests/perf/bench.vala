@@ -34,7 +34,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s [--window] <repository> [<full ref name>...]\n", args[0]);
+			stderr.printf("usage: %s [--window] <repository> [--text <text>] [<full ref name>...]\n", args[0]);
 			return 2;
 		}
 
@@ -97,6 +97,39 @@ public class Bench : Object
 		return 0;
 	}
 
+	private static void filtered(Window window, string text, Gee.Set<string> every, string[] only, string path)
+	{
+		var timer = new Timer();
+
+		window.open_repository(File.new_for_path(path), null, {}, File.new_for_path(path), text, false);
+
+		while (!window.history.path_bar_text.has_prefix("Only") && timer.elapsed() < 600)
+		{
+			drain();
+			Thread.usleep(1000);
+		}
+
+		stdout.printf("window open with -S %s %.3f s, %s\n", text, timer.elapsed(), window.history.summary_text);
+
+		timer.start();
+		window.history.set_ticks(every);
+		drain();
+
+		stdout.printf("window tick under the filter, every ref ticked: %.3f s\n", timer.elapsed());
+
+		foreach (var name in only)
+		{
+			var ticks = new Gee.HashSet<string>();
+			ticks.add(name);
+
+			timer.start();
+			window.history.set_ticks(ticks);
+			drain();
+
+			stdout.printf("window tick under the filter, only %s: %.3f s\n", name, timer.elapsed());
+		}
+	}
+
 	private static double peak_memory()
 	{
 		string status;
@@ -135,8 +168,17 @@ public class Bench : Object
 		stdout.flush();
 	}
 
-	private static int window(string path, string[] only)
+	private static int window(string path, string[] arguments)
 	{
+		var only = arguments;
+		string? text = null;
+
+		if (arguments.length >= 2 && arguments[0] == "--text")
+		{
+			text = arguments[1];
+			only = arguments[2:arguments.length];
+		}
+
 		var app = new Application();
 
 		try
@@ -198,6 +240,12 @@ public class Bench : Object
 		drain();
 
 		stdout.printf("window reload %.3f s\n", timer.elapsed());
+
+		if (text != null)
+		{
+			filtered(window, text, every, only, path);
+		}
+
 		stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
 
 		window.destroy();

@@ -42,7 +42,7 @@ The first command runs every suite: `data`, which validates the settings schema,
 
 `tests/parity/compare.sh <repository> [<gittree arguments>]` compares the commits that gittree shows, with their parents and labels, with those of the Python prototype, which it reads from commit `5ccd222` of the dotfiles repository, `~/dotfiles` or the path in `GITTREE_DOTFILES`.
 
-`tests/perf/fixture.sh <directory>` builds the two large repositories that the speed of gittree is measured on. `tests/perf/measure.sh <directory>` then opens the window of gittree and of the Python prototype on each, three times, and prints the time to open, to tick, to reload, and the peak memory.
+`tests/perf/fixture.sh <directory>` builds the two large repositories that the speed of gittree is measured on. `tests/perf/measure.sh <directory>` then opens the window of gittree and of the Python prototype on each, three times, and prints the time to open, to tick, to reload, and the peak memory. For gittree, it also prints the time to open with the text filter `-S 'line 1'` and to tick under it.
 
 ## The animations in the README
 

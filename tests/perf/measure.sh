@@ -42,15 +42,15 @@ private() {
 
 for name in big big100; do
 	case $name in
-	big) only=refs/heads/feature/f39 ;;
-	big100) only=refs/heads/side ;;
+	big) only=refs/heads/feature/f39 text="line 1" ;;
+	big100) only=refs/heads/side text="line 1" ;;
 	esac
 
 	run=1
 
 	while [ "$run" -le "$runs" ]; do
 		echo "--- $name, run $run, gittree"
-		private "$bench" --window "$repositories/$name" "$only"
+		private "$bench" --window "$repositories/$name" --text "$text" "$only"
 		echo "--- $name, run $run, prototype"
 		private python3 "$here/prototype-window.py" "$repositories/$name" "$only"
 		run=$((run + 1))
