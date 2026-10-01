@@ -532,6 +532,11 @@ public class DiffFindBar : Gtk.SearchBar
 		step_if_pending();
 	}
 
+	private static void tag_added(Gtk.TextTagTable table, Gtk.TextTag tag)
+	{
+		raise_tags(table);
+	}
+
 	public void take_selection(string text, Gtk.TextView view, int offset)
 	{
 		search_mode_enabled = true;
@@ -560,11 +565,6 @@ public class DiffFindBar : Gtk.SearchBar
 
 		d_find.current = chosen - 1;
 		step(1);
-	}
-
-	private static void tag_added(Gtk.TextTagTable table, Gtk.TextTag tag)
-	{
-		raise_tags(table);
 	}
 
 	private void watch(Gitg.DiffViewFile file)

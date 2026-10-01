@@ -67,7 +67,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -155,6 +155,59 @@ public class Bench : Object
 		return 0;
 	}
 
+	private static void searched(Window window, string text, Gee.Set<string> every, string[] only)
+	{
+		var timer = new Timer();
+		Gtk.CheckButton? narrow = null;
+
+		foreach (var widget in widgets(window.history.widget))
+		{
+			var check = widget as Gtk.CheckButton;
+
+			if (check != null && check.label == "Only matches")
+			{
+				narrow = check;
+			}
+		}
+
+		window.history.set_ticks(every);
+		drain();
+		window.history.search_visible = true;
+		window.history.search_field.text = text;
+
+		timer.start();
+		window.history.search_field.search_changed();
+		drain();
+
+		stdout.printf("window search %s, every ref ticked: %.3f s, %s\n", text, timer.elapsed(), window.history.search_count);
+
+		timer.start();
+		narrow.active = true;
+		drain();
+
+		stdout.printf("window only matches %s: %.3f s, %d rows\n", text, timer.elapsed(), window.history.rows().length);
+
+		narrow.active = false;
+		drain();
+
+		foreach (var name in only)
+		{
+			var ticks = new Gee.HashSet<string>();
+			ticks.add(name);
+			window.history.set_ticks(ticks);
+			drain();
+
+			timer.start();
+			window.history.search_field.search_changed();
+			drain();
+
+			stdout.printf("window search %s beyond the ticks, only %s: %.3f s, %s\n", text, name, timer.elapsed(), window.history.search_count);
+		}
+
+		window.history.search_visible = false;
+		drain();
+	}
+
 	private static void tick(History history, Ggit.OId[] mainline, string label, Ggit.OId[] tips)
 	{
 		var timer = new Timer();
@@ -168,15 +221,45 @@ public class Bench : Object
 		stdout.flush();
 	}
 
+	private static Gtk.Widget[] widgets(Gtk.Widget root)
+	{
+		var found = new Gtk.Widget[] { root };
+		var container = root as Gtk.Container;
+
+		if (container != null)
+		{
+			foreach (var child in container.get_children())
+			{
+				foreach (var inner in widgets(child))
+				{
+					found += inner;
+				}
+			}
+		}
+
+		return found;
+	}
+
 	private static int window(string path, string[] arguments)
 	{
-		var only = arguments;
+		var only = new string[0];
 		string? text = null;
+		string? search = null;
 
-		if (arguments.length >= 2 && arguments[0] == "--text")
+		for (var i = 0; i < arguments.length; i++)
 		{
-			text = arguments[1];
-			only = arguments[2:arguments.length];
+			if (arguments[i] == "--text" && i + 1 < arguments.length)
+			{
+				text = arguments[++i];
+			}
+			else if (arguments[i] == "--search" && i + 1 < arguments.length)
+			{
+				search = arguments[++i];
+			}
+			else
+			{
+				only += arguments[i];
+			}
 		}
 
 		var app = new Application();
@@ -240,6 +323,12 @@ public class Bench : Object
 		drain();
 
 		stdout.printf("window reload %.3f s\n", timer.elapsed());
+
+		if (search != null)
+		{
+			searched(window, search, every, only);
+		}
+
 		stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
 
 		if (text != null)

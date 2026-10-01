@@ -42,7 +42,7 @@ The first command runs every suite: `data`, which validates the settings schema,
 
 `tests/parity/compare.sh <repository> [<gittree arguments>]` compares the commits that gittree shows, with their parents and labels, with those of the Python prototype, which it reads from commit `5ccd222` of the dotfiles repository, `~/dotfiles` or the path in `GITTREE_DOTFILES`. The prototype has no text filter, so `compare.sh` cannot compare `-S` or `-G`. The window follows one file through its renames, and the prototype and the dump do not, so with one file after `--` the window can show more commits than `compare.sh` compares. `_build/tests/gittree-dump <repository> -S <text>` prints the rows of gittree alone.
 
-`tests/perf/fixture.sh <directory>` builds the two large repositories that the speed of gittree is measured on. `tests/perf/measure.sh <directory>` then opens the window of gittree and of the Python prototype on each, three times, and prints the time to open, to tick, to reload, and the peak memory. For gittree, it also prints the time to open with the text filter `-S 'line 1'` and to tick under it.
+`tests/perf/fixture.sh <directory>` builds the two large repositories that the speed of gittree is measured on. `tests/perf/measure.sh <directory>` then opens the window of gittree and of the Python prototype on each, three times, and prints the time to open, to tick, to reload, and the peak memory. For gittree, it also prints the time to open with the text filter `-S 'line 1'` and to tick under it. `_build/tests/gittree-bench --window <repository> --search <text> [<ref>...]` prints the time of the search bar of the list, of Only matches, and of the search beyond the ticks with only each named ref ticked.
 
 ## The animations in the README
 

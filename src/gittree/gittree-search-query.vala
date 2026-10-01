@@ -161,14 +161,13 @@ public class SearchQuery : Object
 		}
 
 		var author = commit.get_author();
-		var time = author.get_time();
 
-		if (d_after != null && time.compare(d_after) < 0)
+		if (d_after != null && author.get_time().compare(d_after) < 0)
 		{
 			return false;
 		}
 
-		if (d_before != null && time.compare(d_before) >= 0)
+		if (d_before != null && author.get_time().compare(d_before) >= 0)
 		{
 			return false;
 		}
@@ -176,6 +175,11 @@ public class SearchQuery : Object
 		if (!d_plain.is_empty && !Search.matches(commit, d_plain))
 		{
 			return false;
+		}
+
+		if (d_authors.length == 0 && d_messages.length == 0 && d_hashes.length == 0)
+		{
+			return true;
 		}
 
 		return all_hold(d_authors, author.get_name() + "\n" + author.get_email())

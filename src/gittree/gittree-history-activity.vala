@@ -517,58 +517,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
-	public void apply(string text, bool ignore_case, bool regex, string[] paths, string change = "")
-	{
-		drop_lines();
-		d_change = change;
-
-		if (string.joinv("\n", paths) != string.joinv("\n", d_paths))
-		{
-			read_paths(paths, text != "" ? text : null, ignore_case, regex);
-			return;
-		}
-
-		if (text != "")
-		{
-			apply_filter(text, ignore_case, regex);
-			return;
-		}
-
-		if (d_paths.length == 0 && d_change == "")
-		{
-			lift_filter();
-			return;
-		}
-
-		stop_search();
-		d_text = null;
-		d_regex = false;
-		show_base();
-	}
-
-	public void apply_filter(string text, bool ignore_case, bool regex = false)
-	{
-		if (d_repository == null || d_full == null)
-		{
-			return;
-		}
-
-		var waiting = d_waiting;
-
-		drop_lines();
-		d_find_closed = false;
-		d_text = text;
-		d_ignore_case = ignore_case;
-		d_regex = regex;
-		search(waiting);
-		show_path_bar();
-
-		if (waiting)
-		{
-			show_ticks();
-		}
-	}
-
 	private void add_first_tag_item(Ggit.OId commit)
 	{
 		var item = new Gtk.MenuItem.with_label(_("First tag with this commit..."));
@@ -853,6 +801,58 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		menu.add(item);
 	}
 
+	public void apply(string text, bool ignore_case, bool regex, string[] paths, string change = "")
+	{
+		drop_lines();
+		d_change = change;
+
+		if (string.joinv("\n", paths) != string.joinv("\n", d_paths))
+		{
+			read_paths(paths, text != "" ? text : null, ignore_case, regex);
+			return;
+		}
+
+		if (text != "")
+		{
+			apply_filter(text, ignore_case, regex);
+			return;
+		}
+
+		if (d_paths.length == 0 && d_change == "")
+		{
+			lift_filter();
+			return;
+		}
+
+		stop_search();
+		d_text = null;
+		d_regex = false;
+		show_base();
+	}
+
+	public void apply_filter(string text, bool ignore_case, bool regex = false)
+	{
+		if (d_repository == null || d_full == null)
+		{
+			return;
+		}
+
+		var waiting = d_waiting;
+
+		drop_lines();
+		d_find_closed = false;
+		d_text = text;
+		d_ignore_case = ignore_case;
+		d_regex = regex;
+		search(waiting);
+		show_path_bar();
+
+		if (waiting)
+		{
+			show_ticks();
+		}
+	}
+
 	private void author_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var commit = d_model.commit_from_iter(iter);
@@ -954,24 +954,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return false;
 	}
 
-	private void fill_find_bar(bool refill)
+	private int[] every_row()
 	{
-		if (d_text == null || d_search != null || d_lines != null || !d_paned.details_visible || d_diff.commit == null)
+		var ret = new int[d_model.size];
+
+		for (var i = 0; i < ret.length; i++)
 		{
-			return;
+			ret[i] = i;
 		}
 
-		if (!d_find_bar.search_mode_enabled && d_find_closed)
-		{
-			return;
-		}
-
-		if (!d_find_bar.search_mode_enabled || refill)
-		{
-			d_find_bar.fill(d_text, !d_ignore_case, d_regex);
-		}
-
-		d_find_bar.step_to_first();
+		return ret;
 	}
 
 	private bool fill_commit_menu(double x, double y)
@@ -1026,6 +1018,26 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		add_merge_item(commit.get_id());
 
 		return true;
+	}
+
+	private void fill_find_bar(bool refill)
+	{
+		if (d_text == null || d_search != null || d_lines != null || !d_paned.details_visible || d_diff.commit == null)
+		{
+			return;
+		}
+
+		if (!d_find_bar.search_mode_enabled && d_find_closed)
+		{
+			return;
+		}
+
+		if (!d_find_bar.search_mode_enabled || refill)
+		{
+			d_find_bar.fill(d_text, !d_ignore_case, d_regex);
+		}
+
+		d_find_bar.step_to_first();
 	}
 
 	private Ggit.OId[] find_beyond()
@@ -1389,7 +1401,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void mark_matches()
 	{
-		d_matches = Search.find(rows(), d_query);
+		d_matches = d_narrowed != null ? every_row() : Search.find(rows(), d_query);
 		d_beyond = d_matches.length == 0 ? find_beyond() : new Ggit.OId[0];
 		d_beyond_button.visible = d_beyond.length > 0;
 
@@ -1426,78 +1438,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return "%s\n%d%d%d".printf(d_search_entry.text.strip(), (int)d_search_switches.match_case, (int)d_search_switches.whole_word, (int)d_search_switches.regex);
-	}
-
-	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false, bool regex = false)
-	{
-		Gee.List<Ref> refs;
-		Gee.Set<string> resolved;
-
-		stop_search();
-		drop_lines();
-		d_all = null;
-		d_find_closed = false;
-		d_names = null;
-		d_text = null;
-		d_regex = false;
-
-		try
-		{
-			refs = Refs.read(repository);
-			resolved = ticks != null ? ticks : Ticks.resolve(null, refs);
-		}
-		catch (Error e)
-		{
-			d_repository = null;
-			d_history = null;
-			d_refs = new Gee.ArrayList<Ref>();
-			d_ticks = new Gee.HashSet<string>();
-			d_paned.refs_list.set_refs(d_refs, d_ticks, null);
-			show_ticks(true);
-			show_error(_("Could not read the refs"), e.message);
-			return;
-		}
-
-		d_repository = repository;
-		d_paths = paths;
-		d_filter_bar.set_paths(paths);
-		this.directory = directory;
-		d_diff.repository = repository;
-		d_diff.options.pathspec = pathspec();
-		Languages.warm(repository);
-		d_refs = refs;
-		d_ticks = resolved;
-
-		try
-		{
-			d_history = read_history(d_refs);
-		}
-		catch (Error e)
-		{
-			d_history = null;
-			show_error(_("Could not read the history"), e.message);
-		}
-
-		d_full = d_history;
-		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
-
-		if (text != null && d_history != null)
-		{
-			d_text = text;
-			d_ignore_case = ignore_case;
-			d_regex = regex;
-			d_filter_bar.field.text = text;
-			d_filter_bar.match_case = !ignore_case;
-			d_filter_bar.regex = regex;
-		}
-
-		if (d_history != null && (d_text != null || follows()))
-		{
-			search(true);
-		}
-
-		show_path_bar();
-		show_ticks(true);
 	}
 
 	private void offer_file_history()
@@ -1582,6 +1522,78 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			});
 			view.populate_popup.connect((popup) => add_line_items(file, view, popup));
 		}
+	}
+
+	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false, bool regex = false)
+	{
+		Gee.List<Ref> refs;
+		Gee.Set<string> resolved;
+
+		stop_search();
+		drop_lines();
+		d_all = null;
+		d_find_closed = false;
+		d_names = null;
+		d_text = null;
+		d_regex = false;
+
+		try
+		{
+			refs = Refs.read(repository);
+			resolved = ticks != null ? ticks : Ticks.resolve(null, refs);
+		}
+		catch (Error e)
+		{
+			d_repository = null;
+			d_history = null;
+			d_refs = new Gee.ArrayList<Ref>();
+			d_ticks = new Gee.HashSet<string>();
+			d_paned.refs_list.set_refs(d_refs, d_ticks, null);
+			show_ticks(true);
+			show_error(_("Could not read the refs"), e.message);
+			return;
+		}
+
+		d_repository = repository;
+		d_paths = paths;
+		d_filter_bar.set_paths(paths);
+		this.directory = directory;
+		d_diff.repository = repository;
+		d_diff.options.pathspec = pathspec();
+		Languages.warm(repository);
+		d_refs = refs;
+		d_ticks = resolved;
+
+		try
+		{
+			d_history = read_history(d_refs);
+		}
+		catch (Error e)
+		{
+			d_history = null;
+			show_error(_("Could not read the history"), e.message);
+		}
+
+		d_full = d_history;
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+
+		if (text != null && d_history != null)
+		{
+			d_text = text;
+			d_ignore_case = ignore_case;
+			d_regex = regex;
+			d_filter_bar.field.text = text;
+			d_filter_bar.match_case = !ignore_case;
+			d_filter_bar.regex = regex;
+		}
+
+		if (d_history != null && (d_text != null || follows()))
+		{
+			search(true);
+		}
+
+		show_path_bar();
+		show_ticks(true);
 	}
 
 	private bool opens_files(Gtk.Widget? target)
@@ -2453,13 +2465,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return labels;
 	}
 
-	private File top_directory()
-	{
-		var top = d_repository.get_workdir();
-
-		return top != null ? top : d_repository.get_location();
-	}
-
 	public void toggle_filter()
 	{
 		Gtk.TextView? view;
@@ -2495,6 +2500,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		search_visible = !search_visible;
+	}
+
+	private File top_directory()
+	{
+		var top = d_repository.get_workdir();
+
+		return top != null ? top : d_repository.get_location();
 	}
 
 	private History? unlimited_history()
