@@ -35,11 +35,14 @@ public class Dump : Object
 		}
 
 		var regex = command_line.regex != null;
+		var filter = new Filter(regex ? command_line.regex : command_line.text, command_line.ignore_case, regex, command_line.paths, false);
 
-		TextSearch.run.begin(directory, tips, regex ? command_line.regex : command_line.text, command_line.ignore_case, regex, command_line.paths, new Cancellable(), (obj, res) => {
+		TextSearch.run.begin(directory, tips, filter, new Cancellable(), (obj, res) => {
 			try
 			{
-				matches = TextSearch.run.end(res);
+				Gee.Map<Ggit.OId, Gee.List<string>> names;
+
+				matches = TextSearch.run.end(res, out names);
 			}
 			catch (Error e)
 			{

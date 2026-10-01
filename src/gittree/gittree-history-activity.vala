@@ -46,6 +46,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string d_narrow_key;
 	private History? d_narrow_source;
 	private History? d_narrowed;
+	private Gee.Map<Ggit.OId, Gee.List<string>>? d_names;
 	private Gtk.CheckButton d_only_matches;
 	private string[] d_paths;
 	private Gtk.GestureMultiPress d_press;
@@ -472,10 +473,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		stop_search();
 		d_text = null;
 		d_regex = false;
-		d_history = d_full;
-		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
-		show_path_bar();
-		show_ticks();
+		show_base();
 	}
 
 	public void apply_filter(string text, bool ignore_case, bool regex = false)
@@ -625,6 +623,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return focus != null && focus.is_ancestor(d_paned.box_details);
 	}
 
+	private bool follows()
+	{
+		return d_repository != null && d_paths.length > 0 && Filter.is_one_file(d_repository, pathspec());
+	}
+
 	private File git_directory()
 	{
 		if (directory != null)
@@ -757,12 +760,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_paths.length > 0)
 		{
+			var unlimited = follows();
+
 			d_paths = new string[0];
 			d_diff.options.pathspec = null;
+			d_names = null;
 
 			try
 			{
-				d_full = read_history(d_refs);
+				d_full = unlimited ? d_full : read_history(d_refs);
 			}
 			catch (Error e)
 			{
@@ -812,6 +818,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		stop_search();
 		d_find_closed = false;
+		d_names = null;
 		d_text = null;
 		d_regex = false;
 
@@ -863,6 +870,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_filter_bar.field.text = text;
 			d_filter_bar.match_case = !ignore_case;
 			d_filter_bar.regex = regex;
+		}
+
+		if (d_history != null && (d_text != null || follows()))
+		{
 			search(true);
 		}
 
@@ -903,24 +914,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return null;
 		}
 
-		var top = d_repository.get_workdir();
-		var start = directory != null ? directory : top;
-		var ret = new string[0];
-
-		if (start == null)
-		{
-			return d_paths;
-		}
-
-		foreach (var path in d_paths)
-		{
-			var file = start.resolve_relative_path(path);
-			var relative = top != null ? top.get_relative_path(file) : null;
-
-			ret += relative != null ? relative : (file.equal(top) ? "." : path);
-		}
-
-		return ret;
+		return Filter.relative_paths(d_repository, directory, d_paths);
 	}
 
 	private bool prepare_copy(double x, double y, out string caption, out string text)
@@ -1009,7 +1003,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		var topological = d_settings.get_boolean("topological-order");
 
-		if (d_paths.length > 0)
+		if (d_paths.length > 0 && !follows())
 		{
 			return new History.with_paths(d_repository, refs, d_paths, git_directory(), topological);
 		}
@@ -1037,6 +1031,32 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				apply_filter(text, ignore_case, regex);
 			}
 
+			return;
+		}
+
+		if (Filter.is_one_file(d_repository, Filter.relative_paths(d_repository, directory, paths)))
+		{
+			var unlimited = d_paths.length == 0 || follows();
+
+			d_paths = paths;
+			d_diff.options.pathspec = pathspec();
+
+			try
+			{
+				d_full = unlimited ? d_full : read_history(d_refs);
+			}
+			catch (Error e)
+			{
+				show_error(_("Could not read the history"), e.message);
+				return;
+			}
+
+			d_text = text;
+			d_ignore_case = ignore_case;
+			d_regex = regex;
+			d_find_closed = false;
+			search(false);
+			show_path_bar();
 			return;
 		}
 
@@ -1134,7 +1154,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_ticks = ticks;
 		d_full = history;
 
-		if (d_text != null)
+		if (d_text != null || follows())
 		{
 			search(d_waiting);
 		}
@@ -1170,12 +1190,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search = cancellable;
 		d_waiting = waiting;
 
-		TextSearch.run.begin(start, tips, d_text, d_ignore_case, d_regex, d_paths, cancellable, (obj, res) => {
+		var filter = new Filter(d_text, d_ignore_case, d_regex, d_paths, follows());
+
+		TextSearch.run.begin(start, tips, filter, cancellable, (obj, res) => {
 			Gee.Set<Ggit.OId> matches;
+			Gee.Map<Ggit.OId, Gee.List<string>> names;
 
 			try
 			{
-				matches = TextSearch.run.end(res);
+				matches = TextSearch.run.end(res, out names);
 			}
 			catch (Error e)
 			{
@@ -1201,6 +1224,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			d_search = null;
 			d_waiting = false;
+			d_names = filter.follow ? names : null;
 			d_history = new History.filtered(d_full, matches, d_refs);
 			d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 			show_path_bar();
@@ -1245,6 +1269,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private void show_base()
+	{
+		if (follows())
+		{
+			search(false);
+			show_path_bar();
+			return;
+		}
+
+		d_history = d_full;
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+		show_path_bar();
+		show_ticks();
+	}
+
 	private void show_details()
 	{
 		var commit = selected;
@@ -1263,6 +1302,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (!d_paned.details_visible || d_diff.commit == commit)
 		{
 			return;
+		}
+
+		if (d_names != null && d_names.has_key(commit.get_id()))
+		{
+			d_diff.options.pathspec = d_names[commit.get_id()].to_array();
 		}
 
 		d_diff.commit = commit;
@@ -1303,6 +1347,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			markup = _("Reading the history of %s...").printf(bold_list(d_reading));
 		}
+		else if (searching && d_text == null)
+		{
+			markup = _("Reading the history of %s...").printf(paths);
+		}
 		else if (searching)
 		{
 			markup = _("Searching the changes for %s...").printf(text);
@@ -1320,6 +1368,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			markup = d_regex ? _("Only commits that change %s and whose added or removed lines match %s").printf(paths, text)
 			                 : _("Only commits that change %s and add or remove %s").printf(paths, text);
+		}
+
+		if (!searching && follows())
+		{
+			markup += _(", following renames");
 		}
 
 		if (!searching && d_text != null && d_ignore_case)
@@ -1373,7 +1426,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_waiting)
 		{
-			show_notice(_("Searching the changes for %s...").printf("<b>%s</b>".printf(Markup.escape_text(d_text))));
+			show_notice(d_text != null ? _("Searching the changes for %s...").printf("<b>%s</b>".printf(Markup.escape_text(d_text)))
+			                           : _("Reading the history of %s...").printf(bold_list(d_paths)));
 			return;
 		}
 

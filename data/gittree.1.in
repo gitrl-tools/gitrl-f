@@ -107,7 +107,10 @@ or
 ignore case.
 .TP
 .BI "\-\- " PATH
-Draw only the commits that change these files or folders. The paths field
+Draw only the commits that change these files or folders. With one file,
+the history follows it through its earlier names, as
+.B git log \-\-follow
+does, and shows no merges. The paths field
 of the filter bar changes them in the window. It splits paths at spaces,
 as the shell does, and takes globs such as
 .BR '*.yaml' .

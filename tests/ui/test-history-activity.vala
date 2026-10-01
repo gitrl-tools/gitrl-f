@@ -1070,6 +1070,12 @@ private static void test_path_bar_and_path_notice()
 
 		window = opened(repo, {"refs/heads/lonely"}, {"a"});
 
+		for (var i = 0; i < 300 && window.history.notice_text.has_prefix("Reading"); i++)
+		{
+			drain();
+			Thread.usleep(10000);
+		}
+
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
 		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "No ticked ref reaches a commit that changes a.");
 

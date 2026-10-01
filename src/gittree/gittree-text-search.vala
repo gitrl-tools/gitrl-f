@@ -22,22 +22,8 @@ namespace Gittree
 
 public class TextSearch : Object
 {
-	public static async Gee.Set<Ggit.OId> run(File directory, Ggit.OId[] tips, string text, bool ignore_case, bool regex, string[] paths, Cancellable cancellable) throws Error
+	public static async Gee.Set<Ggit.OId> run(File directory, Ggit.OId[] tips, Filter filter, Cancellable cancellable, out Gee.Map<Ggit.OId, Gee.List<string>> names) throws Error
 	{
-		string[] argv = { "log", "-z", "--stdin", "--no-textconv", "--format=%H", (regex ? "-G" : "-S") + text };
-
-		if (ignore_case)
-		{
-			argv += "-i";
-		}
-
-		argv += "--";
-
-		foreach (var path in paths)
-		{
-			argv += path;
-		}
-
 		var input = new StringBuilder();
 
 		foreach (var tip in tips)
@@ -46,16 +32,33 @@ public class TextSearch : Object
 			input.append_c('\n');
 		}
 
-		var records = yield History.git_async(directory, argv, input.str, cancellable);
+		var records = yield History.git_async(directory, filter.log_arguments(), input.str, cancellable);
 		var found = History.id_set();
+		var named = History.id_map<Gee.List<string>>();
+		Ggit.OId? current = null;
+		var wanted = 0;
 
 		foreach (var record in records)
 		{
-			if (record != "")
+			if (record.has_prefix("\x01"))
 			{
-				found.add(new Ggit.OId.from_string(record));
+				current = new Ggit.OId.from_string(record.substring(1));
+				found.add(current);
+				named[current] = new Gee.ArrayList<string>();
+				wanted = 0;
+			}
+			else if (record != "" && current != null && wanted == 0)
+			{
+				wanted = record[0] == 'R' || record[0] == 'C' ? 2 : 1;
+			}
+			else if (record != "" && current != null)
+			{
+				named[current].add(record);
+				wanted--;
 			}
 		}
+
+		names = named;
 
 		return found;
 	}

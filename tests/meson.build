@@ -105,6 +105,7 @@ ui_tests = [
   'history-activity',
   'preferences',
   'refs-panel',
+  'renames',
   'search',
   'session',
   'smoke',

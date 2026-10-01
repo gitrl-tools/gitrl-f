@@ -83,6 +83,8 @@ appears in a file the commit changes goes up or down, as in git
 log -S. A merge never does.
 
 A regex is a POSIX extended regular expression, as in git log -G.
+One file after -- is followed through its renames, as in git log
+--follow.
 """;
 
 	public const string USAGE = "usage: gittree [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]\n";
