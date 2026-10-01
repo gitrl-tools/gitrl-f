@@ -23,6 +23,8 @@ namespace Gittree
 public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, GitgExt.Searchable
 {
 	private History? d_all;
+	private Ggit.OId[] d_beyond;
+	private Gtk.Button d_beyond_button;
 	private Cancellable? d_blame;
 	private Gtk.Box d_box;
 	private CopyMenu d_copy_menu;
@@ -232,6 +234,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_ticks = new Gee.HashSet<string>();
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
 
+		d_beyond = new Ggit.OId[0];
 		d_match = new TextMatch("", false, false, false);
 		d_matches = new int[0];
 		d_narrow_key = "";
@@ -261,6 +264,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_only_matches.toggled.connect(find_matches);
 		search_box.add(d_only_matches);
 		search_box.add(d_match_count);
+
+		d_beyond_button = new Gtk.Button.with_label(_("Tick and show"));
+		d_beyond_button.tooltip_text = _("Tick a ref that holds the newest of them, and select it");
+		d_beyond_button.no_show_all = true;
+		d_beyond_button.clicked.connect(tick_and_show);
+		search_box.add(d_beyond_button);
 
 		d_search_bar = new Gtk.SearchBar();
 		d_search_bar.add(search_box);
@@ -748,6 +757,36 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_find_bar.step_to_first();
 	}
 
+	private Ggit.OId[] find_beyond()
+	{
+		var source = d_line_history != null ? d_line_history : d_history;
+		var found = new Ggit.OId[0];
+
+		if (source == null || d_match.is_empty || d_match.error != null)
+		{
+			return found;
+		}
+
+		var shown = History.id_set();
+
+		foreach (var row in rows())
+		{
+			shown.add(row.get_id());
+		}
+
+		for (var i = 0; i < source.size; i++)
+		{
+			var commit = source.at(i);
+
+			if (!shown.contains(commit.get_id()) && Search.matches(commit, d_match))
+			{
+				found += commit.get_id();
+			}
+		}
+
+		return found;
+	}
+
 	private void find_matches()
 	{
 		d_match = d_search_switches.match(d_search_bar.search_mode_enabled ? d_search_entry.text.strip() : "");
@@ -998,6 +1037,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private void mark_matches()
 	{
 		d_matches = Search.find(rows(), d_match);
+		d_beyond = d_matches.length == 0 ? find_beyond() : new Ggit.OId[0];
+		d_beyond_button.visible = d_beyond.length > 0;
 
 		var style = d_search_entry.get_style_context();
 
@@ -1716,6 +1757,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_match_count()
 	{
+		if (d_matches.length == 0 && d_beyond.length > 0)
+		{
+			d_match_count.label = _("No match in the ticked refs. %d in others").printf(d_beyond.length);
+			return;
+		}
+
 		d_match_count.label = Search.count_text(d_matches, selected_row(), d_match);
 	}
 
@@ -1973,6 +2020,52 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_reading = null;
 		d_waiting = false;
+	}
+
+	private void tick_and_show()
+	{
+		var source = d_line_history != null ? d_line_history : d_history;
+
+		if (d_beyond.length == 0 || source == null)
+		{
+			return;
+		}
+
+		var newest = d_beyond[0];
+		var holders = source.refs_holding(newest, d_refs);
+		Ref? chosen = null;
+
+		holders.sort((a, b) => strcmp(a.short_name, b.short_name));
+
+		foreach (var reference in holders)
+		{
+			if (chosen == null && reference.head && reference.kind == RefKind.LOCAL)
+			{
+				chosen = reference;
+			}
+		}
+
+		foreach (var kind in new RefKind[] { RefKind.LOCAL, RefKind.REMOTE, RefKind.TAG })
+		{
+			foreach (var reference in holders)
+			{
+				if (chosen == null && reference.kind == kind)
+				{
+					chosen = reference;
+				}
+			}
+		}
+
+		if (chosen == null)
+		{
+			return;
+		}
+
+		var ticks = this.ticks;
+
+		ticks.add(chosen.name);
+		set_ticks(ticks);
+		select(newest);
 	}
 
 	private SList<Gitg.Ref> ticked_labels(Gitg.Commit commit)

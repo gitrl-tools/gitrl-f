@@ -96,6 +96,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/history/merge-sends-a-line-to-each-parent", test_merge_sends_a_line_to_each_parent);
 	Test.add_func("/gittree/history/only-commits-that-a-ticked-ref-reaches-are-drawn", test_only_commits_that_a_ticked_ref_reaches_are_drawn);
 	Test.add_func("/gittree/history/order-is-git-logs", test_order_is_git_logs);
+	Test.add_func("/gittree/history/refs-that-hold-a-commit-are-those-of-git", test_refs_that_hold_a_commit_are_those_of_git);
 	Test.add_func("/gittree/history/shallow-boundary-ends-the-history", test_shallow_boundary_ends_the_history);
 	Test.add_func("/gittree/history/ticking-does-not-read-the-repository-again", test_ticking_does_not_read_the_repository_again);
 	Test.add_func("/gittree/history/topological-order-keeps-children-above-parents", test_topological_order_keeps_children_above_parents);
@@ -420,6 +421,45 @@ private static void test_order_is_git_logs()
 		var theirs = repo.git({"log", "--date-order", "--format=%H", "--branches", "--remotes", "--tags"}).strip();
 
 		assert_cmpstr(string.joinv("\n", ours), CompareOperator.EQ, theirs);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_refs_that_hold_a_commit_are_those_of_git()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var opened = open(repo.path);
+
+		foreach (var line in repo.git({"log", "--all", "--format=%H"}).strip().split("\n"))
+		{
+			var id = new Ggit.OId.from_string(line);
+			var names = new Gee.ArrayList<string>();
+			var expected = new Gee.ArrayList<string>();
+
+			foreach (var reference in opened.history.refs_holding(id, opened.refs))
+			{
+				names.add(reference.name);
+			}
+
+			foreach (var name in repo.git({"for-each-ref", "--contains", line, "--format=%(refname)", "refs/heads", "refs/remotes", "refs/tags"}).strip().split("\n"))
+			{
+				expected.add(name);
+			}
+
+			names.sort();
+			expected.sort();
+
+			assert_cmpstr(string.joinv(",", names.to_array()), CompareOperator.EQ, string.joinv(",", expected.to_array()));
+		}
 
 		repo.remove();
 	}

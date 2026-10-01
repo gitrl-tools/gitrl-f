@@ -39,6 +39,25 @@ private static Gittree.Application application()
 	return app;
 }
 
+private static Repo beyond_fixture() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("base one");
+	repo.branch("elsewhere");
+	repo.commit("master only");
+	repo.checkout("elsewhere");
+	repo.commit("secret work", "secret");
+	repo.git({"tag", "v9"});
+	repo.git({"checkout", "--quiet", "--detach"});
+	repo.commit("remote thing", "remote");
+	repo.git({"update-ref", "refs/remotes/origin/thing", "HEAD"});
+	repo.git({"tag", "t1"});
+	repo.checkout("master");
+
+	return repo;
+}
+
 private static Gtk.Button button(Gittree.Window window, string tooltip)
 {
 	foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
@@ -50,6 +69,19 @@ private static Gtk.Button button(Gittree.Window window, string tooltip)
 	}
 
 	error("no button %s", tooltip);
+}
+
+private static Gtk.Button button_labelled(Gtk.Widget root, string label)
+{
+	foreach (var widget in find_all(root, typeof(Gtk.Button)))
+	{
+		if (((Gtk.Button)widget).label == label)
+		{
+			return (Gtk.Button)widget;
+		}
+	}
+
+	error("no button %s", label);
 }
 
 private static Repo four_subjects() throws Error
@@ -74,6 +106,8 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gittree/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
+	Test.add_func("/gittree/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
+	Test.add_func("/gittree/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
 	Test.add_func("/gittree/ui/search/closing-the-bar-shows-every-commit-and-keeps-only-matches", test_closing_the_bar_shows_every_commit_and_keeps_only_matches);
 	Test.add_func("/gittree/ui/search/escape-closes-keeps-the-text-and-gives-the-focus-back", test_escape_closes_keeps_the_text_and_gives_the_focus_back);
@@ -88,6 +122,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
+	Test.add_func("/gittree/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
 	Test.add_func("/gittree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
 	Test.add_func("/gittree/ui/search/typing-moves-nothing", test_typing_moves_nothing);
@@ -141,6 +176,24 @@ private static Gittree.Window opened(Repo repo) throws Error
 	return window;
 }
 
+private static Gittree.Window opened_with(Repo repo, string[] ticked) throws Error
+{
+	var ticks = new Gee.HashSet<string>();
+
+	foreach (var name in ticked)
+	{
+		ticks.add(name);
+	}
+
+	var window = new Gittree.Window(application());
+	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path);
+	window.set_default_size(1000, 600);
+	window.show();
+	settle(100);
+
+	return window;
+}
+
 private static void settle(int milliseconds)
 {
 	for (var i = 0; i < milliseconds / 10; i++)
@@ -180,6 +233,69 @@ private static void test_a_bad_expression_turns_the_field_red()
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad regular expression");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_hash_on_an_unticked_ref_is_found()
+{
+	try
+	{
+		var repo = beyond_fixture();
+		var window = opened_with(repo, {"refs/heads/master"});
+		var hash = repo.git({"rev-parse", "--short", "v9"}).strip();
+
+		type_text(window, hash);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 1 in others");
+
+		button_labelled(list_bar(window), "Tick and show").clicked();
+		settle(300);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "secret work");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_match_on_an_unticked_ref_is_offered()
+{
+	try
+	{
+		var repo = beyond_fixture();
+		var window = opened_with(repo, {"refs/heads/master"});
+		var button = button_labelled(list_bar(window), "Tick and show");
+
+		assert_false(button.get_visible());
+
+		type_text(window, "secret");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 1 in others");
+		assert_true(button.get_visible());
+		assert_cmpstr(button.tooltip_text, CompareOperator.EQ, "Tick a ref that holds the newest of them, and select it");
+
+		button.clicked();
+		settle(300);
+
+		assert_true(window.history.ticks.contains("refs/heads/elsewhere"));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "secret work");
+		assert_false(button.get_visible());
+
+		type_text(window, "zzz");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+		assert_false(button.get_visible());
 
 		window.destroy();
 		repo.remove();
@@ -665,6 +781,36 @@ private static void test_switches_say_what_they_do()
 	}
 }
 
+private static void test_tick_and_show_prefers_heads_branch_then_remotes_then_tags()
+{
+	try
+	{
+		var repo = beyond_fixture();
+		var window = opened_with(repo, {"refs/heads/elsewhere"});
+
+		type_text(window, "master only");
+		button_labelled(list_bar(window), "Tick and show").clicked();
+		settle(300);
+
+		assert_true(window.history.ticks.contains("refs/heads/master"));
+
+		type_text(window, "remote thing");
+		button_labelled(list_bar(window), "Tick and show").clicked();
+		settle(300);
+
+		assert_true(window.history.ticks.contains("refs/remotes/origin/thing"));
+		assert_false(window.history.ticks.contains("refs/tags/t1"));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "remote thing");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_tick_searches_again()
 {
 	try
@@ -681,7 +827,7 @@ private static void test_tick_searches_again()
 		ticks.remove("refs/heads/feature/scan");
 		window.history.set_ticks(ticks);
 
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 1 in others");
 
 		window.destroy();
 		repo.remove();
@@ -706,7 +852,7 @@ private static void test_ticking_nothing_counts_no_match()
 
 		window.history.set_ticks(new Gee.HashSet<string>());
 
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 3 in others");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 
 		window.destroy();

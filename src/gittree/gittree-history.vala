@@ -598,6 +598,43 @@ public class History : Object
 		return new History.from_log(repository, records, tips, starts);
 	}
 
+	public Gee.List<Ref> refs_holding(Ggit.OId id, Gee.List<Ref> refs)
+	{
+		var held = new Gee.ArrayList<Ref>();
+
+		if (!d_index.has_key(id))
+		{
+			return held;
+		}
+
+		var target = d_index[id];
+		var reaches = new bool[d_commits.length];
+
+		for (var i = d_commits.length - 1; i >= 0; i--)
+		{
+			reaches[i] = i == target;
+
+			foreach (var parent in parents_at(i))
+			{
+				reaches[i] = reaches[i] || reaches[parent];
+			}
+		}
+
+		foreach (var reference in refs)
+		{
+			foreach (var start in starts_of(reference.target))
+			{
+				if (d_index.has_key(start) && reaches[d_index[start]])
+				{
+					held.add(reference);
+					break;
+				}
+			}
+		}
+
+		return held;
+	}
+
 	public static string[] records(Bytes output)
 	{
 		var records = new string[0];

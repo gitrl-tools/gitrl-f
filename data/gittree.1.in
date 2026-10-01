@@ -132,6 +132,15 @@ Options add up:
 .B gittree \-l origin/master
 ticks every local branch and
 .BR origin/master .
+.SH SEARCH
+Ctrl+F opens the search bar of the list. It looks in the subject, the
+message, the author and the hash of each commit in the list. Match case,
+Whole word and Regular expression narrow the search, and Only matches hides
+the commits that do not match. The bar keeps its text when it closes. When
+no commit of the ticked refs matches, the bar counts the matches on the
+other refs, and Tick and show ticks a ref that holds the newest of them and
+selects it: the branch of HEAD, else the first local branch by name, then
+remote branch, then tag.
 .SH THE HISTORY OF LINES
 A right click on a line of the diff, or on lines that you selected, offers
 Show history of this line or Show history of the selected lines. The list
