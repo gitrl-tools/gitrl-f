@@ -1,4 +1,4 @@
-# How to release gitree
+# How to release gittree
 
 A release is four things: the version bump on `master`, an annotated tag, the files on the GitHub releases page, and a source upload to the PPA for each Ubuntu release.
 
@@ -9,7 +9,7 @@ Everything up to the upload runs from a checkout. The upload needs a key and an 
 - `debian/` is complete. Lintian shows one tag at `--pedantic --info`, `binary-nmu-debian-revision-in-source`, which the `~ubuntuNN.NN.1` suffix causes.
 - The `.deb` builds in the `build` stage of the container, which holds only the packaging tools and the build dependencies that `debian/control` declares. A Launchpad builder makes the same check.
 - Install, run, remove and purge are verified in unmodified `ubuntu:24.04` and `ubuntu:26.04` containers.
-- The package is `gitree`. The commands are `gitree` and `git-tree`. It is built for **noble** (24.04) and **resolute** (26.04).
+- The package is `gittree`. The commands are `gittree` and `git-tree`. It is built for **noble** (24.04) and **resolute** (26.04).
 
 ## Preliminary steps
 
@@ -27,7 +27,7 @@ You must do these steps yourself. The first four are necessary one time only, an
    Then add its fingerprint at <https://launchpad.net/~/+editpgpkeys>, and confirm the encrypted email that Launchpad sends.
 3. **An SSH key registered** at <https://launchpad.net/~/+editsshkeys>.
 4. **The Ubuntu Code of Conduct, signed** at <https://launchpad.net/codeofconduct>. Launchpad refuses PPA uploads without it.
-5. **The PPA** `ppa:li9i/gitree`, made at <https://launchpad.net/~li9i/+activate-ppa>. Enable noble and resolute in its settings before you upload for them.
+5. **The PPA** `ppa:li9i/gittree`, made at <https://launchpad.net/~li9i/+activate-ppa>. Enable noble and resolute in its settings before you upload for them.
 
 The maintainer address in `debian/control` and `debian/changelog` is `alexandros filotheou <alexandros.filotheou@gmail.com>`. `debsign` selects a signing key by that address. If your key does not have it, `debsign` refuses after the source package is built. Examine your keys with `gpg --list-secret-keys --keyid-format=long`, then add the address as a UID (`gpg --edit-key <ID>`, then `adduid`), or give `-k <KEYID>`.
 
@@ -41,8 +41,8 @@ Work on a clean tree.
    ./scripts/dev.sh test
    ```
 
-2. Bump `version` in `meson.build`, and the date in the first line of `data/gitree.1.in`.
-3. Add a `<release>` entry at the top of the `<releases>` block in `data/io.github.li9i.gitree.metainfo.xml.in`. `meson test --suite data` validates it.
+2. Bump `version` in `meson.build`, and the date in the first line of `data/gittree.1.in`.
+3. Add a `<release>` entry at the top of the `<releases>` block in `data/io.github.li9i.gittree.metainfo.xml.in`. `meson test --suite data` validates it.
 4. Add an entry at the top of `debian/changelog`. Keep `noble` as the distribution and `-1` as the revision. `docker/build-deb.sh` and `docker/build-source.sh` write both for each release at build time.
 5. Commit the four files as `Release X.Y.Z`, tag the commit, and push both:
 
@@ -71,12 +71,12 @@ A `.deb` links the libraries of the release it was built on, so each release has
 
 ```bash
 ./tests/packaging/test-orig.sh
-./tests/packaging/test-lintian.sh _build/deb/gitree_X.Y.Z-1~ubuntu24.04.1_amd64.changes
-./tests/packaging/test-lintian.sh _build/deb/gitree_X.Y.Z-1~ubuntu26.04.1_amd64.changes
-./tests/packaging/test-install.sh _build/deb/gitree_X.Y.Z-1~ubuntu24.04.1_amd64.deb
-./tests/packaging/test-install.sh _build/deb/gitree_X.Y.Z-1~ubuntu26.04.1_amd64.deb
+./tests/packaging/test-lintian.sh _build/deb/gittree_X.Y.Z-1~ubuntu24.04.1_amd64.changes
+./tests/packaging/test-lintian.sh _build/deb/gittree_X.Y.Z-1~ubuntu26.04.1_amd64.changes
+./tests/packaging/test-install.sh _build/deb/gittree_X.Y.Z-1~ubuntu24.04.1_amd64.deb
+./tests/packaging/test-install.sh _build/deb/gittree_X.Y.Z-1~ubuntu26.04.1_amd64.deb
 ./tests/packaging/test-appimage.sh
-./tests/packaging/test-appimage.sh gitree-X.Y.Z-x86_64.AppImage ubuntu:26.04
+./tests/packaging/test-appimage.sh gittree-X.Y.Z-x86_64.AppImage ubuntu:26.04
 ```
 
 `test-orig.sh` compares the source tarball with the files that git tracks. It must show no difference: a file in the tarball that git does not track is published on Launchpad for anyone to download.
@@ -86,11 +86,11 @@ A `.deb` links the libraries of the release it was built on, so each release has
 ```bash
 git tag -l vX.Y.Z --format='%(contents:body)' > notes.md
 
-gh release create vX.Y.Z --title "gitree X.Y.Z" --verify-tag \
+gh release create vX.Y.Z --title "gittree X.Y.Z" --verify-tag \
     --notes-file notes.md --generate-notes \
-    gitree-X.Y.Z-x86_64.AppImage \
-    _build/deb/gitree_X.Y.Z-1~ubuntu24.04.1_amd64.deb \
-    _build/deb/gitree_X.Y.Z-1~ubuntu26.04.1_amd64.deb
+    gittree-X.Y.Z-x86_64.AppImage \
+    _build/deb/gittree_X.Y.Z-1~ubuntu24.04.1_amd64.deb \
+    _build/deb/gittree_X.Y.Z-1~ubuntu26.04.1_amd64.deb
 ```
 
 GitHub writes `~` as `.` in the names of the files it stores. The instructions in `README.md` name no version, so a release does not change them.
@@ -103,26 +103,26 @@ A PPA takes a source upload and builds the binary package itself. The `.deb` fil
 
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
-    -v "$PWD:/src" -w /src gitree-build:24.04 \
+    -v "$PWD:/src" -w /src gittree-build:24.04 \
     ./docker/build-source.sh noble '~ubuntu24.04.1'
 
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
-    -v "$PWD:/src" -w /src gitree-build:24.04 \
+    -v "$PWD:/src" -w /src gittree-build:24.04 \
     ./docker/build-source.sh resolute '~ubuntu26.04.1'
 ```
 
-The first run writes `gitree_X.Y.Z.orig.tar.gz` to `_build/ppa/` and keeps it there. The second run uses it again, so the two releases upload the same tarball. Check it, and each source package:
+The first run writes `gittree_X.Y.Z.orig.tar.gz` to `_build/ppa/` and keeps it there. The second run uses it again, so the two releases upload the same tarball. Check it, and each source package:
 
 ```bash
-./tests/packaging/test-orig.sh _build/ppa/gitree_X.Y.Z.orig.tar.gz
-./tests/packaging/test-lintian.sh _build/ppa/gitree_X.Y.Z-1~ubuntu24.04.1_source.changes
-./tests/packaging/test-lintian.sh _build/ppa/gitree_X.Y.Z-1~ubuntu26.04.1_source.changes
+./tests/packaging/test-orig.sh _build/ppa/gittree_X.Y.Z.orig.tar.gz
+./tests/packaging/test-lintian.sh _build/ppa/gittree_X.Y.Z-1~ubuntu24.04.1_source.changes
+./tests/packaging/test-lintian.sh _build/ppa/gittree_X.Y.Z-1~ubuntu26.04.1_source.changes
 ```
 
 Then sign, on the host, where your GPG key is:
 
 ```bash
-debsign -k <KEYID> _build/ppa/gitree_X.Y.Z-1~ubuntu*_source.changes
+debsign -k <KEYID> _build/ppa/gittree_X.Y.Z-1~ubuntu*_source.changes
 ```
 
 `docker/build-source.sh` builds unsigned. The container has no access to your key, and it must not have access.
@@ -130,22 +130,22 @@ debsign -k <KEYID> _build/ppa/gitree_X.Y.Z-1~ubuntu*_source.changes
 ## Upload
 
 ```bash
-dput ppa:li9i/gitree _build/ppa/gitree_X.Y.Z-1~ubuntu*_source.changes
+dput ppa:li9i/gittree _build/ppa/gittree_X.Y.Z-1~ubuntu*_source.changes
 ```
 
 This uploads both releases. Give the version in the name, because `_build/ppa` also keeps the files of earlier releases. Run it on the host: it needs your key and your account.
 
 ## After the upload
 
-1. Watch the builds at <https://launchpad.net/~li9i/+archive/ubuntu/gitree/+packages>. A build starts after some minutes.
+1. Watch the builds at <https://launchpad.net/~li9i/+archive/ubuntu/gittree/+packages>. A build starts after some minutes.
 2. Read the build log, also when the build succeeds. The builder is a cleaner place than the container, and a warning there matters.
 3. Install from the real PPA on a clean machine one time:
 
    ```bash
-   sudo add-apt-repository ppa:li9i/gitree
+   sudo add-apt-repository ppa:li9i/gittree
    sudo apt-get update
-   sudo apt-get install gitree
-   gitree --version
+   sudo apt-get install gittree
+   gittree --version
    ```
 
 ## Known problems

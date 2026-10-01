@@ -1,8 +1,8 @@
-# `gitree`
+# `gittree`
 
 > The git history only of the refs that you want to see
 
-`gitree` is a stripped-down version of `gitg`: it shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does: the same lanes, the same labels and the same diff. A commit is drawn when a ticked ref reaches it. A commit that a ticked branch shares with an unticked one is still drawn, as part of the ticked branch. Only the ticked refs get a label.
+`gittree` is a stripped-down version of `gitg`: it shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does: the same lanes, the same labels and the same diff. A commit is drawn when a ticked ref reaches it. A commit that a ticked branch shares with an unticked one is still drawn, as part of the ticked branch. Only the ticked refs get a label.
 
 ![Refs ticked and unticked on the left, and the history redrawn on the right each time](docs/screenshots/demo-ticks.gif)
 
@@ -11,12 +11,12 @@
 - **A checkbox for each ref.** The refs are on the left, in three groups: branches, remote branches under each remote, and tags. A name with slashes, such as `feature/lexer`, goes into a group `feature`, to any depth. The box of a group ticks every ref in it and opens the group, or unticks them all and folds it. At each level the refs come first, then the groups. Both follow the order of the graph: a ref whose commit is higher in the history comes first, and a group takes the place of its highest ref. Refs on the same commit are sorted by name.
 - **Every ref at the start.** With no ref and no option on the command line, every ref is ticked.
 - **The details on a click.** The pane under the history is hidden until you click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A click on the same commit, Enter or Escape hides it again. A double-click is two clicks: it shows the pane and hides it again. A click that opens a file, or a click on Expand all, fills the window with the diff. A click that closes a file does not change the window. When the commit changes only one file, Enter fills the window at once. Escape, the back arrow or the close button at the top right of the diff brings back the refs and the list.
-- **A path limit.** `gitree -- src/parser.py` keeps only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does.
+- **A path limit.** `gittree -- src/parser.py` keeps only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does.
 - **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same commit at the top of the list.
 
 ![A click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
 
-`gitree` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries, and the graph, the labels and the diff are gitg's own code.
+`gittree` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries, and the graph, the labels and the diff are gitg's own code.
 
 ## Installation
 
@@ -25,47 +25,55 @@
 The PPA is for Ubuntu 24.04 and 26.04:
 
 ```bash
-sudo add-apt-repository ppa:li9i/gitree
-sudo apt-get install gitree
+sudo add-apt-repository ppa:li9i/gittree
+sudo apt-get install gittree
 ```
 
-The package is `gitree`. The command is `gitree`, and `git tree` runs it too. In bash, TAB completes the options of both, then the names of the refs, and after `--` the paths.
+The package is `gittree`. The command is `gittree`, and `git tree` runs it too. In bash, TAB completes the options of both, then the names of the refs, and after `--` the paths.
+
+Before 0.4.0, the name was `gitree` and the PPA was `ppa:li9i/gitree`. That PPA is closed. If you added it, remove it:
+
+```bash
+sudo add-apt-repository --remove ppa:li9i/gitree
+```
+
+The `gittree` package removes the `gitree` package when you install it.
 
 ### `.deb` package
 
-Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/li9i/gitree/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
+Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/li9i/gittree/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
 
 ```bash
-sudo apt-get install ./gitree_*_amd64.deb
+sudo apt-get install ./gittree_*_amd64.deb
 ```
 
-If you installed gitree into `~/.local` from source before, remove that copy first, so that it does not come before the package on your `PATH`:
+If you installed gittree into `~/.local` from source before, remove that copy first, so that it does not come before the package on your `PATH`:
 
 ```bash
-rm -f ~/.local/bin/gitree ~/.local/bin/git-tree
-rm -f ~/.local/share/bash-completion/completions/gitree ~/.local/share/bash-completion/completions/git-tree
+rm -f ~/.local/bin/gittree ~/.local/bin/git-tree
+rm -f ~/.local/share/bash-completion/completions/gittree ~/.local/share/bash-completion/completions/git-tree
 ```
 
 ### AppImage
 
-Download the AppImage from the [releases page](https://github.com/li9i/gitree/releases). It is one file, and it is not necessary to install it. Make it executable, then run it from a repository:
+Download the AppImage from the [releases page](https://github.com/li9i/gittree/releases). It is one file, and it is not necessary to install it. Make it executable, then run it from a repository:
 
 ```bash
-chmod +x gitree-*-x86_64.AppImage
-./gitree-*-x86_64.AppImage
+chmod +x gittree-*-x86_64.AppImage
+./gittree-*-x86_64.AppImage
 ```
 
 If your machine has no FUSE, run it unpacked. This needs no other software:
 
 ```bash
-./gitree-*-x86_64.AppImage --appimage-extract-and-run
+./gittree-*-x86_64.AppImage --appimage-extract-and-run
 ```
 
-To call it as `gitree` and as `git tree` from any directory, link it into `~/.local/bin` under both names, from the folder that holds it:
+To call it as `gittree` and as `git tree` from any directory, link it into `~/.local/bin` under both names, from the folder that holds it:
 
 ```bash
-ln -s "$PWD"/gitree-*-x86_64.AppImage ~/.local/bin/gitree
-ln -s "$PWD"/gitree-*-x86_64.AppImage ~/.local/bin/git-tree
+ln -s "$PWD"/gittree-*-x86_64.AppImage ~/.local/bin/gittree
+ln -s "$PWD"/gittree-*-x86_64.AppImage ~/.local/bin/git-tree
 ```
 
 The AppImage has no TAB completion. The package and a build from source have it.
@@ -73,8 +81,8 @@ The AppImage has no TAB completion. The package and a build from source have it.
 ## Build from source
 
 ```bash
-git clone https://github.com/li9i/gitree.git
-cd gitree
+git clone https://github.com/li9i/gittree.git
+cd gittree
 ```
 
 `CONTRIBUTING.md` gives the packages that the build needs.
@@ -86,7 +94,7 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-`~/.local/bin` must be on the `PATH`. The install puts `gitree` there, and `git-tree` as a second name for it. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas`, and bash finds the TAB completion in `~/.local/share/bash-completion/completions`, with no more configuration.
+`~/.local/bin` must be on the `PATH`. The install puts `gittree` there, and `git-tree` as a second name for it. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas`, and bash finds the TAB completion in `~/.local/share/bash-completion/completions`, with no more configuration.
 
 ### `.deb` package
 
@@ -100,8 +108,8 @@ Built in a container of the Ubuntu release that the package is for, so that it l
 The packages go to `_build/deb/`. Install one with `apt`, so that you also get its dependencies:
 
 ```bash
-sudo apt-get remove --purge gitree
-sudo apt-get install ./_build/deb/gitree_*~ubuntu24.04.1_amd64.deb
+sudo apt-get remove --purge gittree
+sudo apt-get install ./_build/deb/gittree_*~ubuntu24.04.1_amd64.deb
 ```
 
 ### AppImage
@@ -110,22 +118,22 @@ sudo apt-get install ./_build/deb/gitree_*~ubuntu24.04.1_amd64.deb
 ./scripts/build-appimage.sh
 ```
 
-The AppImage goes to the top of the repository, as `gitree-<version>-x86_64.AppImage`.
+The AppImage goes to the top of the repository, as `gittree-<version>-x86_64.AppImage`.
 
 ## How to run it
 
 In a repository:
 
 ```bash
-gitree                          # every ref ticked
-gitree main origin/main         # only these two
-gitree 'feature/*'              # every ref whose name matches
-gitree -l -r                    # every local and every remote branch
-gitree -- src/parser.py         # only the commits that change this file
+gittree                         # every ref ticked
+gittree main origin/main        # only these two
+gittree 'feature/*'             # every ref whose name matches
+gittree -l -r                   # every local and every remote branch
+gittree -- src/parser.py        # only the commits that change this file
 git tree -l                     # the same program, as a git command
 ```
 
-Outside a repository, `gitree` opens a list of the repositories that you opened before. `gitree -h` prints every option, and `man gitree` gives the whole of it.
+Outside a repository, `gittree` opens a list of the repositories that you opened before. `gittree -h` prints every option, and `man gittree` gives the whole of it.
 
 | Key | What it does |
 |-----|--------------|

@@ -11,8 +11,8 @@ here=$(dirname "$(readlink -f "$0")")
 root=$(dirname "$(dirname "$here")")
 repositories=$1
 runs=${2:-3}
-bench=${GITREE_BENCH:-$root/_build/tests/gitree-bench}
-dotfiles=${GITREE_DOTFILES:-$HOME/dotfiles}
+bench=${GITTREE_BENCH:-$root/_build/tests/gittree-bench}
+dotfiles=${GITTREE_DOTFILES:-$HOME/dotfiles}
 home=$(mktemp -d)
 trap 'rm -rf "$home"' EXIT
 
@@ -31,7 +31,7 @@ done
 private() {
 	rm -rf "$home/run"
 	mkdir -p "$home/run"
-	env GITREE_DOTFILES="$dotfiles" HOME="$home/run" XDG_CACHE_HOME="$home/run/.cache" \
+	env GITTREE_DOTFILES="$dotfiles" HOME="$home/run" XDG_CACHE_HOME="$home/run/.cache" \
 		XDG_CONFIG_HOME="$home/run/.config" XDG_DATA_HOME="$home/run/.local/share" \
 		GSETTINGS_SCHEMA_DIR="$root/_build/data" GSETTINGS_BACKEND=memory GIT_CONFIG_GLOBAL=/dev/null \
 		GTK_THEME=Adwaita sh "$root/tests/ui/run-xvfb.sh" "$@" 2>"$home/errors" || {
@@ -49,7 +49,7 @@ for name in big big100; do
 	run=1
 
 	while [ "$run" -le "$runs" ]; do
-		echo "--- $name, run $run, gitree"
+		echo "--- $name, run $run, gittree"
 		private "$bench" --window "$repositories/$name" "$only"
 		echo "--- $name, run $run, prototype"
 		private python3 "$here/prototype-window.py" "$repositories/$name" "$only"

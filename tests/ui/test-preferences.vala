@@ -1,22 +1,22 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GitreeTest
+namespace GittreeTest
 {
 
 private static Gtk.CheckButton check_button(Gtk.Widget root, string label)
@@ -48,22 +48,22 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/preferences/check-buttons-follow-their-keys", test_check_buttons_follow_their_keys);
-	Test.add_func("/gitree/ui/preferences/choices-follow-their-keys", test_choices_follow_their_keys);
-	Test.add_func("/gitree/ui/preferences/collapse-scale-follows-its-key", test_collapse_scale_follows_its_key);
-	Test.add_func("/gitree/ui/preferences/pages", test_pages);
+	Test.add_func("/gittree/ui/preferences/check-buttons-follow-their-keys", test_check_buttons_follow_their_keys);
+	Test.add_func("/gittree/ui/preferences/choices-follow-their-keys", test_choices_follow_their_keys);
+	Test.add_func("/gittree/ui/preferences/collapse-scale-follows-its-key", test_collapse_scale_follows_its_key);
+	Test.add_func("/gittree/ui/preferences/pages", test_pages);
 
 	return Test.run();
 }
 
 private static Settings settings(string suffix)
 {
-	return new Settings(Gitree.Config.APPLICATION_ID + "." + suffix);
+	return new Settings(Gittree.Config.APPLICATION_ID + "." + suffix);
 }
 
 private static void test_check_buttons_follow_their_keys()
 {
-	var dialog = new Gitree.PreferencesDialog(null);
+	var dialog = new Gittree.PreferencesDialog(null);
 
 	string[,] rows = {
 		{ "preferences.interface", "use-default-font", "Use the system fixed width font" },
@@ -97,7 +97,7 @@ private static void test_check_buttons_follow_their_keys()
 
 private static void test_choices_follow_their_keys()
 {
-	var dialog = new Gitree.PreferencesDialog(null);
+	var dialog = new Gittree.PreferencesDialog(null);
 	var keys = settings("preferences.interface");
 	Gtk.ComboBoxText? layout = null;
 	Gtk.ComboBoxText? scheme = null;
@@ -147,7 +147,7 @@ private static void test_choices_follow_their_keys()
 
 private static void test_collapse_scale_follows_its_key()
 {
-	var dialog = new Gitree.PreferencesDialog(null);
+	var dialog = new Gittree.PreferencesDialog(null);
 	var keys = settings("preferences.history");
 	var scale = find_all(dialog, typeof(Gtk.Scale))[0] as Gtk.Scale;
 
@@ -175,7 +175,7 @@ private static void test_collapse_scale_follows_its_key()
 
 private static void test_pages()
 {
-	var dialog = new Gitree.PreferencesDialog(null);
+	var dialog = new Gittree.PreferencesDialog(null);
 	var notebook = find_all(dialog, typeof(Gtk.Notebook))[0] as Gtk.Notebook;
 
 	assert_cmpint(notebook.get_n_pages(), CompareOperator.EQ, 2);

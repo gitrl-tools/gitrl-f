@@ -1,31 +1,31 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GitreeTest
+namespace GittreeTest
 {
 
-private static Gitree.Application application()
+private static Gittree.Application application()
 {
-	var app = GLib.Application.get_default() as Gitree.Application;
+	var app = GLib.Application.get_default() as Gittree.Application;
 
 	if (app == null)
 	{
-		app = new Gitree.Application();
+		app = new Gittree.Application();
 
 		try
 		{
@@ -71,10 +71,10 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/dash/a-folder-in-a-repository-opens-it", test_a_folder_in_a_repository_opens_it);
-	Test.add_func("/gitree/ui/dash/a-folder-outside-a-repository-shows-an-error", test_a_folder_outside_a_repository_shows_an_error);
-	Test.add_func("/gitree/ui/dash/opened-repository-is-listed-and-opens", test_opened_repository_is_listed_and_opens);
-	Test.add_func("/gitree/ui/dash/shows-with-no-repository", test_shows_with_no_repository);
+	Test.add_func("/gittree/ui/dash/a-folder-in-a-repository-opens-it", test_a_folder_in_a_repository_opens_it);
+	Test.add_func("/gittree/ui/dash/a-folder-outside-a-repository-shows-an-error", test_a_folder_outside_a_repository_shows_an_error);
+	Test.add_func("/gittree/ui/dash/opened-repository-is-listed-and-opens", test_opened_repository_is_listed_and_opens);
+	Test.add_func("/gittree/ui/dash/shows-with-no-repository", test_shows_with_no_repository);
 
 	return Test.run();
 }
@@ -107,11 +107,11 @@ private static void test_a_folder_in_a_repository_opens_it()
 		return;
 	}
 
-	var window = new Gitree.Window(application());
+	var window = new Gittree.Window(application());
 	window.show();
 	settle(100);
 
-	var dash = find(window, typeof(Gitree.DashView)) as Gitree.DashView;
+	var dash = find(window, typeof(Gittree.DashView)) as Gittree.DashView;
 	dash.open_location(repo.path);
 	settle(100);
 
@@ -130,7 +130,7 @@ private static void test_a_folder_outside_a_repository_shows_an_error()
 
 	try
 	{
-		outside = DirUtils.make_tmp("gitree-outside-XXXXXX");
+		outside = DirUtils.make_tmp("gittree-outside-XXXXXX");
 	}
 	catch (Error e)
 	{
@@ -138,11 +138,11 @@ private static void test_a_folder_outside_a_repository_shows_an_error()
 		return;
 	}
 
-	var window = new Gitree.Window(application());
+	var window = new Gittree.Window(application());
 	window.show();
 	settle(100);
 
-	var dash = find(window, typeof(Gitree.DashView)) as Gitree.DashView;
+	var dash = find(window, typeof(Gittree.DashView)) as Gittree.DashView;
 	dash.open_location(File.new_for_path(outside));
 	settle(100);
 
@@ -168,12 +168,12 @@ private static void test_opened_repository_is_listed_and_opens()
 		return;
 	}
 
-	var first = new Gitree.Window(application());
+	var first = new Gittree.Window(application());
 	first.open_repository(repo.path);
 	settle(500);
 	first.destroy();
 
-	var window = new Gitree.Window(application());
+	var window = new Gittree.Window(application());
 	window.show();
 	settle(100);
 
@@ -207,11 +207,11 @@ private static void test_opened_repository_is_listed_and_opens()
 
 private static void test_shows_with_no_repository()
 {
-	var window = new Gitree.Window(application());
+	var window = new Gittree.Window(application());
 	window.show();
 	settle(100);
 
-	var dash = find(window, typeof(Gitree.DashView));
+	var dash = find(window, typeof(Gittree.DashView));
 	assert_nonnull(dash);
 	assert_true(dash.get_mapped());
 

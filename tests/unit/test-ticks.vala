@@ -1,40 +1,40 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GitreeTest
+namespace GittreeTest
 {
 
 public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gitree/ticks/detached-head-argument-ticks-the-head-row", test_detached_head_argument_ticks_the_head_row);
-	Test.add_func("/gitree/ticks/first-run-ticks-every-ref", test_first_run_ticks_every_ref);
-	Test.add_func("/gitree/ticks/glob-ticks-every-matching-branch", test_glob_ticks_every_matching_branch);
-	Test.add_func("/gitree/ticks/globs-follow-python", test_globs_follow_python);
-	Test.add_func("/gitree/ticks/head-on-a-branch-ticks-that-branch", test_head_on_a_branch_ticks_that_branch);
-	Test.add_func("/gitree/ticks/options-add-up", test_options_add_up);
-	Test.add_func("/gitree/ticks/unknown-ref-stops-before-the-window-opens", test_unknown_ref_stops_before_the_window_opens);
+	Test.add_func("/gittree/ticks/detached-head-argument-ticks-the-head-row", test_detached_head_argument_ticks_the_head_row);
+	Test.add_func("/gittree/ticks/first-run-ticks-every-ref", test_first_run_ticks_every_ref);
+	Test.add_func("/gittree/ticks/glob-ticks-every-matching-branch", test_glob_ticks_every_matching_branch);
+	Test.add_func("/gittree/ticks/globs-follow-python", test_globs_follow_python);
+	Test.add_func("/gittree/ticks/head-on-a-branch-ticks-that-branch", test_head_on_a_branch_ticks_that_branch);
+	Test.add_func("/gittree/ticks/options-add-up", test_options_add_up);
+	Test.add_func("/gittree/ticks/unknown-ref-stops-before-the-window-opens", test_unknown_ref_stops_before_the_window_opens);
 
 	return Test.run();
 }
 
-private static string names(Gee.List<Gitree.Ref> refs, Gee.Set<string>? ticks)
+private static string names(Gee.List<Gittree.Ref> refs, Gee.Set<string>? ticks)
 {
 	var shorts = new Gee.ArrayList<string>();
 
@@ -51,11 +51,11 @@ private static string names(Gee.List<Gitree.Ref> refs, Gee.Set<string>? ticks)
 	return string.joinv(",", shorts.to_array());
 }
 
-private static Gee.List<Gitree.Ref> refs_of(Repo repo) throws Error
+private static Gee.List<Gittree.Ref> refs_of(Repo repo) throws Error
 {
-	var location = Gitree.Application.discover_repository(repo.path);
+	var location = Gittree.Application.discover_repository(repo.path);
 
-	return Gitree.Refs.read(Gitree.Repository.open(location));
+	return Gittree.Refs.read(Gittree.Repository.open(location));
 }
 
 private static void test_detached_head_argument_ticks_the_head_row()
@@ -133,7 +133,7 @@ private static void test_globs_follow_python()
 
 	for (var i = 0; i < cases.length[0]; i++)
 	{
-		var matched = Gitree.Ticks.glob_match(cases[i, 0], cases[i, 1]);
+		var matched = Gittree.Ticks.glob_match(cases[i, 0], cases[i, 1]);
 
 		if (matched != (cases[i, 2] == "yes"))
 		{
@@ -184,7 +184,7 @@ private static void test_unknown_ref_stops_before_the_window_opens()
 		var repo = Repo.create();
 		repo.branched();
 
-		string[] argv = { Environment.get_variable("GITREE_BINARY"), "nope" };
+		string[] argv = { Environment.get_variable("GITTREE_BINARY"), "nope" };
 		var env = Environ.unset_variable(Environ.get(), "DISPLAY");
 		string output;
 		string errors;
@@ -193,7 +193,7 @@ private static void test_unknown_ref_stops_before_the_window_opens()
 		Process.spawn_sync(repo.path.get_path(), argv, env, 0, null, out output, out errors, out status);
 
 		assert_cmpint(Process.exit_status(status), CompareOperator.EQ, 1);
-		assert_cmpstr(errors, CompareOperator.EQ, "gitree: no ref matches 'nope'\n");
+		assert_cmpstr(errors, CompareOperator.EQ, "gittree: no ref matches 'nope'\n");
 
 		repo.remove();
 	}
@@ -207,7 +207,7 @@ private static string ticks_for(Repo repo, string[] arguments) throws Error
 {
 	var refs = refs_of(repo);
 
-	return names(refs, Gitree.Ticks.resolve(new Gitree.CommandLine(arguments), refs));
+	return names(refs, Gittree.Ticks.resolve(new Gittree.CommandLine(arguments), refs));
 }
 
 }

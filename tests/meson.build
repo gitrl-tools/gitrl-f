@@ -1,21 +1,21 @@
-test_support_sources = files('support/gitree-test-repo.vala')
-ui_support_sources = files('support/gitree-test-pointer.vala', 'support/gitree-test-widgets.vala')
+test_support_sources = files('support/gittree-test-repo.vala')
+ui_support_sources = files('support/gittree-test-pointer.vala', 'support/gittree-test-widgets.vala')
 
 test_deps = [
   vendor_gitg_dep,
-  gitree_dep,
+  gittree_dep,
   gtksourceview_dep,
 ]
 
 test_vala_flags = vala_flags + [
-  '--pkg', 'gitree-config',
+  '--pkg', 'gittree-config',
   '--pkg', 'posix',
 ]
 
 git_prog = find_program('git', required: true)
 
 test_env_base = {
-  'GITREE_BINARY': gitree_exe.full_path(),
+  'GITTREE_BINARY': gittree_exe.full_path(),
   'GSETTINGS_SCHEMA_DIR': join_paths(meson.project_build_root(), 'data'),
   'GSETTINGS_BACKEND': 'memory',
 }
@@ -35,7 +35,7 @@ unit_tests = [
 foreach name : unit_tests
   exe = executable(
     'test-' + name,
-    files('unit/test-' + name + '.vala') + test_support_sources + gitree_all_resources,
+    files('unit/test-' + name + '.vala') + test_support_sources + gittree_all_resources,
     include_directories: [top_inc, vendor_gitg_inc],
     dependencies: test_deps,
     vala_args: test_vala_flags,
@@ -56,14 +56,14 @@ foreach name : unit_tests
       'XDG_CONFIG_HOME': join_paths(test_home, '.config'),
       'XDG_DATA_HOME': join_paths(test_home, '.local', 'share'),
     },
-    depends: [gitree_exe, gschemas_compiled],
+    depends: [gittree_exe, gschemas_compiled],
   )
 endforeach
 
 test(
   'read-only',
   find_program('unit/test-read-only.sh'),
-  args: [gitree_exe],
+  args: [gittree_exe],
   suite: 'unit',
 )
 
@@ -71,8 +71,8 @@ test(
   'completion',
   find_program('unit/test-completion.sh'),
   args: [
-    gitree_exe,
-    join_paths(meson.project_source_root(), 'data', 'gitree.bash-completion'),
+    gittree_exe,
+    join_paths(meson.project_source_root(), 'data', 'gittree.bash-completion'),
   ],
   suite: 'unit',
 )
@@ -82,7 +82,7 @@ test(
   find_program('packaging/test-meson-install.sh'),
   args: [meson.project_build_root()],
   suite: 'install',
-  depends: [gitree_exe, gschemas_compiled],
+  depends: [gittree_exe, gschemas_compiled],
 )
 
 test(
@@ -110,7 +110,7 @@ ui_tests = [
 foreach name : ui_tests
   exe = executable(
     'test-ui-' + name,
-    files('ui/test-' + name + '.vala') + test_support_sources + ui_support_sources + gitree_all_resources,
+    files('ui/test-' + name + '.vala') + test_support_sources + ui_support_sources + gittree_all_resources,
     include_directories: [top_inc, vendor_gitg_inc],
     dependencies: test_deps,
     vala_args: test_vala_flags,
@@ -136,18 +136,18 @@ foreach name : ui_tests
   )
 endforeach
 
-gitree_bench = executable(
-  'gitree-bench',
-  files('perf/bench.vala') + gitree_all_resources,
+gittree_bench = executable(
+  'gittree-bench',
+  files('perf/bench.vala') + gittree_all_resources,
   include_directories: [top_inc, vendor_gitg_inc],
   dependencies: test_deps,
   vala_args: test_vala_flags,
   install: false,
 )
 
-gitree_dump = executable(
-  'gitree-dump',
-  files('parity/gitree-dump.vala') + gitree_all_resources,
+gittree_dump = executable(
+  'gittree-dump',
+  files('parity/gittree-dump.vala') + gittree_all_resources,
   include_directories: [top_inc, vendor_gitg_inc],
   dependencies: test_deps,
   vala_args: test_vala_flags,
@@ -160,9 +160,9 @@ if get_option('visual_tests')
     find_program('visual/test-parity.sh'),
     suite: 'visual',
     env: test_env_base + {
-      'GITREE_VISUAL_OUT': join_paths(meson.current_build_dir(), 'visual'),
+      'GITTREE_VISUAL_OUT': join_paths(meson.current_build_dir(), 'visual'),
     },
-    depends: [gitree_exe, gschemas_compiled],
+    depends: [gittree_exe, gschemas_compiled],
     timeout: 300,
   )
 endif

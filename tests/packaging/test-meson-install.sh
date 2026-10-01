@@ -21,18 +21,18 @@ find . -type f -o -type l | sed 's|^\./||' | sort >"$dest/installed"
 
 sort >"$dest/expected" <<'LIST'
 bin/git-tree
-bin/gitree
-share/applications/io.github.li9i.gitree.desktop
+bin/gittree
+share/applications/io.github.li9i.gittree.desktop
 share/bash-completion/completions/git-tree
-share/bash-completion/completions/gitree
-share/glib-2.0/schemas/io.github.li9i.gitree.gschema.xml
-share/icons/hicolor/128x128/apps/io.github.li9i.gitree.png
-share/icons/hicolor/48x48/apps/io.github.li9i.gitree.png
-share/icons/hicolor/64x64/apps/io.github.li9i.gitree.png
-share/icons/hicolor/symbolic/apps/io.github.li9i.gitree-symbolic.svg
+share/bash-completion/completions/gittree
+share/glib-2.0/schemas/io.github.li9i.gittree.gschema.xml
+share/icons/hicolor/128x128/apps/io.github.li9i.gittree.png
+share/icons/hicolor/48x48/apps/io.github.li9i.gittree.png
+share/icons/hicolor/64x64/apps/io.github.li9i.gittree.png
+share/icons/hicolor/symbolic/apps/io.github.li9i.gittree-symbolic.svg
 share/man/man1/git-tree.1
-share/man/man1/gitree.1
-share/metainfo/io.github.li9i.gitree.metainfo.xml
+share/man/man1/gittree.1
+share/metainfo/io.github.li9i.gittree.metainfo.xml
 LIST
 
 if ! diff -u "$dest/expected" "$dest/installed"; then
@@ -40,17 +40,17 @@ if ! diff -u "$dest/expected" "$dest/installed"; then
 	exit 1
 fi
 
-if [ "$(readlink bin/git-tree)" != "gitree" ]; then
-	echo "test-meson-install.sh: bin/git-tree is not a link to gitree" >&2
+if [ "$(readlink bin/git-tree)" != "gittree" ]; then
+	echo "test-meson-install.sh: bin/git-tree is not a link to gittree" >&2
 	exit 1
 fi
 
-if [ "$(readlink share/bash-completion/completions/git-tree)" != "gitree" ]; then
-	echo "test-meson-install.sh: the completion of git-tree is not a link to that of gitree" >&2
+if [ "$(readlink share/bash-completion/completions/git-tree)" != "gittree" ]; then
+	echo "test-meson-install.sh: the completion of git-tree is not a link to that of gittree" >&2
 	exit 1
 fi
 
-warnings=$(groff -man -ww -z share/man/man1/gitree.1 2>&1)
+warnings=$(groff -man -ww -z share/man/man1/gittree.1 2>&1)
 
 if [ -n "$warnings" ]; then
 	echo "test-meson-install.sh: the manual page has warnings:" >&2
@@ -58,9 +58,9 @@ if [ -n "$warnings" ]; then
 	exit 1
 fi
 
-if ! MANPAGER=cat MANWIDTH=80 man -M "$dest$prefix/share/man" git-tree 2>/dev/null | grep -q "gitree - "; then
-	echo "test-meson-install.sh: man git-tree does not show the page of gitree" >&2
+if ! MANPAGER=cat MANWIDTH=80 man -M "$dest$prefix/share/man" git-tree 2>/dev/null | grep -q "gittree - "; then
+	echo "test-meson-install.sh: man git-tree does not show the page of gittree" >&2
 	exit 1
 fi
 
-echo "installed files match the list, git-tree links to gitree, and man git-tree shows the page"
+echo "installed files match the list, git-tree links to gittree, and man git-tree shows the page"

@@ -85,7 +85,7 @@ trap stop EXIT
 
 settle
 
-if [ -n "${GITREE_VISUAL_CLICK:-}" ]; then
-	xdotool mousemove $GITREE_VISUAL_CLICK click 1 mousemove restore
+if [ -n "${GITTREE_VISUAL_CLICK:-}" ]; then
+	xdotool mousemove $GITTREE_VISUAL_CLICK click 1 mousemove restore
 	settle
 fi

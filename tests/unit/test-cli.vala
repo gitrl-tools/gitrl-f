@@ -1,21 +1,21 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GitreeTest
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GittreeTest
 {
 
 private const string[] PROTOTYPE_PARSES = {
@@ -97,7 +97,7 @@ private static string[] arguments_of(string row)
 	return joined.split(" ");
 }
 
-private static string flags_of(Gitree.CommandLine cli)
+private static string flags_of(Gittree.CommandLine cli)
 {
 	var flags = new string[0];
 
@@ -138,23 +138,23 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gitree/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
-	Test.add_func("/gitree/cli/help-names-every-option", test_help_names_every_option);
-	Test.add_func("/gitree/cli/help-says-gitree-and-git-tree", test_help_says_gitree_and_git_tree);
-	Test.add_func("/gitree/cli/long-only-options-parse-as-argparse", test_long_only_options_parse_as_argparse);
-	Test.add_func("/gitree/cli/no-display-exits-with-one", test_no_display_exits_with_one);
-	Test.add_func("/gitree/cli/no-wd-refuses-refs-paths-and-tick-options", test_no_wd_refuses_refs_paths_and_tick_options);
-	Test.add_func("/gitree/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
-	Test.add_func("/gitree/cli/parses-as-the-prototype", test_parses_as_the_prototype);
-	Test.add_func("/gitree/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
-	Test.add_func("/gitree/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
+	Test.add_func("/gittree/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
+	Test.add_func("/gittree/cli/help-names-every-option", test_help_names_every_option);
+	Test.add_func("/gittree/cli/help-says-gittree-and-git-tree", test_help_says_gittree_and_git_tree);
+	Test.add_func("/gittree/cli/long-only-options-parse-as-argparse", test_long_only_options_parse_as_argparse);
+	Test.add_func("/gittree/cli/no-display-exits-with-one", test_no_display_exits_with_one);
+	Test.add_func("/gittree/cli/no-wd-refuses-refs-paths-and-tick-options", test_no_wd_refuses_refs_paths_and_tick_options);
+	Test.add_func("/gittree/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
+	Test.add_func("/gittree/cli/parses-as-the-prototype", test_parses_as_the_prototype);
+	Test.add_func("/gittree/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
+	Test.add_func("/gittree/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
 
 	return Test.run();
 }
 
 private static int run(string directory, string[] arguments, out string output, out string errors)
 {
-	string[] argv = { Environment.get_variable("GITREE_BINARY") };
+	string[] argv = { Environment.get_variable("GITTREE_BINARY") };
 
 	foreach (var argument in arguments)
 	{
@@ -182,7 +182,7 @@ private static void test_help_is_printed_anywhere()
 	try
 	{
 		var repo = Repo.create();
-		var outside = DirUtils.make_tmp("gitree-outside-XXXXXX");
+		var outside = DirUtils.make_tmp("gittree-outside-XXXXXX");
 
 		foreach (var directory in new string[] { repo.path.get_path(), outside })
 		{
@@ -192,7 +192,7 @@ private static void test_help_is_printed_anywhere()
 				string errors;
 
 				assert_cmpint(run(directory, { option }, out output, out errors), CompareOperator.EQ, 0);
-				assert_cmpstr(output, CompareOperator.EQ, Gitree.CommandLine.HELP);
+				assert_cmpstr(output, CompareOperator.EQ, Gittree.CommandLine.HELP);
 				assert_cmpstr(errors, CompareOperator.EQ, "");
 			}
 		}
@@ -219,21 +219,21 @@ private static void test_help_names_every_option()
 	}
 }
 
-private static void test_help_says_gitree_and_git_tree()
+private static void test_help_says_gittree_and_git_tree()
 {
-	var lines = Gitree.CommandLine.HELP.split("\n");
+	var lines = Gittree.CommandLine.HELP.split("\n");
 
-	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gitree [<options>] [<ref>...] [-- <path>...]");
-	assert_cmpstr(Gitree.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
-	assert_true("\ngit tree runs it too.\n" in Gitree.CommandLine.HELP);
-	assert_true("\nOptions add up: 'gitree -l origin/master' ticks every local\n" in Gitree.CommandLine.HELP);
-	assert_true("\n    --version       print the version and exit\n" in Gitree.CommandLine.HELP);
-	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gitree.CommandLine.HELP);
-	assert_false("git tree [" in Gitree.CommandLine.HELP);
-	assert_true("\n    -h, --help      print this help and exit\n" in Gitree.CommandLine.HELP);
-	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gitree.CommandLine.HELP);
-	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gitree.CommandLine.HELP);
-	assert_true("\n    Escape                      close the search bar, full diff or details\n" in Gitree.CommandLine.HELP);
+	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gittree [<options>] [<ref>...] [-- <path>...]");
+	assert_cmpstr(Gittree.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
+	assert_true("\ngit tree runs it too.\n" in Gittree.CommandLine.HELP);
+	assert_true("\nOptions add up: 'gittree -l origin/master' ticks every local\n" in Gittree.CommandLine.HELP);
+	assert_true("\n    --version       print the version and exit\n" in Gittree.CommandLine.HELP);
+	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gittree.CommandLine.HELP);
+	assert_false("git tree [" in Gittree.CommandLine.HELP);
+	assert_true("\n    -h, --help      print this help and exit\n" in Gittree.CommandLine.HELP);
+	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gittree.CommandLine.HELP);
+	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gittree.CommandLine.HELP);
+	assert_true("\n    Escape                      close the search bar, full diff or details\n" in Gittree.CommandLine.HELP);
 }
 
 private static void test_long_only_options_parse_as_argparse()
@@ -249,7 +249,7 @@ private static void test_long_only_options_parse_as_argparse()
 
 	for (var i = 0; i < cases.length[0]; i++)
 	{
-		var cli = new Gitree.CommandLine({ cases[i, 0] });
+		var cli = new Gittree.CommandLine({ cases[i, 0] });
 		var flag = cli.version ? "version" : (cli.no_wd ? "no-wd" : "");
 
 		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, cases[i, 2]);
@@ -310,7 +310,7 @@ private static void test_no_wd_refuses_refs_paths_and_tick_options()
 
 			assert_cmpint(run(repo.path.get_path(), arguments, out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gitree.CommandLine.USAGE + "gitree: error: --no-wd takes no ref, no path and no tick option\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: --no-wd takes no ref, no path and no tick option\n");
 		}
 
 		foreach (var option in new string[] { "-h", "--version" })
@@ -337,7 +337,7 @@ private static void test_outside_a_repository_arguments_are_an_error()
 
 	try
 	{
-		outside = DirUtils.make_tmp("gitree-outside-XXXXXX");
+		outside = DirUtils.make_tmp("gittree-outside-XXXXXX");
 	}
 	catch (FileError e)
 	{
@@ -365,7 +365,7 @@ private static void test_outside_a_repository_arguments_are_an_error()
 
 		assert_cmpint(run(outside, arguments, out output, out errors), CompareOperator.EQ, 1);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, "gitree: not a git repository\n");
+		assert_cmpstr(errors, CompareOperator.EQ, "gittree: not a git repository\n");
 	}
 
 	DirUtils.remove(outside);
@@ -376,7 +376,7 @@ private static void test_parses_as_the_prototype()
 	foreach (var row in PROTOTYPE_PARSES)
 	{
 		var expected = row.split("|");
-		var cli = new Gitree.CommandLine(arguments_of(row));
+		var cli = new Gittree.CommandLine(arguments_of(row));
 
 		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, expected[4]);
 
@@ -404,7 +404,7 @@ private static void test_version_prints_the_name_and_the_version()
 	string errors;
 
 	assert_cmpint(run(Environment.get_current_dir(), { "--version" }, out output, out errors), CompareOperator.EQ, 0);
-	assert_cmpstr(output, CompareOperator.EQ, "gitree %s\n".printf(Gitree.Config.PACKAGE_VERSION));
+	assert_cmpstr(output, CompareOperator.EQ, "gittree %s\n".printf(Gittree.Config.PACKAGE_VERSION));
 	assert_cmpstr(errors, CompareOperator.EQ, "");
 }
 
@@ -420,7 +420,7 @@ private static void test_wrong_option_prints_usage_and_exits_with_two()
 
 		assert_cmpint(run(repo.path.get_path(), { "-x" }, out output, out errors), CompareOperator.EQ, 2);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, Gitree.CommandLine.USAGE + "gitree: error: unrecognized arguments: -x\n");
+		assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: unrecognized arguments: -x\n");
 
 		repo.remove();
 	}

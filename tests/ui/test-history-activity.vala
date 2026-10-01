@@ -1,30 +1,30 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GitreeTest
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GittreeTest
 {
 
-private static Gitree.Application application()
+private static Gittree.Application application()
 {
-	var app = GLib.Application.get_default() as Gitree.Application;
+	var app = GLib.Application.get_default() as Gittree.Application;
 
 	if (app == null)
 	{
-		app = new Gitree.Application();
+		app = new Gittree.Application();
 
 		try
 		{
@@ -39,12 +39,12 @@ private static Gitree.Application application()
 	return app;
 }
 
-private static Gtk.CheckButton check_of(Gitree.Window window, string short_name)
+private static Gtk.CheckButton check_of(Gittree.Window window, string short_name)
 {
 	return (Gtk.CheckButton)find_all(row(window.history.paned.refs_list, short_name), typeof(Gtk.CheckButton))[0];
 }
 
-private static void click_row(Gitree.Window window, int row, int count = 1)
+private static void click_row(Gittree.Window window, int row, int count = 1)
 {
 	var view = window.history.paned.commit_list_view;
 	Gdk.Rectangle cell;
@@ -64,7 +64,7 @@ private static void commit_two_files(Repo repo, string subject) throws Error
 	repo.commit_bytes(subject, "b", (subject + "\n").data);
 }
 
-private static bool details_shown(Gitree.Window window)
+private static bool details_shown(Gittree.Window window)
 {
 	return window.history.paned.box_details.get_mapped();
 }
@@ -90,7 +90,7 @@ private static Gtk.Label label_with(Gtk.Widget root, string text)
 	error("no label %s", text);
 }
 
-private static int label_x(Gitree.Window window, int row, string name)
+private static int label_x(Gittree.Window window, int row, string name)
 {
 	var view = window.history.paned.commit_list_view;
 	var column = view.get_column(0);
@@ -119,12 +119,12 @@ private static int label_x(Gitree.Window window, int row, string name)
 	return (first + last) / 2;
 }
 
-private static string labels(Gitree.HistoryActivity activity, int row)
+private static string labels(Gittree.HistoryActivity activity, int row)
 {
 	return string.joinv(",", activity.labels_for(activity.rows()[row]));
 }
 
-private static uint lane_of(Gitree.Window window, string subject)
+private static uint lane_of(Gittree.Window window, string subject)
 {
 	foreach (var commit in window.history.rows())
 	{
@@ -141,56 +141,56 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
-	Test.add_func("/gitree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
-	Test.add_func("/gitree/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
-	Test.add_func("/gitree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
-	Test.add_func("/gitree/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
-	Test.add_func("/gitree/ui/history-activity/click-on-a-one-file-commit-shows-the-pane-and-enter-fills-the-window", test_click_on_a_one_file_commit_shows_the_pane_and_enter_fills_the_window);
-	Test.add_func("/gitree/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
-	Test.add_func("/gitree/ui/history-activity/click-shows-the-pane-and-on-its-row-hides-it", test_click_shows_the_pane_and_on_its_row_hides_it);
-	Test.add_func("/gitree/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
-	Test.add_func("/gitree/ui/history-activity/close-button-steps-back-from-the-full-diff", test_close_button_steps_back_from_the_full_diff);
-	Test.add_func("/gitree/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
-	Test.add_func("/gitree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
-	Test.add_func("/gitree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
-	Test.add_func("/gitree/ui/history-activity/double-click-shows-and-hides-the-pane", test_double_click_shows_and_hides_the_pane);
-	Test.add_func("/gitree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
-	Test.add_func("/gitree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
-	Test.add_func("/gitree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
-	Test.add_func("/gitree/ui/history-activity/hash-column-shows-the-short-hash", test_hash_column_shows_the_short_hash);
-	Test.add_func("/gitree/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
-	Test.add_func("/gitree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
-	Test.add_func("/gitree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
-	Test.add_func("/gitree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
-	Test.add_func("/gitree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
-	Test.add_func("/gitree/ui/history-activity/right-click-on-a-label-copies-its-name", test_right_click_on_a_label_copies_its_name);
-	Test.add_func("/gitree/ui/history-activity/right-click-on-the-hash-copies-the-full-hash", test_right_click_on_the_hash_copies_the_full_hash);
-	Test.add_func("/gitree/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
-	Test.add_func("/gitree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
-	Test.add_func("/gitree/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
-	Test.add_func("/gitree/ui/history-activity/sidebar-layout", test_sidebar_layout);
-	Test.add_func("/gitree/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
-	Test.add_func("/gitree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
-	Test.add_func("/gitree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
-	Test.add_func("/gitree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
-	Test.add_func("/gitree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
-	Test.add_func("/gitree/ui/history-activity/two-quick-ticks-keep-the-top-row", test_two_quick_ticks_keep_the_top_row);
-	Test.add_func("/gitree/ui/history-activity/untick-of-the-top-row-puts-the-next-shown-row-at-the-top", test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top);
-	Test.add_func("/gitree/ui/history-activity/window-jump-shows-the-tip-in-a-scrolled-list", test_window_jump_shows_the_tip_in_a_scrolled_list);
-	Test.add_func("/gitree/ui/history-activity/window-jump-ticks-an-unticked-ref-and-selects-its-tip", test_window_jump_ticks_an_unticked_ref_and_selects_its_tip);
-	Test.add_func("/gitree/ui/history-activity/window-labels-only-ticked-refs", test_window_labels_only_ticked_refs);
-	Test.add_func("/gitree/ui/history-activity/window-with-nothing-ticked-shows-the-empty-notice", test_window_with_nothing_ticked_shows_the_empty_notice);
+	Test.add_func("/gittree/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
+	Test.add_func("/gittree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
+	Test.add_func("/gittree/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
+	Test.add_func("/gittree/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
+	Test.add_func("/gittree/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
+	Test.add_func("/gittree/ui/history-activity/click-on-a-one-file-commit-shows-the-pane-and-enter-fills-the-window", test_click_on_a_one_file_commit_shows_the_pane_and_enter_fills_the_window);
+	Test.add_func("/gittree/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
+	Test.add_func("/gittree/ui/history-activity/click-shows-the-pane-and-on-its-row-hides-it", test_click_shows_the_pane_and_on_its_row_hides_it);
+	Test.add_func("/gittree/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
+	Test.add_func("/gittree/ui/history-activity/close-button-steps-back-from-the-full-diff", test_close_button_steps_back_from_the_full_diff);
+	Test.add_func("/gittree/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
+	Test.add_func("/gittree/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
+	Test.add_func("/gittree/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
+	Test.add_func("/gittree/ui/history-activity/double-click-shows-and-hides-the-pane", test_double_click_shows_and_hides_the_pane);
+	Test.add_func("/gittree/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
+	Test.add_func("/gittree/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
+	Test.add_func("/gittree/ui/history-activity/escape-closes-the-search-bar-then-the-pane", test_escape_closes_the_search_bar_then_the_pane);
+	Test.add_func("/gittree/ui/history-activity/hash-column-shows-the-short-hash", test_hash_column_shows_the_short_hash);
+	Test.add_func("/gittree/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
+	Test.add_func("/gittree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
+	Test.add_func("/gittree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
+	Test.add_func("/gittree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
+	Test.add_func("/gittree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
+	Test.add_func("/gittree/ui/history-activity/right-click-on-a-label-copies-its-name", test_right_click_on_a_label_copies_its_name);
+	Test.add_func("/gittree/ui/history-activity/right-click-on-the-hash-copies-the-full-hash", test_right_click_on_the_hash_copies_the_full_hash);
+	Test.add_func("/gittree/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
+	Test.add_func("/gittree/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
+	Test.add_func("/gittree/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
+	Test.add_func("/gittree/ui/history-activity/sidebar-layout", test_sidebar_layout);
+	Test.add_func("/gittree/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
+	Test.add_func("/gittree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
+	Test.add_func("/gittree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
+	Test.add_func("/gittree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
+	Test.add_func("/gittree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
+	Test.add_func("/gittree/ui/history-activity/two-quick-ticks-keep-the-top-row", test_two_quick_ticks_keep_the_top_row);
+	Test.add_func("/gittree/ui/history-activity/untick-of-the-top-row-puts-the-next-shown-row-at-the-top", test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top);
+	Test.add_func("/gittree/ui/history-activity/window-jump-shows-the-tip-in-a-scrolled-list", test_window_jump_shows_the_tip_in_a_scrolled_list);
+	Test.add_func("/gittree/ui/history-activity/window-jump-ticks-an-unticked-ref-and-selects-its-tip", test_window_jump_ticks_an_unticked_ref_and_selects_its_tip);
+	Test.add_func("/gittree/ui/history-activity/window-labels-only-ticked-refs", test_window_labels_only_ticked_refs);
+	Test.add_func("/gittree/ui/history-activity/window-with-nothing-ticked-shows-the-empty-notice", test_window_with_nothing_ticked_shows_the_empty_notice);
 
 	return Test.run();
 }
 
-private static bool only_details_shown(Gitree.Window window)
+private static bool only_details_shown(Gittree.Window window)
 {
 	return details_shown(window) && !window.history.paned.commit_list_view.get_mapped() && !window.history.paned.refs_list.get_mapped();
 }
 
-private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths = {}) throws Error
+private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths = {}) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 
@@ -199,15 +199,15 @@ private static Gitree.Window opened(Repo repo, string[] ticked, string[] paths =
 		ticks.add(name);
 	}
 
-	var window = new Gitree.Window(application());
-	window.open_repository(Gitree.Application.discover_repository(repo.path), ticks, paths, repo.path);
+	var window = new Gittree.Window(application());
+	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, paths, repo.path);
 	window.show();
 	drain();
 
 	return window;
 }
 
-private static Gee.List<string> painted(Gitree.Window window, out ulong handler)
+private static Gee.List<string> painted(Gittree.Window window, out ulong handler)
 {
 	var tops = new Gee.ArrayList<string>();
 
@@ -218,7 +218,7 @@ private static Gee.List<string> painted(Gitree.Window window, out ulong handler)
 	return tops;
 }
 
-private static void right_click(Gitree.Window window, int row, int column, int x)
+private static void right_click(Gittree.Window window, int row, int column, int x)
 {
 	var view = window.history.paned.commit_list_view;
 	Gdk.Rectangle cell;
@@ -276,7 +276,7 @@ private static Repo side_branch() throws Error
 	return repo;
 }
 
-private static string subjects_of(Gitree.Window window)
+private static string subjects_of(Gittree.Window window)
 {
 	var names = new string[0];
 
@@ -442,7 +442,7 @@ private static void test_click_on_a_file_fills_the_window_and_escape_steps_back(
 	try
 	{
 		var repo = two_files();
-		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".preferences.interface");
+		var settings = new Settings(Gittree.Config.APPLICATION_ID + ".preferences.interface");
 
 		foreach (var orientation in new string[] { "vertical", "horizontal" })
 		{
@@ -954,7 +954,7 @@ private static void test_history_settings_keep_the_top_row()
 	try
 	{
 		var repo = side_branch();
-		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".preferences.history");
+		var settings = new Settings(Gittree.Config.APPLICATION_ID + ".preferences.history");
 		var window = opened(repo, {"refs/heads/master"});
 
 		scroll_to_row(window, "base 30", 10);
@@ -994,7 +994,7 @@ private static void test_history_settings_redraw_the_list()
 		repo.commit("master two");
 		repo.checkout("side");
 
-		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".preferences.history");
+		var settings = new Settings(Gittree.Config.APPLICATION_ID + ".preferences.history");
 		var window = opened(repo, {"refs/heads/master", "refs/heads/side"});
 		var by_time = subjects_of(window);
 
@@ -1096,7 +1096,7 @@ private static void test_refs_that_cannot_be_read_leave_no_old_rows()
 		FileUtils.set_contents(broken.path.get_child(".git").get_child("packed-refs").get_path(), "garbage\n");
 
 		var window = opened(first, {"refs/heads/master"});
-		window.open_repository(Gitree.Application.discover_repository(broken.path));
+		window.open_repository(Gittree.Application.discover_repository(broken.path));
 		drain();
 
 		assert_cmpint(window.history.rows().length, CompareOperator.EQ, 0);
@@ -1336,7 +1336,7 @@ private static void test_sidebar_position_is_kept()
 		var repo = Repo.create();
 		repo.commit("first");
 
-		var settings = new Settings(Gitree.Config.APPLICATION_ID + ".state.history");
+		var settings = new Settings(Gittree.Config.APPLICATION_ID + ".state.history");
 		settings.set_int("paned-sidebar-position", 231);
 
 		var window = opened(repo, {"refs/heads/master"});
@@ -1447,8 +1447,8 @@ private static void test_ticks_are_not_kept_between_runs()
 
 		assert_false(ticks_file(repo).query_exists());
 
-		var second = new Gitree.Window(application());
-		second.open_repository(Gitree.Application.discover_repository(repo.path));
+		var second = new Gittree.Window(application());
+		second.open_repository(Gittree.Application.discover_repository(repo.path));
 		second.show();
 		drain();
 

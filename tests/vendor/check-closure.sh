@@ -12,14 +12,14 @@ trap 'rm -rf "$tmp"' EXIT
 
 find src/vendor-gitg -type f ! -name meson.build | sed 's|^src/vendor-gitg/||' | sort > "$tmp/present"
 
-grep -oE "'((libgitg|libgitg-ext)/[A-Za-z0-9/_-]+\.(vala|c|xml)|gitree-[a-z0-9-]+\.vala)'" src/vendor-gitg/meson.build \
+grep -oE "'((libgitg|libgitg-ext)/[A-Za-z0-9/_-]+\.(vala|c|xml)|gittree-[a-z0-9-]+\.vala)'" src/vendor-gitg/meson.build \
 	| tr -d "'" > "$tmp/listed.unsorted"
 grep -oE '>ui/[A-Za-z0-9._-]+<' src/vendor-gitg/libgitg/resources/resources.xml \
 	| tr -d '<>' | sed 's|^|libgitg/resources/|' >> "$tmp/listed.unsorted"
 grep -E '\.c$' "$tmp/listed.unsorted" | sed 's/\.c$/.h/' > "$tmp/headers"
 sort -u "$tmp/listed.unsorted" "$tmp/headers" > "$tmp/listed"
 
-present=$(grep -v '^gitree-' "$tmp/present" || true)
+present=$(grep -v '^gittree-' "$tmp/present" || true)
 unlisted=$(comm -23 "$tmp/present" "$tmp/listed")
 missing=$(comm -13 "$tmp/present" "$tmp/listed")
 
@@ -71,7 +71,7 @@ if [ -d vendor/upstream ]; then
 			status=1
 		fi
 	done <<-EOF
-	src/gitree/resources/ui/style.css gitg/resources/ui/style.css
+	src/gittree/resources/ui/style.css gitg/resources/ui/style.css
 	vapi/config.vapi vapi/config.vapi
 	vapi/gitg-platform-support.vapi vapi/gitg-platform-support.vapi
 	vapi/gsettings-desktop-schemas.vapi vapi/gsettings-desktop-schemas.vapi

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="GittreeRefsRow" parent="GtkListBoxRow">
+    <property name="visible">True</property>
+    <style>
+      <class name="sidebar"/>
+    </style>
+    <child>
+      <object class="GtkBox" id="d_box">
+        <property name="visible">True</property>
+        <property name="orientation">horizontal</property>
+        <property name="spacing">6</property>
+        <property name="margin_start">18</property>
+        <property name="margin_top">3</property>
+        <property name="margin_bottom">3</property>
+        <property name="margin_end">6</property>
+        <child>
+          <object class="GtkCheckButton" id="d_check">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="valign">center</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="d_label">
+            <property name="visible">True</property>
+            <property name="ellipsize">middle</property>
+            <property name="halign">start</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="d_note">
+            <property name="visible">False</property>
+            <property name="no_show_all">True</property>
+            <property name="halign">start</property>
+            <property name="hexpand">True</property>
+            <attributes>
+              <attribute name="scale" value="0.8333333333333"/>
+            </attributes>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

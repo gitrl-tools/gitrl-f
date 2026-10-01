@@ -14,8 +14,8 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 mkdir -p "$tmp/completions"
-cp "$script" "$tmp/completions/gitree"
-ln -s gitree "$tmp/completions/git-tree"
+cp "$script" "$tmp/completions/gittree"
+ln -s gittree "$tmp/completions/git-tree"
 export BASH_COMPLETION_USER_DIR=$tmp
 
 git init -q -b master "$tmp/origin"
@@ -84,9 +84,9 @@ origin/master
 topic
 v1"
 
-expect "gitree -" "$(cat "$tmp/options")"
-expect "gitree " "$refs"
-expect "gitree master -- n" "notes.txt"
+expect "gittree -" "$(cat "$tmp/options")"
+expect "gittree " "$refs"
+expect "gittree master -- n" "notes.txt"
 expect "git-tree -" "$(cat "$tmp/options")"
 expect "git tree -" "$(cat "$tmp/options")"
 expect "git tree to" "topic"
@@ -94,7 +94,7 @@ expect "git tree to" "topic"
 kept=$(
 	_own() { :; }
 	complete -F _own git-tree
-	_completion_loader gitree
+	_completion_loader gittree
 	complete -p git-tree
 )
 if [ "$kept" = "complete -F _own git-tree" ]; then

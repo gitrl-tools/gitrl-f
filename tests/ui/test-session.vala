@@ -1,30 +1,30 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GitreeTest
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GittreeTest
 {
 
-private static Gitree.Application application()
+private static Gittree.Application application()
 {
-	var app = GLib.Application.get_default() as Gitree.Application;
+	var app = GLib.Application.get_default() as Gittree.Application;
 
 	if (app == null)
 	{
-		app = new Gitree.Application();
+		app = new Gittree.Application();
 
 		try
 		{
@@ -44,7 +44,7 @@ private static string differences(File a, File b) throws Error
 	return run({ "diff", "-r", "--no-dereference", a.get_path(), b.get_path() });
 }
 
-private static void every_row(Gitree.Window window)
+private static void every_row(Gittree.Window window)
 {
 	var rows = window.history.rows().length;
 
@@ -59,7 +59,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/session/a-session-changes-nothing", test_a_session_changes_nothing);
+	Test.add_func("/gittree/ui/session/a-session-changes-nothing", test_a_session_changes_nothing);
 
 	return Test.run();
 }
@@ -103,8 +103,8 @@ private static void test_a_session_changes_nothing()
 		var copy = repo.path.get_parent().get_child(repo.path.get_basename() + "-copy");
 		run({ "cp", "-a", repo.path.get_path(), copy.get_path() });
 
-		var location = Gitree.Application.discover_repository(repo.path);
-		var window = new Gitree.Window(application());
+		var location = Gittree.Application.discover_repository(repo.path);
+		var window = new Gittree.Window(application());
 		window.set_default_size(1000, 800);
 		window.open_repository(location, null, {}, repo.path);
 		window.show();
@@ -127,7 +127,7 @@ private static void test_a_session_changes_nothing()
 		window.close();
 		settle(100);
 
-		var limited = new Gitree.Window(application());
+		var limited = new Gittree.Window(application());
 		limited.set_default_size(1000, 800);
 		limited.open_repository(location, null, {"fix"}, repo.path);
 		limited.show();

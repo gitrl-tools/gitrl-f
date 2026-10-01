@@ -1,22 +1,22 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GitreeTest
+namespace GittreeTest
 {
 
 private const string[] CHILDREN = {
@@ -52,16 +52,16 @@ private const string[] KEYS = {
 
 private static SettingsSchema? lookup(string suffix)
 {
-	return SettingsSchemaSource.get_default().lookup(Gitree.Config.APPLICATION_ID + "." + suffix, false);
+	return SettingsSchemaSource.get_default().lookup(Gittree.Config.APPLICATION_ID + "." + suffix, false);
 }
 
 public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gitree/settings/children-are-gitgs", test_children_are_gitgs);
-	Test.add_func("/gitree/settings/every-key-has-gitgs-default", test_every_key_has_gitgs_default);
-	Test.add_func("/gitree/settings/no-other-key-exists", test_no_other_key_exists);
+	Test.add_func("/gittree/settings/children-are-gitgs", test_children_are_gitgs);
+	Test.add_func("/gittree/settings/every-key-has-gitgs-default", test_every_key_has_gitgs_default);
+	Test.add_func("/gittree/settings/no-other-key-exists", test_no_other_key_exists);
 
 	return Test.run();
 }

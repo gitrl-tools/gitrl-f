@@ -30,7 +30,7 @@ run)
 	ninja -C _build
 	shift
 	cd "$caller"
-	GSETTINGS_SCHEMA_DIR="$build/data" exec "$build/src/gitree/gitree" "$@"
+	GSETTINGS_SCHEMA_DIR="$build/data" exec "$build/src/gittree/gittree" "$@"
 	;;
 clean)
 	rm -rf "$build"

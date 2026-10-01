@@ -1,29 +1,29 @@
 project(
-  'gitree', ['c', 'vala'],
+  'gittree', ['c', 'vala'],
   version: '0.3.6',
   license: 'GPL-2.0-or-later',
   default_options: 'buildtype=debugoptimized',
   meson_version: '>= 0.61.0',
 )
 
-application_id = 'io.github.li9i.gitree'
-gitree_name = meson.project_name()
-gitree_binary = 'gitree'
-gitree_version = meson.project_version()
-gitree_gettext = gitree_name
+application_id = 'io.github.li9i.gittree'
+gittree_name = meson.project_name()
+gittree_binary = 'gittree'
+gittree_version = meson.project_version()
+gittree_gettext = gittree_name
 
 if get_option('profile') == 'development'
-  application_id = 'io.github.li9i.gitreeDevel'
+  application_id = 'io.github.li9i.gittreeDevel'
 endif
 
-gitree_prefix = get_option('prefix')
-gitree_bindir = join_paths(gitree_prefix, get_option('bindir'))
-gitree_datadir = join_paths(gitree_prefix, get_option('datadir'))
-gitree_libdir = join_paths(gitree_prefix, get_option('libdir'))
-gitree_localedir = join_paths(gitree_prefix, get_option('localedir'))
+gittree_prefix = get_option('prefix')
+gittree_bindir = join_paths(gittree_prefix, get_option('bindir'))
+gittree_datadir = join_paths(gittree_prefix, get_option('datadir'))
+gittree_libdir = join_paths(gittree_prefix, get_option('libdir'))
+gittree_localedir = join_paths(gittree_prefix, get_option('localedir'))
 
-gitree_pkgdatadir = join_paths(gitree_datadir, gitree_name)
-gitree_pkglibdir = join_paths(gitree_libdir, gitree_name)
+gittree_pkgdatadir = join_paths(gittree_datadir, gittree_name)
+gittree_pkglibdir = join_paths(gittree_libdir, gittree_name)
 
 cc = meson.get_compiler('c')
 valac = meson.get_compiler('vala')
@@ -54,15 +54,15 @@ libm_dep = cc.find_library('m', required: false)
 config_h = configuration_data()
 config_h.set_quoted('APPLICATION_ID', application_id)
 config_h.set_quoted('PROFILE', get_option('profile'))
-config_h.set_quoted('GETTEXT_PACKAGE', gitree_gettext)
-config_h.set_quoted('PACKAGE_NAME', gitree_name)
-config_h.set_quoted('PACKAGE_VERSION', gitree_version)
-config_h.set_quoted('PACKAGE_URL', 'https://github.com/li9i/gitree')
-config_h.set_quoted('VERSION', gitree_version)
+config_h.set_quoted('GETTEXT_PACKAGE', gittree_gettext)
+config_h.set_quoted('PACKAGE_NAME', gittree_name)
+config_h.set_quoted('PACKAGE_VERSION', gittree_version)
+config_h.set_quoted('PACKAGE_URL', 'https://github.com/li9i/gittree')
+config_h.set_quoted('VERSION', gittree_version)
 config_h.set_quoted('PLATFORM_NAME', 'unix')
-config_h.set_quoted('GITG_DATADIR', gitree_pkgdatadir)
-config_h.set_quoted('GITG_LOCALEDIR', gitree_localedir)
-config_h.set_quoted('GITG_LIBDIR', gitree_pkglibdir)
+config_h.set_quoted('GITG_DATADIR', gittree_pkgdatadir)
+config_h.set_quoted('GITG_LOCALEDIR', gittree_localedir)
+config_h.set_quoted('GITG_LIBDIR', gittree_pkglibdir)
 
 configure_file(
   output: 'config.h',
@@ -98,8 +98,8 @@ gnome.post_install(
 )
 
 summary({
-  'prefix': gitree_prefix,
-  'binary': gitree_binary,
+  'prefix': gittree_prefix,
+  'binary': gittree_binary,
   'application id': application_id,
   'profile': get_option('profile'),
   'visual tests': get_option('visual_tests'),

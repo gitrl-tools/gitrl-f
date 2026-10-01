@@ -60,7 +60,7 @@ git checkout -q topic
 change layout.c "void tidy(void);" "Tidy the layout"
 git checkout -q master
 stamp
-printf '%s\n' "gitree" "" "Shows the history of the refs you tick." "Each ref has a checkbox." > MANUAL
+printf '%s\n' "gittree" "" "Shows the history of the refs you tick." "Each ref has a checkbox." > MANUAL
 git add MANUAL
 git commit -q -m "Write the manual"
 git tag -a -m "First release" v1.0

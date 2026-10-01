@@ -37,19 +37,19 @@ APPIMAGE_EXTRACT_AND_RUN=1 DEPLOY_GTK_VERSION=3 VERSION="$version" \
 PATH="$PWD/$tools:$PATH" \
 	"$tools/linuxdeploy-x86_64.AppImage" \
 		--appdir "$appdir" \
-		--executable "$appdir/usr/bin/gitree" \
-		--desktop-file "$appdir/usr/share/applications/io.github.li9i.gitree.desktop" \
-		--icon-file "$appdir/usr/share/icons/hicolor/128x128/apps/io.github.li9i.gitree.png" \
+		--executable "$appdir/usr/bin/gittree" \
+		--desktop-file "$appdir/usr/share/applications/io.github.li9i.gittree.desktop" \
+		--icon-file "$appdir/usr/share/icons/hicolor/128x128/apps/io.github.li9i.gittree.png" \
 		--plugin gtk
 
 schemas=$appdir/usr/share/glib-2.0/schemas
-cp "$work/build/data/io.github.li9i.gitree.gschema.xml" "$schemas/"
+cp "$work/build/data/io.github.li9i.gittree.gschema.xml" "$schemas/"
 glib-compile-schemas "$schemas"
 
-rm -f "$root"/gitree-*-x86_64.AppImage
+rm -f "$root"/gittree-*-x86_64.AppImage
 APPIMAGE_EXTRACT_AND_RUN=1 VERSION="$version" \
 	"$tools/appimagetool-x86_64.AppImage" \
-		"$appdir" "$root/gitree-$version-x86_64.AppImage"
+		"$appdir" "$root/gittree-$version-x86_64.AppImage"
 
 echo "--- built ---"
-ls -la "$root"/gitree-*-x86_64.AppImage
+ls -la "$root"/gittree-*-x86_64.AppImage

@@ -1,30 +1,30 @@
 /*
- * This file is part of gitree
+ * This file is part of gittree
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gitree is free software: you can redistribute it and/or modify it under the
+ * gittree is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gitree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gitree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GitreeTest
+ * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GittreeTest
 {
 
-private static Gitree.Application application()
+private static Gittree.Application application()
 {
-	var app = GLib.Application.get_default() as Gitree.Application;
+	var app = GLib.Application.get_default() as Gittree.Application;
 
 	if (app == null)
 	{
-		app = new Gitree.Application();
+		app = new Gittree.Application();
 
 		try
 		{
@@ -39,7 +39,7 @@ private static Gitree.Application application()
 	return app;
 }
 
-private static Gtk.Button button(Gitree.Window window, string tooltip)
+private static Gtk.Button button(Gittree.Window window, string tooltip)
 {
 	foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
 	{
@@ -56,19 +56,19 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gitree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
-	Test.add_func("/gitree/ui/search/escape-closes-clears-and-gives-the-focus-back", test_escape_closes_clears_and_gives_the_focus_back);
-	Test.add_func("/gitree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
-	Test.add_func("/gitree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
-	Test.add_func("/gitree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
-	Test.add_func("/gitree/ui/search/tick-searches-again", test_tick_searches_again);
-	Test.add_func("/gitree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
-	Test.add_func("/gitree/ui/search/typing-moves-nothing", test_typing_moves_nothing);
+	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
+	Test.add_func("/gittree/ui/search/escape-closes-clears-and-gives-the-focus-back", test_escape_closes_clears_and_gives_the_focus_back);
+	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
+	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
+	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
+	Test.add_func("/gittree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
+	Test.add_func("/gittree/ui/search/typing-moves-nothing", test_typing_moves_nothing);
 
 	return Test.run();
 }
 
-private static int marked_pixels(Gitree.Window window, int index)
+private static int marked_pixels(Gittree.Window window, int index)
 {
 	var view = window.history.paned.commit_list_view;
 	var column = view.get_column(index);
@@ -99,14 +99,14 @@ private static int marked_pixels(Gitree.Window window, int index)
 	return count;
 }
 
-private static Gitree.Window opened(Repo repo) throws Error
+private static Gittree.Window opened(Repo repo) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 	ticks.add("refs/heads/master");
 	ticks.add("refs/heads/feature/scan");
 
-	var window = new Gitree.Window(application());
-	window.open_repository(Gitree.Application.discover_repository(repo.path), ticks, {}, repo.path);
+	var window = new Gittree.Window(application());
+	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path);
 	window.set_default_size(1000, 600);
 	window.show();
 	settle(100);
@@ -381,7 +381,7 @@ private static void test_typing_moves_nothing()
 	}
 }
 
-private static void type_text(Gitree.Window window, string text)
+private static void type_text(Gittree.Window window, string text)
 {
 	window.history.search_visible = true;
 	window.history.search_field.text = text;
