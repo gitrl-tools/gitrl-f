@@ -27,7 +27,7 @@ You must do these steps yourself. The first four are necessary one time only, an
    Then add its fingerprint at <https://launchpad.net/~/+editpgpkeys>, and confirm the encrypted email that Launchpad sends.
 3. **An SSH key registered** at <https://launchpad.net/~/+editsshkeys>.
 4. **The Ubuntu Code of Conduct, signed** at <https://launchpad.net/codeofconduct>. Launchpad refuses PPA uploads without it.
-5. **The PPA** `ppa:li9i/gittree`, made at <https://launchpad.net/~li9i/+activate-ppa>. Enable noble and resolute in its settings before you upload for them.
+5. **The PPA** `ppa:li9i/gittree`, made at <https://launchpad.net/~li9i/+activate-ppa>. The PPA has no setting for the releases of Ubuntu. It builds for the release that each upload names.
 
 The maintainer address in `debian/control` and `debian/changelog` is `alexandros filotheou <alexandros.filotheou@gmail.com>`. `debsign` selects a signing key by that address. If your key does not have it, `debsign` refuses after the source package is built. Examine your keys with `gpg --list-secret-keys --keyid-format=long`, then add the address as a UID (`gpg --edit-key <ID>`, then `adduid`), or give `-k <KEYID>`.
 
@@ -159,4 +159,4 @@ This uploads both releases. Give the version in the name, because `_build/ppa` a
 
 The vendored source agrees with gitg 44 (`vendor/PROVENANCE`). Noble carries `44-1build2`. Before you add a release of Ubuntu, make sure it carries gitg 44 too. `Dockerfile.visual` asserts noble's exact version, so the pixel suite runs on the noble image only.
 
-To add a release, add its version and codename to `scripts/build-deb.sh`, build with `./scripts/build-deb.sh <version>`, enable it in the PPA settings, and upload the `.changes` that names it.
+To add a release, add its version and codename to `scripts/build-deb.sh`, build with `./scripts/build-deb.sh <version>`, and upload the `.changes` that names it.
