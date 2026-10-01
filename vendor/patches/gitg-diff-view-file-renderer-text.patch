@@ -139,6 +139,23 @@
  		highlight = true;
  	}
  
+@@ -421,14 +364,14 @@
+ 		}
+ 
+ 		bool uncertain;
+-		var content_type = GLib.ContentType.guess(location.get_basename(), content, out uncertain);
++		var content_type = GLib.ContentType.guess(location != null ? location.get_basename() : null, content, out uncertain);
+ 
+ 		var stream = new GLib.MemoryInputStream.from_bytes(new Bytes(content));
+ 
+ 		return yield init_highlighting_buffer_from_stream(file, location, stream, content_type, cancellable);
+ 	}
+ 
+-	private async Gtk.SourceBuffer? init_highlighting_buffer_from_stream(Ggit.DiffFile file, File location, InputStream stream, string content_type, Cancellable cancellable)
++	private async Gtk.SourceBuffer? init_highlighting_buffer_from_stream(Ggit.DiffFile file, File? location, InputStream stream, string content_type, Cancellable cancellable)
+ 	{
+ 		var manager = Gtk.SourceLanguageManager.get_default();
+ 		var language = manager.guess_language(location != null ? location.get_basename() : null, content_type);
 @@ -671,6 +614,24 @@
  		this.set_mark_attributes("header", header_attributes, 0);
  		this.set_mark_attributes("added", added_attributes, 0);

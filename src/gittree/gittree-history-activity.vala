@@ -352,6 +352,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			fill_find_bar(false);
 		});
 
+		d_diff.files_changed.connect(offer_file_history);
+
 		d_find_bar = new DiffFindBar(d_diff);
 		d_find_bar.notify["search-mode-enabled"].connect(() => {
 			if (!d_find_bar.search_mode_enabled && !d_find_with_pane)
@@ -881,6 +883,34 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks(true);
 	}
 
+	private void offer_file_history()
+	{
+		foreach (var file in d_diff.get_files())
+		{
+			if (file.get_data<bool>("gittree-history-item"))
+			{
+				continue;
+			}
+
+			file.set_data<bool>("gittree-history-item", true);
+			file.populate_menu.connect((menu, path) => {
+				var item = new Gtk.MenuItem.with_label(_("Show history of this file"));
+
+				if (menu.get_children() != null)
+				{
+					var separator = new Gtk.SeparatorMenuItem();
+
+					separator.show();
+					menu.add(separator);
+				}
+
+				item.activate.connect(() => show_file_history(path));
+				item.show();
+				menu.add(item);
+			});
+		}
+	}
+
 	private bool opens_files(Gtk.Widget? target)
 	{
 		var box = target as Gtk.EventBox;
@@ -1311,6 +1341,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_diff.commit = commit;
 		fill_find_bar(false);
+	}
+
+	private void show_file_history(string path)
+	{
+		var top = d_repository.get_workdir();
+		var wanted = path;
+
+		if (top != null && directory != null && !directory.equal(top))
+		{
+			var file = top.resolve_relative_path(path);
+			var relative = directory.get_relative_path(file);
+
+			wanted = relative != null ? relative : file.get_path();
+		}
+
+		d_filter_bar.field.text = "";
+		d_filter_bar.set_paths({ wanted });
+		filter_visible = true;
+		apply("", !d_filter_bar.match_case, d_filter_bar.regex, { wanted });
 	}
 
 	private void show_match_count()

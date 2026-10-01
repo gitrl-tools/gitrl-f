@@ -9,7 +9,7 @@
  {
  	[GtkChild( name = "expander" )]
  	private unowned Gtk.Expander d_expander;
-@@ -39,8 +39,20 @@
+@@ -39,8 +39,21 @@
  	private unowned Gtk.Stack? d_stack_file_renderer;
  
  	private bool d_expanded;
@@ -28,10 +28,11 @@
 +	internal signal void renderer_added(DiffViewFileRenderer renderer);
 +
 +	public signal void page_shown();
++	public signal void populate_menu(Gtk.Menu menu, string path);
  
  	public bool new_is_workdir { get; construct set; }
  
-@@ -57,6 +69,7 @@
+@@ -57,6 +70,7 @@
  			{
  				d_expanded = value;
  				d_revealer_content.reveal_child = d_expanded;
@@ -39,7 +40,7 @@
  				bool visible = false;
  				if (d_expanded)
  				{
-@@ -82,53 +95,14 @@
+@@ -82,53 +96,14 @@
  	public DiffViewFileInfo? info {get; construct set;}
  	private Gee.HashMap<Gtk.Widget, bool> d_diff_stat_visible_map = new Gee.HashMap<Gtk.Widget, bool>();
  
@@ -95,7 +96,7 @@
  	}
  
  	private void page_changed()
-@@ -136,33 +110,82 @@
+@@ -136,33 +111,82 @@
  		var visible_child = d_stack_file_renderer.get_visible_child();
  		var visible = d_diff_stat_visible_map.get(visible_child);
  		d_diff_stat_file.set_visible(visible);
@@ -192,7 +193,56 @@
  	}
  
  	public void add_binary_renderer()
-@@ -307,11 +330,82 @@
+@@ -206,7 +230,7 @@
+ 		d_expander.bind_property("expanded", this, "expanded", BindingFlags.BIDIRECTIONAL);
+ 
+ 		var repository = info.repository;
+-		if (repository != null && !repository.is_bare)
++		if (repository != null)
+ 		{
+ 			d_expander.popup_menu.connect(expander_popup_menu);
+ 			d_expander.button_press_event.connect(expander_button_press_event);
+@@ -227,17 +251,19 @@
+ 		File? location = null;
+ 
+ 		var repository = info.repository;
+-		if (newpath != null && newpath != "")
++		if (!repository.is_bare && newpath != null && newpath != "")
+ 		{
+ 			location = repository.get_workdir().get_child(newpath);
+ 		}
+-		else if (oldpath != null && oldpath != "")
++		else if (!repository.is_bare && oldpath != null && oldpath != "")
+ 		{
+ 			location = repository.get_workdir().get_child(oldpath);
+ 		}
+ 
+ 		if (location == null)
+ 		{
++			populate_menu(menu, newpath != null && newpath != "" ? newpath : oldpath);
++			popup_if_filled(menu, event);
+ 			return;
+ 		}
+ 
+@@ -284,6 +310,17 @@
+ 
+ 		menu.add(copy_file_path);
+ 
++		populate_menu(menu, newpath != null && newpath != "" ? newpath : oldpath);
++		popup_if_filled(menu, event);
++	}
++
++	private void popup_if_filled(Gtk.Menu menu, Gdk.EventButton? event)
++	{
++		if (menu.get_children() == null)
++		{
++			return;
++		}
++
+ 		menu.attach_to_widget(d_expander, null);
+ 		menu.popup_at_pointer(event);
+ 	}
+@@ -307,11 +344,82 @@
  
  	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
  	{

@@ -59,7 +59,7 @@ This patch only removes lines. gitrl-z's patch to this file also indents the lin
 
 ## gitg-diff-view-file-renderer-text.patch
 
-Three changes: the selection comes out, the word marks go in, and the view records where the text of each line starts.
+Four changes: the selection comes out, the word marks go in, the view records where the text of each line starts, and the colours of a file load in a repository with no working tree.
 
 **1. Removes the line selection** from the diff renderer of gitg. It removes the `DiffSelectable` interface from the class declaration, and the fields `d_selectable`, `d_lines`, `d_has_selection` and `d_doffset`. It also removes the `has_selection` property, `clear_selection()`, the `selection` property, and the `PatchSet.Patch` that the hunk loop made for each added and removed line.
 
@@ -92,6 +92,12 @@ The offsets are byte offsets because they index a string, but a text buffer coun
 
 **Cost.** One integer for each line of each hunk.
 
+**4. Lets the colours of a file load when the file has no place on disk.** The content type is guessed with no file name when the location of the file is null, and `init_highlighting_buffer_from_stream()` takes a null location, as its body already allows.
+
+**Why.** In a repository with no working tree, a file has no location. gitg asked the null location for its name, and GIO gave the critical message "g_file_get_basename: assertion 'G_IS_FILE (file)' failed" each time such a repository showed a diff (seen in the UI test of the menu of a file, 2026-10-01).
+
+**Cost.** None. A file with a location loads as before.
+
 ## gitg-diff-view-file-renderer-text-split.patch
 
 Three changes.
@@ -114,7 +120,7 @@ Removes `DiffSelectable` from the base list of the interface, one line.
 
 ## gitg-diff-view-file.patch
 
-Three changes: the selection comes out, the text views of a file are made only when they show, and gittree can read the lines and the views of a file.
+Four changes: the selection comes out, the text views of a file are made only when they show, gittree can read the lines and the views of a file, and gittree can add items to the menu of a file.
 
 **1. Removes `has_selection()`, `clear_selection()` and `get_selection()`**, which asked each renderer of one file for its selection.
 
@@ -146,13 +152,27 @@ Now the file keeps its hunks. It makes the unified view when the file opens, and
 
 **Cost.** The class is public, so it is in the interface file of the library. The five members only read state or send a signal. `expanded` changes nothing that a click on the arrow does not.
 
+**4. Lets gittree add items to the menu of a file, and opens the menu in a repository with no working tree.** gitg makes the menu of a file when the second mouse button presses its header. The menu has Open file, Open containing folder and Copy file path, and gitg connects it only when the repository has a working tree. Now the menu is connected in every repository. Before the menu opens, the new signal `populate_menu` gives the menu and the path of the file from the top of the repository, and a handler can add items to it. gitg's three items need a file on disk, so they show only with a working tree. A menu that has no item does not open.
+
+**Why.** gittree adds Show history of this file to that menu. JetBrains IDEs, GitLens and GitKraken put the history of a file in the menu of the file, so a user looks for it there. The history of a file needs no file on disk, so the menu must open in a bare repository too.
+
+**Cost.** One signal and one small method. In a repository with a working tree, gitg's items are the same, in the same order.
+
 ## gitg-diff-view-file-info.patch
 
-Makes the class `Gitg.DiffViewFileInfo` public. One word.
+Two changes of one word each.
+
+**1. Makes the class `Gitg.DiffViewFileInfo` public.**
 
 **Why.** `gitg-diff-view-file.patch` makes `Gitg.DiffViewFile` public, and its `info` is a construct property. The compiler refuses an internal construct property: "construct properties must be public". A public property cannot have an internal type, so the type of `info` becomes public too. Its members name only public types.
 
 **Cost.** None. gittree does not use the class.
+
+**2. Lets the guess of the content type take no file name.** The parameter `basename` of `guess_content_type()` can be null.
+
+**Why.** In a repository with no working tree, a file has no place on disk, so its name on disk is null. The parameter could not be null, so the code that the compiler makes stopped the guess with the critical message "assertion 'basename != NULL' failed" each time such a repository showed a diff (seen in the UI test of the menu of a file, 2026-10-01). `GLib.ContentType.guess()` takes a null file name and guesses from the data.
+
+**Cost.** None.
 
 ## gitg-diff-view-file.ui.patch
 

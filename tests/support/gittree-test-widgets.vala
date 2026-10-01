@@ -76,6 +76,44 @@ public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 	return found;
 }
 
+public static Gtk.MenuItem? menu_item(string label)
+{
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		foreach (var widget in find_all(toplevel, typeof(Gtk.MenuItem)))
+		{
+			var item = (Gtk.MenuItem)widget;
+
+			if (item.get_mapped() && item.label == label)
+			{
+				return item;
+			}
+		}
+	}
+
+	return null;
+}
+
+public static string menu_labels()
+{
+	var labels = new string[0];
+
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		foreach (var widget in find_all(toplevel, typeof(Gtk.MenuItem)))
+		{
+			var item = (Gtk.MenuItem)widget;
+
+			if (item.get_mapped() && !(item is Gtk.SeparatorMenuItem))
+			{
+				labels += item.label.replace("_", "");
+			}
+		}
+	}
+
+	return string.joinv(",", labels);
+}
+
 public static Gittree.RefsRow row(Gittree.RefsList list, string short_name)
 {
 	foreach (var child in list.get_children())

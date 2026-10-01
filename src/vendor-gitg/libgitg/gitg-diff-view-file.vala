@@ -53,6 +53,7 @@ public class Gitg.DiffViewFile : Gtk.Grid
 	internal signal void renderer_added(DiffViewFileRenderer renderer);
 
 	public signal void page_shown();
+	public signal void populate_menu(Gtk.Menu menu, string path);
 
 	public bool new_is_workdir { get; construct set; }
 
@@ -229,7 +230,7 @@ public class Gitg.DiffViewFile : Gtk.Grid
 		d_expander.bind_property("expanded", this, "expanded", BindingFlags.BIDIRECTIONAL);
 
 		var repository = info.repository;
-		if (repository != null && !repository.is_bare)
+		if (repository != null)
 		{
 			d_expander.popup_menu.connect(expander_popup_menu);
 			d_expander.button_press_event.connect(expander_button_press_event);
@@ -250,17 +251,19 @@ public class Gitg.DiffViewFile : Gtk.Grid
 		File? location = null;
 
 		var repository = info.repository;
-		if (newpath != null && newpath != "")
+		if (!repository.is_bare && newpath != null && newpath != "")
 		{
 			location = repository.get_workdir().get_child(newpath);
 		}
-		else if (oldpath != null && oldpath != "")
+		else if (!repository.is_bare && oldpath != null && oldpath != "")
 		{
 			location = repository.get_workdir().get_child(oldpath);
 		}
 
 		if (location == null)
 		{
+			populate_menu(menu, newpath != null && newpath != "" ? newpath : oldpath);
+			popup_if_filled(menu, event);
 			return;
 		}
 
@@ -306,6 +309,17 @@ public class Gitg.DiffViewFile : Gtk.Grid
 		});
 
 		menu.add(copy_file_path);
+
+		populate_menu(menu, newpath != null && newpath != "" ? newpath : oldpath);
+		popup_if_filled(menu, event);
+	}
+
+	private void popup_if_filled(Gtk.Menu menu, Gdk.EventButton? event)
+	{
+		if (menu.get_children() == null)
+		{
+			return;
+		}
 
 		menu.attach_to_widget(d_expander, null);
 		menu.popup_at_pointer(event);

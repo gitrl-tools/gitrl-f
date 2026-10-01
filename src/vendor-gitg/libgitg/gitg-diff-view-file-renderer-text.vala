@@ -364,14 +364,14 @@ class Gitg.DiffViewFileRendererText : Gtk.SourceView, DiffViewFileRenderer, Diff
 		}
 
 		bool uncertain;
-		var content_type = GLib.ContentType.guess(location.get_basename(), content, out uncertain);
+		var content_type = GLib.ContentType.guess(location != null ? location.get_basename() : null, content, out uncertain);
 
 		var stream = new GLib.MemoryInputStream.from_bytes(new Bytes(content));
 
 		return yield init_highlighting_buffer_from_stream(file, location, stream, content_type, cancellable);
 	}
 
-	private async Gtk.SourceBuffer? init_highlighting_buffer_from_stream(Ggit.DiffFile file, File location, InputStream stream, string content_type, Cancellable cancellable)
+	private async Gtk.SourceBuffer? init_highlighting_buffer_from_stream(Ggit.DiffFile file, File? location, InputStream stream, string content_type, Cancellable cancellable)
 	{
 		var manager = Gtk.SourceLanguageManager.get_default();
 		var language = manager.guess_language(location != null ? location.get_basename() : null, content_type);

@@ -113,6 +113,8 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gittree/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
+	Test.add_func("/gittree/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
 	Test.add_func("/gittree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
 	Test.add_func("/gittree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
 	Test.add_func("/gittree/ui/diff-pane/another-commit-stops-the-rows-of-the-last", test_another_commit_stops_the_rows_of_the_last);
@@ -234,6 +236,34 @@ private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths 
 	return window;
 }
 
+private static Repo renamed_repo() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("add old", "old.c", "l1");
+	repo.git({"mv", "old.c", "new.c"});
+	repo.git({"commit", "--quiet", "-m", "rename"});
+	repo.commit("edit new", "new.c", "l2");
+	repo.commit("unrelated", "other.txt", "x");
+
+	return repo;
+}
+
+private static void right_click_file(Gittree.Window window, string name)
+{
+	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.Label)))
+	{
+		if (((Gtk.Label)widget).get_text() == name)
+		{
+			click_widget(widget, 3);
+			settle(300);
+			return;
+		}
+	}
+
+	error("no file %s in the diff", name);
+}
+
 private static Repo seam_repo() throws Error
 {
 	var repo = Repo.create();
@@ -325,6 +355,89 @@ private static string source_text(Gittree.Window window)
 	}
 
 	return text.str;
+}
+
+private static void test_a_bare_repository_offers_only_the_history_of_a_file()
+{
+	try
+	{
+		var repo = renamed_repo();
+		var bare = File.new_for_path(repo.path.get_path() + ".git");
+
+		repo.git({"clone", "--quiet", "--bare", repo.path.get_path(), bare.get_path()});
+
+		var ticks = new Gee.HashSet<string>();
+		ticks.add("refs/heads/master");
+
+		var window = new Gittree.Window(application());
+
+		window.set_default_size(1200, 800);
+		window.open_repository(Gittree.Application.discover_repository(bare), ticks);
+		window.show();
+		settle(300);
+		select_subject(window, "edit new");
+		window.history.paned.details_visible = true;
+		settle(400);
+		right_click_file(window, "new.c");
+
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Show history of this file");
+
+		menu_item("Show history of this file").activate();
+		((Gtk.Menu)menu_item("Show history of this file").get_parent()).popdown();
+		settle(800);
+
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change new.c, following renames");
+
+		window.destroy();
+		new Repo(bare).remove();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_file_menu_shows_the_history_of_the_file()
+{
+	try
+	{
+		var repo = renamed_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		window.history.filter_bar.field.text = "something";
+		select_subject(window, "edit new");
+		window.history.paned.details_visible = true;
+		settle(400);
+		right_click_file(window, "new.c");
+
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file");
+
+		var item = menu_item("Show history of this file");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(800);
+
+		var subjects = new string[0];
+
+		foreach (var commit in window.history.rows())
+		{
+			subjects += commit.get_subject();
+		}
+
+		assert_cmpstr(string.joinv(",", subjects), CompareOperator.EQ, "edit new,rename,add old");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change new.c, following renames");
+		assert_cmpstr(window.history.filter_bar.paths_field.text, CompareOperator.EQ, "new.c");
+		assert_cmpstr(window.history.filter_bar.field.text, CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_added_lines_without_a_removed_partner_are_not_word_marked()

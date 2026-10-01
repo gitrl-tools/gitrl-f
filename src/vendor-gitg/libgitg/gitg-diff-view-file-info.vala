@@ -93,7 +93,7 @@ public class Gitg.DiffViewFileInfo : Object
 		}
 	}
 
-	private async void guess_content_type(InputStream stream, string basename, Cancellable? cancellable)
+	private async void guess_content_type(InputStream stream, string? basename, Cancellable? cancellable)
 	{
 		var buffer = new uint8[4096];
 		size_t bytes_read = 0;
