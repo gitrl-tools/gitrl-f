@@ -184,7 +184,7 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Four changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, and gittree can read the rows.
+Five changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gittree can read the rows, and gittree can read the parent that the diff compares with.
 
 **1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
@@ -209,6 +209,12 @@ Four changes: the selection comes out, a text view is bound when its file makes 
 **Why.** The find bar of the diff searches the files of the commit that shows, and it must search again when more files come in. The grid that holds the rows is private. A `Gtk.Grid` gives its children in the reverse of the order in which they were added. For a commit of `a.txt` to `d.bin`, it gave `d.bin` first (measured in the UI test, 2026-10-01). Thus `get_files()` sorts the rows by their row in the grid, in one pass over the children. A first version asked the grid for the child at each row, and its time grew with the square of the number of files. On a commit of 1000 files with the find bar open, opening every file took 12.22 s with that version and 4.46 s with this one. With the bar closed, it took 4.13 s (measured under Xvfb, 2026-10-01).
 
 **Cost.** One signal for each batch, and nothing when nothing listens.
+
+**5. Gives the parent that the diff compares with**, through the read-only property `parent_commit`. It reads the parent that the details grid holds, which is the parent that the parents row of a merge chose.
+
+**Why.** The history of removed lines, and the commit that last changed a line, dig from the parent that the diff shows. For a merge, the user can choose another parent in the details grid, and the grid keeps it in a private field.
+
+**Cost.** None. The property only reads.
 
 ## gitg-lanes.patch
 

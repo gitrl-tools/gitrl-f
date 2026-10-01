@@ -89,6 +89,11 @@ public class Gitg.DiffView : Gtk.Grid
 		}
 	}
 
+	public Ggit.Commit? parent_commit
+	{
+		get { return d_commit_details.parent_commit; }
+	}
+
 	public Commit? commit
 	{
 		get { return d_commit; }

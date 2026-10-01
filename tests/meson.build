@@ -25,6 +25,7 @@ unit_tests = [
   'diff-find',
   'filter-history',
   'history',
+  'line-history',
   'path-history',
   'refs',
   'search',

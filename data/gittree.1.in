@@ -132,6 +132,14 @@ Options add up:
 .B gittree \-l origin/master
 ticks every local branch and
 .BR origin/master .
+.SH THE HISTORY OF LINES
+A right click on a line of the diff, or on lines that you selected, offers
+Show history of this line or Show history of the selected lines. The list
+then shows only the commits that changed those lines, as
+.B git log \-L
+does, from the commit on show. Removed lines are read from the parent that
+the diff compares with. The close button of the yellow bar brings back the
+list as it was.
 .SH KEYS
 .TP
 .BR Click ", " Enter

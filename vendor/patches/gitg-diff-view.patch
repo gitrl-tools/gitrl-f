@@ -21,7 +21,19 @@
  	public Ggit.Diff? diff
  	{
  		get { return d_diff; }
-@@ -107,6 +104,8 @@
+@@ -92,6 +89,11 @@
+ 		}
+ 	}
+ 
++	public Ggit.Commit? parent_commit
++	{
++		get { return d_commit_details.parent_commit; }
++	}
++
+ 	public Commit? commit
+ 	{
+ 		get { return d_commit; }
+@@ -107,6 +109,8 @@
  		}
  	}
  
@@ -30,7 +42,7 @@
  	public virtual signal void options_changed()
  	{
  		if (d_commit != null)
-@@ -249,6 +248,25 @@
+@@ -249,6 +253,25 @@
  		}
  	}
  
@@ -56,7 +68,7 @@
  	private static Regex s_message_regexp;
  
  	static construct
-@@ -639,25 +657,6 @@
+@@ -639,25 +662,6 @@
  		SignalHandler.unblock(d_commit_details, d_expanded_notify);
  	}
  
@@ -82,7 +94,7 @@
  	private string? primary_path(Ggit.DiffDelta delta)
  	{
  		var path = delta.get_old_file().get_path();
-@@ -730,11 +729,94 @@
+@@ -730,11 +734,94 @@
  		check_finish();
  	}
  
@@ -179,7 +191,7 @@
  		Ggit.DiffHunk? current_hunk = null;
  		Gee.ArrayList<Ggit.DiffLine>? current_lines = null;
  		var current_is_binary = false;
-@@ -756,8 +838,6 @@
+@@ -756,8 +843,6 @@
  
  			if (current_file != null)
  			{
@@ -188,7 +200,7 @@
  				files.add(current_file);
  
  				current_file = null;
-@@ -826,11 +906,11 @@
+@@ -826,11 +911,11 @@
  					bool can_diff_as_image = mime_type_for_image != null && s_image_mime_types.contains(mime_type_for_image);
  					bool can_diff_as_text = ContentType.is_mime_type(mime_type_for_image, "text/plain");
  
@@ -202,7 +214,7 @@
  					}
  					if (!can_diff_as_image && !current_is_binary && !can_diff_as_text)
  					{
-@@ -839,21 +919,9 @@
+@@ -839,21 +924,9 @@
  					}
  					if (can_diff_as_text)
  					{
@@ -227,7 +239,7 @@
  					}
  					if (current_is_binary)
  					{
-@@ -893,8 +961,8 @@
+@@ -893,8 +966,8 @@
  											{
  												info = new DiffViewFileInfo(repository, delta, new_is_workdir);
  											}
@@ -238,7 +250,7 @@
  												return 0;
  											},
  									(delta, binary) => {
-@@ -941,7 +1009,7 @@
+@@ -941,7 +1014,7 @@
  							stderr.printf (@"Error: $(error.message)\n");
  						}
  						if (current_is_binary)
@@ -247,7 +259,7 @@
  					}
  					return 0;
  				},
-@@ -1018,22 +1086,7 @@
+@@ -1018,22 +1091,7 @@
  		d_commit_details.expanded = (files.size <= 1 || !default_collapse_all);
  		d_commit_details.expander_visible = (files.size > 1);
  
@@ -271,7 +283,7 @@
  	}
  
  	private void auto_update_expanded()
-@@ -1050,26 +1103,6 @@
+@@ -1050,26 +1108,6 @@
  		auto_change_expanded(true);
  	}
  
@@ -298,7 +310,7 @@
  	private void update_hide_show_options(Gdk.Window window, int ex, int ey)
  	{
  		void *data;
-@@ -1152,4 +1185,29 @@
+@@ -1152,4 +1190,29 @@
  	}
  }
  

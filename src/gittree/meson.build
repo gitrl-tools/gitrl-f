@@ -12,6 +12,7 @@ gittree_lib_sources = files(
   'gittree-history-paned.vala',
   'gittree-history.vala',
   'gittree-languages.vala',
+  'gittree-line-history.vala',
   'gittree-poll.vala',
   'gittree-preferences-dialog.vala',
   'gittree-ref.vala',
