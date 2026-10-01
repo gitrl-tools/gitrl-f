@@ -5,6 +5,7 @@ gittree_lib_sources = files(
   'gittree-dash-view.vala',
   'gittree-diff-find-bar.vala',
   'gittree-diff-find.vala',
+  'gittree-filter-bar.vala',
   'gittree-history-activity.vala',
   'gittree-history-model.vala',
   'gittree-history-paned.vala',

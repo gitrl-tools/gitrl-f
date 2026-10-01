@@ -251,6 +251,7 @@ public class Application : Gtk.Application
 		set_accels_for_action("app.quit", {"<Primary>q"});
 		set_accels_for_action("win.reload", {"F5"});
 		set_accels_for_action("win.search", {"<Primary>f"});
+		set_accels_for_action("win.filter", {"<Primary><Shift>f"});
 	}
 }
 

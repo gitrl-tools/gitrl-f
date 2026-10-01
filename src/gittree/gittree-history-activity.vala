@@ -27,6 +27,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
+	private FilterBar d_filter_bar;
 	private DiffFindBar d_find_bar;
 	private History? d_full;
 	private Gtk.Label d_match_count;
@@ -70,6 +71,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public string display_name
 	{
 		owned get { return _("History"); }
+	}
+
+	public FilterBar filter_bar
+	{
+		get { return d_filter_bar; }
+	}
+
+	public bool filter_visible
+	{
+		get { return d_filter_bar.search_mode_enabled; }
+		set { d_filter_bar.search_mode_enabled = value; }
 	}
 
 	public DiffFindBar find_bar
@@ -253,8 +265,24 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return false;
 		});
 
+		d_filter_bar = new FilterBar();
+		d_filter_bar.applied.connect((text, match_case) => {
+			if (text == "")
+			{
+				lift_filter();
+			}
+			else
+			{
+				apply_filter(text, !match_case);
+			}
+		});
+		d_filter_bar.notify["search-mode-enabled"].connect(() => {
+			notify_property("filter-visible");
+		});
+
 		d_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
 		d_box.add(d_search_bar);
+		d_box.add(d_filter_bar);
 		d_box.add(d_paned);
 		d_box.show_all();
 		d_box.destroy.connect(stop_search);
@@ -375,6 +403,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		});
 
+		d_paned.path_bar.response.connect((response) => {
+			if (response == Gtk.ResponseType.CLOSE)
+			{
+				lift_filter();
+			}
+		});
+
 		d_paned.refs_list.ticks_changed.connect(() => {
 			set_ticks(d_paned.refs_list.ticks);
 		});
@@ -405,6 +440,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
+	public void apply_filter(string text, bool ignore_case)
+	{
+		d_text = text;
+		d_ignore_case = ignore_case;
+		search(false);
+		show_path_bar();
+	}
+
 	private void author_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var commit = d_model.commit_from_iter(iter);
@@ -417,10 +460,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	public bool escape()
 	{
-		if (d_search_bar.search_mode_enabled)
+		foreach (var bar in new Gtk.SearchBar[] { d_search_bar, d_find_bar, d_filter_bar })
 		{
-			d_search_bar.search_mode_enabled = false;
-			return true;
+			if (bar.search_mode_enabled)
+			{
+				bar.search_mode_enabled = false;
+				return true;
+			}
 		}
 
 		if (d_paned.details_only)
@@ -554,6 +600,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
+	public void lift_filter()
+	{
+		stop_search();
+		d_text = null;
+		d_history = d_full;
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+		show_path_bar();
+		show_ticks();
+	}
+
 	private void lanes_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var lanes = (Gitg.CellRendererLanes)cell;
@@ -635,6 +691,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			d_text = text;
 			d_ignore_case = ignore_case;
+			d_filter_bar.field.text = text;
+			d_filter_bar.match_case = !ignore_case;
 			search(true);
 		}
 
@@ -981,6 +1039,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.path_spinner.visible = searching;
 		d_paned.path_spinner.active = searching;
+		d_paned.path_bar.show_close_button = d_text != null;
 
 		if (d_paths.length == 0 && d_text == null)
 		{

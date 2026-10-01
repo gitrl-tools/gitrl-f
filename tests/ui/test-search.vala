@@ -139,7 +139,7 @@ private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 
 		foreach (var child in ((Gtk.HeaderBar)window.get_titlebar()).get_children())
 		{
-			if (child is Gtk.ToggleButton)
+			if (child is Gtk.ToggleButton && child.tooltip_text == "Search the history")
 			{
 				toggle = (Gtk.ToggleButton)child;
 			}
