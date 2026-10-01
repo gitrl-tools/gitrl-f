@@ -46,38 +46,10 @@ public class TextSearch : Object
 			input.append_c('\n');
 		}
 
-		var process = History.spawn_git(directory, argv, true);
-		var handler = cancellable.connect(() => process.force_exit());
-		Bytes? output = null;
-		Bytes? errors = null;
-
-		try
-		{
-			try
-			{
-				size_t written;
-
-				yield process.get_stdin_pipe().write_all_async(input.data, Priority.DEFAULT, cancellable, out written);
-			}
-			catch (IOError.BROKEN_PIPE e)
-			{
-			}
-
-			yield process.communicate_async(new Bytes(null), cancellable, out output, out errors);
-		}
-		finally
-		{
-			cancellable.disconnect(handler);
-		}
-
-		if (!process.get_successful())
-		{
-			throw History.failure(errors);
-		}
-
+		var records = yield History.git_async(directory, argv, input.str, cancellable);
 		var found = History.id_set();
 
-		foreach (var record in History.records(output))
+		foreach (var record in records)
 		{
 			if (record != "")
 			{

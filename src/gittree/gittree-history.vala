@@ -186,83 +186,23 @@ public class History : Object
 
 	public History.with_paths(Gitg.Repository repository, Gee.List<Ref> refs, string[] paths, File directory, bool topological) throws Error
 	{
-		var tips = new Gee.ArrayList<string>();
+		var tips = tip_names(refs);
+		var records = git(directory, log_arguments(paths, topological), string.joinv("\n", tips) + "\n");
+		var starts = new Gee.HashMap<string, string>();
 
-		foreach (var tip in tips_of(refs))
+		foreach (var tip in missing(records, tips))
 		{
-			tips.add(tip.to_string());
+			var found = git(directory, start_arguments(tip, paths), null);
+
+			starts[tip] = found.length > 0 ? found[0] : "";
 		}
 
-		string[] log = { "log", "-z", "--parents", topological ? "--topo-order" : "--date-order", "--stdin", "--format=%H%x1f%P", "--" };
+		load_log(repository, records, tips, starts);
+	}
 
-		foreach (var path in paths)
-		{
-			log += path;
-		}
-
-		var records = git(directory, log, string.joinv("\n", tips.to_array()) + "\n");
-
-		begin();
-
-		var parents = new Ggit.OId[0];
-		var counts = new int[0];
-
-		foreach (var record in records)
-		{
-			var fields = record.split("\x1f");
-
-			if (fields.length < 2 || fields[0] == "")
-			{
-				continue;
-			}
-
-			add(repository.lookup<Gitg.Commit>(new Ggit.OId.from_string(fields[0])));
-
-			var count = 0;
-
-			foreach (var parent in fields[1].split(" "))
-			{
-				if (parent != "")
-				{
-					parents += new Ggit.OId.from_string(parent);
-					count++;
-				}
-			}
-
-			counts += count;
-		}
-
-		index_parents(parents, counts);
-
-		foreach (var tip in tips)
-		{
-			var id = new Ggit.OId.from_string(tip);
-
-			if (d_index.has_key(id))
-			{
-				continue;
-			}
-
-			string[] rev_list = { "rev-list", "-1", tip, "--" };
-
-			foreach (var path in paths)
-			{
-				rev_list += path;
-			}
-
-			var found = git(directory, rev_list, null);
-			var list = new Gee.ArrayList<Ggit.OId>();
-
-			if (found.length > 0 && found[0] != "")
-			{
-				list.add(new Ggit.OId.from_string(found[0]));
-			}
-
-			d_starts[id] = list;
-		}
-
-		d_lanes = new Gitg.Lanes();
-		d_lanes.set_parents_func(parents_of);
+	private History.from_log(Gitg.Repository repository, string[] records, string[] tips, Gee.Map<string, string> starts) throws Error
+	{
+		load_log(repository, records, tips, starts);
 	}
 
 	private void add(Gitg.Commit commit)
@@ -319,6 +259,43 @@ public class History : Object
 		return records(output);
 	}
 
+	public static async string[] git_async(File directory, string[] arguments, string? input, Cancellable cancellable) throws Error
+	{
+		var process = spawn_git(directory, arguments, input != null);
+		var handler = cancellable.connect(() => process.force_exit());
+		Bytes? output = null;
+		Bytes? errors = null;
+
+		try
+		{
+			if (input != null)
+			{
+				try
+				{
+					size_t written;
+
+					yield process.get_stdin_pipe().write_all_async(input.data, Priority.DEFAULT, cancellable, out written);
+				}
+				catch (IOError.BROKEN_PIPE e)
+				{
+				}
+			}
+
+			yield process.communicate_async(input != null ? new Bytes(null) : null, cancellable, out output, out errors);
+		}
+		finally
+		{
+			cancellable.disconnect(handler);
+		}
+
+		if (!process.get_successful())
+		{
+			throw failure(errors);
+		}
+
+		return records(output);
+	}
+
 	public static Gee.HashMap<Ggit.OId, V> id_map<V>()
 	{
 		return new Gee.HashMap<Ggit.OId, V>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
@@ -359,6 +336,75 @@ public class History : Object
 		}
 
 		d_parents_start[d_commits.length] = d_parents.length;
+	}
+
+	private void load_log(Gitg.Repository repository, string[] records, string[] tips, Gee.Map<string, string> starts) throws Error
+	{
+		begin();
+
+		var parents = new Ggit.OId[0];
+		var counts = new int[0];
+
+		foreach (var record in records)
+		{
+			var fields = record.split("\x1f");
+
+			if (fields.length < 2 || fields[0] == "")
+			{
+				continue;
+			}
+
+			add(repository.lookup<Gitg.Commit>(new Ggit.OId.from_string(fields[0])));
+
+			var count = 0;
+
+			foreach (var parent in fields[1].split(" "))
+			{
+				if (parent != "")
+				{
+					parents += new Ggit.OId.from_string(parent);
+					count++;
+				}
+			}
+
+			counts += count;
+		}
+
+		index_parents(parents, counts);
+
+		foreach (var tip in tips)
+		{
+			var id = new Ggit.OId.from_string(tip);
+
+			if (d_index.has_key(id))
+			{
+				continue;
+			}
+
+			var list = new Gee.ArrayList<Ggit.OId>();
+
+			if (starts.has_key(tip) && starts[tip] != "")
+			{
+				list.add(new Ggit.OId.from_string(starts[tip]));
+			}
+
+			d_starts[id] = list;
+		}
+
+		d_lanes = new Gitg.Lanes();
+		d_lanes.set_parents_func(parents_of);
+	}
+
+	private static string[] log_arguments(string[] paths, bool topological)
+	{
+		string[] log = { "log", "-z", "--parents", topological ? "--topo-order" : "--date-order", "--stdin", "--format=%H%x1f%P", "--" };
+
+		foreach (var path in paths)
+		{
+			log += path;
+		}
+
+		return log;
 	}
 
 	public Gitg.Commit? lookup(Ggit.OId id)
@@ -422,6 +468,27 @@ public class History : Object
 			if (seen.add(id))
 			{
 				ret += id;
+			}
+		}
+
+		return ret;
+	}
+
+	private static string[] missing(string[] records, string[] tips)
+	{
+		var shown = new Gee.HashSet<string>();
+		var ret = new string[0];
+
+		foreach (var record in records)
+		{
+			shown.add(record.split("\x1f")[0]);
+		}
+
+		foreach (var tip in tips)
+		{
+			if (!shown.contains(tip))
+			{
+				ret += tip;
 			}
 		}
 
@@ -514,6 +581,23 @@ public class History : Object
 		}
 	}
 
+	public static async History read_paths(Gitg.Repository repository, Gee.List<Ref> refs, string[] paths, File directory, bool topological, Cancellable cancellable) throws Error
+	{
+		string[] kept = paths;
+		var tips = tip_names(refs);
+		var records = yield git_async(directory, log_arguments(kept, topological), string.joinv("\n", tips) + "\n", cancellable);
+		var starts = new Gee.HashMap<string, string>();
+
+		foreach (var tip in missing(records, tips))
+		{
+			var found = yield git_async(directory, start_arguments(tip, kept), null, cancellable);
+
+			starts[tip] = found.length > 0 ? found[0] : "";
+		}
+
+		return new History.from_log(repository, records, tips, starts);
+	}
+
 	public static string[] records(Bytes output)
 	{
 		var records = new string[0];
@@ -561,6 +645,18 @@ public class History : Object
 		launcher.set_cwd(directory.get_path());
 
 		return launcher.spawnv(argv);
+	}
+
+	private static string[] start_arguments(string tip, string[] paths)
+	{
+		string[] rev_list = { "rev-list", "-1", tip, "--" };
+
+		foreach (var path in paths)
+		{
+			rev_list += path;
+		}
+
+		return rev_list;
 	}
 
 	public Ggit.OId? start_of(Ggit.OId tip)
@@ -679,6 +775,18 @@ public class History : Object
 		}
 
 		return rows;
+	}
+
+	private static string[] tip_names(Gee.List<Ref> refs)
+	{
+		var names = new string[0];
+
+		foreach (var tip in tips_of(refs))
+		{
+			names += tip.to_string();
+		}
+
+		return names;
 	}
 
 	public static Ggit.OId[] tips_of(Gee.List<Ref> refs)

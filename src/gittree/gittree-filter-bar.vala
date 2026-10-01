@@ -23,6 +23,7 @@ namespace Gittree
 public class FilterBar : Gtk.SearchBar
 {
 	private Gtk.SearchEntry d_field;
+	private Gtk.Entry d_paths;
 	private Gtk.Label d_problem;
 	private SearchSwitches d_switches;
 
@@ -37,6 +38,11 @@ public class FilterBar : Gtk.SearchBar
 		set { d_switches.match_case = value; }
 	}
 
+	public Gtk.Entry paths_field
+	{
+		get { return d_paths; }
+	}
+
 	public string problem
 	{
 		owned get { return d_problem.label; }
@@ -48,7 +54,7 @@ public class FilterBar : Gtk.SearchBar
 		set { d_switches.regex = value; }
 	}
 
-	public signal void applied(string text, bool match_case, bool regex);
+	public signal void applied(string text, bool match_case, bool regex, string[] paths);
 
 	public FilterBar()
 	{
@@ -60,10 +66,18 @@ public class FilterBar : Gtk.SearchBar
 			search_mode_enabled = false;
 		});
 
+		d_paths = new Gtk.Entry();
+		d_paths.width_chars = 30;
+		d_paths.placeholder_text = _("Only commits that change these paths");
+		d_paths.tooltip_text = _("Files or folders, split by spaces. Globs such as '*.yaml' work");
+		d_paths.activate.connect(apply);
+		d_paths.changed.connect(() => check());
+
 		d_problem = new Gtk.Label(null);
 
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);
+		box.add(d_paths);
 
 		d_switches = new SearchSwitches(box, false);
 		d_switches.changed.connect(() => check());
@@ -88,20 +102,33 @@ public class FilterBar : Gtk.SearchBar
 
 	private void apply()
 	{
-		if (check())
+		string[] paths;
+		var whole = split(d_paths.text, out paths);
+
+		if (check() && whole)
 		{
-			applied(d_field.text, d_switches.match_case, d_switches.regex);
+			applied(d_field.text, d_switches.match_case, d_switches.regex, paths);
 		}
 	}
 
 	private bool check()
 	{
+		string[] paths;
 		var bad = d_switches.match(d_field.text).error != null;
-		var style = d_field.get_style_context();
+		var unquoted = !split(d_paths.text, out paths);
 
 		d_field.placeholder_text = d_switches.regex ? _("Only commits whose added or removed lines match this")
 		                                           : _("Only commits that add or remove this text");
-		d_problem.label = bad ? _("Bad regular expression") : "";
+		d_problem.label = bad ? _("Bad regular expression") : (unquoted ? _("A quote is not closed") : "");
+		mark(d_field, bad);
+		mark(d_paths, unquoted);
+
+		return !bad && !unquoted;
+	}
+
+	private static void mark(Gtk.Widget widget, bool bad)
+	{
+		var style = widget.get_style_context();
 
 		if (bad)
 		{
@@ -111,8 +138,37 @@ public class FilterBar : Gtk.SearchBar
 		{
 			style.remove_class("error");
 		}
+	}
 
-		return !bad;
+	public void set_paths(string[] paths)
+	{
+		var words = new string[0];
+
+		foreach (var path in paths)
+		{
+			words += Regex.match_simple("^[^\\s'\"\\\\]+$", path) ? path : Shell.quote(path);
+		}
+
+		d_paths.text = string.joinv(" ", words);
+	}
+
+	private static bool split(string text, out string[] paths)
+	{
+		paths = new string[0];
+
+		if (text.strip() == "")
+		{
+			return true;
+		}
+
+		try
+		{
+			return Shell.parse_argv(text, out paths);
+		}
+		catch (ShellError e)
+		{
+			return false;
+		}
 	}
 }
 

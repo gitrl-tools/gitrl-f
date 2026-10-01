@@ -51,6 +51,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.GestureMultiPress d_press;
 	private bool d_press_on_row;
 	private bool d_press_on_shown;
+	private string[]? d_reading;
 	private Gee.List<Ref> d_refs;
 	private bool d_regex;
 	private Gitg.Repository? d_repository;
@@ -267,15 +268,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		d_filter_bar = new FilterBar();
-		d_filter_bar.applied.connect((text, match_case, regex) => {
-			if (text == "")
-			{
-				lift_filter();
-			}
-			else
-			{
-				apply_filter(text, !match_case, regex);
-			}
+		d_filter_bar.applied.connect((text, match_case, regex, paths) => {
+			apply(text, !match_case, regex, paths);
 		});
 		d_filter_bar.notify["search-mode-enabled"].connect(() => {
 			notify_property("filter-visible");
@@ -455,6 +449,35 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
+	public void apply(string text, bool ignore_case, bool regex, string[] paths)
+	{
+		if (string.joinv("\n", paths) != string.joinv("\n", d_paths))
+		{
+			read_paths(paths, text != "" ? text : null, ignore_case, regex);
+			return;
+		}
+
+		if (text != "")
+		{
+			apply_filter(text, ignore_case, regex);
+			return;
+		}
+
+		if (d_paths.length == 0)
+		{
+			lift_filter();
+			return;
+		}
+
+		stop_search();
+		d_text = null;
+		d_regex = false;
+		d_history = d_full;
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+		show_path_bar();
+		show_ticks();
+	}
+
 	public void apply_filter(string text, bool ignore_case, bool regex = false)
 	{
 		if (d_repository == null || d_full == null)
@@ -485,6 +508,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_match);
 		}
+	}
+
+	private static string bold_list(string[] paths)
+	{
+		var names = new string[0];
+
+		foreach (var path in paths)
+		{
+			names += "<b>%s</b>".printf(Markup.escape_text(path));
+		}
+
+		return string.joinv(", ", names);
 	}
 
 	private string? diff_selection(out Gtk.TextView? view, out int offset)
@@ -588,6 +623,23 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var focus = window != null ? window.get_focus() : null;
 
 		return focus != null && focus.is_ancestor(d_paned.box_details);
+	}
+
+	private File git_directory()
+	{
+		if (directory != null)
+		{
+			return directory;
+		}
+
+		var top = d_repository.get_workdir();
+
+		if (top != null)
+		{
+			return top;
+		}
+
+		return d_repository.get_location();
 	}
 
 	private void hash_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
@@ -702,6 +754,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		stop_search();
 		d_text = null;
 		d_regex = false;
+
+		if (d_paths.length > 0)
+		{
+			d_paths = new string[0];
+			d_diff.options.pathspec = null;
+
+			try
+			{
+				d_full = read_history(d_refs);
+			}
+			catch (Error e)
+			{
+				show_error(_("Could not read the history"), e.message);
+			}
+		}
+
 		d_history = d_full;
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_path_bar();
@@ -766,6 +834,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_repository = repository;
 		d_paths = paths;
+		d_filter_bar.set_paths(paths);
 		this.directory = directory;
 		d_diff.repository = repository;
 		d_diff.options.pathspec = pathspec();
@@ -837,6 +906,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var top = d_repository.get_workdir();
 		var start = directory != null ? directory : top;
 		var ret = new string[0];
+
+		if (start == null)
+		{
+			return d_paths;
+		}
 
 		foreach (var path in d_paths)
 		{
@@ -937,10 +1011,85 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_paths.length > 0)
 		{
-			return new History.with_paths(d_repository, refs, d_paths, directory, topological);
+			return new History.with_paths(d_repository, refs, d_paths, git_directory(), topological);
 		}
 
 		return new History(d_repository, refs, topological);
+	}
+
+	private void read_paths(string[] wanted, string? text, bool ignore_case, bool regex)
+	{
+		string[] paths = wanted;
+
+		if (d_repository == null || d_full == null)
+		{
+			return;
+		}
+
+		stop_search();
+
+		if (paths.length == 0)
+		{
+			lift_filter();
+
+			if (text != null)
+			{
+				apply_filter(text, ignore_case, regex);
+			}
+
+			return;
+		}
+
+		var cancellable = new Cancellable();
+
+		d_search = cancellable;
+		d_reading = paths;
+		show_path_bar();
+
+		History.read_paths.begin(d_repository, d_refs, paths, git_directory(), d_settings.get_boolean("topological-order"), cancellable, (obj, res) => {
+			History history;
+
+			try
+			{
+				history = History.read_paths.end(res);
+			}
+			catch (Error e)
+			{
+				if (!cancellable.is_cancelled())
+				{
+					d_search = null;
+					d_reading = null;
+					show_error(_("Could not read the history"), e.message);
+					show_path_bar();
+				}
+
+				return;
+			}
+
+			if (cancellable.is_cancelled())
+			{
+				return;
+			}
+
+			d_search = null;
+			d_reading = null;
+			d_paths = paths;
+			d_diff.options.pathspec = pathspec();
+			d_full = history;
+			d_history = history;
+			d_text = null;
+			d_regex = false;
+			d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+
+			if (text != null)
+			{
+				apply_filter(text, ignore_case, regex);
+				return;
+			}
+
+			show_path_bar();
+			show_ticks();
+		});
 	}
 
 	public void refresh()
@@ -1016,12 +1165,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		var cancellable = new Cancellable();
 		var tips = History.tips_of(d_refs);
-		var start = directory != null ? directory : d_repository.get_workdir();
-
-		if (start == null)
-		{
-			start = d_repository.get_location();
-		}
+		var start = git_directory();
 
 		d_search = cancellable;
 		d_waiting = waiting;
@@ -1143,26 +1287,23 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.path_spinner.visible = searching;
 		d_paned.path_spinner.active = searching;
-		d_paned.path_bar.show_close_button = d_text != null;
+		d_paned.path_bar.show_close_button = d_text != null || d_paths.length > 0;
 
-		if (d_paths.length == 0 && d_text == null)
+		if (d_paths.length == 0 && d_text == null && d_reading == null)
 		{
 			d_paned.path_bar.hide();
 			return;
 		}
 
-		var names = new string[0];
-
-		foreach (var path in d_paths)
-		{
-			names += "<b>%s</b>".printf(Markup.escape_text(path));
-		}
-
-		var paths = string.joinv(", ", names);
+		var paths = bold_list(d_paths);
 		var text = d_text != null ? "<b>%s</b>".printf(Markup.escape_text(d_text)) : "";
 		string markup;
 
-		if (searching)
+		if (d_reading != null)
+		{
+			markup = _("Reading the history of %s...").printf(bold_list(d_reading));
+		}
+		else if (searching)
 		{
 			markup = _("Searching the changes for %s...").printf(text);
 		}
@@ -1356,6 +1497,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_search = null;
 		}
 
+		d_reading = null;
 		d_waiting = false;
 	}
 

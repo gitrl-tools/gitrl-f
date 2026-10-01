@@ -88,6 +88,17 @@ private static void filter_with(Gittree.Window window, string text, bool regex)
 	settle(800);
 }
 
+private static void filter_paths(Gittree.Window window, string text, string paths)
+{
+	var bar = window.history.filter_bar;
+
+	window.history.filter_visible = true;
+	bar.field.text = text;
+	bar.paths_field.text = paths;
+	button_labelled(bar, "Filter").clicked();
+	settle(800);
+}
+
 private static int git_calls(string? word = null)
 {
 	string text;
@@ -130,7 +141,7 @@ private static void install_wrapper()
 	var script = """#!/bin/sh
 echo "$*" >> "%s"
 case "$*" in
-*" -S"* | *" -G"*)
+*" -S"* | *" -G"* | *" --parents "*)
 	sleep "${GITTREE_TEST_GIT_DELAY:-0}"
 	if [ -n "$GITTREE_TEST_GIT_FAIL" ]; then
 		echo "$GITTREE_TEST_GIT_FAIL" >&2
@@ -170,11 +181,13 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-launch-with-a-text-shows-the-notice-until-the-search-ends", test_a_launch_with_a_text_shows_the_notice_until_the_search_ends);
 	Test.add_func("/gittree/ui/filter/a-new-filter-puts-its-text-in-the-diff-bar", test_a_new_filter_puts_its_text_in_the_diff_bar);
 	Test.add_func("/gittree/ui/filter/a-new-filter-stops-the-search-before-it", test_a_new_filter_stops_the_search_before_it);
+	Test.add_func("/gittree/ui/filter/a-path-outside-the-repository-shows-git-and-keeps-the-filter", test_a_path_outside_the_repository_shows_git_and_keeps_the_filter);
 	Test.add_func("/gittree/ui/filter/a-regex-filter-fills-the-diff-bar-with-its-switch", test_a_regex_filter_fills_the_diff_bar_with_its_switch);
 	Test.add_func("/gittree/ui/filter/a-reload-during-a-slow-search-stops-it-first", test_a_reload_during_a_slow_search_stops_it_first);
 	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
 	Test.add_func("/gittree/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
+	Test.add_func("/gittree/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
 	Test.add_func("/gittree/ui/filter/closing-the-bar-keeps-the-filter", test_closing_the_bar_keeps_the_filter);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
 	Test.add_func("/gittree/ui/filter/ctrl-shift-f-and-the-toggle-open-the-bar", test_ctrl_shift_f_and_the_toggle_open_the_bar);
@@ -182,10 +195,13 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/enter-and-the-button-apply-and-typing-does-not", test_enter_and_the_button_apply_and_typing_does_not);
 	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
 	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-never-lifts-the-filter", test_escape_closes_in_order_and_never_lifts_the_filter);
+	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
 	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
-	Test.add_func("/gittree/ui/filter/the-close-button-lifts-the-filter-from-memory", test_the_close_button_lifts_the_filter_from_memory);
+	Test.add_func("/gittree/ui/filter/the-close-button-lifts-the-filter-and-the-paths", test_the_close_button_lifts_the_filter_and_the_paths);
 	Test.add_func("/gittree/ui/filter/the-diff-bar-opens-with-the-text-and-the-case-of-the-filter", test_the_diff_bar_opens_with_the_text_and_the_case_of_the_filter);
 	Test.add_func("/gittree/ui/filter/the-list-answers-while-a-search-runs", test_the_list_answers_while_a_search_runs);
+	Test.add_func("/gittree/ui/filter/the-paths-are-read-in-the-background", test_the_paths_are_read_in_the_background);
+	Test.add_func("/gittree/ui/filter/the-paths-field-holds-the-command-line-paths", test_the_paths_field_holds_the_command_line_paths);
 	Test.add_func("/gittree/ui/filter/the-regular-expression-switch-filters-by-changed-lines", test_the_regular_expression_switch_filters_by_changed_lines);
 	Test.add_func("/gittree/ui/filter/the-users-own-text-in-the-diff-bar-is-kept-across-commits", test_the_users_own_text_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/the-yellow-bar-names-the-paths-and-the-case", test_the_yellow_bar_names_the_paths_and_the_case);
@@ -292,6 +308,30 @@ private static string subjects(Gittree.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_a_path_outside_the_repository_shows_git_and_keeps_the_filter()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {"p"}, null, false);
+
+		settle(300);
+		filter_paths(window, "", "../elsewhere");
+
+		assert_true(window.error_shown);
+		assert_true("outside repository" in window.error_text);
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "d,a");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change p");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_a_bad_expression_in_the_bar_applies_nothing()
@@ -761,6 +801,46 @@ private static void test_a_selection_in_the_diff_bar_is_kept_across_commits()
 	}
 }
 
+private static void test_a_typed_path_draws_what_the_command_line_draws()
+{
+	try
+	{
+		var repo = fixture();
+		var typed = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var given = opened(repo, {"refs/heads/master"}, {"p"}, null, false);
+
+		settle(300);
+
+		assert_cmpstr(typed.history.filter_bar.paths_field.placeholder_text, CompareOperator.EQ, "Only commits that change these paths");
+		assert_cmpstr(typed.history.filter_bar.paths_field.tooltip_text, CompareOperator.EQ, "Files or folders, split by spaces. Globs such as '*.yaml' work");
+
+		filter_paths(typed, "", "p");
+
+		assert_cmpstr(subjects(typed), CompareOperator.EQ, subjects(given));
+		assert_cmpstr(subjects(typed), CompareOperator.EQ, "d,a");
+		assert_cmpstr(typed.history.path_bar_text, CompareOperator.EQ, "Only commits that change p");
+		assert_cmpstr(typed.history.summary_text, CompareOperator.EQ, given.history.summary_text);
+
+		filter_paths(typed, "needle", "p");
+
+		assert_cmpstr(subjects(typed), CompareOperator.EQ, "a");
+		assert_cmpstr(typed.history.path_bar_text, CompareOperator.EQ, "Only commits that change p and add or remove needle, ignoring case");
+
+		filter_paths(typed, "", "");
+
+		assert_cmpstr(subjects(typed), CompareOperator.EQ, "e,d,c,b,a");
+		assert_cmpstr(typed.history.path_bar_text, CompareOperator.EQ, "");
+
+		typed.destroy();
+		given.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_tick_under_a_filter_asks_git_nothing()
 {
 	try
@@ -1060,6 +1140,47 @@ private static void test_escape_closes_in_order_and_never_lifts_the_filter()
 	}
 }
 
+private static void test_globs_and_quoted_paths_work_in_the_field()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("top", "top.yaml", "one");
+		repo.commit("deep", "a b/c/deep.yaml", "two");
+		repo.commit("text", "notes.txt", "three");
+		repo.commit("spaced", "a b/notes.txt", "four");
+
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+
+		settle(300);
+		filter_paths(window, "", "'*.yaml'");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "deep,top");
+
+		filter_paths(window, "", "\"a b\"");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "spaced,deep");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change a b");
+
+		filter_paths(window, "", "notes.txt top.yaml");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "text,top");
+
+		window.history.filter_bar.paths_field.text = "'a b";
+		settle(300);
+
+		assert_cmpstr(window.history.filter_bar.problem, CompareOperator.EQ, "A quote is not closed");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_no_ticked_ref_reaching_a_match_shows_a_notice()
 {
 	try
@@ -1084,7 +1205,7 @@ private static void test_no_ticked_ref_reaching_a_match_shows_a_notice()
 	}
 }
 
-private static void test_the_close_button_lifts_the_filter_from_memory()
+private static void test_the_close_button_lifts_the_filter_and_the_paths()
 {
 	try
 	{
@@ -1110,7 +1231,14 @@ private static void test_the_close_button_lifts_the_filter_from_memory()
 
 		settle(300);
 
-		assert_false(limited.history.paned.path_bar.show_close_button);
+		assert_true(limited.history.paned.path_bar.show_close_button);
+
+		limited.history.paned.path_bar.response(Gtk.ResponseType.CLOSE);
+		settle(300);
+
+		assert_cmpstr(subjects(limited), CompareOperator.EQ, "e,d,c,b,a");
+		assert_cmpstr(limited.history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpstr(limited.history.filter_bar.paths_field.text, CompareOperator.EQ, "p");
 
 		limited.destroy();
 		window.destroy();
@@ -1191,6 +1319,62 @@ private static void test_the_list_answers_while_a_search_runs()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "c");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_paths_are_read_in_the_background()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+
+		settle(300);
+		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
+		window.history.filter_visible = true;
+		window.history.filter_bar.paths_field.text = "p";
+		button_labelled(window.history.filter_bar, "Filter").clicked();
+		settle(300);
+		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Reading the history of p...");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
+
+		select_subject(window, "c");
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "c");
+
+		settle(1500);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "d,a");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change p");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_paths_field_holds_the_command_line_paths()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {"p", "a b"}, null, false);
+
+		settle(300);
+
+		assert_cmpstr(window.history.filter_bar.paths_field.text, CompareOperator.EQ, "p 'a b'");
 
 		window.destroy();
 		repo.remove();
