@@ -30,6 +30,7 @@ unit_tests = [
   'search',
   'settings',
   'smoke',
+  'text-match',
   'ticks',
   'word-diff',
 ]

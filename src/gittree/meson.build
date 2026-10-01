@@ -21,6 +21,7 @@ gittree_lib_sources = files(
   'gittree-repository.vala',
   'gittree-search-keys.vala',
   'gittree-search.vala',
+  'gittree-text-match.vala',
   'gittree-text-search.vala',
   'gittree-ticks.vala',
   'gittree-window.vala',
