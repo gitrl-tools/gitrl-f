@@ -24,7 +24,7 @@ public class TextSearch : Object
 {
 	public static async Gee.Set<Ggit.OId> run(File directory, Ggit.OId[] tips, string text, bool ignore_case, string[] paths, Cancellable cancellable) throws Error
 	{
-		string[] argv = { "git", "log", "-z", "--stdin", "--no-textconv", "--format=%H", "-S" + text };
+		string[] argv = { "log", "-z", "--stdin", "--no-textconv", "--format=%H", "-S" + text };
 
 		if (ignore_case)
 		{
@@ -46,15 +46,10 @@ public class TextSearch : Object
 			input.append_c('\n');
 		}
 
-		var launcher = new SubprocessLauncher(SubprocessFlags.STDIN_PIPE | SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE);
-		launcher.set_cwd(directory.get_path());
-
-		var process = launcher.spawnv(argv);
+		var process = History.spawn_git(directory, argv, true);
 		var handler = cancellable.connect(() => process.force_exit());
 		Bytes? output = null;
 		Bytes? errors = null;
-
-		Posix.signal(Posix.Signal.PIPE, Posix.SIG_IGN);
 
 		try
 		{

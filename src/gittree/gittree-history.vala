@@ -39,14 +39,9 @@ public class History : Object
 		var walker = new Ggit.RevisionWalker(repository);
 		walker.set_sort_mode(topological ? Ggit.SortMode.TOPOLOGICAL : Ggit.SortMode.TOPOLOGICAL | Ggit.SortMode.TIME);
 
-		var pushed = id_set();
-
-		foreach (var reference in refs)
+		foreach (var tip in tips_of(refs))
 		{
-			if (pushed.add(reference.target))
-			{
-				walker.push(reference.target);
-			}
+			walker.push(tip);
 		}
 
 		begin();
@@ -94,28 +89,12 @@ public class History : Object
 			if (shown[i])
 			{
 				near += i;
-				near_end[i] = near.length;
-				continue;
 			}
-
-			for (var p = history.d_parents_start[i]; p < history.d_parents_start[i + 1]; p++)
+			else
 			{
-				var parent = history.d_parents[p];
-
-				for (var n = near_start[parent]; n < near_end[parent]; n++)
+				foreach (var found in nearest(history.parents_at(i), near, near_start, near_end))
 				{
-					var found = near[n];
-					var seen = false;
-
-					for (var k = near_start[i]; k < near.length && !seen; k++)
-					{
-						seen = near[k] == found;
-					}
-
-					if (!seen)
-					{
-						near += found;
-					}
+					near += found;
 				}
 			}
 
@@ -132,14 +111,7 @@ public class History : Object
 
 			if (shown[i])
 			{
-				var parents = new int[0];
-
-				for (var p = history.d_parents_start[i]; p < history.d_parents_start[i + 1]; p++)
-				{
-					parents += history.d_parents[p];
-				}
-
-				foreach (var found in nearest(parents, near, near_start, near_end))
+				foreach (var found in nearest(history.parents_at(i), near, near_start, near_end))
 				{
 					through += found;
 				}
@@ -176,41 +148,36 @@ public class History : Object
 
 		index_parents(parent_ids, counts);
 
-		var tips = id_set();
-
-		foreach (var reference in refs)
+		foreach (var tip in tips_of(refs))
 		{
-			if (d_index.has_key(reference.target) || !tips.add(reference.target))
+			if (d_index.has_key(tip))
 			{
 				continue;
 			}
 
 			var starts = new int[0];
 
-			foreach (var id in history.starts_of(reference.target))
+			foreach (var id in history.starts_of(tip))
 			{
 				starts += history.d_index[id];
 			}
 
-			var kept = uncovered(nearest(starts, near, near_start, near_end), through, through_start, through_end, marks, ref stamp);
+			var sorted = new Gee.ArrayList<int>();
 			var list = new Gee.ArrayList<Ggit.OId>();
 
-			for (var k = 1; k < kept.length; k++)
+			foreach (var start in uncovered(nearest(starts, near, near_start, near_end), through, through_start, through_end, marks, ref stamp))
 			{
-				for (var j = k; j > 0 && kept[j - 1] > kept[j]; j--)
-				{
-					var swap = kept[j];
-					kept[j] = kept[j - 1];
-					kept[j - 1] = swap;
-				}
+				sorted.add(start);
 			}
 
-			foreach (var start in kept)
+			sorted.sort((a, b) => a - b);
+
+			foreach (var start in sorted)
 			{
 				list.add(history.d_commits[start].get_id());
 			}
 
-			d_starts[reference.target] = list;
+			d_starts[tip] = list;
 		}
 
 		d_lanes = new Gitg.Lanes();
@@ -220,14 +187,10 @@ public class History : Object
 	public History.with_paths(Gitg.Repository repository, Gee.List<Ref> refs, string[] paths, File directory, bool topological) throws Error
 	{
 		var tips = new Gee.ArrayList<string>();
-		var pushed = id_set();
 
-		foreach (var reference in refs)
+		foreach (var tip in tips_of(refs))
 		{
-			if (pushed.add(reference.target))
-			{
-				tips.add(reference.target.to_string());
-			}
+			tips.add(tip.to_string());
 		}
 
 		string[] log = { "log", "-z", "--parents", topological ? "--topo-order" : "--date-order", "--stdin", "--format=%H%x1f%P", "--" };
@@ -325,29 +288,10 @@ public class History : Object
 
 	private static string[] git(File directory, string[] arguments, string? input) throws Error
 	{
-		string[] argv = { "git" };
-
-		foreach (var argument in arguments)
-		{
-			argv += argument;
-		}
-
-		var flags = SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE;
+		var process = spawn_git(directory, arguments, input != null);
 
 		if (input != null)
 		{
-			flags |= SubprocessFlags.STDIN_PIPE;
-		}
-
-		var launcher = new SubprocessLauncher(flags);
-		launcher.set_cwd(directory.get_path());
-
-		var process = launcher.spawnv(argv);
-
-		if (input != null)
-		{
-			Posix.signal(Posix.Signal.PIPE, Posix.SIG_IGN);
-
 			try
 			{
 				process.get_stdin_pipe().write_all(input.data, null);
@@ -500,6 +444,11 @@ public class History : Object
 		return list;
 	}
 
+	private int[] parents_at(int commit)
+	{
+		return d_parents[d_parents_start[commit]:d_parents_start[commit + 1]];
+	}
+
 	public Ggit.OId[] parents_of(Gitg.Commit commit)
 	{
 		var ret = new Ggit.OId[0];
@@ -579,6 +528,29 @@ public class History : Object
 		}
 
 		return records;
+	}
+
+	public static Subprocess spawn_git(File directory, string[] arguments, bool input) throws Error
+	{
+		string[] argv = { "git" };
+
+		foreach (var argument in arguments)
+		{
+			argv += argument;
+		}
+
+		var flags = SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE;
+
+		if (input)
+		{
+			flags |= SubprocessFlags.STDIN_PIPE;
+			Posix.signal(Posix.Signal.PIPE, Posix.SIG_IGN);
+		}
+
+		var launcher = new SubprocessLauncher(flags);
+		launcher.set_cwd(directory.get_path());
+
+		return launcher.spawnv(argv);
 	}
 
 	public Ggit.OId? start_of(Ggit.OId tip)
@@ -697,6 +669,22 @@ public class History : Object
 		}
 
 		return rows;
+	}
+
+	public static Ggit.OId[] tips_of(Gee.List<Ref> refs)
+	{
+		var tips = new Ggit.OId[0];
+		var seen = id_set();
+
+		foreach (var reference in refs)
+		{
+			if (seen.add(reference.target))
+			{
+				tips += reference.target;
+			}
+		}
+
+		return tips;
 	}
 
 	private static int[] uncovered(int[] candidates, int[] through, int[] through_start, int[] through_end, int[] marks, ref int stamp)

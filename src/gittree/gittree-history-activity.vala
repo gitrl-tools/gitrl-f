@@ -218,22 +218,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search_entry.width_chars = 40;
 		d_search_entry.placeholder_text = _("Subject, message, author or hash");
 
-		var previous = new Gtk.Button.from_icon_name("go-up-symbolic", Gtk.IconSize.BUTTON);
-		previous.tooltip_text = _("Previous match (Shift+Enter)");
-		previous.clicked.connect(() => step(-1));
-
-		var next = new Gtk.Button.from_icon_name("go-down-symbolic", Gtk.IconSize.BUTTON);
-		next.tooltip_text = _("Next match (Enter)");
-		next.clicked.connect(() => step(1));
-
 		d_match_count = new Gtk.Label(null);
 		d_match_count.width_chars = 12;
 		d_match_count.xalign = 0;
 
 		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		search_box.add(d_search_entry);
-		search_box.add(previous);
-		search_box.add(next);
+		SearchKeys.attach(d_search_entry, search_box, step);
 		search_box.add(d_match_count);
 
 		d_search_bar = new Gtk.SearchBar();
@@ -251,20 +242,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_search_entry.search_changed.connect(() => {
 			find_matches();
-		});
-		d_search_entry.activate.connect(() => step(1));
-		d_search_entry.next_match.connect(() => step(1));
-		d_search_entry.previous_match.connect(() => step(-1));
-		d_search_entry.key_press_event.connect((event) => {
-			var enter = event.keyval == Gdk.Key.Return || event.keyval == Gdk.Key.KP_Enter;
-
-			if (enter && (event.state & Gdk.ModifierType.SHIFT_MASK) != 0)
-			{
-				step(-1);
-				return true;
-			}
-
-			return false;
 		});
 
 		d_filter_bar = new FilterBar();
@@ -644,16 +621,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
-	public void lift_filter()
-	{
-		stop_search();
-		d_text = null;
-		d_history = d_full;
-		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
-		show_path_bar();
-		show_ticks();
-	}
-
 	private void lanes_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var lanes = (Gitg.CellRendererLanes)cell;
@@ -682,6 +649,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			lanes.markup = Search.marked(commit.get_subject(), d_needle);
 		}
+	}
+
+	public void lift_filter()
+	{
+		stop_search();
+		d_text = null;
+		d_history = d_full;
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
+		show_path_bar();
+		show_ticks();
 	}
 
 	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false)
@@ -959,21 +936,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		stop_search();
 
 		var cancellable = new Cancellable();
-		var tips = new Ggit.OId[0];
-		var seen = History.id_set();
+		var tips = History.tips_of(d_refs);
 		var start = directory != null ? directory : d_repository.get_workdir();
 
 		if (start == null)
 		{
 			start = d_repository.get_location();
-		}
-
-		foreach (var reference in d_refs)
-		{
-			if (seen.add(reference.target))
-			{
-				tips += reference.target;
-			}
 		}
 
 		d_search = cancellable;

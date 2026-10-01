@@ -73,14 +73,6 @@ public class DiffFindBar : Gtk.SearchBar
 		d_field.width_chars = 30;
 		d_field.placeholder_text = _("Find in the diff");
 
-		var previous = new Gtk.Button.from_icon_name("go-up-symbolic", Gtk.IconSize.BUTTON);
-		previous.tooltip_text = _("Previous match (Shift+Enter)");
-		previous.clicked.connect(() => step(-1));
-
-		var next = new Gtk.Button.from_icon_name("go-down-symbolic", Gtk.IconSize.BUTTON);
-		next.tooltip_text = _("Next match (Enter)");
-		next.clicked.connect(() => step(1));
-
 		d_case = new Gtk.CheckButton.with_label(_("Match case"));
 		d_case.active = true;
 		d_case.toggled.connect(search);
@@ -91,8 +83,7 @@ public class DiffFindBar : Gtk.SearchBar
 
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);
-		box.add(previous);
-		box.add(next);
+		SearchKeys.attach(d_field, box, step);
 		box.add(d_case);
 		box.add(d_count);
 
@@ -112,20 +103,6 @@ public class DiffFindBar : Gtk.SearchBar
 		no_show_all = true;
 
 		d_field.search_changed.connect(search);
-		d_field.activate.connect(() => step(1));
-		d_field.next_match.connect(() => step(1));
-		d_field.previous_match.connect(() => step(-1));
-		d_field.key_press_event.connect((event) => {
-			var enter = event.keyval == Gdk.Key.Return || event.keyval == Gdk.Key.KP_Enter;
-
-			if (enter && (event.state & Gdk.ModifierType.SHIFT_MASK) != 0)
-			{
-				step(-1);
-				return true;
-			}
-
-			return false;
-		});
 
 		notify["search-mode-enabled"].connect(search_mode_changed);
 		d_diff.files_changed.connect(() => {

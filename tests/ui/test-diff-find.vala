@@ -59,6 +59,25 @@ private static bool focus_in(Gittree.Window window, Gtk.Widget area)
 	return focus != null && (focus == area || focus.is_ancestor(area));
 }
 
+public static int main(string[] args)
+{
+	Gtk.test_init(ref args);
+
+	Test.add_func("/gittree/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
+	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-list-opens-the-list-bar", test_ctrl_f_in_the_list_opens_the_list_bar);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
+	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-clears-the-marks", test_escape_in_the_field_closes_the_bar_and_clears_the_marks);
+	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
+	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
+	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
+	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
+
+	return Test.run();
+}
+
 private static Repo many_files() throws Error
 {
 	var repo = Repo.create();
@@ -86,25 +105,6 @@ private static Repo many_files() throws Error
 	repo.git({"commit", "--quiet", "-am", "many"});
 
 	return repo;
-}
-
-public static int main(string[] args)
-{
-	Gtk.test_init(ref args);
-
-	Test.add_func("/gittree/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
-	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-list-opens-the-list-bar", test_ctrl_f_in_the_list_opens_the_list_bar);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
-	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-clears-the-marks", test_escape_in_the_field_closes_the_bar_and_clears_the_marks);
-	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
-	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
-	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
-	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
-	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
-
-	return Test.run();
 }
 
 private static string marks(Gittree.Window window, string tag_name)
@@ -194,39 +194,6 @@ private static void settle(int milliseconds)
 
 		Thread.usleep(10000);
 	}
-}
-
-private static Repo three_files() throws Error
-{
-	var repo = Repo.create();
-
-	foreach (var name in new string[] { "a.txt", "b.txt", "c.txt" })
-	{
-		FileUtils.set_contents(repo.path.get_child(name).get_path(), "keep\n");
-	}
-
-	repo.git({"add", "--all"});
-	repo.git({"commit", "--quiet", "-m", "start"});
-
-	FileUtils.set_contents(repo.path.get_child("a.txt").get_path(), "keep\nNeedle in a\n");
-	FileUtils.set_contents(repo.path.get_child("b.txt").get_path(), "keep\nno match here\n");
-	FileUtils.set_contents(repo.path.get_child("c.txt").get_path(), "needle in c\nkeep\n");
-	repo.git({"commit", "--quiet", "-am", "change"});
-
-	FileUtils.set_contents(repo.path.get_child("b.txt").get_path(), "keep\nneedle in b\nneedle again\n");
-	repo.git({"commit", "--quiet", "-am", "later"});
-
-	return repo;
-}
-
-private static void unfold_all(Gittree.Window window)
-{
-	foreach (var file in window.history.diff_view.get_files())
-	{
-		file.expanded = true;
-	}
-
-	settle(300);
 }
 
 private static void test_a_match_in_a_folded_file_unfolds_it_and_shows()
@@ -628,6 +595,39 @@ private static void test_typing_marks_every_match_and_moves_nothing()
 	{
 		Test.fail_printf("%s", e.message);
 	}
+}
+
+private static Repo three_files() throws Error
+{
+	var repo = Repo.create();
+
+	foreach (var name in new string[] { "a.txt", "b.txt", "c.txt" })
+	{
+		FileUtils.set_contents(repo.path.get_child(name).get_path(), "keep\n");
+	}
+
+	repo.git({"add", "--all"});
+	repo.git({"commit", "--quiet", "-m", "start"});
+
+	FileUtils.set_contents(repo.path.get_child("a.txt").get_path(), "keep\nNeedle in a\n");
+	FileUtils.set_contents(repo.path.get_child("b.txt").get_path(), "keep\nno match here\n");
+	FileUtils.set_contents(repo.path.get_child("c.txt").get_path(), "needle in c\nkeep\n");
+	repo.git({"commit", "--quiet", "-am", "change"});
+
+	FileUtils.set_contents(repo.path.get_child("b.txt").get_path(), "keep\nneedle in b\nneedle again\n");
+	repo.git({"commit", "--quiet", "-am", "later"});
+
+	return repo;
+}
+
+private static void unfold_all(Gittree.Window window)
+{
+	foreach (var file in window.history.diff_view.get_files())
+	{
+		file.expanded = true;
+	}
+
+	settle(300);
 }
 
 }

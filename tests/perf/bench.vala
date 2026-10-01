@@ -30,6 +30,39 @@ public class Bench : Object
 		}
 	}
 
+	private static void filtered(Window window, string text, Gee.Set<string> every, string[] only, string path)
+	{
+		var timer = new Timer();
+
+		window.open_repository(File.new_for_path(path), null, {}, File.new_for_path(path), text, false);
+
+		while (!window.history.path_bar_text.has_prefix("Only") && timer.elapsed() < 600)
+		{
+			drain();
+			Thread.usleep(1000);
+		}
+
+		stdout.printf("window open with -S %s %.3f s, %s\n", text, timer.elapsed(), window.history.summary_text);
+
+		timer.start();
+		window.history.set_ticks(every);
+		drain();
+
+		stdout.printf("window tick under the filter, every ref ticked: %.3f s\n", timer.elapsed());
+
+		foreach (var name in only)
+		{
+			var ticks = new Gee.HashSet<string>();
+			ticks.add(name);
+
+			timer.start();
+			window.history.set_ticks(ticks);
+			drain();
+
+			stdout.printf("window tick under the filter, only %s: %.3f s\n", name, timer.elapsed());
+		}
+	}
+
 	public static int main(string[] args)
 	{
 		if (args.length < 2)
@@ -95,39 +128,6 @@ public class Bench : Object
 		}
 
 		return 0;
-	}
-
-	private static void filtered(Window window, string text, Gee.Set<string> every, string[] only, string path)
-	{
-		var timer = new Timer();
-
-		window.open_repository(File.new_for_path(path), null, {}, File.new_for_path(path), text, false);
-
-		while (!window.history.path_bar_text.has_prefix("Only") && timer.elapsed() < 600)
-		{
-			drain();
-			Thread.usleep(1000);
-		}
-
-		stdout.printf("window open with -S %s %.3f s, %s\n", text, timer.elapsed(), window.history.summary_text);
-
-		timer.start();
-		window.history.set_ticks(every);
-		drain();
-
-		stdout.printf("window tick under the filter, every ref ticked: %.3f s\n", timer.elapsed());
-
-		foreach (var name in only)
-		{
-			var ticks = new Gee.HashSet<string>();
-			ticks.add(name);
-
-			timer.start();
-			window.history.set_ticks(ticks);
-			drain();
-
-			stdout.printf("window tick under the filter, only %s: %.3f s\n", name, timer.elapsed());
-		}
 	}
 
 	private static double peak_memory()
