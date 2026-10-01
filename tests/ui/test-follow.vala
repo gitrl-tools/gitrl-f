@@ -43,6 +43,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gittree/ui/follow/a-commit-under-a-filter-searches-again", test_a_commit_under_a_filter_searches_again);
 	Test.add_func("/gittree/ui/follow/deleted-repository-shows-an-error-and-keeps-the-history", test_deleted_repository_shows_an_error_and_keeps_the_history);
 	Test.add_func("/gittree/ui/follow/f5-reloads-at-once", test_f5_reloads_at_once);
 	Test.add_func("/gittree/ui/follow/monitoring-off-stops-the-poll", test_monitoring_off_stops_the_poll);
@@ -83,6 +84,55 @@ private static void settle(int milliseconds)
 		}
 
 		Thread.usleep(10000);
+	}
+}
+
+private static void test_a_commit_under_a_filter_searches_again()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("one", "f", "needle");
+		repo.commit("two", "f", "plain");
+
+		var ticks = new Gee.HashSet<string>();
+		ticks.add("refs/heads/master");
+
+		var window = new Gittree.Window(application());
+		window.set_default_size(900, 300);
+		window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path, "needle", false);
+		window.show();
+		settle(500);
+
+		assert_cmpstr(window.history.rows()[0].get_subject(), CompareOperator.EQ, "one");
+
+		repo.commit("three", "f", "needle");
+		settle(3000);
+
+		assert_cmpstr(window.history.rows()[0].get_subject(), CompareOperator.EQ, "three");
+		assert_cmpint(window.history.rows().length, CompareOperator.EQ, 2);
+
+		var settings = new Settings(Gittree.Config.APPLICATION_ID + ".preferences.interface");
+
+		settings.set_boolean("enable-monitoring", false);
+		settle(20);
+		repo.commit("four", "f", "needle");
+		settle(2500);
+
+		assert_cmpstr(window.history.rows()[0].get_subject(), CompareOperator.EQ, "three");
+
+		window.activate_action("reload", null);
+		settle(500);
+
+		assert_cmpstr(window.history.rows()[0].get_subject(), CompareOperator.EQ, "four");
+
+		settings.reset("enable-monitoring");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
 	}
 }
 

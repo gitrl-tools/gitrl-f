@@ -29,6 +29,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.GestureMultiPress d_file_press;
 	private FilterBar d_filter_bar;
 	private DiffFindBar d_find_bar;
+	private bool d_find_closed;
+	private bool d_find_with_pane;
 	private History? d_full;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
@@ -347,13 +349,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.notify["details-visible"].connect(() => {
 			if (!d_paned.details_visible)
 			{
+				d_find_with_pane = true;
 				d_find_bar.search_mode_enabled = false;
+				d_find_with_pane = false;
 			}
 
 			show_details();
+			fill_find_bar(false);
 		});
 
 		d_find_bar = new DiffFindBar(d_diff);
+		d_find_bar.notify["search-mode-enabled"].connect(() => {
+			if (!d_find_bar.search_mode_enabled && !d_find_with_pane)
+			{
+				d_find_closed = true;
+			}
+		});
 		d_paned.box_details.add(d_find_bar);
 
 		var overlay = new Gtk.Overlay();
@@ -442,6 +453,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	public void apply_filter(string text, bool ignore_case)
 	{
+		d_find_closed = false;
 		d_text = text;
 		d_ignore_case = ignore_case;
 		search(false);
@@ -483,6 +495,26 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return false;
+	}
+
+	private void fill_find_bar(bool refill)
+	{
+		if (d_text == null || d_search != null || !d_paned.details_visible || d_diff.commit == null)
+		{
+			return;
+		}
+
+		if (!d_find_bar.search_mode_enabled && d_find_closed)
+		{
+			return;
+		}
+
+		if (!d_find_bar.search_mode_enabled || refill)
+		{
+			d_find_bar.fill(d_text, !d_ignore_case);
+		}
+
+		d_find_bar.step_to_first();
 	}
 
 	private void find_matches()
@@ -646,6 +678,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		Gee.Set<string> resolved;
 
 		stop_search();
+		d_find_closed = false;
 		d_text = null;
 
 		try
@@ -916,7 +949,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var cancellable = new Cancellable();
 		var tips = new Ggit.OId[0];
 		var seen = History.id_set();
-		var start = directory != null ? directory : (d_repository.get_workdir() != null ? d_repository.get_workdir() : d_repository.get_location());
+		var start = directory != null ? directory : d_repository.get_workdir();
+
+		if (start == null)
+		{
+			start = d_repository.get_location();
+		}
 
 		foreach (var reference in d_refs)
 		{
@@ -964,6 +1002,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 			show_path_bar();
 			show_ticks();
+			fill_find_bar(true);
 		});
 	}
 
@@ -1019,6 +1058,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_diff.commit = commit;
+		fill_find_bar(false);
 	}
 
 	private void show_match_count()

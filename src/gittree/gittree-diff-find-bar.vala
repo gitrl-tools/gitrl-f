@@ -30,14 +30,17 @@ public class DiffFindBar : Gtk.SearchBar
 	private Gtk.CheckButton d_case;
 	private Gtk.Label d_count;
 	private Gitg.DiffView d_diff;
+	private Ggit.Diff? d_diff_rows;
 	private Ggit.Diff? d_diff_searched;
 	private Gtk.SearchEntry d_field;
 	private DiffFind d_find;
+	private bool d_quiet;
 	private Gtk.Widget? d_return_focus;
 	private bool d_scroll_pending;
 	private bool d_scrolling;
 	private int[] d_sizes;
 	private bool[] d_split;
+	private bool d_step_pending;
 	private Gee.HashSet<Gitg.DiffViewFile> d_watched;
 
 	public string count
@@ -124,6 +127,8 @@ public class DiffFindBar : Gtk.SearchBar
 
 		notify["search-mode-enabled"].connect(search_mode_changed);
 		d_diff.files_changed.connect(() => {
+			d_diff_rows = d_diff.diff;
+
 			if (search_mode_enabled)
 			{
 				search();
@@ -154,6 +159,24 @@ public class DiffFindBar : Gtk.SearchBar
 		buffer.create_tag(MATCH, "background", "#fce94f", "foreground", "#1a1a1a");
 		buffer.create_tag(CURRENT, "background", "#f57900", "foreground", "#1a1a1a");
 		buffer.tag_table.tag_added.connect(tag_added);
+	}
+
+	public void fill(string text, bool match_case)
+	{
+		var window = get_toplevel() as Gtk.Window;
+		var focus = window != null ? window.get_focus() : null;
+
+		d_quiet = true;
+		search_mode_enabled = true;
+		d_quiet = false;
+
+		if (window != null)
+		{
+			window.set_focus(focus);
+		}
+		d_field.text = text;
+		d_case.active = match_case;
+		search();
 	}
 
 	private void mark_file(int index, Gitg.DiffViewFile file)
@@ -343,7 +366,7 @@ public class DiffFindBar : Gtk.SearchBar
 	{
 		var files = d_diff.get_files();
 		var before = d_find;
-		var same_diff = d_diff_searched != null && d_diff_searched == d_diff.diff;
+		var same_diff = d_diff_searched != null && d_diff_searched == d_diff_rows;
 		var text = search_mode_enabled ? d_field.text : "";
 
 		d_scroll_pending = false;
@@ -388,7 +411,7 @@ public class DiffFindBar : Gtk.SearchBar
 			}
 		}
 
-		d_diff_searched = d_diff.diff;
+		d_diff_searched = d_diff_rows;
 
 		for (var i = 0; i < files.size; i++)
 		{
@@ -396,6 +419,7 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 
 		show_count();
+		step_if_pending();
 	}
 
 	private void search_mode_changed()
@@ -407,8 +431,12 @@ public class DiffFindBar : Gtk.SearchBar
 			var window = get_toplevel() as Gtk.Window;
 			var focus = window != null ? window.get_focus() : null;
 
-			d_return_focus = focus != null && focus.is_ancestor(d_diff) ? focus : null;
-			d_field.grab_focus();
+			if (!d_quiet)
+			{
+				d_return_focus = focus != null && focus.is_ancestor(d_diff) ? focus : null;
+				d_field.grab_focus();
+			}
+
 			return;
 		}
 
@@ -473,6 +501,40 @@ public class DiffFindBar : Gtk.SearchBar
 		files[match.file].expanded = true;
 		mark_file(match.file, files[match.file]);
 		scroll_when_drawn();
+	}
+
+	private void step_if_pending()
+	{
+		if (!d_step_pending || !search_mode_enabled || d_diff_rows != d_diff.diff || d_find.length == 0)
+		{
+			return;
+		}
+
+		var before = d_find.current;
+
+		d_step_pending = false;
+
+		if (before == 0)
+		{
+			return;
+		}
+
+		d_find.current = -1;
+
+		if (before > 0)
+		{
+			var match = d_find.get_match(before);
+
+			mark_file(match.file, d_diff.get_files()[match.file]);
+		}
+
+		step(1);
+	}
+
+	public void step_to_first()
+	{
+		d_step_pending = true;
+		step_if_pending();
 	}
 
 	private static void tag_added(Gtk.TextTagTable table, Gtk.TextTag tag)
