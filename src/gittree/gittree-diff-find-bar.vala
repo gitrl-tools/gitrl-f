@@ -74,7 +74,7 @@ public class DiffFindBar : Gtk.SearchBar
 		d_field.placeholder_text = _("Find in the diff");
 
 		d_case = new Gtk.CheckButton.with_label(_("Match case"));
-		d_case.active = true;
+		d_case.active = false;
 		d_case.toggled.connect(search);
 
 		d_count = new Gtk.Label(null);

@@ -335,7 +335,7 @@ private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 		assert_false(window.history.search_visible);
 		assert_true(bar.field.has_focus);
 		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Find in the diff");
-		assert_true(bar.match_case);
+		assert_false(bar.match_case);
 
 		bar.field.text = "needle";
 		settle(400);
@@ -495,7 +495,7 @@ private static void test_no_match_turns_the_field_red()
 
 		search_for(window, "needle");
 
-		assert_cmpstr(bar.count, CompareOperator.EQ, "1 match");
+		assert_cmpstr(bar.count, CompareOperator.EQ, "2 matches");
 		assert_false(bar.field.get_style_context().has_class("error"));
 
 		search_for(window, "");
@@ -546,7 +546,7 @@ private static void test_the_text_is_kept_from_commit_to_commit()
 		bar.step(1);
 		settle(100);
 
-		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 1");
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 2");
 
 		select_subject(window, "later");
 
@@ -573,22 +573,23 @@ private static void test_typing_marks_every_match_and_moves_nothing()
 
 		search_for(window, "needle");
 
-		assert_cmpstr(bar.count, CompareOperator.EQ, "1 match");
+		assert_cmpstr(bar.count, CompareOperator.EQ, "2 matches");
 
 		foreach (var file in files)
 		{
 			assert_false(file.expanded);
 		}
 
-		bar.match_case = false;
-		settle(100);
-
-		assert_cmpstr(bar.count, CompareOperator.EQ, "2 matches");
-
 		unfold_all(window);
 
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle|2:needle");
 		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "");
+
+		bar.match_case = true;
+		settle(100);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 match");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "2:needle");
 
 		var tag = files[0].get_text_views()[0].buffer.tag_table.lookup("diff-find-match");
 		var current = files[0].get_text_views()[0].buffer.tag_table.lookup("diff-find-current");

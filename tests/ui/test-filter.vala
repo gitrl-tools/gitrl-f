@@ -480,6 +480,7 @@ private static void test_a_new_filter_stops_the_search_before_it()
 		settle(300);
 		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
 		window.history.filter_visible = true;
+		window.history.filter_bar.match_case = true;
 		window.history.filter_bar.field.text = "needle";
 		window.history.filter_bar.field.activate();
 		settle(300);
@@ -610,6 +611,7 @@ private static void test_closing_the_bar_keeps_the_filter()
 
 		settle(300);
 		window.history.filter_visible = true;
+		window.history.filter_bar.match_case = true;
 		window.history.filter_bar.field.text = "needle";
 		window.history.filter_bar.field.activate();
 		settle(600);
@@ -690,7 +692,7 @@ private static void test_ctrl_shift_f_and_the_toggle_open_the_bar()
 		assert_true(toggle.active);
 		assert_true(window.history.filter_bar.field.has_focus);
 		assert_cmpstr(window.history.filter_bar.field.placeholder_text, CompareOperator.EQ, "Only commits that add or remove this text");
-		assert_true(window.history.filter_bar.match_case);
+		assert_false(window.history.filter_bar.match_case);
 
 		window.activate_action("filter", null);
 		settle(100);
@@ -741,15 +743,16 @@ private static void test_enter_and_the_button_apply_and_typing_does_not()
 		bar.field.activate();
 		settle(600);
 
-		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle, ignoring case");
 		assert_true(window.history.filter_visible);
 
-		bar.match_case = false;
+		bar.match_case = true;
 		button_labelled(bar, "Filter").clicked();
 		settle(600);
 
-		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle, ignoring case");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle");
 
 		window.destroy();
 		repo.remove();
@@ -948,6 +951,7 @@ private static void test_the_list_answers_while_a_search_runs()
 		window.history.paned.details_visible = true;
 		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1.5", true);
 		window.history.filter_visible = true;
+		window.history.filter_bar.match_case = true;
 		window.history.filter_bar.field.text = "needle";
 		window.history.filter_bar.field.activate();
 		settle(300);

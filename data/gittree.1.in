@@ -80,7 +80,8 @@ a file the commit changes goes up or down, as in
 .BR "git log \-S" .
 A merge never does. The graph joins across the commits that it leaves out.
 The search runs in the background, and the filter bar changes the text
-later. Enter on an empty field of the filter bar, or the close button of the
+later. The filter bar ignores case unless its Match case switch is on.
+Enter on an empty field of the filter bar, or the close button of the
 yellow bar above the list, lifts the filter.
 .TP
 .BR \-i ", " \-\-ignore\-case

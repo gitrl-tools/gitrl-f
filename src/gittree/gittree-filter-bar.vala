@@ -49,7 +49,7 @@ public class FilterBar : Gtk.SearchBar
 		});
 
 		d_case = new Gtk.CheckButton.with_label(_("Match case"));
-		d_case.active = true;
+		d_case.active = false;
 
 		var filter = new Gtk.Button.with_label(_("Filter"));
 		filter.clicked.connect(apply);
