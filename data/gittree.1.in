@@ -157,6 +157,9 @@ no commit of the ticked refs matches, the bar counts the matches on the
 other refs, and Tick and show ticks a ref that holds the newest of them and
 selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
+.PP
+The find bar of the diff has Match case, Whole word and Regular expression
+too, and keeps its text when it closes.
 .SH THE MENU OF A COMMIT
 A right click on a commit in the list opens its menu. Copy hash copies its
 hash, and Copy name, on a label, the name of that ref. Branches and tags
@@ -197,10 +200,12 @@ Fill the window with the diff. A click that closes a file does not.
 .TP
 .B Ctrl+F
 Open or close the search bar. When the diff has the focus or fills the
-window, open or close the find bar of the diff instead.
+window, open or close the find bar of the diff instead. With text selected
+on one line of the diff, search the diff for that text.
 .TP
 .B Ctrl+Shift+F
-Open or close the filter bar.
+Open or close the filter bar. With text selected on one line of the diff,
+put that text in the filter bar.
 .TP
 .BR Enter ", " Ctrl+G
 Go to the next commit that matches. In the find bar of the diff, go to the
