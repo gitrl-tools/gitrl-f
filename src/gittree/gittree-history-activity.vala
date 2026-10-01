@@ -53,6 +53,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string? d_lines_path;
 	private SList<Gitg.Ref> d_labels;
 	private HistoryModel d_model;
+	private Cancellable? d_menu_search;
 	private string d_narrow_key;
 	private History? d_narrow_source;
 	private History? d_narrowed;
@@ -352,7 +353,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		d_copy_menu = new CopyMenu(d_paned.commit_list_view);
-		d_copy_menu.find.connect(prepare_copy);
+		d_copy_menu.find.connect(fill_commit_menu);
+		d_copy_menu.deactivate.connect(() => {
+			if (d_menu_search != null)
+			{
+				d_menu_search.cancel();
+				d_menu_search = null;
+			}
+		});
 
 		d_paned.commit_list_view.row_activated.connect(() => {
 			var event = Gtk.get_current_event();
@@ -555,6 +563,110 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
+	private void add_first_tag_item(Ggit.OId commit)
+	{
+		var item = new Gtk.MenuItem.with_label(_("First tag with this commit..."));
+		var cancellable = menu_search();
+
+		item.sensitive = false;
+		item.show();
+		d_copy_menu.add(item);
+
+		History.git_async.begin(git_directory(), { "describe", "--contains", commit.to_string() }, null, cancellable, (obj, res) => {
+			string[] records;
+
+			try
+			{
+				records = History.git_async.end(res);
+			}
+			catch (Error e)
+			{
+				if (!cancellable.is_cancelled())
+				{
+					item.label = _("No tag holds this commit yet");
+				}
+
+				return;
+			}
+
+			if (cancellable.is_cancelled() || records.length == 0)
+			{
+				return;
+			}
+
+			var tag = records[0].split("~")[0].split("^")[0];
+
+			item.label = _("First tag with this commit: %s").printf(tag);
+			item.sensitive = true;
+			item.activate.connect(() => jump("refs/tags/" + tag));
+		});
+	}
+
+	private void add_holders_item(Ggit.OId commit)
+	{
+		var source = d_line_history != null ? d_line_history : d_history;
+		var item = new Gtk.MenuItem.with_label(_("Branches and tags with this commit"));
+		var submenu = new Gtk.Menu();
+
+		if (source == null)
+		{
+			return;
+		}
+
+		var holders = source.refs_holding(commit, d_refs);
+
+		holders.sort((a, b) => strcmp(a.short_name, b.short_name));
+
+		foreach (var kind in new RefKind[] { RefKind.LOCAL, RefKind.REMOTE, RefKind.TAG })
+		{
+			var first = true;
+
+			foreach (var reference in holders)
+			{
+				if (reference.kind != kind)
+				{
+					continue;
+				}
+
+				if (first && submenu.get_children() != null)
+				{
+					var separator = new Gtk.SeparatorMenuItem();
+
+					separator.show();
+					submenu.add(separator);
+				}
+
+				first = false;
+
+				var check = new Gtk.CheckMenuItem.with_label(reference.short_name);
+				var name = reference.name;
+
+				check.active = d_ticks.contains(name);
+				check.toggled.connect(() => {
+					var ticks = this.ticks;
+
+					if (check.active)
+					{
+						ticks.add(name);
+					}
+					else
+					{
+						ticks.remove(name);
+					}
+
+					set_ticks(ticks);
+				});
+				check.show();
+				submenu.add(check);
+			}
+		}
+
+		item.submenu = submenu;
+		item.sensitive = submenu.get_children() != null;
+		item.show();
+		d_copy_menu.add(item);
+	}
+
 	private void add_line_items(Gitg.DiffViewFile file, Gtk.TextView view, Gtk.Widget popup)
 	{
 		var menu = popup as Gtk.Menu;
@@ -634,6 +746,79 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		blame.activate.connect(() => go_to_blame(parent, old_path, number));
 		blame.show();
 		menu.append(blame);
+	}
+
+	private void add_merge_item(Ggit.OId commit)
+	{
+		Ref? branch = null;
+
+		foreach (var reference in d_refs)
+		{
+			if (reference.head && reference.kind == RefKind.LOCAL)
+			{
+				branch = reference;
+			}
+		}
+
+		if (branch == null)
+		{
+			return;
+		}
+
+		var item = new Gtk.MenuItem.with_label(_("Merged into..."));
+		var cancellable = menu_search();
+		var name = branch.short_name;
+		var target = branch.target.to_string();
+
+		item.sensitive = false;
+		item.show();
+		d_copy_menu.add(item);
+
+		find_merge.begin(commit.to_string(), target, cancellable, (obj, res) => {
+			string? merge;
+
+			try
+			{
+				merge = find_merge.end(res);
+			}
+			catch (Error e)
+			{
+				return;
+			}
+
+			if (cancellable.is_cancelled())
+			{
+				return;
+			}
+
+			if (merge == null)
+			{
+				item.hide();
+			}
+			else if (merge == commit.to_string())
+			{
+				item.label = _("Made on %s").printf(name);
+			}
+			else
+			{
+				var id = new Ggit.OId.from_string(merge);
+				var reference = branch.name;
+
+				item.label = _("Merged into %s by %s").printf(name, merge.substring(0, 7));
+				item.sensitive = true;
+				item.activate.connect(() => {
+					if (!d_ticks.contains(reference))
+					{
+						var ticks = this.ticks;
+
+						ticks.add(reference);
+						set_ticks(ticks);
+					}
+
+					select(id);
+				});
+			}
+		});
 	}
 
 	private void author_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
@@ -757,6 +942,60 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_find_bar.step_to_first();
 	}
 
+	private bool fill_commit_menu(double x, double y)
+	{
+		var view = d_paned.commit_list_view;
+		int bin_x;
+		int bin_y;
+		int cell_x;
+		int cell_width;
+		int hot_x;
+		Gtk.TreePath? path;
+		Gtk.TreeViewColumn? column;
+		Gtk.TreeIter iter;
+
+		view.convert_widget_to_bin_window_coords((int)x, (int)y, out bin_x, out bin_y);
+
+		if (!view.get_path_at_pos(bin_x, bin_y, out path, out column, out cell_x, null))
+		{
+			return false;
+		}
+
+		d_model.get_iter(out iter, path);
+
+		var commit = d_model.commit_from_iter(iter);
+
+		if (commit == null)
+		{
+			return false;
+		}
+
+		if (column == d_paned.column_subject)
+		{
+			var lanes = (Gitg.CellRendererLanes)view.find_cell_at_pos(column, path, cell_x, out cell_width);
+			var label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
+
+			if (label != null)
+			{
+				d_copy_menu.add_copy(_("Copy name"), label.parsed_name.shortname);
+			}
+		}
+
+		if (d_menu_search != null)
+		{
+			d_menu_search.cancel();
+		}
+
+		d_menu_search = new Cancellable();
+		d_copy_menu.add_copy(_("Copy hash"), commit.get_id().to_string());
+		d_copy_menu.add_separator();
+		add_holders_item(commit.get_id());
+		add_first_tag_item(commit.get_id());
+		add_merge_item(commit.get_id());
+
+		return true;
+	}
+
 	private Ggit.OId[] find_beyond()
 	{
 		var source = d_line_history != null ? d_line_history : d_history;
@@ -798,6 +1037,36 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		mark_matches();
+	}
+
+	private async string? find_merge(string commit, string branch, Cancellable cancellable) throws Error
+	{
+		var directory = git_directory();
+		var line = yield History.git_async(directory, { "rev-list", "--first-parent", branch }, null, cancellable);
+		var on_line = new Gee.HashSet<string>();
+
+		foreach (var id in line)
+		{
+			on_line.add(id);
+		}
+
+		if (on_line.contains(commit))
+		{
+			return commit;
+		}
+
+		var path = yield History.git_async(directory, { "rev-list", "--ancestry-path", commit + ".." + branch }, null, cancellable);
+		string? merge = null;
+
+		foreach (var id in path)
+		{
+			if (on_line.contains(id))
+			{
+				merge = id;
+			}
+		}
+
+		return merge;
 	}
 
 	private bool finds_in_diff()
@@ -1055,6 +1324,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.queue_draw();
 	}
 
+	private Cancellable menu_search()
+	{
+		if (d_menu_search == null)
+		{
+			d_menu_search = new Cancellable();
+		}
+
+		return d_menu_search;
+	}
+
 	private string narrow_key()
 	{
 		if (!d_only_matches.active || d_match.is_empty || d_match.error != null)
@@ -1255,57 +1534,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return Filter.relative_paths(d_repository, directory, d_paths);
-	}
-
-	private bool prepare_copy(double x, double y, out string caption, out string text)
-	{
-		var view = d_paned.commit_list_view;
-		int bin_x;
-		int bin_y;
-		int cell_x;
-		int cell_width;
-		int hot_x;
-		Gtk.TreePath? path;
-		Gtk.TreeViewColumn? column;
-		Gtk.TreeIter iter;
-
-		caption = "";
-		text = "";
-
-		view.convert_widget_to_bin_window_coords((int)x, (int)y, out bin_x, out bin_y);
-
-		if (!view.get_path_at_pos(bin_x, bin_y, out path, out column, out cell_x, null))
-		{
-			return false;
-		}
-
-		d_model.get_iter(out iter, path);
-
-		var commit = d_model.commit_from_iter(iter);
-
-		if (commit != null && column == d_paned.column_hash)
-		{
-			caption = _("Copy hash");
-			text = commit.get_id().to_string();
-			return true;
-		}
-
-		if (commit == null || column != d_paned.column_subject)
-		{
-			return false;
-		}
-
-		var lanes = (Gitg.CellRendererLanes)view.find_cell_at_pos(column, path, cell_x, out cell_width);
-		var label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
-
-		if (label == null)
-		{
-			return false;
-		}
-
-		caption = _("Copy name");
-		text = label.parsed_name.shortname;
-		return true;
 	}
 
 	private void queue_details()

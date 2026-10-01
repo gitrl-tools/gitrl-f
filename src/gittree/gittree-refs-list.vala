@@ -264,20 +264,16 @@ public class RefsList : Gtk.ListBox
 		return group.expanded && group.is_shown_by_folds;
 	}
 
-	private bool find_copy(double x, double y, out string caption, out string text)
+	private bool find_copy(double x, double y)
 	{
 		var row = get_row_at_y((int)y) as RefsRow;
-
-		caption = "";
-		text = "";
 
 		if (row == null)
 		{
 			return false;
 		}
 
-		caption = _("Copy name");
-		text = row.reference.short_name;
+		d_copy_menu.add_copy(_("Copy name"), row.reference.short_name);
 		return true;
 	}
 

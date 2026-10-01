@@ -94,6 +94,24 @@ public static Gtk.MenuItem? menu_item(string label)
 	return null;
 }
 
+public static Gtk.MenuItem? menu_item_starting(string prefix)
+{
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		foreach (var widget in find_all(toplevel, typeof(Gtk.MenuItem)))
+		{
+			var item = (Gtk.MenuItem)widget;
+
+			if (item.get_mapped() && item.label.has_prefix(prefix))
+			{
+				return item;
+			}
+		}
+	}
+
+	return null;
+}
+
 public static string menu_labels()
 {
 	var labels = new string[0];
@@ -145,6 +163,25 @@ public static void scroll_to_row(Gittree.Window window, string subject, int hidd
 	}
 
 	error("no row %s", subject);
+}
+
+public static string submenu_labels(Gtk.MenuItem item)
+{
+	var labels = new string[0];
+
+	foreach (var child in ((Gtk.Menu)item.submenu).get_children())
+	{
+		var entry = child as Gtk.MenuItem;
+
+		if (entry != null && !(entry is Gtk.SeparatorMenuItem))
+		{
+			var check = entry as Gtk.CheckMenuItem;
+
+			labels += (check != null && check.active ? "*" : "") + entry.label;
+		}
+	}
+
+	return string.joinv(",", labels);
 }
 
 public static string top_row(Gittree.Window window)

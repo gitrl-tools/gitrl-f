@@ -141,6 +141,15 @@ no commit of the ticked refs matches, the bar counts the matches on the
 other refs, and Tick and show ticks a ref that holds the newest of them and
 selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
+.SH THE MENU OF A COMMIT
+A right click on a commit in the list opens its menu. Copy hash copies its
+hash, and Copy name, on a label, the name of that ref. Branches and tags
+with this commit lists every ref whose history holds the commit, and a
+choice ticks or unticks it. First tag with this commit names the tag that
+.B git describe \-\-contains
+gives, and a choice selects it. Merged into names the merge that brought
+the commit into the branch of HEAD, or says that the commit was made on
+that branch.
 .SH THE HISTORY OF LINES
 A right click on a line of the diff, or on lines that you selected, offers
 Show history of this line or Show history of the selected lines. The list

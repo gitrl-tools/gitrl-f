@@ -22,40 +22,48 @@ namespace Gittree
 
 public class CopyMenu : Gtk.Menu
 {
-	private Gtk.MenuItem d_item;
 	private Gtk.GestureMultiPress d_press;
-	private string d_text;
 
-	public signal bool find(double x, double y, out string caption, out string text);
+	public signal bool find(double x, double y);
 
 	public CopyMenu(Gtk.Widget widget)
 	{
-		d_text = "";
-
-		d_item = new Gtk.MenuItem();
-		d_item.activate.connect(() => {
-			get_attach_widget().get_clipboard(Gdk.SELECTION_CLIPBOARD).set_text(d_text, -1);
-		});
-		d_item.show();
-
-		add(d_item);
 		attach_to_widget(widget, null);
 
 		d_press = new Gtk.GestureMultiPress(widget);
 		d_press.button = Gdk.BUTTON_SECONDARY;
 		d_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
 		d_press.pressed.connect((presses, x, y) => {
-			string caption;
-			string text;
-
-			if (find(x, y, out caption, out text))
+			foreach (var child in get_children())
 			{
-				d_item.label = caption;
-				d_text = text;
+				child.destroy();
+			}
+
+			if (find(x, y) && get_children() != null)
+			{
 				d_press.set_state(Gtk.EventSequenceState.CLAIMED);
 				popup_at_pointer(d_press.get_last_event(d_press.get_current_sequence()));
 			}
 		});
+	}
+
+	public void add_copy(string caption, string text)
+	{
+		var item = new Gtk.MenuItem.with_label(caption);
+
+		item.activate.connect(() => {
+			get_attach_widget().get_clipboard(Gdk.SELECTION_CLIPBOARD).set_text(text, -1);
+		});
+		item.show();
+		add(item);
+	}
+
+	public void add_separator()
+	{
+		var separator = new Gtk.SeparatorMenuItem();
+
+		separator.show();
+		add(separator);
 	}
 }
 

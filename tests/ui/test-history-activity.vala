@@ -172,6 +172,10 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gittree/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gittree/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
+	Test.add_func("/gittree/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
+	Test.add_func("/gittree/ui/history-activity/the-commit-menu-names-the-first-tag", test_the_commit_menu_names_the_first_tag);
+	Test.add_func("/gittree/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
+	Test.add_func("/gittree/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
 	Test.add_func("/gittree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
 	Test.add_func("/gittree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
 	Test.add_func("/gittree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
@@ -230,6 +234,21 @@ private static void right_click(Gittree.Window window, int row, int column, int 
 
 	click_at(origin_x + cell.x + x, origin_y + cell.y + cell.height / 2, 1, 3);
 	settle(300);
+}
+
+private static int row_of(Gittree.Window window, string subject)
+{
+	var rows = window.history.rows();
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		if (rows[i].get_subject() == subject)
+		{
+			return i;
+		}
+	}
+
+	error("no row %s", subject);
 }
 
 private static void settle(int milliseconds)
@@ -1131,7 +1150,9 @@ private static void test_right_click_on_a_label_copies_its_name()
 		var width = window.history.paned.commit_list_view.get_column(0).get_width();
 
 		right_click(window, 0, 0, width - 10);
-		assert_null(copy_item());
+		assert_cmpstr(copy_item().label, CompareOperator.EQ, "Copy hash");
+		((Gtk.Menu)copy_item().get_parent()).popdown();
+		settle(100);
 
 		right_click(window, 0, 0, label_x(window, 0, "feature/scan"));
 
@@ -1372,6 +1393,169 @@ private static void test_summary_counts_rows_of_commits()
 		var window = opened(repo, {"refs/heads/feature/scan"});
 
 		assert_cmpstr(window.history.summary_text, CompareOperator.EQ, "Showing 3 of 8 commits");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_lists_the_branches_and_tags_with_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		right_click(window, row_of(window, "base one"), 1, 10);
+
+		var item = menu_item("Branches and tags with this commit");
+
+		assert_nonnull(item);
+		assert_cmpstr(submenu_labels(item), CompareOperator.EQ, "feature/scan,fix/stamp,*master,origin/master,v1");
+
+		foreach (var child in ((Gtk.Menu)item.submenu).get_children())
+		{
+			if (((Gtk.MenuItem)child).label == "fix/stamp")
+			{
+				((Gtk.MenuItem)child).activate();
+			}
+		}
+
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(300);
+
+		assert_true(window.history.ticks.contains("refs/heads/fix/stamp"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_names_the_first_tag()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		right_click(window, row_of(window, "base one"), 1, 10);
+		settle(500);
+
+		var item = menu_item_starting("First tag with this commit");
+
+		assert_cmpstr(item.label, CompareOperator.EQ, "First tag with this commit: v1");
+		assert_true(item.sensitive);
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(300);
+
+		assert_true(window.history.ticks.contains("refs/tags/v1"));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "base two");
+
+		right_click(window, row_of(window, "master four"), 1, 10);
+		settle(500);
+		item = menu_item_starting("No tag holds");
+
+		assert_cmpstr(item.label, CompareOperator.EQ, "No tag holds this commit yet");
+		assert_false(item.sensitive);
+
+		((Gtk.Menu)item.get_parent()).popdown();
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_names_the_merge_that_brought_it_in()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/fix/stamp", "refs/heads/feature/scan"});
+		var merge = repo.git({"rev-parse", "--short", "master~1"}).strip();
+
+		right_click(window, row_of(window, "fix one"), 1, 10);
+		settle(500);
+
+		var item = menu_item_starting("Merged into");
+
+		assert_cmpstr(item.label, CompareOperator.EQ, "Merged into master by %s".printf(merge));
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(300);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "Merge branch 'fix/stamp'");
+
+		right_click(window, row_of(window, "master three"), 1, 10);
+		settle(500);
+		item = menu_item_starting("Made on");
+
+		assert_cmpstr(item.label, CompareOperator.EQ, "Made on master");
+		assert_false(item.sensitive);
+
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+		right_click(window, row_of(window, "feature one"), 1, 10);
+		settle(500);
+
+		assert_null(menu_item_starting("Merged into"));
+		assert_null(menu_item_starting("Made on"));
+
+		((Gtk.Menu)copy_item().get_parent()).popdown();
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_opens_on_every_column()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.commit("second");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		for (var column = 0; column < (int)view.get_n_columns(); column++)
+		{
+			right_click(window, 1, column, 10);
+
+			var item = copy_item();
+
+			assert_nonnull(item);
+			assert_cmpstr(item.label, CompareOperator.EQ, "Copy hash");
+			assert_nonnull(menu_item("Branches and tags with this commit"));
+
+			((Gtk.Menu)item.get_parent()).popdown();
+			settle(100);
+		}
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "second");
 
 		window.destroy();
 		repo.remove();
