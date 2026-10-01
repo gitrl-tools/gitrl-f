@@ -152,6 +152,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gittree/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
 	Test.add_func("/gittree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
+	Test.add_func("/gittree/ui/diff-pane/an-added-line-offers-no-commit-that-last-changed-it", test_an_added_line_offers_no_commit_that_last_changed_it);
 	Test.add_func("/gittree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
 	Test.add_func("/gittree/ui/diff-pane/another-commit-stops-the-rows-of-the-last", test_another_commit_stops_the_rows_of_the_last);
 	Test.add_func("/gittree/ui/diff-pane/closing-the-history-of-lines-returns-to-the-filter", test_closing_the_history_of_lines_returns_to_the_filter);
@@ -175,6 +176,8 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-pane/selected-lines-show-their-history", test_selected_lines_show_their_history);
 	Test.add_func("/gittree/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
 	Test.add_func("/gittree/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
+	Test.add_func("/gittree/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
+	Test.add_func("/gittree/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
 	Test.add_func("/gittree/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
 	Test.add_func("/gittree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
 	Test.add_func("/gittree/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
@@ -584,6 +587,28 @@ private static void test_added_lines_without_a_removed_partner_are_not_word_mark
 		assert_false("extra" in added);
 		assert_false("one" in added);
 
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_an_added_line_offers_no_commit_that_last_changed_it()
+{
+	try
+	{
+		var repo = lines_repo();
+		var window = lines_window(repo);
+
+		right_click_text(window, "D", 0);
+
+		assert_true("Show history of this line" in menu_labels());
+		assert_false("Go to the commit that last changed this line" in menu_labels());
+
+		((Gtk.Menu)menu_item("Show history of this line").get_parent()).popdown();
 		window.destroy();
 		repo.remove();
 	}
@@ -1408,6 +1433,77 @@ private static void test_split_view_is_built_only_when_chosen()
 		assert_cmpint(find_all(split[0], typeof(Gtk.SourceView)).length, CompareOperator.EQ, 2);
 		assert_cmpstr(marked_words(window, "word-added"), CompareOperator.EQ, "gamma|gamma");
 		assert_cmpstr(marked_words(window, "word-removed"), CompareOperator.EQ, "beta|beta");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter()
+{
+	try
+	{
+		var repo = lines_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var two = repo.git({"rev-parse", "--short", "HEAD~2"}).strip();
+
+		window.history.apply_filter("D", false);
+		settle(800);
+		select_subject(window, "three");
+		window.history.paned.details_visible = true;
+		window.history.paned.details_only = true;
+		settle(600);
+		right_click_text(window, "B", 0);
+		activate_item("Go to the commit that last changed this line");
+
+		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "%s last changed this line. The filter hides it.".printf(two));
+
+		foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
+		{
+			if (((Gtk.Button)widget).label == "Lift the filter")
+			{
+				((Gtk.Button)widget).clicked();
+			}
+		}
+
+		settle(400);
+
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two");
+		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_that_last_changed_a_line_is_selected()
+{
+	try
+	{
+		var repo = lines_repo();
+		var window = lines_window(repo);
+
+		right_click_text(window, "B", 0);
+		activate_item("Go to the commit that last changed this line");
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two");
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "two");
+
+		select_subject(window, "three");
+		settle(400);
+		right_click_text(window, "d", 0);
+		activate_item("Go to the commit that last changed this line");
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one");
 
 		window.destroy();
 		repo.remove();

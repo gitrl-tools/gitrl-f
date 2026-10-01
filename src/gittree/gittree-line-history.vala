@@ -33,6 +33,44 @@ public class LineHistory : Object
 		this.start = start;
 	}
 
+	public static async Ggit.OId? blame(File directory, Ggit.OId parent, string path, int line, Cancellable cancellable, out string? name) throws Error
+	{
+		string[] argv = { "blame", "--porcelain", "-L%d,%d".printf(line, line), parent.to_string(), "--", path };
+		var records = yield History.git_async(directory, argv, null, cancellable);
+		Ggit.OId? found = null;
+
+		name = null;
+
+		foreach (var record in records)
+		{
+			if (found == null && record.length >= 40)
+			{
+				found = new Ggit.OId.from_string(record.substring(0, 40));
+			}
+			else if (name == null && record.has_prefix("filename "))
+			{
+				name = record.substring(9);
+			}
+		}
+
+		return found;
+	}
+
+	public static int line_at(int[] offsets, int offset)
+	{
+		var found = -1;
+
+		for (var i = 0; i < offsets.length; i++)
+		{
+			if (offsets[i] >= 0 && offsets[i] <= offset)
+			{
+				found = i;
+			}
+		}
+
+		return found;
+	}
+
 	public static LineHistory? of_view(Ggit.DiffLineType[] origins, int[] old_numbers, int[] new_numbers, int[] offsets, int from, int to, int side, bool split)
 	{
 		var picked_new = new int[0];

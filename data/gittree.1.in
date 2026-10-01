@@ -140,6 +140,12 @@ then shows only the commits that changed those lines, as
 does, from the commit on show. Removed lines are read from the parent that
 the diff compares with. The close button of the yellow bar brings back the
 list as it was.
+.PP
+On a line that the commit did not add, the same menu offers Go to the
+commit that last changed this line, as
+.B git blame
+finds it. When the filter hides that commit, a bar says so and offers to
+lift the filter.
 .SH KEYS
 .TP
 .BR Click ", " Enter

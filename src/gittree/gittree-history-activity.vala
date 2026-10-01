@@ -23,6 +23,7 @@ namespace Gittree
 public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, GitgExt.Searchable
 {
 	private History? d_all;
+	private Cancellable? d_blame;
 	private Gtk.Box d_box;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
@@ -53,6 +54,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string d_narrow_key;
 	private History? d_narrow_source;
 	private History? d_narrowed;
+	private Gtk.InfoBar d_hidden_bar;
+	private Gtk.Label d_hidden_label;
+	private Ggit.OId? d_hidden_target;
 	private Gee.Map<Ggit.OId, Gee.List<string>>? d_names;
 	private Gtk.CheckButton d_only_matches;
 	private string[] d_paths;
@@ -70,6 +74,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private SearchSwitches d_search_switches;
 	private string? d_text;
 	private Gee.Set<string> d_ticks;
+	private Ggit.OId? d_unfold_commit;
+	private string? d_unfold_path;
 	private bool d_waiting;
 
 	public GitgExt.Application? application { owned get; construct set; }
@@ -105,6 +111,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public DiffFindBar find_bar
 	{
 		get { return d_find_bar; }
+	}
+
+	public string hidden_text
+	{
+		owned get { return d_hidden_bar.visible ? d_hidden_label.get_text() : ""; }
 	}
 
 	public string id
@@ -283,9 +294,29 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			notify_property("filter-visible");
 		});
 
+		d_hidden_label = new Gtk.Label(null);
+		d_hidden_label.xalign = 0;
+		d_hidden_label.show();
+
+		d_hidden_bar = new Gtk.InfoBar();
+		d_hidden_bar.message_type = Gtk.MessageType.QUESTION;
+		d_hidden_bar.show_close_button = true;
+		d_hidden_bar.no_show_all = true;
+		d_hidden_bar.get_content_area().add(d_hidden_label);
+		d_hidden_bar.add_button(_("Lift the filter"), Gtk.ResponseType.ACCEPT);
+		d_hidden_bar.response.connect((response) => {
+			d_hidden_bar.hide();
+
+			if (response == Gtk.ResponseType.ACCEPT && d_hidden_target != null)
+			{
+				reveal(d_hidden_target);
+			}
+		});
+
 		d_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
 		d_box.add(d_search_bar);
 		d_box.add(d_filter_bar);
+		d_box.add(d_hidden_bar);
 		d_box.add(d_paned);
 		d_box.show_all();
 		d_box.destroy.connect(stop_search);
@@ -578,6 +609,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		item.show();
 		menu.append(separator);
 		menu.append(item);
+
+		var line = LineHistory.line_at(offsets, view.get_data<int>("gittree-click"));
+		var parent = diff_parent(commit);
+		var old_path = delta.get_old_file().get_path();
+
+		if (line < 0 || origins[line] == Ggit.DiffLineType.ADDITION || old_numbers[line] <= 0 || parent == null || old_path == null)
+		{
+			return;
+		}
+
+		var blame = new Gtk.MenuItem.with_label(_("Go to the commit that last changed this line"));
+		var number = old_numbers[line];
+
+		blame.activate.connect(() => go_to_blame(parent, old_path, number));
+		blame.show();
+		menu.append(blame);
 	}
 
 	private void author_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
@@ -752,6 +799,56 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return d_repository.get_location();
+	}
+
+	private void go_to_blame(Ggit.OId parent, string path, int line)
+	{
+		var cancellable = new Cancellable();
+
+		if (d_blame != null)
+		{
+			d_blame.cancel();
+		}
+
+		d_blame = cancellable;
+
+		LineHistory.blame.begin(top_directory(), parent, path, line, cancellable, (obj, res) => {
+			Ggit.OId? found;
+			string? name;
+
+			try
+			{
+				found = LineHistory.blame.end(res, out name);
+			}
+			catch (Error e)
+			{
+				if (!cancellable.is_cancelled())
+				{
+					show_error(_("Could not find the commit that last changed the line"), e.message);
+				}
+
+				return;
+			}
+
+			if (cancellable.is_cancelled() || found == null)
+			{
+				return;
+			}
+
+			d_blame = null;
+			d_unfold_commit = found;
+			d_unfold_path = name != null ? name : path;
+
+			if (d_model.path_from_commit(found) != null)
+			{
+				select(found);
+				return;
+			}
+
+			d_hidden_target = found;
+			d_hidden_label.label = _("%s last changed this line. The filter hides it.").printf(found.to_string().substring(0, 7));
+			d_hidden_bar.show();
+		});
 	}
 
 	private void hash_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
@@ -1042,6 +1139,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			var delta = file.info.delta;
 
 			if (d_line_history != null && (delta.get_new_file().get_path() == d_lines_path || delta.get_old_file().get_path() == d_lines_path))
+			{
+				file.expanded = true;
+			}
+
+			var shown = d_diff.commit;
+
+			if (d_unfold_path != null && shown != null && shown.get_id().equal(d_unfold_commit) && delta.get_new_file().get_path() == d_unfold_path)
 			{
 				file.expanded = true;
 			}
@@ -1367,6 +1471,26 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		show_ticks();
+	}
+
+	private void reveal(Ggit.OId id)
+	{
+		if (d_lines != null)
+		{
+			lift_lines();
+		}
+
+		if (d_model.path_from_commit(id) == null && d_only_matches.active)
+		{
+			d_only_matches.active = false;
+		}
+
+		if (d_model.path_from_commit(id) == null && (d_text != null || d_paths.length > 0))
+		{
+			lift_filter();
+		}
+
+		select(id);
 	}
 
 	public Gitg.Commit[] rows()
