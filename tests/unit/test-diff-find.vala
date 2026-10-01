@@ -140,7 +140,7 @@ private static void test_expressions_follow_the_switch()
 
 	assert_cmpstr(found(expression), CompareOperator.EQ, "0.0.0@0+4");
 	assert_cmpint(bad.length, CompareOperator.EQ, 0);
-	assert_cmpstr(bad.count_text(), CompareOperator.EQ, "Bad regular expression");
+	assert_cmpstr(bad.count_text(), CompareOperator.EQ, "Bad regex");
 }
 
 private static void test_files_come_in_the_order_they_are_added()

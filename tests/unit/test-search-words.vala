@@ -74,7 +74,7 @@ private static void test_a_bad_date_is_a_problem()
 		assert_false(query.matches(s_commit));
 	}
 
-	assert_cmpstr(new Gittree.SearchQuery("(", false, true).problem, CompareOperator.EQ, "Bad regular expression");
+	assert_cmpstr(new Gittree.SearchQuery("(", false, true).problem, CompareOperator.EQ, "Bad regex");
 	assert_null(new Gittree.SearchQuery("after:2026-01", false, false).problem);
 }
 

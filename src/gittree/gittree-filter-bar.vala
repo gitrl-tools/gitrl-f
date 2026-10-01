@@ -60,7 +60,7 @@ public class FilterBar : Gtk.SearchBar
 	{
 		d_field = new Gtk.SearchEntry();
 		d_field.width_chars = 40;
-		d_field.tooltip_text = _("Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regular expression");
+		d_field.tooltip_text = _("Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regex");
 		d_field.activate.connect(apply);
 		d_field.search_changed.connect(() => check());
 
@@ -127,7 +127,7 @@ public class FilterBar : Gtk.SearchBar
 
 		d_field.placeholder_text = d_switches.regex ? _("Only commits whose added or removed lines match this")
 		                                           : _("Only commits that add or remove this text");
-		d_problem.label = bad ? _("Bad regular expression") : (unquoted ? _("A quote is not closed") : "");
+		d_problem.label = bad ? _("Bad regex") : (unquoted ? _("A quote is not closed") : "");
 		mark(d_field, bad);
 		mark(d_paths, unquoted);
 

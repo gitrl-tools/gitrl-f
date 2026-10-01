@@ -45,7 +45,7 @@ private static void test_count_wording()
 	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 0, false, null), CompareOperator.EQ, "2 matches");
 	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 5, false, null), CompareOperator.EQ, "2 of 2");
 	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 3, false, null), CompareOperator.EQ, "1 of 2");
-	assert_cmpstr(Gittree.Search.count_text({}, 0, false, "Bad regular expression"), CompareOperator.EQ, "Bad regular expression");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, false, "Bad regex"), CompareOperator.EQ, "Bad regex");
 }
 
 private static void test_each_field_matches_without_regard_to_case()

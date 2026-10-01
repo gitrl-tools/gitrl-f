@@ -125,7 +125,7 @@ public class Application : Gtk.Application
 
 		if (expression.error != null)
 		{
-			stderr.printf("%sgittree: error: argument -G/--regex: bad regular expression: %s\n", CommandLine.USAGE, expression.error);
+			stderr.printf("%sgittree: error: argument -G/--regex: bad regex: %s\n", CommandLine.USAGE, expression.error);
 			exit_status = 2;
 			return true;
 		}

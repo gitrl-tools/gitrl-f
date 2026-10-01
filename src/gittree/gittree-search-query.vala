@@ -97,7 +97,7 @@ public class SearchQuery : Object
 
 			if (match.error != null && problem == null)
 			{
-				problem = _("Bad regular expression");
+				problem = _("Bad regex");
 			}
 		}
 
@@ -109,7 +109,7 @@ public class SearchQuery : Object
 
 		if (d_plain.error != null && problem == null)
 		{
-			problem = _("Bad regular expression");
+			problem = _("Bad regex");
 		}
 	}
 

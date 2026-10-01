@@ -42,7 +42,7 @@ public class SearchSwitches : Object
 	public SearchSwitches(Gtk.Box box)
 	{
 		d_case = add(box, _("Match case"), _("Tell capital and small letters apart"));
-		d_regex = add(box, _("Regular expression"), _("Read the text as a regular expression, as git log -G does"));
+		d_regex = add(box, _("Regex"), _("Read the text as a regex, a POSIX extended regular expression, as git log -G does"));
 	}
 
 	private Gtk.CheckButton add(Gtk.Box box, string label, string tooltip)

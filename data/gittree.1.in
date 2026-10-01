@@ -96,7 +96,7 @@ Draw only the commits whose added or removed lines match
 a POSIX extended regular expression, as in
 .BR "git log \-G" .
 A commit that moves a line, or edits a line that still matches, is drawn
-too. A merge never is. The filter bar's Regular expression switch does the
+too. A merge never is. The filter bar's Regex switch does the
 same in the window.
 .TP
 .BR \-i ", " \-\-ignore\-case
@@ -135,8 +135,10 @@ ticks every local branch and
 .SH SEARCH
 Ctrl+F opens the search bar of the list. It looks in the subject, the
 message, the author and the hash of each commit in the list. Match case
-and Regular expression narrow the search, and Display matches only hides
-the commits that do not match. Words narrow it further:
+and Regex narrow the search, and Display matches only hides the commits
+that do not match. A regex is a POSIX extended regular expression, as in
+.BR "git log \-G" .
+Words narrow it further:
 .BI author: TEXT
 looks in the name and the email of the author,
 .BI message: TEXT
@@ -155,8 +157,8 @@ other refs, and Tick and show ticks a ref that holds the newest of them and
 selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
 .PP
-The find bar of the diff has Match case and Regular expression too, and
-keeps its text when it closes.
+The find bar of the diff has Match case and Regex too, and keeps its text
+when it closes.
 .SH THE MENU OF A COMMIT
 A right click on a commit in the list opens its menu. Copy hash copies its
 hash, and Copy name, on a label, the name of that ref. Branches and tags

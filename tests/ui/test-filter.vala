@@ -83,7 +83,7 @@ private static void filter_with(Gittree.Window window, string text, bool regex)
 
 	window.history.filter_visible = true;
 	bar.field.text = text;
-	check_labelled(bar, "Regular expression").active = regex;
+	check_labelled(bar, "Regex").active = regex;
 	button_labelled(bar, "Filter").clicked();
 	settle(800);
 }
@@ -204,7 +204,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/the-list-answers-while-a-search-runs", test_the_list_answers_while_a_search_runs);
 	Test.add_func("/gittree/ui/filter/the-paths-are-read-in-the-background", test_the_paths_are_read_in_the_background);
 	Test.add_func("/gittree/ui/filter/the-paths-field-holds-the-command-line-paths", test_the_paths_field_holds_the_command_line_paths);
-	Test.add_func("/gittree/ui/filter/the-regular-expression-switch-filters-by-changed-lines", test_the_regular_expression_switch_filters_by_changed_lines);
+	Test.add_func("/gittree/ui/filter/the-regex-switch-filters-by-changed-lines", test_the_regex_switch_filters_by_changed_lines);
 	Test.add_func("/gittree/ui/filter/the-users-own-text-in-the-diff-bar-is-kept-across-commits", test_the_users_own_text_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/the-yellow-bar-names-the-paths-and-the-case", test_the_yellow_bar_names_the_paths_and_the_case);
 
@@ -350,7 +350,7 @@ private static void test_a_bad_expression_in_the_bar_applies_nothing()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "three,two,one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 		assert_true(bar.field.get_style_context().has_class("error"));
-		assert_cmpstr(bar.problem, CompareOperator.EQ, "Bad regular expression");
+		assert_cmpstr(bar.problem, CompareOperator.EQ, "Bad regex");
 		assert_cmpint(git_calls("-G("), CompareOperator.EQ, 0);
 
 		bar.field.text = "needle";
@@ -547,7 +547,7 @@ private static void test_a_launch_with_a_regex_filters_by_changed_lines()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "two,one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits whose added or removed lines match needle");
 		assert_cmpstr(window.history.filter_bar.field.text, CompareOperator.EQ, "needle");
-		assert_true(check_labelled(window.history.filter_bar, "Regular expression").active);
+		assert_true(check_labelled(window.history.filter_bar, "Regex").active);
 
 		window.destroy();
 		repo.remove();
@@ -1031,7 +1031,7 @@ private static void test_each_field_has_a_label_and_the_switches_come_before_fil
 		var bar = window.history.filter_bar;
 		var text = label_with(bar, "Changed lines:");
 		var paths = label_with(bar, "In files:");
-		var row = new Gtk.Widget[] { text, bar.field, paths, bar.paths_field, check_labelled(bar, "Match case"), check_labelled(bar, "Regular expression"), button_labelled(bar, "Filter") };
+		var row = new Gtk.Widget[] { text, bar.field, paths, bar.paths_field, check_labelled(bar, "Match case"), check_labelled(bar, "Regex"), button_labelled(bar, "Filter") };
 		var before = -1;
 		int x;
 		int y;
@@ -1470,7 +1470,7 @@ private static void test_the_paths_field_holds_the_command_line_paths()
 	}
 }
 
-private static void test_the_regular_expression_switch_filters_by_changed_lines()
+private static void test_the_regex_switch_filters_by_changed_lines()
 {
 	try
 	{
@@ -1481,8 +1481,8 @@ private static void test_the_regular_expression_switch_filters_by_changed_lines(
 		settle(300);
 
 		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Only commits that add or remove this text");
-		assert_cmpstr(bar.field.tooltip_text, CompareOperator.EQ, "Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regular expression");
-		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
+		assert_cmpstr(bar.field.tooltip_text, CompareOperator.EQ, "Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regex");
+		assert_cmpstr(check_labelled(bar, "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
 
 		filter_with(window, "needle", false);
 

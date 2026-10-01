@@ -318,7 +318,7 @@ private static void test_a_bad_regex_is_refused()
 
 		assert_cmpint(run(repo.path.get_path(), { "-G", "(" }, out output, out errors), CompareOperator.EQ, 2);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -G/--regex: bad regular expression: Unmatched ( or \\(\n");
+		assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -G/--regex: bad regex: Unmatched ( or \\(\n");
 
 		repo.remove();
 	}

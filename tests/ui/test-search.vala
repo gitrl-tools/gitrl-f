@@ -229,10 +229,10 @@ private static void test_a_bad_expression_turns_the_field_red()
 		var window = opened(repo);
 
 		type_text(window, "(");
-		check_labelled(list_bar(window), "Regular expression").active = true;
+		check_labelled(list_bar(window), "Regex").active = true;
 		settle(200);
 
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad regular expression");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad regex");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 
@@ -742,7 +742,7 @@ private static void test_switches_keep_their_state_when_the_bar_closes()
 		settle(100);
 
 		assert_true(check_labelled(list_bar(window), "Match case").active);
-		assert_false(check_labelled(list_bar(window), "Regular expression").active);
+		assert_false(check_labelled(list_bar(window), "Regex").active);
 
 		window.destroy();
 		repo.remove();
@@ -775,7 +775,7 @@ private static void test_switches_narrow_the_matches()
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
 
-		check_labelled(bar, "Regular expression").active = true;
+		check_labelled(bar, "Regex").active = true;
 		settle(100);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 of 1");
@@ -799,7 +799,7 @@ private static void test_switches_say_what_they_do()
 		var bar = list_bar(window);
 
 		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
-		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
+		assert_cmpstr(check_labelled(bar, "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
 
 		window.destroy();
 		repo.remove();

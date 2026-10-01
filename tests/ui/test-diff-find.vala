@@ -65,7 +65,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/ui/diff-find/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gittree/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
-	Test.add_func("/gittree/ui/diff-find/a-regular-expression-narrows-the-marks", test_a_regular_expression_narrows_the_marks);
+	Test.add_func("/gittree/ui/diff-find/a-regex-narrows-the-marks", test_a_regex_narrows_the_marks);
 	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-list-opens-the-list-bar", test_ctrl_f_in_the_list_opens_the_list_bar);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
@@ -223,10 +223,10 @@ private static void test_a_bad_expression_turns_the_field_red()
 		var window = opened(repo, "change");
 		var bar = window.history.find_bar;
 
-		check_labelled(bar, "Regular expression").active = true;
+		check_labelled(bar, "Regex").active = true;
 		search_for(window, "(");
 
-		assert_cmpstr(bar.count, CompareOperator.EQ, "Bad regular expression");
+		assert_cmpstr(bar.count, CompareOperator.EQ, "Bad regex");
 		assert_true(bar.field.get_style_context().has_class("error"));
 
 		unfold_all(window);
@@ -303,7 +303,7 @@ private static void test_a_match_in_a_folded_file_unfolds_it_and_shows()
 	}
 }
 
-private static void test_a_regular_expression_narrows_the_marks()
+private static void test_a_regex_narrows_the_marks()
 {
 	try
 	{
@@ -312,7 +312,7 @@ private static void test_a_regular_expression_narrows_the_marks()
 		var bar = window.history.find_bar;
 
 		unfold_all(window);
-		check_labelled(bar, "Regular expression").active = true;
+		check_labelled(bar, "Regex").active = true;
 		search_for(window, "^needle in [a-z]");
 
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle in a|2:needle in c");
@@ -684,7 +684,7 @@ private static void test_the_switches_say_what_they_do()
 		var bar = window.history.find_bar;
 
 		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
-		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
+		assert_cmpstr(check_labelled(bar, "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
 
 		window.destroy();
 		repo.remove();
