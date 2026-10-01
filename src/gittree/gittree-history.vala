@@ -271,6 +271,11 @@ public class History : Object
 		d_commits += commit;
 	}
 
+	public Gitg.Commit at(int index)
+	{
+		return d_commits[index];
+	}
+
 	private void begin()
 	{
 		d_commits = new Gitg.Commit[0];
@@ -324,6 +329,11 @@ public class History : Object
 	{
 		return new Gee.HashSet<Ggit.OId>((Gee.HashDataFunc<Ggit.OId>)Ggit.OId.hash,
 		                                 (Gee.EqualDataFunc<Ggit.OId>)Ggit.OId.equal);
+	}
+
+	public int index_of(Ggit.OId id)
+	{
+		return d_index.has_key(id) ? d_index[id] : -1;
 	}
 
 	private void index_parents(Ggit.OId[] parents, int[] counts)

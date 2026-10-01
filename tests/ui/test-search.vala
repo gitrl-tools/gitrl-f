@@ -75,10 +75,15 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
+	Test.add_func("/gittree/ui/search/closing-the-bar-shows-every-commit-and-keeps-only-matches", test_closing_the_bar_shows_every_commit_and_keeps_only_matches);
 	Test.add_func("/gittree/ui/search/escape-closes-keeps-the-text-and-gives-the-focus-back", test_escape_closes_keeps_the_text_and_gives_the_focus_back);
 	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gittree/ui/search/only-matches-and-a-filter-both-hold", test_only_matches_and_a_filter_both_hold);
+	Test.add_func("/gittree/ui/search/only-matches-keeps-the-selection-out-of-the-list", test_only_matches_keeps_the_selection_out_of_the_list);
+	Test.add_func("/gittree/ui/search/only-matches-narrows-as-you-type", test_only_matches_narrows_as_you_type);
+	Test.add_func("/gittree/ui/search/only-matches-with-nothing-shows-a-notice", test_only_matches_with_nothing_shows_a_notice);
 	Test.add_func("/gittree/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
@@ -149,6 +154,18 @@ private static void settle(int milliseconds)
 	}
 }
 
+private static string subjects(Gittree.Window window)
+{
+	var names = new string[0];
+
+	foreach (var commit in window.history.rows())
+	{
+		names += commit.get_subject();
+	}
+
+	return string.joinv(",", names);
+}
+
 private static void test_a_bad_expression_turns_the_field_red()
 {
 	try
@@ -205,6 +222,39 @@ private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 
 		assert_cmpstr(window.history.search_field.placeholder_text, CompareOperator.EQ, "Subject, message, author or hash");
 		assert_cmpstr(string.joinv(",", application().get_accels_for_action("win.search")), CompareOperator.EQ, "<Primary>f");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_closing_the_bar_shows_every_commit_and_keeps_only_matches()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		type_text(window, "parser");
+		check_labelled(list_bar(window), "Only matches").active = true;
+		settle(200);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
+
+		window.history.search_visible = false;
+		settle(200);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+
+		window.history.search_visible = true;
+		settle(200);
+
+		assert_true(check_labelled(list_bar(window), "Only matches").active);
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
 
 		window.destroy();
 		repo.remove();
@@ -342,6 +392,134 @@ private static void test_no_match_turns_the_field_red()
 		type_text(window, "base");
 
 		assert_false(window.history.search_field.get_style_context().has_class("error"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_only_matches_and_a_filter_both_hold()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		window.history.apply_filter("fix", false);
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
+
+		type_text(window, "parser");
+		check_labelled(list_bar(window), "Only matches").active = true;
+		settle(200);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "Parser fix");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_only_matches_keeps_the_selection_out_of_the_list()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		window.history.paned.details_visible = true;
+		settle(300);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "issue 42");
+
+		check_labelled(list_bar(window), "Only matches").active = true;
+		type_text(window, "parser");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
+		assert_null(window.history.selected);
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "issue 42");
+
+		type_text(window, "42");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42");
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "issue 42");
+
+		type_text(window, "parser");
+		window.history.step(1);
+		settle(200);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "parser tidy");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_only_matches_narrows_as_you_type()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var toggle = check_labelled(list_bar(window), "Only matches");
+
+		assert_cmpstr(toggle.tooltip_text, CompareOperator.EQ, "Hide the commits that do not match");
+
+		type_text(window, "parser");
+		toggle.active = true;
+		settle(200);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
+		assert_cmpstr(window.history.summary_text, CompareOperator.EQ, "Showing 2 of 4 commits");
+
+		type_text(window, "fix");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
+
+		type_text(window, "");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+
+		type_text(window, "fix");
+		toggle.active = false;
+		settle(200);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_only_matches_with_nothing_shows_a_notice()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		check_labelled(list_bar(window), "Only matches").active = true;
+		type_text(window, "zzz");
+
+		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
+		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "No commit in the ticked refs matches zzz.");
 
 		window.destroy();
 		repo.remove();
