@@ -115,7 +115,10 @@ of the filter bar changes them in the window. It splits paths at spaces,
 as the shell does, and takes globs such as
 .BR '*.yaml' .
 A right click on a file in the diff offers Show history of this file,
-which puts that file in the field.
+which puts that file in the field. Beside the field, Added, Deleted or
+Renamed keeps only the commits that added, deleted or renamed a file, as
+.B git log \-\-diff\-filter
+does.
 .TP
 .B \-\-no\-wd
 Open the list of repositories, not the repository of the current folder.

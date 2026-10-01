@@ -22,14 +22,16 @@ namespace Gittree
 
 public class Filter : Object
 {
+	public string change { get; private set; }
 	public bool follow { get; private set; }
 	public bool ignore_case { get; private set; }
 	public string[] paths { get; private set; }
 	public bool regex { get; private set; }
 	public string? text { get; private set; }
 
-	public Filter(string? text, bool ignore_case, bool regex, string[] paths, bool follow)
+	public Filter(string? text, bool ignore_case, bool regex, string[] paths, bool follow, string change = "")
 	{
+		this.change = change;
 		this.follow = follow;
 		this.ignore_case = ignore_case;
 		this.paths = paths;
@@ -89,6 +91,11 @@ public class Filter : Object
 			{
 				argv += "-i";
 			}
+		}
+
+		if (change != "")
+		{
+			argv += "--diff-filter=" + change;
 		}
 
 		if (follow)

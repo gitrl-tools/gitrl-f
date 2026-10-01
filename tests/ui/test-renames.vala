@@ -41,6 +41,19 @@ private static Gittree.Application application()
 	return app;
 }
 
+private static void choose_change(Gittree.Window window, string id, string paths, string text)
+{
+	var bar = window.history.filter_bar;
+	var choice = (Gtk.ComboBox)find_all(bar, typeof(Gtk.ComboBoxText))[0];
+
+	window.history.filter_visible = true;
+	choice.active_id = id;
+	bar.paths_field.text = paths;
+	bar.field.text = text;
+	bar.field.activate();
+	settle(800);
+}
+
 private static string diff_paths(Gittree.Window window)
 {
 	var names = new string[0];
@@ -87,6 +100,8 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/renames/merges-are-not-shown-when-following", test_merges_are_not_shown_when_following);
 	Test.add_func("/gittree/ui/renames/one-file-is-followed-through-its-renames", test_one_file_is_followed_through_its_renames);
 	Test.add_func("/gittree/ui/renames/the-diff-shows-the-file-under-its-name-then", test_the_diff_shows_the_file_under_its_name_then);
+	Test.add_func("/gittree/ui/renames/what-a-commit-did-keeps-added-deleted-or-renamed-files", test_what_a_commit_did_keeps_added_deleted_or_renamed_files);
+	Test.add_func("/gittree/ui/renames/what-a-commit-did-works-with-paths-and-a-text", test_what_a_commit_did_works_with_paths_and_a_text);
 
 	return Test.run();
 }
@@ -299,6 +314,83 @@ private static void test_the_diff_shows_the_file_under_its_name_then()
 		select_subject(window, "edit new");
 
 		assert_cmpstr(diff_paths(window), CompareOperator.EQ, "new.c");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_what_a_commit_did_keeps_added_deleted_or_renamed_files()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {});
+		var choice = (Gtk.ComboBox)find_all(window.history.filter_bar, typeof(Gtk.ComboBoxText))[0];
+
+		assert_cmpstr(choice.active_id, CompareOperator.EQ, "");
+		assert_cmpstr(choice.tooltip_text, CompareOperator.EQ, "Only commits that added, deleted or renamed a file");
+
+		choose_change(window, "A", "", "");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "add gone,add dir,unrelated,add old");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add files");
+
+		choose_change(window, "D", "", "");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "remove gone");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that delete files");
+
+		choose_change(window, "R", "", "");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "rename");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that rename files");
+
+		choose_change(window, "", "", "");
+
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_true("unrelated" in subjects(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_what_a_commit_did_works_with_paths_and_a_text()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {});
+
+		choose_change(window, "A", "dir", "");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "add dir");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add files under dir");
+
+		choose_change(window, "D", "", "z");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "remove gone");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that delete files and add or remove z, ignoring case");
+
+		choose_change(window, "D", "", "y");
+
+		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
+		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "No ticked ref reaches a commit that the filter keeps.");
+
+		window.history.paned.path_bar.response(Gtk.ResponseType.CLOSE);
+		settle(300);
+
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_true("unrelated" in subjects(window));
 
 		window.destroy();
 		repo.remove();
