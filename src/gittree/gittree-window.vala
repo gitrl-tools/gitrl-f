@@ -196,7 +196,7 @@ public class Window : Gtk.ApplicationWindow
 	{
 		if (d_filter_button.visible)
 		{
-			d_history.filter_visible = !d_history.filter_visible;
+			d_history.toggle_filter();
 		}
 	}
 

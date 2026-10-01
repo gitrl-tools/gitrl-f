@@ -68,13 +68,15 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-list-opens-the-list-bar", test_ctrl_f_in_the_list_opens_the_list_bar);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-leaves-a-selection-over-two-lines", test_ctrl_f_leaves_a_selection_over_two_lines);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-takes-a-selection-on-one-line", test_ctrl_f_takes_a_selection_on_one_line);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
-	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-clears-the-marks", test_escape_in_the_field_closes_the_bar_and_clears_the_marks);
+	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-keeps-the-text", test_escape_in_the_field_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
 	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
 	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
-	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
 	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
+	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
 	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
 	Test.add_func("/gittree/ui/diff-find/whole-word-and-regular-expression-narrow-the-marks", test_whole_word_and_regular_expression_narrow_the_marks);
 
@@ -184,6 +186,20 @@ private static void select_subject(Gittree.Window window, string subject)
 	}
 
 	settle(400);
+}
+
+private static void select_text(Gittree.Window window, int file, string text)
+{
+	var view = window.history.diff_view.get_files()[file].get_text_views()[0];
+	Gtk.TextIter start;
+	Gtk.TextIter found;
+	Gtk.TextIter end;
+
+	view.buffer.get_start_iter(out start);
+	assert_true(start.forward_search(text, 0, out found, out end, null));
+	view.buffer.select_range(found, end);
+	view.grab_focus();
+	settle(100);
 }
 
 private static void settle(int milliseconds)
@@ -373,8 +389,63 @@ private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 		settle(100);
 
 		assert_false(bar.search_mode_enabled);
-		assert_cmpstr(bar.field.text, CompareOperator.EQ, "");
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "needle");
 		assert_true(focus_in(window, window.history.diff_view));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_leaves_a_selection_over_two_lines()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		search_for(window, "keep");
+		bar.search_mode_enabled = false;
+		settle(100);
+		unfold_all(window);
+		select_text(window, 2, "c\nkeep");
+		window.activate_action("search", null);
+		settle(300);
+
+		assert_true(bar.search_mode_enabled);
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "keep");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_takes_a_selection_on_one_line()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		unfold_all(window);
+		select_text(window, 2, "needle");
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_true(bar.search_mode_enabled);
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "needle");
+		assert_cmpstr(bar.count, CompareOperator.EQ, "2 of 2");
+		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "2:needle");
 
 		window.destroy();
 		repo.remove();
@@ -410,7 +481,7 @@ private static void test_ctrl_f_with_the_diff_filling_the_window()
 	}
 }
 
-private static void test_escape_in_the_field_closes_the_bar_and_clears_the_marks()
+private static void test_escape_in_the_field_closes_the_bar_and_keeps_the_text()
 {
 	try
 	{
@@ -428,9 +499,20 @@ private static void test_escape_in_the_field_closes_the_bar_and_clears_the_marks
 		settle(100);
 
 		assert_false(bar.search_mode_enabled);
-		assert_cmpstr(bar.field.text, CompareOperator.EQ, "");
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "keep");
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "");
 		assert_true(focus_in(window, window.history.diff_view));
+
+		window.activate_action("search", null);
+		settle(300);
+
+		int start;
+		int end;
+
+		assert_true(bar.search_mode_enabled);
+		assert_true(bar.field.get_selection_bounds(out start, out end));
+		assert_cmpint(end - start, CompareOperator.EQ, 4);
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:keep|1:keep|2:keep");
 
 		window.destroy();
 		repo.remove();

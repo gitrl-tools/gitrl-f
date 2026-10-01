@@ -75,10 +75,11 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
-	Test.add_func("/gittree/ui/search/escape-closes-clears-and-gives-the-focus-back", test_escape_closes_clears_and_gives_the_focus_back);
+	Test.add_func("/gittree/ui/search/escape-closes-keeps-the-text-and-gives-the-focus-back", test_escape_closes_keeps_the_text_and_gives_the_focus_back);
 	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gittree/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
@@ -214,7 +215,7 @@ private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 	}
 }
 
-private static void test_escape_closes_clears_and_gives_the_focus_back()
+private static void test_escape_closes_keeps_the_text_and_gives_the_focus_back()
 {
 	try
 	{
@@ -231,7 +232,9 @@ private static void test_escape_closes_clears_and_gives_the_focus_back()
 		settle(100);
 
 		assert_false(window.history.search_visible);
-		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "");
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "fix");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "");
+		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_true(window.history.paned.commit_list_view.has_focus);
 
 		window.destroy();
@@ -339,6 +342,45 @@ private static void test_no_match_turns_the_field_red()
 		type_text(window, "base");
 
 		assert_false(window.history.search_field.get_style_context().has_class("error"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_opening_again_selects_the_kept_text()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo);
+		int start;
+		int end;
+
+		type_text(window, "fix");
+
+		var count = window.history.search_count;
+
+		window.history.search_visible = false;
+		settle(100);
+		window.activate_action("search", null);
+		settle(300);
+
+		assert_true(window.history.search_visible);
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "fix");
+		assert_true(window.history.search_field.has_focus);
+		assert_true(window.history.search_field.get_selection_bounds(out start, out end));
+		assert_cmpint(start, CompareOperator.EQ, 0);
+		assert_cmpint(end, CompareOperator.EQ, 3);
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, count);
+		assert_cmpstr(count, CompareOperator.EQ, "3 matches");
+		assert_true(marked_pixels(window, 0) > 0);
 
 		window.destroy();
 		repo.remove();

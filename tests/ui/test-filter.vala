@@ -173,10 +173,12 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-regex-filter-fills-the-diff-bar-with-its-switch", test_a_regex_filter_fills_the_diff_bar_with_its_switch);
 	Test.add_func("/gittree/ui/filter/a-reload-during-a-slow-search-stops-it-first", test_a_reload_during_a_slow_search_stops_it_first);
 	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
+	Test.add_func("/gittree/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
 	Test.add_func("/gittree/ui/filter/closing-the-bar-keeps-the-filter", test_closing_the_bar_keeps_the_filter);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
 	Test.add_func("/gittree/ui/filter/ctrl-shift-f-and-the-toggle-open-the-bar", test_ctrl_shift_f_and_the_toggle_open_the_bar);
+	Test.add_func("/gittree/ui/filter/ctrl-shift-f-takes-a-selection-and-applies-nothing", test_ctrl_shift_f_takes_a_selection_and_applies_nothing);
 	Test.add_func("/gittree/ui/filter/enter-and-the-button-apply-and-typing-does-not", test_enter_and_the_button_apply_and_typing_does_not);
 	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
 	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-never-lifts-the-filter", test_escape_closes_in_order_and_never_lifts_the_filter);
@@ -218,6 +220,38 @@ private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths,
 	window.show();
 
 	return window;
+}
+
+private static void select_in_diff(Gittree.Window window, string text)
+{
+	foreach (var file in window.history.diff_view.get_files())
+	{
+		file.expanded = true;
+	}
+
+	settle(300);
+
+	foreach (var file in window.history.diff_view.get_files())
+	{
+		foreach (var view in file.get_text_views())
+		{
+			Gtk.TextIter start;
+			Gtk.TextIter found;
+			Gtk.TextIter end;
+
+			view.buffer.get_start_iter(out start);
+
+			if (start.forward_search(text, 0, out found, out end, null))
+			{
+				view.buffer.select_range(found, end);
+				view.grab_focus();
+				settle(100);
+				return;
+			}
+		}
+	}
+
+	error("no %s in the diff", text);
 }
 
 private static void select_subject(Gittree.Window window, string subject)
@@ -687,6 +721,46 @@ private static void test_a_reload_or_a_new_filter_keeps_the_launch_notice()
 	}
 }
 
+private static void test_a_selection_in_the_diff_bar_is_kept_across_commits()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
+		var history = window.history;
+
+		settle(800);
+		select_subject(window, "c");
+		history.paned.details_visible = true;
+		settle(400);
+		history.find_bar.search_mode_enabled = false;
+		settle(100);
+		select_in_diff(window, "needle");
+		window.activate_action("search", null);
+		settle(300);
+
+		assert_cmpstr(history.find_bar.field.text, CompareOperator.EQ, "needle");
+
+		history.find_bar.field.text = "need";
+		settle(300);
+		select_in_diff(window, "need");
+		window.activate_action("search", null);
+		settle(300);
+		select_subject(window, "a");
+		settle(300);
+
+		assert_true(history.find_bar.search_mode_enabled);
+		assert_cmpstr(history.find_bar.field.text, CompareOperator.EQ, "need");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_tick_under_a_filter_asks_git_nothing()
 {
 	try
@@ -770,6 +844,36 @@ private static void test_closing_with_the_pane_is_not_a_close_by_the_user()
 		settle(400);
 
 		assert_true(history.find_bar.search_mode_enabled);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_shift_f_takes_a_selection_and_applies_nothing()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		select_subject(window, "c");
+		history.paned.details_visible = true;
+		settle(400);
+		select_in_diff(window, "needle");
+		window.activate_action("filter", null);
+		settle(300);
+
+		assert_true(history.filter_visible);
+		assert_cmpstr(history.filter_bar.field.text, CompareOperator.EQ, "needle");
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
 
 		window.destroy();
 		repo.remove();

@@ -108,10 +108,12 @@ public class DiffFindBar : Gtk.SearchBar
 		holder.show_all();
 
 		add(holder);
-		connect_entry(d_field);
 		no_show_all = true;
 
 		d_field.search_changed.connect(search);
+		d_field.stop_search.connect(() => {
+			search_mode_enabled = false;
+		});
 
 		notify["search-mode-enabled"].connect(search_mode_changed);
 		d_diff.files_changed.connect(() => {
@@ -427,12 +429,13 @@ public class DiffFindBar : Gtk.SearchBar
 			{
 				d_return_focus = focus != null && focus.is_ancestor(d_diff) ? focus : null;
 				d_field.grab_focus();
+				d_field.select_region(0, -1);
 			}
 
+			search();
 			return;
 		}
 
-		d_field.text = "";
 		search();
 
 		if (!d_diff.get_mapped())
@@ -527,6 +530,36 @@ public class DiffFindBar : Gtk.SearchBar
 	{
 		d_step_pending = true;
 		step_if_pending();
+	}
+
+	public void take_selection(string text, Gtk.TextView view, int offset)
+	{
+		search_mode_enabled = true;
+		d_field.text = text;
+		search();
+
+		var files = d_diff.get_files();
+		var chosen = -1;
+
+		for (var i = 0; i < d_find.length && chosen < 0; i++)
+		{
+			var match = d_find.get_match(i);
+			var views = files[match.file].get_text_views();
+			var here = match.side < views.length ? views[match.side] : null;
+
+			if (here == view && files[match.file].get_line_offset(view, match.line) + match.start >= offset)
+			{
+				chosen = i;
+			}
+		}
+
+		if (chosen < 0)
+		{
+			return;
+		}
+
+		d_find.current = chosen - 1;
+		step(1);
 	}
 
 	private static void tag_added(Gtk.TextTagTable table, Gtk.TextTag tag)

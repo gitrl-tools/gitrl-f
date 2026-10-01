@@ -233,15 +233,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_search_bar = new Gtk.SearchBar();
 		d_search_bar.add(search_box);
-		d_search_bar.connect_entry(d_search_entry);
 		d_search_bar.notify["search-mode-enabled"].connect(() => {
-			if (!d_search_bar.search_mode_enabled)
+			if (d_search_bar.search_mode_enabled)
 			{
-				d_search_entry.text = "";
+				d_search_entry.grab_focus();
+				d_search_entry.select_region(0, -1);
+			}
+			else
+			{
 				d_paned.commit_list_view.grab_focus();
 			}
 
+			find_matches();
 			notify_property("search-visible");
+		});
+		d_search_entry.stop_search.connect(() => {
+			d_search_bar.search_mode_enabled = false;
 		});
 
 		d_search_entry.search_changed.connect(() => {
@@ -464,6 +471,31 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
+	private string? diff_selection(out Gtk.TextView? view, out int offset)
+	{
+		var window = d_box.get_toplevel() as Gtk.Window;
+
+		view = window != null ? window.get_focus() as Gtk.TextView : null;
+		offset = 0;
+
+		if (view == null || !view.is_ancestor(d_diff))
+		{
+			return null;
+		}
+
+		Gtk.TextIter start;
+		Gtk.TextIter end;
+
+		if (!view.buffer.get_selection_bounds(out start, out end) || start.get_line() != end.get_line())
+		{
+			return null;
+		}
+
+		offset = start.get_offset();
+
+		return view.buffer.get_text(start, end, false);
+	}
+
 	public bool escape()
 	{
 		foreach (var bar in new Gtk.SearchBar[] { d_search_bar, d_find_bar, d_filter_bar })
@@ -513,7 +545,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void find_matches()
 	{
-		d_match = d_search_switches.match(d_search_entry.text.strip());
+		d_match = d_search_switches.match(d_search_bar.search_mode_enabled ? d_search_entry.text.strip() : "");
 		d_matches = Search.find(rows(), d_match);
 
 		var style = d_search_entry.get_style_context();
@@ -1250,8 +1282,34 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return labels;
 	}
 
+	public void toggle_filter()
+	{
+		Gtk.TextView? view;
+		int offset;
+		var text = diff_selection(out view, out offset);
+
+		if (text != null)
+		{
+			d_filter_bar.field.text = text;
+			filter_visible = true;
+			return;
+		}
+
+		filter_visible = !filter_visible;
+	}
+
 	public void toggle_search()
 	{
+		Gtk.TextView? view;
+		int offset;
+		var text = diff_selection(out view, out offset);
+
+		if (text != null)
+		{
+			d_find_bar.take_selection(text, view, offset);
+			return;
+		}
+
 		if (finds_in_diff())
 		{
 			d_find_bar.search_mode_enabled = !d_find_bar.search_mode_enabled;

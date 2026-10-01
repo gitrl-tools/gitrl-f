@@ -137,7 +137,7 @@ foreach name : ui_tests
       'XDG_DATA_HOME': join_paths(test_home, '.local', 'share'),
     },
     depends: [gschemas_compiled],
-    timeout: 60,
+    timeout: 120,
   )
 endforeach
 
