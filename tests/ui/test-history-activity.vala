@@ -1577,6 +1577,12 @@ private static void test_the_commit_menu_opens_on_every_column()
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
+		int width;
+		int height;
+
+		window.get_size(out width, out height);
+		window.resize(1200, 800);
+		settle(300);
 
 		for (var column = 0; column < (int)view.get_n_columns(); column++)
 		{
@@ -1594,6 +1600,8 @@ private static void test_the_commit_menu_opens_on_every_column()
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "second");
 
+		window.resize(width, height);
+		settle(300);
 		window.destroy();
 		repo.remove();
 	}

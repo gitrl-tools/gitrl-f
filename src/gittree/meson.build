@@ -1,5 +1,7 @@
 gittree_lib_sources = files(
   'gittree-application.vala',
+  'gittree-bar-row.vala',
+  'gittree-bar-spacer.vala',
   'gittree-command-line.vala',
   'gittree-copy-menu.vala',
   'gittree-dash-view.vala',

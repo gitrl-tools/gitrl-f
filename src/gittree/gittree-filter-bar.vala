@@ -60,6 +60,7 @@ public class FilterBar : Gtk.SearchBar
 	{
 		d_field = new Gtk.SearchEntry();
 		d_field.width_chars = 40;
+		d_field.tooltip_text = _("Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regular expression");
 		d_field.activate.connect(apply);
 		d_field.search_changed.connect(() => check());
 		d_field.stop_search.connect(() => {
@@ -87,9 +88,10 @@ public class FilterBar : Gtk.SearchBar
 		box.add(d_paths);
 		box.add(filter);
 		box.add(d_problem);
-		box.show_all();
+		var row = new BarRow(box);
 
-		add(box);
+		row.show_all();
+		add(row);
 		check();
 
 		notify["search-mode-enabled"].connect(() => {

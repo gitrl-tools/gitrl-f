@@ -1394,6 +1394,7 @@ private static void test_the_regular_expression_switch_filters_by_changed_lines(
 		settle(300);
 
 		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Only commits that add or remove this text");
+		assert_cmpstr(bar.field.tooltip_text, CompareOperator.EQ, "Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regular expression");
 		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
 
 		filter_with(window, "needle", false);

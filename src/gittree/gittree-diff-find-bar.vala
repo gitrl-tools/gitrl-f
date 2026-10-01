@@ -77,7 +77,8 @@ public class DiffFindBar : Gtk.SearchBar
 
 		d_field = new Gtk.SearchEntry();
 		d_field.width_chars = 30;
-		d_field.placeholder_text = _("Find in the diff");
+		d_field.placeholder_text = _("Find in the changed lines of this commit");
+		d_field.tooltip_text = _("Searches the added, removed and unchanged lines of every file in the commit shown below, folded files too");
 
 		d_count = new Gtk.Label(null);
 		d_count.width_chars = 12;

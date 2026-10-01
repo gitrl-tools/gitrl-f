@@ -408,7 +408,8 @@ private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 		assert_true(bar.search_mode_enabled);
 		assert_false(window.history.search_visible);
 		assert_true(bar.field.has_focus);
-		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Find in the diff");
+		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Find in the changed lines of this commit");
+		assert_cmpstr(bar.field.tooltip_text, CompareOperator.EQ, "Searches the added, removed and unchanged lines of every file in the commit shown below, folded files too");
 		assert_false(bar.match_case);
 
 		bar.field.text = "needle";

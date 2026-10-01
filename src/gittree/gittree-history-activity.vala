@@ -249,33 +249,42 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.width_chars = 40;
-		d_search_entry.placeholder_text = _("Subject, message, author or hash");
-		d_search_entry.tooltip_text = _("Narrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
+		d_search_entry.placeholder_text = _("Search commit messages, authors and hashes");
+		d_search_entry.tooltip_text = _("Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: Ctrl+Shift+F filters by what the commits changed.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
 
 		d_match_count = new Gtk.Label(null);
 		d_match_count.width_chars = 12;
 		d_match_count.xalign = 0;
 
-		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-		search_box.add(d_search_entry);
-		SearchKeys.attach(d_search_entry, search_box, step);
-		d_search_switches = new SearchSwitches(search_box);
+		var after_field = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+
+		SearchKeys.attach(d_search_entry, after_field, step);
+		d_search_switches = new SearchSwitches(after_field);
 		d_search_switches.changed.connect(find_matches);
 
 		d_only_matches = new Gtk.CheckButton.with_label(_("Display matches only"));
 		d_only_matches.tooltip_text = _("Hide the commits that do not match");
 		d_only_matches.toggled.connect(find_matches);
-		search_box.add(d_only_matches);
-		search_box.add(d_match_count);
+		after_field.add(d_only_matches);
+		after_field.add(d_match_count);
 
 		d_beyond_button = new Gtk.Button.with_label(_("Tick and show"));
 		d_beyond_button.tooltip_text = _("Tick a ref that holds the newest of them, and select it");
 		d_beyond_button.no_show_all = true;
 		d_beyond_button.clicked.connect(tick_and_show);
-		search_box.add(d_beyond_button);
+		after_field.add(d_beyond_button);
+
+		var spacer = new BarSpacer(after_field);
+		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+		search_box.add(spacer);
+		search_box.add(d_search_entry);
+		search_box.add(after_field);
 
 		d_search_bar = new Gtk.SearchBar();
-		d_search_bar.add(search_box);
+		d_search_bar.add(new BarRow(search_box));
+		d_search_bar.notify["search-mode-enabled"].connect(() => {
+			spacer.active = d_search_bar.search_mode_enabled;
+		});
 		d_search_bar.notify["search-mode-enabled"].connect(() => {
 			if (d_search_bar.search_mode_enabled)
 			{

@@ -123,6 +123,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
+	Test.add_func("/gittree/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
 	Test.add_func("/gittree/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
 	Test.add_func("/gittree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
@@ -337,7 +338,7 @@ private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 		toggle.active = true;
 		assert_true(window.history.search_visible);
 
-		assert_cmpstr(window.history.search_field.placeholder_text, CompareOperator.EQ, "Subject, message, author or hash");
+		assert_cmpstr(window.history.search_field.placeholder_text, CompareOperator.EQ, "Search commit messages, authors and hashes");
 		assert_cmpstr(string.joinv(",", application().get_accels_for_action("win.search")), CompareOperator.EQ, "<Primary>f");
 
 		window.destroy();
@@ -693,7 +694,7 @@ private static void test_search_words_narrow_the_list()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Narrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
+		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: Ctrl+Shift+F filters by what the commits changed.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
 
 		type_text(window, "author:tester parser");
 
@@ -799,6 +800,49 @@ private static void test_switches_say_what_they_do()
 
 		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
 		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_field_sits_at_the_centre_of_the_bar()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var field = window.history.search_field;
+		var last = check_labelled(list_bar(window), "Display matches only");
+		int x;
+		int y;
+		int right;
+
+		window.history.search_visible = true;
+		window.resize(1700, 800);
+		settle(400);
+		field.translate_coordinates(window.history.widget, field.get_allocated_width() / 2, 0, out x, out y);
+
+		assert_true((x - window.history.widget.get_allocated_width() / 2).abs() <= 2);
+
+		window.resize(1000, 800);
+		settle(400);
+		field.translate_coordinates(window.history.widget, field.get_allocated_width() / 2, 0, out x, out y);
+		last.translate_coordinates(window.history.widget, last.get_allocated_width(), 0, out right, out y);
+
+		assert_true(x < window.history.widget.get_allocated_width() / 2);
+		assert_true(right <= window.history.widget.get_allocated_width());
+
+		int minimum;
+		int natural;
+
+		window.history.widget.get_preferred_width(out minimum, out natural);
+
+		assert_true(minimum < 400);
 
 		window.destroy();
 		repo.remove();
