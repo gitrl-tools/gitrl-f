@@ -24,11 +24,16 @@ public class Search : Object
 {
 	private const string MARK = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
 
-	public static string count_text(int[] matches, int selected, string needle)
+	public static string count_text(int[] matches, int selected, TextMatch match)
 	{
-		if (needle == "")
+		if (match.is_empty)
 		{
 			return "";
+		}
+
+		if (match.error != null)
+		{
+			return _("Bad regular expression");
 		}
 
 		if (matches.length == 0)
@@ -47,18 +52,18 @@ public class Search : Object
 		return ngettext("%d match", "%d matches", matches.length).printf(matches.length);
 	}
 
-	public static int[] find(Gitg.Commit[] rows, string needle)
+	public static int[] find(Gitg.Commit[] rows, TextMatch match)
 	{
 		var found = new int[0];
 
-		if (needle == "")
+		if (match.is_empty)
 		{
 			return found;
 		}
 
 		for (var i = 0; i < rows.length; i++)
 		{
-			if (matches(rows[i], needle))
+			if (matches(rows[i], match))
 			{
 				found += i;
 			}
@@ -67,30 +72,19 @@ public class Search : Object
 		return found;
 	}
 
-	public static string marked(string text, string needle)
+	public static string marked(string text, TextMatch match)
 	{
-		if (needle == "")
-		{
-			return Markup.escape_text(text);
-		}
-
 		var result = new StringBuilder();
-		var lower = text.down();
-		var wanted = needle.down();
 		var start = 0;
 
-		while (true)
+		foreach (var span in match.find(text))
 		{
-			var found = lower.index_of(wanted, start);
+			var from = text.index_of_nth_char(span.start);
+			var to = text.index_of_nth_char(span.start + span.length);
 
-			if (found < 0 || lower.length != text.length)
-			{
-				break;
-			}
-
-			result.append(Markup.escape_text(text.substring(start, found - start)));
-			result.append(MARK.printf(Markup.escape_text(text.substring(found, wanted.length))));
-			start = found + wanted.length;
+			result.append(Markup.escape_text(text.substring(start, from - start)));
+			result.append(MARK.printf(Markup.escape_text(text.substring(from, to - from))));
+			start = to;
 		}
 
 		result.append(Markup.escape_text(text.substring(start)));
@@ -98,7 +92,7 @@ public class Search : Object
 		return result.str;
 	}
 
-	public static bool matches(Gitg.Commit commit, string needle)
+	public static bool matches(Gitg.Commit commit, TextMatch match)
 	{
 		var author = commit.get_author();
 		var haystack = string.join("\n",
@@ -107,7 +101,7 @@ public class Search : Object
 		                           author.get_email(),
 		                           commit.get_id().to_string());
 
-		return needle.down() in haystack.down();
+		return match.matches(haystack);
 	}
 
 	public static int step(int[] matches, int selected, int direction)

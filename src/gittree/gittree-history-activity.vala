@@ -32,6 +32,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_find_closed;
 	private bool d_find_with_pane;
 	private History? d_full;
+	private TextMatch d_match;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
 	private HistoryPaned d_paned;
@@ -41,7 +42,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_ignore_case;
 	private SList<Gitg.Ref> d_labels;
 	private HistoryModel d_model;
-	private string d_needle;
 	private string[] d_paths;
 	private Gtk.GestureMultiPress d_press;
 	private bool d_press_on_row;
@@ -52,6 +52,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Settings d_settings;
 	private Gtk.SearchBar d_search_bar;
 	private Gtk.SearchEntry d_search_entry;
+	private SearchSwitches d_search_switches;
 	private string? d_text;
 	private Gee.Set<string> d_ticks;
 	private bool d_waiting;
@@ -205,8 +206,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_ticks = new Gee.HashSet<string>();
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
 
+		d_match = new TextMatch("", false, false, false);
 		d_matches = new int[0];
-		d_needle = "";
 
 		d_paned = new HistoryPaned();
 		d_paned.commit_list_view.model = d_model;
@@ -225,6 +226,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		search_box.add(d_search_entry);
 		SearchKeys.attach(d_search_entry, search_box, step);
+		d_search_switches = new SearchSwitches(search_box, true);
+		d_search_switches.changed.connect(find_matches);
 		search_box.add(d_match_count);
 
 		d_search_bar = new Gtk.SearchBar();
@@ -453,9 +456,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		var commit = d_model.commit_from_iter(iter);
 
-		if (commit != null && d_needle != "")
+		if (commit != null && !d_match.is_empty)
 		{
-			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_needle);
+			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_match);
 		}
 	}
 
@@ -508,12 +511,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void find_matches()
 	{
-		d_needle = d_search_entry.text.strip();
-		d_matches = Search.find(rows(), d_needle);
+		d_match = d_search_switches.match(d_search_entry.text.strip());
+		d_matches = Search.find(rows(), d_match);
 
 		var style = d_search_entry.get_style_context();
 
-		if (d_needle != "" && d_matches.length == 0)
+		if (!d_match.is_empty && d_matches.length == 0)
 		{
 			style.add_class("error");
 		}
@@ -551,7 +554,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit != null)
 		{
 			var hash = commit.get_id().to_string().substring(0, 7);
-			((Gtk.CellRendererText)cell).markup = Search.marked(hash, d_needle);
+			((Gtk.CellRendererText)cell).markup = Search.marked(hash, d_match);
 		}
 	}
 
@@ -645,9 +648,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		lanes.next_commit = next_commit;
 		lanes.labels = d_labels;
 
-		if (d_needle != "")
+		if (!d_match.is_empty)
 		{
-			lanes.markup = Search.marked(commit.get_subject(), d_needle);
+			lanes.markup = Search.marked(commit.get_subject(), d_match);
 		}
 	}
 
@@ -1043,7 +1046,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_match_count()
 	{
-		d_match_count.label = Search.count_text(d_matches, selected_row(), d_needle);
+		d_match_count.label = Search.count_text(d_matches, selected_row(), d_match);
 	}
 
 	private void show_notice(string markup)

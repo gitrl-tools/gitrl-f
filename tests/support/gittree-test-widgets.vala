@@ -20,6 +20,19 @@
 namespace GittreeTest
 {
 
+public static Gtk.CheckButton check_labelled(Gtk.Widget root, string label)
+{
+	foreach (var widget in find_all(root, typeof(Gtk.CheckButton)))
+	{
+		if (((Gtk.CheckButton)widget).label == label)
+		{
+			return (Gtk.CheckButton)widget;
+		}
+	}
+
+	error("no check button %s", label);
+}
+
 public static Gtk.MenuItem? copy_item()
 {
 	foreach (var toplevel in Gtk.Window.list_toplevels())

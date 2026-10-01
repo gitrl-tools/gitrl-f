@@ -31,10 +31,8 @@ public struct DiffMatch
 
 public class DiffFind : Object
 {
-	private bool d_match_case;
+	private TextMatch d_match;
 	private DiffMatch[] d_matches;
-	private unichar[] d_needle;
-	private string d_text;
 
 	public int current { get; set; default = -1; }
 
@@ -43,17 +41,15 @@ public class DiffFind : Object
 		get { return d_matches.length; }
 	}
 
-	public DiffFind(string text, bool match_case)
+	public DiffFind(string text, bool match_case, bool whole_word = false, bool regex = false)
 	{
-		d_match_case = match_case;
+		d_match = new TextMatch(text, match_case, whole_word, regex);
 		d_matches = new DiffMatch[0];
-		d_needle = characters(text, match_case);
-		d_text = text;
 	}
 
 	public void add_file(int file, Ggit.DiffLineType[] origins, string[] texts, bool split)
 	{
-		if (d_needle.length == 0)
+		if (d_match.is_empty)
 		{
 			return;
 		}
@@ -72,64 +68,26 @@ public class DiffFind : Object
 
 	private void add_line(int file, int side, int line, string text)
 	{
-		var haystack = characters(shown_text(text), d_match_case);
-		var start = 0;
-
-		while (start + d_needle.length <= haystack.length)
+		foreach (var span in d_match.find(shown_text(text)))
 		{
-			if (!matches_at(haystack, start))
-			{
-				start++;
-				continue;
-			}
-
 			d_matches += DiffMatch() {
 				file = file,
 				side = side,
 				line = line,
-				start = start,
-				length = d_needle.length
+				start = span.start,
+				length = span.length
 			};
-
-			start += d_needle.length;
 		}
-	}
-
-	private static unichar[] characters(string text, bool match_case)
-	{
-		var result = new unichar[0];
-		var index = 0;
-		unichar c;
-
-		while (text.get_next_char(ref index, out c))
-		{
-			result += match_case ? c : c.tolower();
-		}
-
-		return result;
 	}
 
 	public string count_text()
 	{
-		return Search.count_text(numbers(), current, d_text);
+		return Search.count_text(numbers(), current, d_match);
 	}
 
 	public DiffMatch get_match(int index)
 	{
 		return d_matches[index];
-	}
-
-	private bool matches_at(unichar[] haystack, int start)
-	{
-		for (var i = 0; i < d_needle.length; i++)
-		{
-			if (haystack[start + i] != d_needle[i])
-			{
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	private int[] numbers()

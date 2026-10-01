@@ -24,20 +24,28 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/search/count-wording", test_count_wording);
 	Test.add_func("/gittree/search/each-field-matches-without-regard-to-case", test_each_field_matches_without_regard_to_case);
+	Test.add_func("/gittree/search/marks-follow-the-switches", test_marks_follow_the_switches);
 	Test.add_func("/gittree/search/marks-keep-the-case-of-the-text", test_marks_keep_the_case_of_the_text);
+	Test.add_func("/gittree/search/the-switches-narrow-the-fields", test_the_switches_narrow_the_fields);
 	Test.add_func("/gittree/search/next-and-previous-wrap", test_next_and_previous_wrap);
 
 	return Test.run();
 }
 
+private static Gittree.TextMatch plain(string text)
+{
+	return new Gittree.TextMatch(text, false, false, false);
+}
+
 private static void test_count_wording()
 {
-	assert_cmpstr(Gittree.Search.count_text({}, 0, ""), CompareOperator.EQ, "");
-	assert_cmpstr(Gittree.Search.count_text({}, 0, "x"), CompareOperator.EQ, "No match");
-	assert_cmpstr(Gittree.Search.count_text({ 3 }, 0, "x"), CompareOperator.EQ, "1 match");
-	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 0, "x"), CompareOperator.EQ, "2 matches");
-	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 5, "x"), CompareOperator.EQ, "2 of 2");
-	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 3, "x"), CompareOperator.EQ, "1 of 2");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, plain("")), CompareOperator.EQ, "");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, plain("x")), CompareOperator.EQ, "No match");
+	assert_cmpstr(Gittree.Search.count_text({ 3 }, 0, plain("x")), CompareOperator.EQ, "1 match");
+	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 0, plain("x")), CompareOperator.EQ, "2 matches");
+	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 5, plain("x")), CompareOperator.EQ, "2 of 2");
+	assert_cmpstr(Gittree.Search.count_text({ 3, 5 }, 3, plain("x")), CompareOperator.EQ, "1 of 2");
+	assert_cmpstr(Gittree.Search.count_text({}, 0, new Gittree.TextMatch("(", false, false, true)), CompareOperator.EQ, "Bad regular expression");
 }
 
 private static void test_each_field_matches_without_regard_to_case()
@@ -53,10 +61,10 @@ private static void test_each_field_matches_without_regard_to_case()
 
 		foreach (var needle in new string[] { "analytical", "BERNOULLI", "ada love", "engine.ORG", hash.substring(10, 12), hash.up() })
 		{
-			assert_true(Gittree.Search.matches(commit, needle));
+			assert_true(Gittree.Search.matches(commit, plain(needle)));
 		}
 
-		assert_false(Gittree.Search.matches(commit, "babbage"));
+		assert_false(Gittree.Search.matches(commit, plain("babbage")));
 
 		repo.remove();
 	}
@@ -66,13 +74,25 @@ private static void test_each_field_matches_without_regard_to_case()
 	}
 }
 
+private static void test_marks_follow_the_switches()
+{
+	var mark = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
+
+	assert_cmpstr(Gittree.Search.marked("a1 <b22>", new Gittree.TextMatch("[0-9]+", true, false, true)), CompareOperator.EQ,
+	              "a" + mark.printf("1") + " &lt;b" + mark.printf("22") + "&gt;");
+	assert_cmpstr(Gittree.Search.marked("café fix prefix", new Gittree.TextMatch("fix", true, true, false)), CompareOperator.EQ,
+	              "café " + mark.printf("fix") + " prefix");
+	assert_cmpstr(Gittree.Search.marked("Fix fix", new Gittree.TextMatch("fix", true, false, false)), CompareOperator.EQ,
+	              "Fix " + mark.printf("fix"));
+}
+
 private static void test_marks_keep_the_case_of_the_text()
 {
-	assert_cmpstr(Gittree.Search.marked("Fix the FIX & fix", "fix"), CompareOperator.EQ,
+	assert_cmpstr(Gittree.Search.marked("Fix the FIX & fix", plain("fix")), CompareOperator.EQ,
 	              "<span background=\"#fce94f\" foreground=\"#1a1a1a\">Fix</span> the "
 	              + "<span background=\"#fce94f\" foreground=\"#1a1a1a\">FIX</span> &amp; "
 	              + "<span background=\"#fce94f\" foreground=\"#1a1a1a\">fix</span>");
-	assert_cmpstr(Gittree.Search.marked("a <b>", ""), CompareOperator.EQ, "a &lt;b&gt;");
+	assert_cmpstr(Gittree.Search.marked("a <b>", plain("")), CompareOperator.EQ, "a &lt;b&gt;");
 }
 
 private static void test_next_and_previous_wrap()
@@ -86,6 +106,31 @@ private static void test_next_and_previous_wrap()
 	assert_cmpint(Gittree.Search.step(matches, 2, -1), CompareOperator.EQ, 9);
 	assert_cmpint(Gittree.Search.step(matches, 0, -1), CompareOperator.EQ, 9);
 	assert_cmpint(Gittree.Search.step({}, 0, 1), CompareOperator.EQ, -1);
+}
+
+private static void test_the_switches_narrow_the_fields()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.git({"-c", "user.name=Ada Lovelace", "-c", "user.email=ada@engine.org", "commit", "--quiet", "--allow-empty", "-m", "Analytical subject\n\nThe body mentions Bernoulli."});
+
+		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
+		var commit = repository.lookup<Gitg.Commit>(new Ggit.OId.from_string(repo.git({"rev-parse", "HEAD"}).strip()));
+
+		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("Analytical", true, false, false)));
+		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("analytical", true, false, false)));
+		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("analytic", false, true, false)));
+		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("ada", false, true, false)));
+		assert_true(Gittree.Search.matches(commit, new Gittree.TextMatch("^the body", false, false, true)));
+		assert_false(Gittree.Search.matches(commit, new Gittree.TextMatch("subject.the", false, false, true)));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 }

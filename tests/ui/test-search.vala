@@ -52,15 +52,36 @@ private static Gtk.Button button(Gittree.Window window, string tooltip)
 	error("no button %s", tooltip);
 }
 
+private static Repo four_subjects() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("Parser fix");
+	repo.commit("parser tidy");
+	repo.commit("prefix work");
+	repo.commit("issue 42");
+
+	return repo;
+}
+
+private static Gtk.Widget list_bar(Gittree.Window window)
+{
+	return window.history.search_field.get_parent();
+}
+
 public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gittree/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
 	Test.add_func("/gittree/ui/search/escape-closes-clears-and-gives-the-focus-back", test_escape_closes_clears_and_gives_the_focus_back);
 	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
+	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
+	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
 	Test.add_func("/gittree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
 	Test.add_func("/gittree/ui/search/typing-moves-nothing", test_typing_moves_nothing);
@@ -124,6 +145,30 @@ private static void settle(int milliseconds)
 		}
 
 		Thread.usleep(10000);
+	}
+}
+
+private static void test_a_bad_expression_turns_the_field_red()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		type_text(window, "(");
+		check_labelled(list_bar(window), "Regular expression").active = true;
+		settle(200);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad regular expression");
+		assert_true(window.history.search_field.get_style_context().has_class("error"));
+		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
 	}
 }
 
@@ -294,6 +339,102 @@ private static void test_no_match_turns_the_field_red()
 		type_text(window, "base");
 
 		assert_false(window.history.search_field.get_style_context().has_class("error"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_switches_keep_their_state_when_the_bar_closes()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		type_text(window, "parser");
+		check_labelled(list_bar(window), "Match case").active = true;
+		check_labelled(list_bar(window), "Whole word").active = true;
+		window.history.search_visible = false;
+		settle(100);
+		window.history.search_visible = true;
+		settle(100);
+
+		assert_true(check_labelled(list_bar(window), "Match case").active);
+		assert_true(check_labelled(list_bar(window), "Whole word").active);
+		assert_false(check_labelled(list_bar(window), "Regular expression").active);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_switches_narrow_the_matches()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var bar = list_bar(window);
+
+		type_text(window, "parser");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
+
+		check_labelled(bar, "Match case").active = true;
+		settle(100);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
+
+		check_labelled(bar, "Match case").active = false;
+		type_text(window, "fix");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
+
+		check_labelled(bar, "Whole word").active = true;
+		settle(100);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
+
+		check_labelled(bar, "Whole word").active = false;
+		type_text(window, "issue [0-9]+");
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
+
+		check_labelled(bar, "Regular expression").active = true;
+		settle(100);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 of 1");
+		assert_true(marked_pixels(window, 0) > 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_switches_say_what_they_do()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var bar = list_bar(window);
+
+		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
+		assert_cmpstr(check_labelled(bar, "Whole word").tooltip_text, CompareOperator.EQ, "Match only whole words");
+		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
 
 		window.destroy();
 		repo.remove();

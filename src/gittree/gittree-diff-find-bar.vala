@@ -27,7 +27,6 @@ public class DiffFindBar : Gtk.SearchBar
 	private const string MATCH = "diff-find-match";
 
 	private Gtk.Adjustment? d_adjustment;
-	private Gtk.CheckButton d_case;
 	private Gtk.Label d_count;
 	private Gitg.DiffView d_diff;
 	private Ggit.Diff? d_diff_rows;
@@ -42,6 +41,7 @@ public class DiffFindBar : Gtk.SearchBar
 	private int[] d_sizes;
 	private bool[] d_split;
 	private bool d_step_pending;
+	private SearchSwitches d_switches;
 	private Gee.HashSet<Gitg.DiffViewFile> d_watched;
 
 	public string count
@@ -56,8 +56,20 @@ public class DiffFindBar : Gtk.SearchBar
 
 	public bool match_case
 	{
-		get { return d_case.active; }
-		set { d_case.active = value; }
+		get { return d_switches.match_case; }
+		set { d_switches.match_case = value; }
+	}
+
+	public bool regex
+	{
+		get { return d_switches.regex; }
+		set { d_switches.regex = value; }
+	}
+
+	public bool whole_word
+	{
+		get { return d_switches.whole_word; }
+		set { d_switches.whole_word = value; }
 	}
 
 	public DiffFindBar(Gitg.DiffView diff)
@@ -73,10 +85,6 @@ public class DiffFindBar : Gtk.SearchBar
 		d_field.width_chars = 30;
 		d_field.placeholder_text = _("Find in the diff");
 
-		d_case = new Gtk.CheckButton.with_label(_("Match case"));
-		d_case.active = false;
-		d_case.toggled.connect(search);
-
 		d_count = new Gtk.Label(null);
 		d_count.width_chars = 12;
 		d_count.xalign = 0;
@@ -84,7 +92,8 @@ public class DiffFindBar : Gtk.SearchBar
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);
 		SearchKeys.attach(d_field, box, step);
-		box.add(d_case);
+		d_switches = new SearchSwitches(box, true);
+		d_switches.changed.connect(search);
 		box.add(d_count);
 
 		var viewport = new Gtk.Viewport(null, null);
@@ -154,7 +163,7 @@ public class DiffFindBar : Gtk.SearchBar
 			window.set_focus(focus);
 		}
 		d_field.text = text;
-		d_case.active = match_case;
+		d_switches.match_case = match_case;
 		search();
 	}
 
@@ -355,7 +364,7 @@ public class DiffFindBar : Gtk.SearchBar
 			d_watched.clear();
 		}
 
-		d_find = new DiffFind(text, d_case.active);
+		d_find = new DiffFind(text, d_switches.match_case, d_switches.whole_word, d_switches.regex);
 		d_indexes = new Gee.HashMap<Gitg.DiffViewFile, int>();
 		d_sizes = new int[files.size];
 		d_split = new bool[files.size];

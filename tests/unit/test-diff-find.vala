@@ -50,6 +50,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/diff-find/next-and-previous-wrap", test_next_and_previous_wrap);
 	Test.add_func("/gittree/diff-find/offsets-count-characters-as-the-pane-shows-them", test_offsets_count_characters_as_the_pane_shows_them);
 	Test.add_func("/gittree/diff-find/several-matches-on-one-line", test_several_matches_on_one_line);
+	Test.add_func("/gittree/diff-find/whole-words-and-expressions-follow-the-switches", test_whole_words_and_expressions_follow_the_switches);
 
 	return Test.run();
 }
@@ -224,6 +225,22 @@ private static void test_several_matches_on_one_line()
 
 	assert_cmpstr(found(spaced), CompareOperator.EQ, "0.0.0@0+2 0.0.0@2+2 0.0.0@5+2");
 	assert_cmpstr(found(overlapping), CompareOperator.EQ, "0.0.0@0+2 0.0.0@2+2");
+}
+
+private static void test_whole_words_and_expressions_follow_the_switches()
+{
+	var word = new Gittree.DiffFind("need", false, true, false);
+	var expression = new Gittree.DiffFind("^ne+d", true, false, true);
+	var bad = new Gittree.DiffFind("(", false, false, true);
+
+	word.add_file(0, { ADDED }, { "needle need\n" }, false);
+	expression.add_file(0, { ADDED, CONTEXT }, { "need it\n", "a need\n" }, false);
+	bad.add_file(0, { ADDED }, { "(\n" }, false);
+
+	assert_cmpstr(found(word), CompareOperator.EQ, "0.0.0@7+4");
+	assert_cmpstr(found(expression), CompareOperator.EQ, "0.0.0@0+4");
+	assert_cmpint(bad.length, CompareOperator.EQ, 0);
+	assert_cmpstr(bad.count_text(), CompareOperator.EQ, "Bad regular expression");
 }
 
 }
