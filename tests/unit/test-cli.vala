@@ -141,6 +141,18 @@ private const string[] TEXT_PARSES = {
 	"-S\ta b||||a b||",
 	"-x\t-S\tfoo||||||unrecognized arguments: -x",
 	"-S\tfoo\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-S\t-x\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-S\t-x\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"-S\t--zzz\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-S\t-x\t--\t--t||||||argument -S/--text: expected one argument",
+	"--t\t-S||||||ambiguous option: --t could match --tags, --text",
+	"-S\t-x\t--te||||||argument -S/--text: expected one argument",
+	"-S\t-x\t--t\t-a||||||ambiguous option: --t could match --tags, --text",
+	"-x\t-S\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-a=1\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-i=x\t--=x||||||ambiguous option: --=x could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"-x\t--t||||||ambiguous option: --t could match --tags, --text",
+	"-h\t--t||||||ambiguous option: --t could match --tags, --text",
 };
 
 private static string[] arguments_of(string row)

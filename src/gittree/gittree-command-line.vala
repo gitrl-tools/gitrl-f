@@ -119,6 +119,25 @@ log -S. A merge never does.
 		parse(arguments);
 	}
 
+	private static string? ambiguity(string argument)
+	{
+		var matches = long_matches(long_name(argument));
+
+		if (matches.length < 2)
+		{
+			return null;
+		}
+
+		var names = new string[0];
+
+		foreach (var match in matches)
+		{
+			names += "--" + match;
+		}
+
+		return "ambiguous option: %s could match %s".printf(argument, string.joinv(", ", names));
+	}
+
 	private void explicit_argument(char option, string argument)
 	{
 		var index = LONG_KEYS.index_of_char(option);
@@ -209,6 +228,22 @@ log -S. A merge never does.
 
 		foreach (var argument in arguments)
 		{
+			if (argument == "--")
+			{
+				break;
+			}
+
+			if (argument.has_prefix("--") && ambiguity(argument) != null)
+			{
+				error = ambiguity(argument);
+				refs = positional;
+				paths = after;
+				return;
+			}
+		}
+
+		foreach (var argument in arguments)
+		{
 			if (split)
 			{
 				after += argument;
@@ -225,15 +260,7 @@ log -S. A merge never does.
 					continue;
 				}
 
-				if (argument != "--" && argument.has_prefix("--") && long_matches(long_name(argument)).length > 1)
-				{
-					parse_long(argument);
-				}
-				else
-				{
-					error = EXPECTED_TEXT;
-				}
-
+				error = EXPECTED_TEXT;
 				break;
 			}
 
@@ -298,19 +325,6 @@ log -S. A merge never does.
 		}
 
 		var matches = long_matches(head.substring(2));
-
-		if (matches.length > 1)
-		{
-			var names = new string[0];
-
-			foreach (var match in matches)
-			{
-				names += "--" + match;
-			}
-
-			error = "ambiguous option: %s could match %s".printf(argument, string.joinv(", ", names));
-			return true;
-		}
 
 		if (matches.length == 0)
 		{
