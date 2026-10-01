@@ -34,7 +34,9 @@ public class Dump : Object
 			tips += reference.target;
 		}
 
-		TextSearch.run.begin(directory, tips, command_line.text, command_line.ignore_case, command_line.paths, new Cancellable(), (obj, res) => {
+		var regex = command_line.regex != null;
+
+		TextSearch.run.begin(directory, tips, regex ? command_line.regex : command_line.text, command_line.ignore_case, regex, command_line.paths, new Cancellable(), (obj, res) => {
 			try
 			{
 				matches = TextSearch.run.end(res);
@@ -78,7 +80,7 @@ public class Dump : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]\n", args[0]);
+			stderr.printf("usage: %s <repository> [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]\n", args[0]);
 			return 2;
 		}
 
@@ -108,7 +110,7 @@ public class Dump : Object
 				? new History.with_paths(repository, refs, command_line.paths, directory, false)
 				: new History(repository, refs, false);
 
-			if (command_line.text != null)
+			if (command_line.text != null || command_line.regex != null)
 			{
 				history = filtered(history, refs, directory, command_line);
 			}

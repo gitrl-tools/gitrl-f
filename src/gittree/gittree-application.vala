@@ -32,6 +32,7 @@ public class Application : Gtk.Application
 	private bool d_ignore_case;
 	private File? d_location;
 	private string[] d_paths;
+	private bool d_regex;
 	private string? d_text;
 	private Gee.Set<string>? d_ticks;
 
@@ -43,18 +44,18 @@ public class Application : Gtk.Application
 
 	protected override void activate()
 	{
-		create_window(d_location, d_ticks, d_paths, d_directory, d_text, d_ignore_case);
+		create_window(d_location, d_ticks, d_paths, d_directory, d_text, d_ignore_case, d_regex);
 
 		base.activate();
 	}
 
-	public void create_window(File? location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null, string? text = null, bool ignore_case = false)
+	public void create_window(File? location, Gee.Set<string>? ticks = null, string[] paths = {}, File? directory = null, string? text = null, bool ignore_case = false, bool regex = false)
 	{
 		var window = new Window(this);
 
 		if (location != null)
 		{
-			window.open_repository(location, ticks, paths, directory, text, ignore_case);
+			window.open_repository(location, ticks, paths, directory, text, ignore_case, regex);
 		}
 
 		window.present();
@@ -101,7 +102,7 @@ public class Application : Gtk.Application
 
 		if (command_line.no_wd && !command_line.is_empty)
 		{
-			stderr.printf("%sgittree: error: --no-wd takes no ref, no path, no text and no tick option\n", CommandLine.USAGE);
+			stderr.printf("%sgittree: error: --no-wd takes no ref, no path, no text, no regex and no tick option\n", CommandLine.USAGE);
 			exit_status = 2;
 			return true;
 		}
@@ -113,16 +114,33 @@ public class Application : Gtk.Application
 			return true;
 		}
 
-		if (command_line.ignore_case && command_line.text == null)
+		if (command_line.regex == "")
 		{
-			stderr.printf("%sgittree: error: argument -i/--ignore-case: needs -S\n", CommandLine.USAGE);
+			stderr.printf("%sgittree: error: argument -G/--regex: the regex is empty\n", CommandLine.USAGE);
+			exit_status = 2;
+			return true;
+		}
+
+		var expression = new TextMatch(command_line.regex != null ? command_line.regex : "", true, false, true);
+
+		if (expression.error != null)
+		{
+			stderr.printf("%sgittree: error: argument -G/--regex: bad regular expression: %s\n", CommandLine.USAGE, expression.error);
+			exit_status = 2;
+			return true;
+		}
+
+		if (command_line.ignore_case && command_line.text == null && command_line.regex == null)
+		{
+			stderr.printf("%sgittree: error: argument -i/--ignore-case: needs -S or -G\n", CommandLine.USAGE);
 			exit_status = 2;
 			return true;
 		}
 
 		d_directory = File.new_for_path(Environment.get_current_dir());
 		d_paths = command_line.paths;
-		d_text = command_line.text;
+		d_regex = command_line.regex != null;
+		d_text = d_regex ? command_line.regex : command_line.text;
 		d_ignore_case = command_line.ignore_case;
 
 		var location = command_line.no_wd ? null : discover_repository(d_directory);

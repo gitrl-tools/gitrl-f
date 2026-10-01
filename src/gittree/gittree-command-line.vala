@@ -22,7 +22,7 @@ namespace Gittree
 
 public class CommandLine : Object
 {
-	public const string HELP = """usage: gittree [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]
+	public const string HELP = """usage: gittree [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]
 
 Shows the history of the repository in a window, with a checkbox
 for each branch, remote branch and tag. Only the commits that a
@@ -42,8 +42,11 @@ repository, it opens a list of the repositories you opened last.
     -t, --tags      tick every tag
     -S, --text <text>
                     draw only the commits that add or remove <text>
+    -G, --regex <regex>
+                    draw only the commits whose added or removed
+                    lines match <regex>
     -i, --ignore-case
-                    with -S, ignore case
+                    with -S or -G, ignore case
     -h, --help      print this help and exit
     --version       print the version and exit
     --no-wd         open the chooser, not the repository of this
@@ -78,20 +81,20 @@ hash.
 A commit adds or removes the text when the number of times it
 appears in a file the commit changes goes up or down, as in git
 log -S. A merge never does.
+
+A regex is a POSIX extended regular expression, as in git log -G.
 """;
 
-	public const string USAGE = "usage: gittree [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]\n";
+	public const string USAGE = "usage: gittree [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]\n";
 
-	private const string EXPECTED_TEXT = "argument -S/--text: expected one argument";
+	private const string LONG_KEYS = "alrtSGihVW";
 
-	private const string LONG_KEYS = "alrtSihVW";
+	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "text", "regex", "ignore-case", "help", "version", "no-wd" };
 
-	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "text", "ignore-case", "help", "version", "no-wd" };
-
-	private const string SHORT_NAMES = "alrtSih";
+	private const string SHORT_NAMES = "alrtSGih";
 
 	private string[] d_extras;
-	private bool d_wants_text;
+	private char d_wants;
 
 	public bool all { get; private set; }
 	public string? error { get; private set; }
@@ -101,6 +104,7 @@ log -S. A merge never does.
 	public bool no_wd { get; private set; }
 	public string[] paths { get; private set; }
 	public string[] refs { get; private set; }
+	public string? regex { get; private set; }
 	public bool remotes { get; private set; }
 	public bool tags { get; private set; }
 	public string? text { get; private set; }
@@ -110,7 +114,7 @@ log -S. A merge never does.
 	{
 		get
 		{
-			return !all && !local && !remotes && !tags && text == null && !ignore_case && refs.length == 0 && paths.length == 0;
+			return !all && !local && !remotes && !tags && text == null && regex == null && !ignore_case && refs.length == 0 && paths.length == 0;
 		}
 	}
 
@@ -138,12 +142,14 @@ log -S. A merge never does.
 		return "ambiguous option: %s could match %s".printf(argument, string.joinv(", ", names));
 	}
 
+	private static string expected(char option)
+	{
+		return "argument %s: expected one argument".printf(names_of(option));
+	}
+
 	private void explicit_argument(char option, string argument)
 	{
-		var index = LONG_KEYS.index_of_char(option);
-		var names = is_short_name(option) ? "-%c/--%s".printf(option, LONG_NAMES[index]) : "--" + LONG_NAMES[index];
-
-		error = "argument %s: ignored explicit argument %s".printf(names, quoted(argument));
+		error = "argument %s: ignored explicit argument %s".printf(names_of(option), quoted(argument));
 	}
 
 	private static int index_of_long(string name)
@@ -218,6 +224,13 @@ log -S. A merge never does.
 		return (equals >= 0 ? argument.substring(0, equals) : argument).substring(2);
 	}
 
+	private static string names_of(char option)
+	{
+		var index = LONG_KEYS.index_of_char(option);
+
+		return is_short_name(option) ? "-%c/--%s".printf(option, LONG_NAMES[index]) : "--" + LONG_NAMES[index];
+	}
+
 	private void parse(string[] arguments)
 	{
 		d_extras = new string[0];
@@ -250,17 +263,25 @@ log -S. A merge never does.
 				continue;
 			}
 
-			if (d_wants_text)
+			if (d_wants != 0)
 			{
-				d_wants_text = false;
+				var option = d_wants;
+
+				d_wants = 0;
 
 				if (argument != "--" && !is_option_like(argument))
 				{
-					text = argument;
+					set_value(option, argument);
+
+					if (error != null)
+					{
+						break;
+					}
+
 					continue;
 				}
 
-				error = EXPECTED_TEXT;
+				error = expected(option);
 				break;
 			}
 
@@ -301,9 +322,9 @@ log -S. A merge never does.
 		refs = positional;
 		paths = after;
 
-		if (error == null && d_wants_text)
+		if (error == null && d_wants != 0)
 		{
-			error = EXPECTED_TEXT;
+			error = expected(d_wants);
 		}
 
 		if (error == null && d_extras.length > 0)
@@ -339,9 +360,9 @@ log -S. A merge never does.
 
 		var option = LONG_KEYS[index_of_long(matches[0])];
 
-		if (option == 'S')
+		if (takes_value(option))
 		{
-			take_text(explicit);
+			take_value(option, explicit);
 		}
 		else if (explicit != null)
 		{
@@ -387,9 +408,9 @@ log -S. A merge never does.
 
 		var rest = argument.substring(2);
 
-		if (option == 'S')
+		if (takes_value(option))
 		{
-			take_text(rest.has_prefix("=") ? rest.substring(1) : rest, !rest.has_prefix("="));
+			take_value(option, rest.has_prefix("=") ? rest.substring(1) : rest, !rest.has_prefix("="));
 			return true;
 		}
 
@@ -418,9 +439,9 @@ log -S. A merge never does.
 			option = rest[0];
 			rest = rest.substring(1);
 
-			if (option == 'S')
+			if (takes_value(option))
 			{
-				take_text(rest.has_prefix("=") ? rest.substring(1) : rest, !rest.has_prefix("="));
+				take_value(option, rest.has_prefix("=") ? rest.substring(1) : rest, !rest.has_prefix("="));
 				return true;
 			}
 
@@ -471,15 +492,40 @@ log -S. A merge never does.
 		}
 	}
 
-	private void take_text(string? attached, bool attached_or_next = false)
+	private void set_value(char option, string value)
 	{
-		if (attached != null && (attached != "" || !attached_or_next))
+		var other = option == 'S' ? 'G' : 'S';
+
+		if ((option == 'S' && regex != null) || (option == 'G' && text != null))
 		{
-			text = attached;
+			error = "argument %s: not allowed with argument %s".printf(names_of(option), names_of(other));
 			return;
 		}
 
-		d_wants_text = true;
+		if (option == 'S')
+		{
+			text = value;
+		}
+		else
+		{
+			regex = value;
+		}
+	}
+
+	private void take_value(char option, string? attached, bool attached_or_next = false)
+	{
+		if (attached != null && (attached != "" || !attached_or_next))
+		{
+			set_value(option, attached);
+			return;
+		}
+
+		d_wants = option;
+	}
+
+	private static bool takes_value(char option)
+	{
+		return option == 'S' || option == 'G';
 	}
 }
 

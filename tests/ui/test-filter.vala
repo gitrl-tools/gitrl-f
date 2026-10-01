@@ -77,6 +77,17 @@ private static Repo fixture() throws Error
 	return repo;
 }
 
+private static void filter_with(Gittree.Window window, string text, bool regex)
+{
+	var bar = window.history.filter_bar;
+
+	window.history.filter_visible = true;
+	bar.field.text = text;
+	check_labelled(bar, "Regular expression").active = regex;
+	button_labelled(bar, "Filter").clicked();
+	settle(800);
+}
+
 private static int git_calls(string? word = null)
 {
 	string text;
@@ -119,7 +130,7 @@ private static void install_wrapper()
 	var script = """#!/bin/sh
 echo "$*" >> "%s"
 case "$*" in
-*" -S"*)
+*" -S"* | *" -G"*)
 	sleep "${GITTREE_TEST_GIT_DELAY:-0}"
 	if [ -n "$GITTREE_TEST_GIT_FAIL" ]; then
 		echo "$GITTREE_TEST_GIT_FAIL" >&2
@@ -149,14 +160,17 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 	install_wrapper();
 
+	Test.add_func("/gittree/ui/filter/a-bad-expression-in-the-bar-applies-nothing", test_a_bad_expression_in_the_bar_applies_nothing);
 	Test.add_func("/gittree/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
 	Test.add_func("/gittree/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
 	Test.add_func("/gittree/ui/filter/a-failed-search-shows-git-and-the-plain-history", test_a_failed_search_shows_git_and_the_plain_history);
 	Test.add_func("/gittree/ui/filter/a-filter-after-a-failed-open-does-nothing", test_a_filter_after_a_failed_open_does_nothing);
 	Test.add_func("/gittree/ui/filter/a-launch-fills-the-closed-bar-with-the-text-and-the-case", test_a_launch_fills_the_closed_bar_with_the_text_and_the_case);
+	Test.add_func("/gittree/ui/filter/a-launch-with-a-regex-filters-by-changed-lines", test_a_launch_with_a_regex_filters_by_changed_lines);
 	Test.add_func("/gittree/ui/filter/a-launch-with-a-text-shows-the-notice-until-the-search-ends", test_a_launch_with_a_text_shows_the_notice_until_the_search_ends);
 	Test.add_func("/gittree/ui/filter/a-new-filter-puts-its-text-in-the-diff-bar", test_a_new_filter_puts_its_text_in_the_diff_bar);
 	Test.add_func("/gittree/ui/filter/a-new-filter-stops-the-search-before-it", test_a_new_filter_stops_the_search_before_it);
+	Test.add_func("/gittree/ui/filter/a-regex-filter-fills-the-diff-bar-with-its-switch", test_a_regex_filter_fills_the_diff_bar_with_its_switch);
 	Test.add_func("/gittree/ui/filter/a-reload-during-a-slow-search-stops-it-first", test_a_reload_during_a_slow_search_stops_it_first);
 	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
@@ -170,10 +184,22 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/the-close-button-lifts-the-filter-from-memory", test_the_close_button_lifts_the_filter_from_memory);
 	Test.add_func("/gittree/ui/filter/the-diff-bar-opens-with-the-text-and-the-case-of-the-filter", test_the_diff_bar_opens_with_the_text_and_the_case_of_the_filter);
 	Test.add_func("/gittree/ui/filter/the-list-answers-while-a-search-runs", test_the_list_answers_while_a_search_runs);
+	Test.add_func("/gittree/ui/filter/the-regular-expression-switch-filters-by-changed-lines", test_the_regular_expression_switch_filters_by_changed_lines);
 	Test.add_func("/gittree/ui/filter/the-users-own-text-in-the-diff-bar-is-kept-across-commits", test_the_users_own_text_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/the-yellow-bar-names-the-paths-and-the-case", test_the_yellow_bar_names_the_paths_and_the_case);
 
 	return Test.run();
+}
+
+private static Repo moved_fixture() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("one", "f", "alpha needle");
+	repo.commit_bytes("two", "f", "alpha needle beta\n".data);
+	repo.commit("three", "g", "plain");
+
+	return repo;
 }
 
 private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths, string? text, bool ignore_case) throws Error
@@ -232,6 +258,38 @@ private static string subjects(Gittree.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_a_bad_expression_in_the_bar_applies_nothing()
+{
+	try
+	{
+		var repo = moved_fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var bar = window.history.filter_bar;
+
+		settle(300);
+		filter_with(window, "(", true);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "three,two,one");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_true(bar.field.get_style_context().has_class("error"));
+		assert_cmpstr(bar.problem, CompareOperator.EQ, "Bad regular expression");
+		assert_cmpint(git_calls("-G("), CompareOperator.EQ, 0);
+
+		bar.field.text = "needle";
+		settle(300);
+
+		assert_false(bar.field.get_style_context().has_class("error"));
+		assert_cmpstr(bar.problem, CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_a_bare_repository_opened_from_the_list_can_be_filtered()
@@ -395,6 +453,35 @@ private static void test_a_launch_fills_the_closed_bar_with_the_text_and_the_cas
 	}
 }
 
+private static void test_a_launch_with_a_regex_filters_by_changed_lines()
+{
+	try
+	{
+		var repo = moved_fixture();
+		var ticks = new Gee.HashSet<string>();
+		ticks.add("refs/heads/master");
+
+		var window = new Gittree.Window(application());
+
+		window.set_default_size(1200, 800);
+		window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path, "needle", false, true);
+		window.show();
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "two,one");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits whose added or removed lines match needle");
+		assert_cmpstr(window.history.filter_bar.field.text, CompareOperator.EQ, "needle");
+		assert_true(check_labelled(window.history.filter_bar, "Regular expression").active);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_launch_with_a_text_shows_the_notice_until_the_search_ends()
 {
 	try
@@ -491,6 +578,36 @@ private static void test_a_new_filter_stops_the_search_before_it()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove NEEDLE");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_regex_filter_fills_the_diff_bar_with_its_switch()
+{
+	try
+	{
+		var repo = moved_fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var find_bar = window.history.find_bar;
+
+		settle(300);
+		find_bar.whole_word = true;
+		filter_with(window, "need+le", true);
+		window.history.paned.details_visible = true;
+		settle(400);
+
+		assert_true(find_bar.search_mode_enabled);
+		assert_cmpstr(find_bar.field.text, CompareOperator.EQ, "need+le");
+		assert_true(find_bar.regex);
+		assert_false(find_bar.whole_word);
+		assert_false(find_bar.match_case);
+		assert_cmpstr(find_bar.count, CompareOperator.EQ, "1 of 2");
 
 		window.destroy();
 		repo.remove();
@@ -970,6 +1087,38 @@ private static void test_the_list_answers_while_a_search_runs()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "c");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_regular_expression_switch_filters_by_changed_lines()
+{
+	try
+	{
+		var repo = moved_fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var bar = window.history.filter_bar;
+
+		settle(300);
+
+		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Only commits that add or remove this text");
+		assert_cmpstr(check_labelled(bar, "Regular expression").tooltip_text, CompareOperator.EQ, "Read the text as a regular expression, as git log -G does");
+
+		filter_with(window, "needle", false);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "one");
+
+		filter_with(window, "needle", true);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "two,one");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits whose added or removed lines match needle, ignoring case");
+		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Only commits whose added or removed lines match this");
 
 		window.destroy();
 		repo.remove();

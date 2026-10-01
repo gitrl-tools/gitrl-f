@@ -47,6 +47,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_press_on_row;
 	private bool d_press_on_shown;
 	private Gee.List<Ref> d_refs;
+	private bool d_regex;
 	private Gitg.Repository? d_repository;
 	private Cancellable? d_search;
 	private Settings d_settings;
@@ -248,14 +249,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		d_filter_bar = new FilterBar();
-		d_filter_bar.applied.connect((text, match_case) => {
+		d_filter_bar.applied.connect((text, match_case, regex) => {
 			if (text == "")
 			{
 				lift_filter();
 			}
 			else
 			{
-				apply_filter(text, !match_case);
+				apply_filter(text, !match_case, regex);
 			}
 		});
 		d_filter_bar.notify["search-mode-enabled"].connect(() => {
@@ -431,7 +432,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
-	public void apply_filter(string text, bool ignore_case)
+	public void apply_filter(string text, bool ignore_case, bool regex = false)
 	{
 		if (d_repository == null || d_full == null)
 		{
@@ -443,6 +444,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_find_closed = false;
 		d_text = text;
 		d_ignore_case = ignore_case;
+		d_regex = regex;
 		search(waiting);
 		show_path_bar();
 
@@ -503,7 +505,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (!d_find_bar.search_mode_enabled || refill)
 		{
-			d_find_bar.fill(d_text, !d_ignore_case);
+			d_find_bar.fill(d_text, !d_ignore_case, d_regex);
 		}
 
 		d_find_bar.step_to_first();
@@ -658,13 +660,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		stop_search();
 		d_text = null;
+		d_regex = false;
 		d_history = d_full;
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		show_path_bar();
 		show_ticks();
 	}
 
-	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false)
+	public void open(Gitg.Repository repository, Gee.Set<string>? ticks, string[] paths, File? directory, string? text = null, bool ignore_case = false, bool regex = false)
 	{
 		Gee.List<Ref> refs;
 		Gee.Set<string> resolved;
@@ -672,6 +675,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		stop_search();
 		d_find_closed = false;
 		d_text = null;
+		d_regex = false;
 
 		try
 		{
@@ -716,8 +720,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			d_text = text;
 			d_ignore_case = ignore_case;
+			d_regex = regex;
 			d_filter_bar.field.text = text;
 			d_filter_bar.match_case = !ignore_case;
+			d_filter_bar.regex = regex;
 			search(true);
 		}
 
@@ -950,7 +956,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search = cancellable;
 		d_waiting = waiting;
 
-		TextSearch.run.begin(start, tips, d_text, d_ignore_case, d_paths, cancellable, (obj, res) => {
+		TextSearch.run.begin(start, tips, d_text, d_ignore_case, d_regex, d_paths, cancellable, (obj, res) => {
 			Gee.Set<Ggit.OId> matches;
 
 			try
@@ -1091,11 +1097,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 		else if (d_paths.length == 0)
 		{
-			markup = _("Only commits that add or remove %s").printf(text);
+			markup = d_regex ? _("Only commits whose added or removed lines match %s").printf(text)
+			                 : _("Only commits that add or remove %s").printf(text);
 		}
 		else
 		{
-			markup = _("Only commits that change %s and add or remove %s").printf(paths, text);
+			markup = d_regex ? _("Only commits that change %s and whose added or removed lines match %s").printf(paths, text)
+			                 : _("Only commits that change %s and add or remove %s").printf(paths, text);
 		}
 
 		if (!searching && d_text != null && d_ignore_case)
@@ -1162,6 +1170,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			var text = "<b>%s</b>".printf(Markup.escape_text(d_text));
 			var paths = Markup.escape_text(string.joinv(", ", d_paths));
+
+			if (d_regex)
+			{
+				show_notice(d_paths.length == 0 ? _("No ticked ref reaches a commit whose added or removed lines match %s.").printf(text)
+				                                : _("No ticked ref reaches a commit whose added or removed lines match %s in %s.").printf(text, paths));
+				return;
+			}
 
 			show_notice(d_paths.length == 0 ? _("No ticked ref reaches a commit that adds or removes %s.").printf(text)
 			                                : _("No ticked ref reaches a commit that adds or removes %s in %s.").printf(text, paths));

@@ -74,7 +74,7 @@ private const string[] PROTOTYPE_PARSES = {
 	"--foo -- p||||unrecognized arguments: --foo|",
 	"-lx -y||||unrecognized arguments: -x -y|",
 	"-=x||||unrecognized arguments: -=x|",
-	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd|",
+	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd|",
 	"-l-||||argument -l/--local: ignored explicit argument '-'|",
 	"-la=x||||argument -a/--all: ignored explicit argument 'x'|",
 	"-l origin/master|local|origin/master|||",
@@ -82,6 +82,56 @@ private const string[] PROTOTYPE_PARSES = {
 	"feature/* refs/tags/v1.*||feature/*,refs/tags/v1.*|||",
 	"-.5||-.5|||",
 	"-1.5x||||unrecognized arguments: -1.5x|",
+};
+
+private const string[] REGEX_PARSES = {
+	"-G\tx||||None|x||",
+	"-Gx||||None|x||",
+	"-G=x||||None|x||",
+	"-G-x||||None|-x||",
+	"-G\t-1||||None|-1||",
+	"--regex\tx||||None|x||",
+	"--regex=x||||None|x||",
+	"--reg\tx||||None|x||",
+	"--re\tx|||||||ambiguous option: --re could match --remotes, --regex",
+	"--r|||||||ambiguous option: --r could match --remotes, --regex",
+	"--r\tx|||||||ambiguous option: --r could match --remotes, --regex",
+	"--rem|remotes|||None|None||",
+	"-r|remotes|||None|None||",
+	"--rege=x||||None|x||",
+	"-S\ta\t-G\tb|||||||argument -G/--regex: not allowed with argument -S/--text",
+	"-G\tb\t-S\ta|||||||argument -S/--text: not allowed with argument -G/--regex",
+	"-G\ta\t-G\tb||||None|b||",
+	"-S\ta\t-S\tb||||b|None||",
+	"-G|||||||argument -G/--regex: expected one argument",
+	"--regex|||||||argument -G/--regex: expected one argument",
+	"-G\t-x|||||||argument -G/--regex: expected one argument",
+	"-G\t--all|||||||argument -G/--regex: expected one argument",
+	"-G\tx\tmaster||master||None|x||",
+	"master\t-G\tx||master||None|x||",
+	"-G\tx\t--\tsrc|||src|None|x||",
+	"-G\t--\tsrc|||||||argument -G/--regex: expected one argument",
+	"-lG\tx|local|||None|x||",
+	"-lGx|local|||None|x||",
+	"-Gl||||None|l||",
+	"-iG\tx||||None|x|i|",
+	"-G\tx\t-i||||None|x|i|",
+	"-G\t||||None|||",
+	"-G=||||None|||",
+	"-G\ta b||||None|a b||",
+	"-G\t-foo|||||||argument -G/--regex: expected one argument",
+	"-G-foo||||None|-foo||",
+	"-G\t^a.*b$||||None|^a.*b$||",
+	"-G\t[0-9]+||||None|[0-9]+||",
+	"-SG\tx||x||G|None||",
+	"-GS\tx||x||None|S||",
+	"-S\ta\t-Gb|||||||argument -G/--regex: not allowed with argument -S/--text",
+	"--text=a\t--regex=b|||||||argument -G/--regex: not allowed with argument -S/--text",
+	"-G\tx\t--t|||||||ambiguous option: --t could match --tags, --text",
+	"--=|||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"-G\t--=|||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"-G\t--r|||||||ambiguous option: --r could match --remotes, --regex",
+	"-x\t-G\ta|||||||unrecognized arguments: -x",
 };
 
 private const string[] TEXT_PARSES = {
@@ -126,7 +176,7 @@ private const string[] TEXT_PARSES = {
 	"-S\tfoo\t-x||||||unrecognized arguments: -x",
 	"-ia|all|||None|i|",
 	"-ai|all|||None|i|",
-	"--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
 	"--ta|tags|||None||",
 	"--tex\tfoo||||foo||",
 	"-lS=foo|local|||foo||",
@@ -134,7 +184,7 @@ private const string[] TEXT_PARSES = {
 	"-S\t--zzz||||||argument -S/--text: expected one argument",
 	"-S\t-a b||||||argument -S/--text: expected one argument",
 	"-S\t-x y||||-x y||",
-	"-S\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"-S\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
 	"-S\t-||||-||",
 	"-S\t--no||||||argument -S/--text: expected one argument",
 	"-S\t--text=x||||||argument -S/--text: expected one argument",
@@ -142,7 +192,7 @@ private const string[] TEXT_PARSES = {
 	"-x\t-S\tfoo||||||unrecognized arguments: -x",
 	"-S\tfoo\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-S\t-x\t--t||||||ambiguous option: --t could match --tags, --text",
-	"-S\t-x\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"-S\t-x\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
 	"-S\t--zzz\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-S\t-x\t--\t--t||||||argument -S/--text: expected one argument",
 	"--t\t-S||||||ambiguous option: --t could match --tags, --text",
@@ -150,7 +200,7 @@ private const string[] TEXT_PARSES = {
 	"-S\t-x\t--t\t-a||||||ambiguous option: --t could match --tags, --text",
 	"-x\t-S\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-a=1\t--t||||||ambiguous option: --t could match --tags, --text",
-	"-i=x\t--=x||||||ambiguous option: --=x could match --all, --local, --remotes, --tags, --text, --ignore-case, --help, --version, --no-wd",
+	"-i=x\t--=x||||||ambiguous option: --=x could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
 	"-x\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-h\t--t||||||ambiguous option: --t could match --tags, --text",
 };
@@ -209,7 +259,9 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gittree/cli/a-bad-regex-is-refused", test_a_bad_regex_is_refused);
 	Test.add_func("/gittree/cli/a-text-alone-ticks-every-ref", test_a_text_alone_ticks_every_ref);
+	Test.add_func("/gittree/cli/an-empty-regex-is-refused", test_an_empty_regex_is_refused);
 	Test.add_func("/gittree/cli/an-empty-text-is-refused", test_an_empty_text_is_refused);
 	Test.add_func("/gittree/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
 	Test.add_func("/gittree/cli/help-names-every-option", test_help_names_every_option);
@@ -221,6 +273,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/cli/no-wd-refuses-refs-paths-texts-and-tick-options", test_no_wd_refuses_refs_paths_texts_and_tick_options);
 	Test.add_func("/gittree/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
 	Test.add_func("/gittree/cli/parses-as-the-prototype", test_parses_as_the_prototype);
+	Test.add_func("/gittree/cli/regex-parses-as-argparse", test_regex_parses_as_argparse);
 	Test.add_func("/gittree/cli/text-and-ignore-case-parse-as-argparse", test_text_and_ignore_case_parse_as_argparse);
 	Test.add_func("/gittree/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
 	Test.add_func("/gittree/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
@@ -253,6 +306,28 @@ private static int run(string directory, string[] arguments, out string output, 
 	return Process.if_exited(status) ? Process.exit_status(status) : -1;
 }
 
+private static void test_a_bad_regex_is_refused()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		string output;
+		string errors;
+
+		assert_cmpint(run(repo.path.get_path(), { "-G", "(" }, out output, out errors), CompareOperator.EQ, 2);
+		assert_cmpstr(output, CompareOperator.EQ, "");
+		assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -G/--regex: bad regular expression: Unmatched ( or \\(\n");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_text_alone_ticks_every_ref()
 {
 	try
@@ -271,6 +346,31 @@ private static void test_a_text_alone_ticks_every_ref()
 		assert_true(all.contains("refs/tags/v1"));
 		assert_true(local.contains("refs/heads/side"));
 		assert_false(local.contains("refs/tags/v1"));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_an_empty_regex_is_refused()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		foreach (var arguments in new string[] { "-G\t", "-G=", "--regex=" })
+		{
+			string output;
+			string errors;
+
+			assert_cmpint(run(repo.path.get_path(), arguments.split("\t"), out output, out errors), CompareOperator.EQ, 2);
+			assert_cmpstr(output, CompareOperator.EQ, "");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -G/--regex: the regex is empty\n");
+		}
 
 		repo.remove();
 	}
@@ -341,7 +441,7 @@ private static void test_help_names_every_option()
 
 	run(Environment.get_current_dir(), { "-h" }, out output, out errors);
 
-	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--text <text>", "--ignore-case", "--version", "--no-wd", "-- <path>..." })
+	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--text <text>", "--regex <regex>", "--ignore-case", "--version", "--no-wd", "-- <path>..." })
 	{
 		assert_true(option in output);
 	}
@@ -351,7 +451,7 @@ private static void test_help_says_gittree_and_git_tree()
 {
 	var lines = Gittree.CommandLine.HELP.split("\n");
 
-	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gittree [<options>] [<ref>...] [-S <text> [-i]] [-- <path>...]");
+	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gittree [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]");
 	assert_cmpstr(Gittree.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
 	assert_true("\ngit tree runs it too.\n" in Gittree.CommandLine.HELP);
 	assert_true("\nOptions add up: 'gittree -l origin/master' ticks every local\n" in Gittree.CommandLine.HELP);
@@ -370,8 +470,8 @@ private static void test_help_says_what_adds_or_removes_a_text()
 {
 	var help = Gittree.CommandLine.HELP;
 
-	assert_true("\n    -t, --tags      tick every tag\n    -S, --text <text>\n                    draw only the commits that add or remove <text>\n    -i, --ignore-case\n                    with -S, ignore case\n    -h, --help" in help);
-	assert_true("\nSearch looks in the subject, the message, the author and the\nhash.\n\nA commit adds or removes the text when the number of times it\nappears in a file the commit changes goes up or down, as in git\nlog -S. A merge never does.\n" in help);
+	assert_true("\n    -t, --tags      tick every tag\n    -S, --text <text>\n                    draw only the commits that add or remove <text>\n    -G, --regex <regex>\n                    draw only the commits whose added or removed\n                    lines match <regex>\n    -i, --ignore-case\n                    with -S or -G, ignore case\n    -h, --help" in help);
+	assert_true("\nSearch looks in the subject, the message, the author and the\nhash.\n\nA commit adds or removes the text when the number of times it\nappears in a file the commit changes goes up or down, as in git\nlog -S. A merge never does.\n\nA regex is a POSIX extended regular expression, as in git log -G.\n" in help);
 }
 
 private static void test_ignore_case_needs_a_text()
@@ -388,7 +488,7 @@ private static void test_ignore_case_needs_a_text()
 
 			assert_cmpint(run(repo.path.get_path(), { option }, out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -i/--ignore-case: needs -S\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -i/--ignore-case: needs -S or -G\n");
 		}
 
 		repo.remove();
@@ -458,6 +558,7 @@ private static void test_no_wd_refuses_refs_paths_texts_and_tick_options()
 			{ "-l", "" },
 			{ "--", "file" },
 			{ "-S", "foo" },
+			{ "-G", "foo" },
 			{ "-i", "" },
 		};
 
@@ -475,7 +576,7 @@ private static void test_no_wd_refuses_refs_paths_texts_and_tick_options()
 
 			assert_cmpint(run(repo.path.get_path(), arguments, out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: --no-wd takes no ref, no path, no text and no tick option\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: --no-wd takes no ref, no path, no text, no regex and no tick option\n");
 		}
 
 		foreach (var option in new string[] { "-h", "--version" })
@@ -561,6 +662,30 @@ private static void test_parses_as_the_prototype()
 		assert_cmpstr(flags_of(cli), CompareOperator.EQ, expected[1]);
 		assert_cmpstr(string.joinv(",", cli.refs), CompareOperator.EQ, expected[2]);
 		assert_cmpstr(string.joinv(",", cli.paths), CompareOperator.EQ, expected[3]);
+	}
+}
+
+private static void test_regex_parses_as_argparse()
+{
+	foreach (var row in REGEX_PARSES)
+	{
+		var expected = row.split("|");
+		var arguments = expected[0] == "" ? new string[0] : expected[0].split("\t");
+		var cli = new Gittree.CommandLine(arguments);
+
+		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, expected[7]);
+
+		if (expected[7] != "")
+		{
+			continue;
+		}
+
+		assert_cmpstr(flags_of(cli), CompareOperator.EQ, expected[1]);
+		assert_cmpstr(string.joinv(",", cli.refs), CompareOperator.EQ, expected[2]);
+		assert_cmpstr(string.joinv(",", cli.paths), CompareOperator.EQ, expected[3]);
+		assert_cmpstr(cli.text != null ? cli.text : "None", CompareOperator.EQ, expected[4]);
+		assert_cmpstr(cli.regex != null ? cli.regex : "None", CompareOperator.EQ, expected[5]);
+		assert_true(cli.ignore_case == (expected[6] == "i"));
 	}
 }
 

@@ -149,7 +149,7 @@ public class DiffFindBar : Gtk.SearchBar
 		buffer.tag_table.tag_added.connect(tag_added);
 	}
 
-	public void fill(string text, bool match_case)
+	public void fill(string text, bool match_case, bool regex = false)
 	{
 		var window = get_toplevel() as Gtk.Window;
 		var focus = window != null ? window.get_focus() : null;
@@ -164,6 +164,8 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 		d_field.text = text;
 		d_switches.match_case = match_case;
+		d_switches.regex = regex;
+		d_switches.whole_word = false;
 		search();
 	}
 

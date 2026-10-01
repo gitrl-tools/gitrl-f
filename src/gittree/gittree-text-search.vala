@@ -22,9 +22,9 @@ namespace Gittree
 
 public class TextSearch : Object
 {
-	public static async Gee.Set<Ggit.OId> run(File directory, Ggit.OId[] tips, string text, bool ignore_case, string[] paths, Cancellable cancellable) throws Error
+	public static async Gee.Set<Ggit.OId> run(File directory, Ggit.OId[] tips, string text, bool ignore_case, bool regex, string[] paths, Cancellable cancellable) throws Error
 	{
-		string[] argv = { "log", "-z", "--stdin", "--no-textconv", "--format=%H", "-S" + text };
+		string[] argv = { "log", "-z", "--stdin", "--no-textconv", "--format=%H", (regex ? "-G" : "-S") + text };
 
 		if (ignore_case)
 		{
