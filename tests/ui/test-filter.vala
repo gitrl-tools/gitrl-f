@@ -152,11 +152,13 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
 	Test.add_func("/gittree/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
 	Test.add_func("/gittree/ui/filter/a-failed-search-shows-git-and-the-plain-history", test_a_failed_search_shows_git_and_the_plain_history);
+	Test.add_func("/gittree/ui/filter/a-filter-after-a-failed-open-does-nothing", test_a_filter_after_a_failed_open_does_nothing);
 	Test.add_func("/gittree/ui/filter/a-launch-fills-the-closed-bar-with-the-text-and-the-case", test_a_launch_fills_the_closed_bar_with_the_text_and_the_case);
 	Test.add_func("/gittree/ui/filter/a-launch-with-a-text-shows-the-notice-until-the-search-ends", test_a_launch_with_a_text_shows_the_notice_until_the_search_ends);
 	Test.add_func("/gittree/ui/filter/a-new-filter-puts-its-text-in-the-diff-bar", test_a_new_filter_puts_its_text_in_the_diff_bar);
 	Test.add_func("/gittree/ui/filter/a-new-filter-stops-the-search-before-it", test_a_new_filter_stops_the_search_before_it);
 	Test.add_func("/gittree/ui/filter/a-reload-during-a-slow-search-stops-it-first", test_a_reload_during_a_slow_search_stops_it_first);
+	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
 	Test.add_func("/gittree/ui/filter/closing-the-bar-keeps-the-filter", test_closing_the_bar_keeps_the_filter);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
@@ -342,6 +344,35 @@ private static void test_a_failed_search_shows_git_and_the_plain_history()
 	}
 }
 
+private static void test_a_filter_after_a_failed_open_does_nothing()
+{
+	try
+	{
+		var repo = fixture();
+
+		FileUtils.set_contents(repo.path.get_child(".git").get_child("packed-refs").get_path(), "garbage line\n");
+
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+
+		settle(300);
+
+		assert_true(window.error_shown);
+
+		window.history.apply_filter("needle", false);
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_launch_fills_the_closed_bar_with_the_text_and_the_case()
 {
 	try
@@ -490,6 +521,44 @@ private static void test_a_reload_during_a_slow_search_stops_it_first()
 
 		assert_cmpint(git_calls(" -S"), CompareOperator.EQ, before + 2);
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "f,c,a");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_reload_or_a_new_filter_keeps_the_launch_notice()
+{
+	try
+	{
+		var repo = fixture();
+
+		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
+
+		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
+
+		settle(300);
+		window.activate_action("reload", null);
+		settle(200);
+
+		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "");
+
+		window.history.apply_filter("NEEDLE", false);
+		settle(200);
+
+		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
+		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "Searching the changes for NEEDLE...");
+
+		settle(1500);
+		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+
+		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "list");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e");
 
 		window.destroy();
 		repo.remove();

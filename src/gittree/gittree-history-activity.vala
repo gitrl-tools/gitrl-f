@@ -453,11 +453,23 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	public void apply_filter(string text, bool ignore_case)
 	{
+		if (d_repository == null || d_full == null)
+		{
+			return;
+		}
+
+		var waiting = d_waiting;
+
 		d_find_closed = false;
 		d_text = text;
 		d_ignore_case = ignore_case;
-		search(false);
+		search(waiting);
 		show_path_bar();
+
+		if (waiting)
+		{
+			show_ticks();
+		}
 	}
 
 	private void author_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
@@ -919,7 +931,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_text != null)
 		{
-			search(false);
+			search(d_waiting);
 		}
 		else
 		{
