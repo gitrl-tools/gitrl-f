@@ -34,6 +34,7 @@ public class DiffFindBar : Gtk.SearchBar
 	private Ggit.Diff? d_diff_searched;
 	private Gtk.SearchEntry d_field;
 	private DiffFind d_find;
+	private Gee.HashMap<Gitg.DiffViewFile, int> d_indexes;
 	private bool d_quiet;
 	private Gtk.Widget? d_return_focus;
 	private bool d_scroll_pending;
@@ -63,6 +64,7 @@ public class DiffFindBar : Gtk.SearchBar
 	{
 		d_diff = diff;
 		d_find = new DiffFind("", true);
+		d_indexes = new Gee.HashMap<Gitg.DiffViewFile, int>();
 		d_sizes = new int[0];
 		d_split = new bool[0];
 		d_watched = new Gee.HashSet<Gitg.DiffViewFile>();
@@ -229,12 +231,12 @@ public class DiffFindBar : Gtk.SearchBar
 			return;
 		}
 
-		var index = d_diff.get_files().index_of(file);
-
-		if (index < 0 || index >= d_split.length)
+		if (!d_indexes.has_key(file))
 		{
 			return;
 		}
+
+		var index = d_indexes[file];
 
 		if (file.split != d_split[index] || file.get_lines().size != d_sizes[index])
 		{
@@ -377,6 +379,7 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 
 		d_find = new DiffFind(text, d_case.active);
+		d_indexes = new Gee.HashMap<Gitg.DiffViewFile, int>();
 		d_sizes = new int[files.size];
 		d_split = new bool[files.size];
 
@@ -388,6 +391,7 @@ public class DiffFindBar : Gtk.SearchBar
 			var texts = new string[lines.size];
 
 			watch(file);
+			d_indexes[file] = i;
 
 			for (var line = 0; line < lines.size; line++)
 			{

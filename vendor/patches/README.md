@@ -185,7 +185,7 @@ Four changes: the selection comes out, a text view is bound when its file makes 
 
 **4. Gives the rows of the files, and a signal when they change.** `get_files()` gives the row of each file, in the order of the pane. `files_changed` is sent after each batch of rows from part 3. The first batch of a new diff comes after the rows of the old diff are removed. Thus the signal also tells that the rows were replaced.
 
-**Why.** The find bar of the diff searches the files of the commit that shows, and it must search again when more files come in. The grid that holds the rows is private. A `Gtk.Grid` gives its children in the reverse of the order in which they were added. For a commit of `a.txt` to `d.bin`, it gave `d.bin` first (measured in the UI test, 2026-10-01). Thus the rows are read by their place in the grid.
+**Why.** The find bar of the diff searches the files of the commit that shows, and it must search again when more files come in. The grid that holds the rows is private. A `Gtk.Grid` gives its children in the reverse of the order in which they were added. For a commit of `a.txt` to `d.bin`, it gave `d.bin` first (measured in the UI test, 2026-10-01). Thus `get_files()` sorts the rows by their row in the grid, in one pass over the children. A first version asked the grid for the child at each row, and its time grew with the square of the number of files. On a commit of 1000 files with the find bar open, opening every file took 12.22 s with that version and 4.46 s with this one. With the bar closed, it took 4.13 s (measured under Xvfb, 2026-10-01).
 
 **Cost.** One signal for each batch, and nothing when nothing listens.
 

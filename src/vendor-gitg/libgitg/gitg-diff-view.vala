@@ -251,11 +251,18 @@ public class Gitg.DiffView : Gtk.Grid
 	public Gee.List<DiffViewFile> get_files()
 	{
 		var files = new Gee.ArrayList<DiffViewFile>();
+		var rows = new Gee.HashMap<DiffViewFile, int>();
 
-		for (var i = 0; d_grid_files.get_child_at(0, i) != null; i++)
+		foreach (var child in d_grid_files.get_children())
 		{
-			files.add((DiffViewFile) d_grid_files.get_child_at(0, i));
+			int row;
+
+			d_grid_files.child_get(child, "top-attach", out row);
+			files.add((DiffViewFile) child);
+			rows[(DiffViewFile) child] = row;
 		}
+
+		files.sort((a, b) => rows[a] - rows[b]);
 
 		return files;
 	}
