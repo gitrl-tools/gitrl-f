@@ -122,6 +122,10 @@ does, and shows no merges. The window opens with the paths in Files of the
 search bar, which can change them. It splits paths at spaces, as the shell does, and takes globs such
 as
 .BR '*.yaml' .
+In the bar, Files ignores case unless Match case is on. With Regex on, the
+field is one regex that a path must match. The search reads the files that
+each commit of the ticked refs changed, and keeps the commits that changed a
+path that matches.
 The diff of a commit that matches shows only those files. A right click on
 a file in the diff offers Show history of this file, which puts that file
 in Files.

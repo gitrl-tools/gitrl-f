@@ -36,6 +36,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
+	private bool d_files_case;
+	private bool d_files_regex;
 	private DiffFindBar d_find_bar;
 	private bool d_find_closed;
 	private bool d_find_with_pane;
@@ -900,7 +902,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		drop_lines();
 
-		if (string.joinv("\n", paths) != string.joinv("\n", d_paths))
+		if (string.joinv("\n", paths) != string.joinv("\n", d_paths) || (paths.length > 0 && (d_cases[SearchChoice.FILES] != d_files_case || d_regexes[SearchChoice.FILES] != d_files_regex)))
 		{
 			read_paths(paths, text != "" ? text : null, ignore_case, regex);
 			return;
@@ -945,7 +947,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		Filter.split(d_typed[SearchChoice.FILES], out paths);
+		typed_paths(out paths);
 		apply(d_text != null ? d_text : "", d_ignore_case, d_regex, paths);
 	}
 
@@ -1021,7 +1023,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return _("Bad regex");
 		}
 
-		if (d_choice == SearchChoice.FILES && !Filter.split(d_typed[SearchChoice.FILES], out paths))
+		if (d_choice == SearchChoice.FILES && d_regexes[SearchChoice.FILES] && new TextMatch(d_typed[SearchChoice.FILES].strip(), d_cases[SearchChoice.FILES], true).error != null)
+		{
+			return _("Bad regex");
+		}
+
+		if (d_choice == SearchChoice.FILES && !typed_paths(out paths))
 		{
 			return _("A quote is not closed");
 		}
@@ -1057,7 +1064,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_paths.length > 0)
 		{
-			parts += singular ? _("changes %s").printf(bold_list(d_paths)) : _("change %s").printf(bold_list(d_paths));
+			var names = d_files_regex ? _("a path that matches %s").printf(bold_list(d_paths)) : bold_list(d_paths);
+
+			parts += (singular ? _("changes %s") : _("change %s")).printf(names);
 			whose += false;
 		}
 
@@ -1345,7 +1354,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private bool follows()
 	{
-		return d_repository != null && d_paths.length > 0 && Filter.is_one_file(d_repository, pathspec());
+		return d_repository != null && d_paths.length > 0 && !d_files_regex && Filter.is_one_file(d_repository, pathspec());
 	}
 
 	private File git_directory()
@@ -1363,6 +1372,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return d_repository.get_location();
+	}
+
+	private string[] git_paths()
+	{
+		return Filter.pathspecs(d_paths, d_files_case || follows());
 	}
 
 	private void go(int direction)
@@ -1609,10 +1623,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_paths.length > 0)
 		{
-			var unlimited = follows();
+			var unlimited = scans();
 
 			d_paths = new string[0];
-			d_diff.options.pathspec = null;
+			d_files_regex = false;
+			limit_diff();
 			d_names = null;
 
 			try
@@ -1661,6 +1676,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			style.add_class("unlit");
 		}
+	}
+
+	private void limit_diff()
+	{
+		var flags = d_diff.options.flags & ~Ggit.DiffOption.IGNORE_CASE;
+
+		d_diff.options.flags = d_paths.length > 0 && !d_files_case && !d_files_regex ? flags | Ggit.DiffOption.IGNORE_CASE : flags;
+		d_diff.options.pathspec = pathspec();
 	}
 
 	private History? listed_history()
@@ -1858,10 +1881,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_repository = repository;
 		d_paths = paths;
+		d_files_case = true;
+		d_files_regex = false;
 		d_typed[SearchChoice.FILES] = Filter.joined(paths);
+		d_cases[SearchChoice.FILES] = d_cases[SearchChoice.FILES] || paths.length > 0;
 		this.directory = directory;
 		d_diff.repository = repository;
-		d_diff.options.pathspec = pathspec();
+		limit_diff();
 		Languages.warm(repository);
 		d_refs = refs;
 		d_ticks = resolved;
@@ -1898,7 +1924,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		show_typed();
 
-		if (d_history != null && (d_text != null || follows()))
+		if (d_history != null && (d_text != null || scans()))
 		{
 			search(true);
 		}
@@ -1935,7 +1961,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private string[]? pathspec()
 	{
-		if (d_paths.length == 0)
+		if (d_paths.length == 0 || d_files_regex)
 		{
 			return null;
 		}
@@ -1958,7 +1984,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			var applied = d_reading != null ? d_reading : d_paths;
 
-			return !Filter.split(d_typed[SearchChoice.FILES], out paths) || string.joinv("\n", paths) != string.joinv("\n", applied);
+			return !typed_paths(out paths) || string.joinv("\n", paths) != string.joinv("\n", applied) || (paths.length > 0 && (d_cases[SearchChoice.FILES] != d_files_case || d_regexes[SearchChoice.FILES] != d_files_regex));
 		}
 
 		return d_query.is_empty && d_typed[SearchChoice.MESSAGES].strip() != "";
@@ -1999,9 +2025,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		var topological = d_settings.get_boolean("topological-order");
 
-		if (d_paths.length > 0 && !follows())
+		if (d_paths.length > 0 && !scans())
 		{
-			return new History.with_paths(d_repository, refs, d_paths, git_directory(), topological);
+			return new History.with_paths(d_repository, refs, git_paths(), git_directory(), topological);
 		}
 
 		return new History(d_repository, refs, topological);
@@ -2010,6 +2036,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private void read_paths(string[] wanted, string? text, bool ignore_case, bool regex)
 	{
 		string[] paths = wanted;
+		var match_case = d_cases[SearchChoice.FILES];
+		var by_regex = d_regexes[SearchChoice.FILES];
 
 		if (d_repository == null || d_full == null)
 		{
@@ -2030,12 +2058,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		if (Filter.is_one_file(d_repository, Filter.relative_paths(d_repository, directory, paths)))
+		if (by_regex || Filter.is_one_file(d_repository, Filter.relative_paths(d_repository, directory, paths)))
 		{
-			var unlimited = d_paths.length == 0 || follows();
+			var unlimited = d_paths.length == 0 || scans();
 
 			d_paths = paths;
-			d_diff.options.pathspec = pathspec();
+			d_files_case = match_case;
+			d_files_regex = by_regex;
+			limit_diff();
 
 			try
 			{
@@ -2062,7 +2092,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_reading = paths;
 		show_path_bar();
 
-		History.read_paths.begin(d_repository, d_refs, paths, git_directory(), d_settings.get_boolean("topological-order"), cancellable, (obj, res) => {
+		History.read_paths.begin(d_repository, d_refs, Filter.pathspecs(paths, match_case), git_directory(), d_settings.get_boolean("topological-order"), cancellable, (obj, res) => {
 			History history;
 
 			try
@@ -2090,7 +2120,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_search = null;
 			d_reading = null;
 			d_paths = paths;
-			d_diff.options.pathspec = pathspec();
+			d_files_case = match_case;
+			d_files_regex = false;
+			limit_diff();
 			d_full = history;
 			d_history = history;
 			d_text = null;
@@ -2141,7 +2173,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_full = history;
 		d_all = null;
 
-		if (d_text != null || follows())
+		if (d_text != null || scans())
 		{
 			search(d_waiting);
 		}
@@ -2225,6 +2257,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return ret;
 	}
 
+	private bool scans()
+	{
+		return follows() || (d_paths.length > 0 && d_files_regex);
+	}
+
 	private void search(bool waiting)
 	{
 		stop_search();
@@ -2236,7 +2273,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search = cancellable;
 		d_waiting = waiting;
 
-		var filter = new Filter(d_text, d_ignore_case, d_regex, d_paths, follows());
+		var filter = new Filter(d_text, d_ignore_case, d_regex, d_files_regex ? new string[0] : git_paths(), follows());
+
+		filter.path_match = d_files_regex ? new TextMatch(d_paths[0], d_files_case, true) : null;
 
 		TextSearch.run.begin(start, tips, filter, cancellable, (obj, res) => {
 			Gee.Set<Ggit.OId> matches;
@@ -2270,7 +2309,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			d_search = null;
 			d_waiting = false;
-			d_names = filter.follow ? names : null;
+			d_names = filter.follow || filter.path_match != null ? names : null;
 			d_history = new History.filtered(d_full, matches, d_refs);
 			d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 			show_path_bar();
@@ -2361,7 +2400,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_base()
 	{
-		if (follows())
+		if (scans())
 		{
 			search(false);
 			show_path_bar();
@@ -2380,7 +2419,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		string[] tooltips = {
 			_("Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: pick Changed lines or Files for that.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01"),
 			_("Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regex. Enter searches"),
-			_("Files or folders, split by spaces. Globs such as '*.yaml' work. Enter searches")
+			_("Files or folders, split by spaces. Globs such as '*.yaml' work. With Regex, the field is one regex for the whole path. Enter searches")
 		};
 		string?[] texts = { messages_apply() ? d_typed[SearchChoice.MESSAGES].strip() : null, d_text, d_paths.length > 0 ? Filter.joined(d_paths) : null };
 
@@ -2394,7 +2433,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_choice_label.label = d_choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(d_choice);
 		d_search_entry.placeholder_text = placeholders[d_choice];
 		d_search_entry.tooltip_text = tooltips[d_choice];
-		d_search_switches.sensitive = d_choice != SearchChoice.FILES;
 	}
 
 	private void show_details()
@@ -2580,7 +2618,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			markup += _(", following renames");
 		}
 
-		if (!searching && d_text != null && d_ignore_case)
+		if (!searching && ((d_text != null && d_ignore_case) || (d_paths.length > 0 && !d_files_case && !follows())))
 		{
 			markup += _(", ignoring case");
 		}
@@ -2886,9 +2924,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return top != null ? top : d_repository.get_location();
 	}
 
+	private bool typed_paths(out string[] paths)
+	{
+		var text = d_typed[SearchChoice.FILES].strip();
+
+		if (d_regexes[SearchChoice.FILES])
+		{
+			paths = text != "" ? new string[] { text } : new string[0];
+			return true;
+		}
+
+		return Filter.split(text, out paths);
+	}
+
 	private History? unlimited_history()
 	{
-		if (d_paths.length == 0 || follows())
+		if (d_paths.length == 0 || scans())
 		{
 			return d_full;
 		}

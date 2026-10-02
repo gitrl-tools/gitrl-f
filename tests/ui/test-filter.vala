@@ -223,6 +223,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-lifts-the-filter-with-the-bar", test_escape_closes_in_order_and_lifts_the_filter_with_the_bar);
 	Test.add_func("/gittree/ui/filter/escape-in-a-filled-diff-bar-selects-no-text", test_escape_in_a_filled_diff_bar_selects_no_text);
 	Test.add_func("/gittree/ui/filter/escape-in-the-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_the_field_closes_from_the_bottom_up_and_keeps_the_focus);
+	Test.add_func("/gittree/ui/filter/files-match-case-and-regex-change-what-matches", test_files_match_case_and_regex_change_what_matches);
 	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
 	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
 	Test.add_func("/gittree/ui/filter/the-choices-stack-and-the-list-shows-each-text", test_the_choices_stack_and_the_list_shows_each_text);
@@ -900,13 +901,13 @@ private static void test_a_typed_path_draws_what_the_command_line_draws()
 		choose(typed, Gittree.SearchChoice.FILES);
 
 		assert_cmpstr(typed.history.search_field.placeholder_text, CompareOperator.EQ, "Files or folders, split by spaces");
-		assert_cmpstr(typed.history.search_field.tooltip_text, CompareOperator.EQ, "Files or folders, split by spaces. Globs such as '*.yaml' work. Enter searches");
+		assert_cmpstr(typed.history.search_field.tooltip_text, CompareOperator.EQ, "Files or folders, split by spaces. Globs such as '*.yaml' work. With Regex, the field is one regex for the whole path. Enter searches");
 
 		filter_paths(typed, "", "p");
 
 		assert_cmpstr(subjects(typed), CompareOperator.EQ, subjects(given));
 		assert_cmpstr(subjects(typed), CompareOperator.EQ, "d,a");
-		assert_cmpstr(typed.history.path_bar_text, CompareOperator.EQ, "Only commits that change p");
+		assert_cmpstr(typed.history.path_bar_text, CompareOperator.EQ, "Only commits that change p, ignoring case");
 		assert_cmpstr(typed.history.summary_text, CompareOperator.EQ, given.history.summary_text);
 
 		filter_paths(typed, "needle", "p");
@@ -1178,8 +1179,9 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 		pick(window, "Files");
 
 		assert_cmpstr(field.text, CompareOperator.EQ, "");
-		assert_false(match_case.sensitive);
-		assert_false(regex.sensitive);
+		assert_true(match_case.sensitive);
+		assert_true(regex.sensitive);
+		assert_false(match_case.active);
 
 		pick(window, "Messages, authors and hashes");
 
@@ -1407,6 +1409,84 @@ private static void test_escape_in_the_field_closes_from_the_bottom_up_and_keeps
 	}
 }
 
+private static void test_files_match_case_and_regex_change_what_matches()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("upper", "src/Test.vala", "one");
+		repo.commit("lower", "src/test.c", "two");
+		repo.commit("other", "docs/notes.txt", "three");
+
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		choose(window, Gittree.SearchChoice.FILES);
+
+		var match_case = check_labelled(list_bar(window), "Match case");
+		var regex = check_labelled(list_bar(window), "Regex");
+
+		assert_true(match_case.sensitive);
+		assert_true(regex.sensitive);
+
+		filter_paths(window, "", "*test*");
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "lower,upper");
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that change *test*, ignoring case");
+
+		choose(window, Gittree.SearchChoice.FILES);
+		match_case.active = true;
+		history.search_field.activate();
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "lower");
+
+		regex.active = true;
+		history.search_field.text = "^src/.*\\.vala$";
+		history.search_field.activate();
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "upper");
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that change a path that matches ^src/.*\\.vala$");
+
+		select_subject(window, "upper");
+		history.paned.details_visible = true;
+		settle(400);
+
+		assert_cmpint((int)history.diff_view.diff.get_num_deltas(), CompareOperator.EQ, 1);
+		assert_cmpstr(history.diff_view.diff.get_delta(0).get_new_file().get_path(), CompareOperator.EQ, "src/Test.vala");
+
+		history.search_field.text = "\\.(c|txt)$";
+		history.search_field.activate();
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "other,lower");
+
+		choose(window, Gittree.SearchChoice.LINES);
+		history.search_field.text = "three";
+		history.search_field.activate();
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "other");
+
+		choose(window, Gittree.SearchChoice.FILES);
+		history.search_field.text = "src/(";
+		settle(300);
+
+		assert_cmpstr(history.search_count, CompareOperator.EQ, "Bad regex");
+		assert_true(history.search_field.get_style_context().has_class("error"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_globs_and_quoted_paths_work_in_the_field()
 {
 	try
@@ -1428,7 +1508,7 @@ private static void test_globs_and_quoted_paths_work_in_the_field()
 		filter_paths(window, "", "\"a b\"");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "spaced,deep");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change a b");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change a b, ignoring case");
 
 		filter_paths(window, "", "notes.txt top.yaml");
 
@@ -1734,7 +1814,7 @@ private static void test_the_paths_are_read_in_the_background()
 		settle(1500);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "d,a");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change p");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change p, ignoring case");
 
 		window.destroy();
 		repo.remove();

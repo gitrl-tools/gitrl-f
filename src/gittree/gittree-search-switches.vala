@@ -37,15 +37,6 @@ public class SearchSwitches : Object
 		set { d_regex.active = value; }
 	}
 
-	public bool sensitive
-	{
-		set
-		{
-			d_case.sensitive = value;
-			d_regex.sensitive = value;
-		}
-	}
-
 	public signal void changed();
 
 	public SearchSwitches(Gtk.Box box)

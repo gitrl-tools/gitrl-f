@@ -58,6 +58,35 @@ public class TextSearch : Object
 			}
 		}
 
+		if (filter.path_match != null)
+		{
+			var kept = History.id_map<Gee.List<string>>();
+
+			foreach (var entry in named.entries)
+			{
+				var matched = new Gee.ArrayList<string>();
+
+				foreach (var name in entry.value)
+				{
+					if (filter.path_match.matches(name))
+					{
+						matched.add(name);
+					}
+				}
+
+				if (matched.size > 0)
+				{
+					kept[entry.key] = matched;
+				}
+				else
+				{
+					found.remove(entry.key);
+				}
+			}
+
+			named = kept;
+		}
+
 		names = named;
 
 		return found;

@@ -24,6 +24,7 @@ public class Filter : Object
 {
 	public bool follow { get; private set; }
 	public bool ignore_case { get; private set; }
+	public TextMatch? path_match { get; set; }
 	public string[] paths { get; private set; }
 	public bool regex { get; private set; }
 	public string? text { get; private set; }
@@ -103,9 +104,13 @@ public class Filter : Object
 			}
 		}
 
-		if (follow)
+		if (follow || path_match != null)
 		{
 			argv += "--name-status";
+		}
+
+		if (follow)
+		{
 			argv += "--follow";
 		}
 
@@ -117,6 +122,18 @@ public class Filter : Object
 		}
 
 		return argv;
+	}
+
+	public static string[] pathspecs(string[] paths, bool match_case)
+	{
+		var ret = new string[0];
+
+		foreach (var path in paths)
+		{
+			ret += match_case ? path : ":(icase)" + path;
+		}
+
+		return ret;
 	}
 
 	public static string[] relative_paths(Gitg.Repository repository, File? directory, string[] paths)
