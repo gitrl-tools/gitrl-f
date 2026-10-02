@@ -150,6 +150,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
 	Test.add_func("/gittree/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
 	Test.add_func("/gittree/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
+	Test.add_func("/gittree/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
 	Test.add_func("/gittree/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
 	Test.add_func("/gittree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
 	Test.add_func("/gittree/ui/diff-pane/an-added-line-offers-no-commit-that-last-changed-it", test_an_added_line_offers_no_commit_that_last_changed_it);
@@ -543,6 +544,59 @@ private static void test_a_line_shows_its_history()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "two,one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "History of line 2 of f.c, from %s".printf(three));
 		assert_true(window.history.paned.path_bar.show_close_button);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_long_line_of_the_message_wraps()
+{
+	try
+	{
+		var repo = Repo.create();
+		var words = new StringBuilder();
+
+		for (var i = 0; i < 80; i++)
+		{
+			words.append("word ");
+		}
+
+		repo.commit_bytes("long\n\n" + words.str + "\n" + words.str + "\n" + words.str, "f.c", "a\n".data);
+
+		var window = new Gittree.Window(application());
+
+		window.set_default_size(1200, 900);
+		window.open_repository(Gittree.Application.discover_repository(repo.path), null, {}, repo.path);
+		window.show();
+		settle(300);
+		select_subject(window, "long");
+		window.history.paned.details_visible = true;
+		settle(600);
+
+		var pane = (Gtk.ScrolledWindow)find_all(window.history.diff_view, typeof(Gtk.ScrolledWindow))[0];
+		Gtk.TextView? message = null;
+
+		foreach (var widget in find_all(pane, typeof(Gtk.TextView)))
+		{
+			if (widget.get_style_context().has_class("commit-message"))
+			{
+				message = (Gtk.TextView)widget;
+			}
+		}
+		Gtk.TextIter end;
+		int top;
+		int height;
+
+		message.buffer.get_end_iter(out end);
+		message.get_line_yrange(end, out top, out height);
+
+		assert_cmpfloat(pane.hadjustment.upper, CompareOperator.LE, pane.hadjustment.page_size);
+		assert_cmpint(message.get_allocated_height(), CompareOperator.LE, top + height);
 
 		window.destroy();
 		repo.remove();

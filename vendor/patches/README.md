@@ -184,7 +184,7 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Five changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gittree can read the rows, and gittree can read the parent that the diff compares with.
+Six changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gittree can read the rows, gittree can read the parent that the diff compares with, and the message wraps.
 
 **1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
@@ -215,6 +215,14 @@ Five changes: the selection comes out, a text view is bound when its file makes 
 **Why.** The history of removed lines, and the commit that last changed a line, dig from the parent that the diff shows. For a merge, the user can choose another parent in the details grid, and the grid keeps it in a private field.
 
 **Cost.** None. The property only reads.
+
+**6. Wraps the lines of the commit message at the width of the pane**, and measures the height of the message again when its width changes.
+
+**Why.** The text view of the message did not wrap. Thus one long line of a message made the content of the pane wider than the pane. The pane then showed a horizontal scroll bar at its bottom, which moved the message, the names of the files and the diffs together. A long line of a diff has its own scroll bar at the end of its file, so the operator saw the bar at the bottom as wrong. A message with lines of 400 characters made the content 2753 pixels wide, in a pane of 1200 pixels (measured under Xvfb, 2026-10-02).
+
+A text view that wraps finds its height before it knows its width. When the pane opened, the same message got 306 pixels for 177 pixels of text, and the rows of the files started below an empty space. The view now asks for its size again after each change of its width, and it gets 177 pixels (measured in the same test).
+
+**Cost.** A long line of a message shows on two or more lines. The lines that the author broke stay broken at the same places. Each change of the width of the pane asks for the size of the message one more time.
 
 ## gitg-lanes.patch
 

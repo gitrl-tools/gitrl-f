@@ -1,6 +1,14 @@
 --- a/libgitg/gitg-diff-view.vala
 +++ b/libgitg/gitg-diff-view.vala
-@@ -57,6 +57,8 @@
+@@ -48,6 +48,7 @@
+ 	private ulong d_expanded_notify;
+ 	private ulong d_parent_commit_notify;
+ 	private bool d_changes_inline;
++	private int d_message_width;
+ 
+ 	Gdk.RGBA d_color_link;
+ 	Gdk.RGBA color_hovered_link;
+@@ -57,6 +58,8 @@
  	private uint d_reveal_options_timeout;
  	private uint d_unreveal_options_timeout;
  
@@ -9,7 +17,7 @@
  	private static Gee.HashSet<string> s_image_mime_types;
  
  	public Ggit.DiffOptions options
-@@ -72,11 +74,6 @@
+@@ -72,11 +75,6 @@
  		}
  	}
  
@@ -21,7 +29,7 @@
  	public Ggit.Diff? diff
  	{
  		get { return d_diff; }
-@@ -92,6 +89,11 @@
+@@ -92,6 +90,11 @@
  		}
  	}
  
@@ -33,7 +41,7 @@
  	public Commit? commit
  	{
  		get { return d_commit; }
-@@ -107,6 +109,8 @@
+@@ -107,6 +110,8 @@
  		}
  	}
  
@@ -42,7 +50,16 @@
  	public virtual signal void options_changed()
  	{
  		if (d_commit != null)
-@@ -249,6 +253,25 @@
+@@ -217,6 +222,8 @@
+ 		d_text_view_message.has_tooltip = true;
+ 		d_text_view_message.query_tooltip.connect (on_query_tooltip_event);
+ 		d_text_view_message.style_updated.connect (load_colors_from_theme);
++		d_text_view_message.wrap_mode = Gtk.WrapMode.WORD_CHAR;
++		d_text_view_message.size_allocate.connect (on_message_allocated);
+ 
+ 		load_colors_from_theme(d_text_view_message);
+ 
+@@ -249,6 +256,25 @@
  		}
  	}
  
@@ -68,7 +85,31 @@
  	private static Regex s_message_regexp;
  
  	static construct
-@@ -639,25 +662,6 @@
+@@ -455,6 +481,23 @@
+ 		}
+ 	}
+ 
++	private void on_message_allocated (Gtk.Allocation allocation)
++	{
++		if (allocation.width == d_message_width)
++		{
++			return;
++		}
++
++		d_message_width = allocation.width;
++
++		Gtk.TextView view = d_text_view_message;
++
++		Idle.add (() => {
++			view.queue_resize ();
++			return false;
++		});
++	}
++
+ 	private bool on_motion_notify_event (Gtk.Widget widget, Gdk.EventMotion evt)
+ 	{
+ 		int x, y;
+@@ -639,25 +682,6 @@
  		SignalHandler.unblock(d_commit_details, d_expanded_notify);
  	}
  
@@ -94,7 +135,7 @@
  	private string? primary_path(Ggit.DiffDelta delta)
  	{
  		var path = delta.get_old_file().get_path();
-@@ -730,11 +734,94 @@
+@@ -730,11 +754,94 @@
  		check_finish();
  	}
  
@@ -191,7 +232,7 @@
  		Ggit.DiffHunk? current_hunk = null;
  		Gee.ArrayList<Ggit.DiffLine>? current_lines = null;
  		var current_is_binary = false;
-@@ -756,8 +843,6 @@
+@@ -756,8 +863,6 @@
  
  			if (current_file != null)
  			{
@@ -200,7 +241,7 @@
  				files.add(current_file);
  
  				current_file = null;
-@@ -826,11 +911,11 @@
+@@ -826,11 +931,11 @@
  					bool can_diff_as_image = mime_type_for_image != null && s_image_mime_types.contains(mime_type_for_image);
  					bool can_diff_as_text = ContentType.is_mime_type(mime_type_for_image, "text/plain");
  
@@ -214,7 +255,7 @@
  					}
  					if (!can_diff_as_image && !current_is_binary && !can_diff_as_text)
  					{
-@@ -839,21 +924,9 @@
+@@ -839,21 +944,9 @@
  					}
  					if (can_diff_as_text)
  					{
@@ -239,7 +280,7 @@
  					}
  					if (current_is_binary)
  					{
-@@ -893,8 +966,8 @@
+@@ -893,8 +986,8 @@
  											{
  												info = new DiffViewFileInfo(repository, delta, new_is_workdir);
  											}
@@ -250,7 +291,7 @@
  												return 0;
  											},
  									(delta, binary) => {
-@@ -941,7 +1014,7 @@
+@@ -941,7 +1034,7 @@
  							stderr.printf (@"Error: $(error.message)\n");
  						}
  						if (current_is_binary)
@@ -259,7 +300,7 @@
  					}
  					return 0;
  				},
-@@ -1018,22 +1091,7 @@
+@@ -1018,22 +1111,7 @@
  		d_commit_details.expanded = (files.size <= 1 || !default_collapse_all);
  		d_commit_details.expander_visible = (files.size > 1);
  
@@ -283,7 +324,7 @@
  	}
  
  	private void auto_update_expanded()
-@@ -1050,26 +1108,6 @@
+@@ -1050,26 +1128,6 @@
  		auto_change_expanded(true);
  	}
  
@@ -310,7 +351,7 @@
  	private void update_hide_show_options(Gdk.Window window, int ex, int ey)
  	{
  		void *data;
-@@ -1152,4 +1190,29 @@
+@@ -1152,4 +1210,29 @@
  	}
  }
  

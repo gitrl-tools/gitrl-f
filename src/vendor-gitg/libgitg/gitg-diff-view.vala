@@ -48,6 +48,7 @@ public class Gitg.DiffView : Gtk.Grid
 	private ulong d_expanded_notify;
 	private ulong d_parent_commit_notify;
 	private bool d_changes_inline;
+	private int d_message_width;
 
 	Gdk.RGBA d_color_link;
 	Gdk.RGBA color_hovered_link;
@@ -221,6 +222,8 @@ public class Gitg.DiffView : Gtk.Grid
 		d_text_view_message.has_tooltip = true;
 		d_text_view_message.query_tooltip.connect (on_query_tooltip_event);
 		d_text_view_message.style_updated.connect (load_colors_from_theme);
+		d_text_view_message.wrap_mode = Gtk.WrapMode.WORD_CHAR;
+		d_text_view_message.size_allocate.connect (on_message_allocated);
 
 		load_colors_from_theme(d_text_view_message);
 
@@ -476,6 +479,23 @@ public class Gitg.DiffView : Gtk.Grid
 		{
 			follow_if_link (textview, iter);
 		}
+	}
+
+	private void on_message_allocated (Gtk.Allocation allocation)
+	{
+		if (allocation.width == d_message_width)
+		{
+			return;
+		}
+
+		d_message_width = allocation.width;
+
+		Gtk.TextView view = d_text_view_message;
+
+		Idle.add (() => {
+			view.queue_resize ();
+			return false;
+		});
 	}
 
 	private bool on_motion_notify_event (Gtk.Widget widget, Gdk.EventMotion evt)
