@@ -67,9 +67,9 @@ New remote branches and tags come in unticked.
 Keys
     Click, Enter                show or hide the details of a commit
     Open a file, Expand all     fill the window with the diff
-    Ctrl+F                      open or close the search bar, or the
-                                diff's find bar when the diff has the
-                                focus
+    Ctrl+F                      open or close the diff's find bar while
+                                the pane is open, or the search bar
+                                while it is shut
     Ctrl+Shift+F                open the search bar on Changed lines
     Enter, Ctrl+G               go to the next commit that matches
     Shift+Enter, Ctrl+Shift+G   go to the one before

@@ -1334,24 +1334,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return merge;
 	}
 
-	private bool finds_in_diff()
-	{
-		if (!d_paned.details_visible)
-		{
-			return false;
-		}
-
-		if (d_paned.details_only)
-		{
-			return true;
-		}
-
-		var window = d_box.get_toplevel() as Gtk.Window;
-		var focus = window != null ? window.get_focus() : null;
-
-		return focus != null && focus.is_ancestor(d_paned.box_details);
-	}
-
 	private bool follows()
 	{
 		return d_repository != null && d_paths.length > 0 && Filter.is_one_file(d_repository, pathspec());
@@ -2867,7 +2849,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		if (finds_in_diff())
+		if (d_paned.details_visible)
 		{
 			d_find_bar.search_mode_enabled = !d_find_bar.search_mode_enabled;
 			return;

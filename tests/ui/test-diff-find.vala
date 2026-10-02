@@ -67,11 +67,12 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
 	Test.add_func("/gittree/ui/diff-find/a-regex-narrows-the-marks", test_a_regex_narrows_the_marks);
 	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-list-opens-the-list-bar", test_ctrl_f_in_the_list_opens_the_list_bar);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-leaves-a-selection-over-two-lines", test_ctrl_f_leaves_a_selection_over_two_lines);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-takes-a-selection-on-one-line", test_ctrl_f_takes_a_selection_on_one_line);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-pane-open-finds-in-the-diff-from-the-list", test_ctrl_f_with_the_pane_open_finds_in_the_diff_from_the_list);
+	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-pane-shut-opens-the-list-bar", test_ctrl_f_with_the_pane_shut_opens_the_list_bar);
 	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-keeps-the-text", test_escape_in_the_field_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
 	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
@@ -371,29 +372,6 @@ private static void test_a_switch_to_split_searches_again()
 	}
 }
 
-private static void test_ctrl_f_in_the_list_opens_the_list_bar()
-{
-	try
-	{
-		var repo = three_files();
-		var window = opened(repo, "change");
-
-		window.history.paned.commit_list_view.grab_focus();
-		window.activate_action("search", null);
-		settle(100);
-
-		assert_true(window.history.search_visible);
-		assert_false(window.history.find_bar.search_mode_enabled);
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
 private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 {
 	try
@@ -501,6 +479,54 @@ private static void test_ctrl_f_with_the_diff_filling_the_window()
 
 		assert_true(window.history.find_bar.search_mode_enabled);
 		assert_false(window.history.search_visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_with_the_pane_open_finds_in_the_diff_from_the_list()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+
+		window.history.paned.commit_list_view.grab_focus();
+		window.activate_action("search", null);
+		settle(100);
+
+		assert_true(window.history.find_bar.search_mode_enabled);
+		assert_false(window.history.search_visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_with_the_pane_shut_opens_the_list_bar()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+
+		window.history.paned.details_visible = false;
+		settle(100);
+		window.history.paned.commit_list_view.grab_focus();
+		window.activate_action("search", null);
+		settle(100);
+
+		assert_true(window.history.search_visible);
+		assert_false(window.history.find_bar.search_mode_enabled);
 
 		window.destroy();
 		repo.remove();

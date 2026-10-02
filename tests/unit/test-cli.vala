@@ -462,8 +462,8 @@ private static void test_help_says_gittree_and_git_tree()
 	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gittree.CommandLine.HELP);
 	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gittree.CommandLine.HELP);
 	assert_true("\n    Escape                      close a bar, the full diff or the details\n" in Gittree.CommandLine.HELP);
-	assert_true("\n                                focus\n    Ctrl+Shift+F                open the search bar on Changed lines\n    Enter, Ctrl+G" in Gittree.CommandLine.HELP);
-	assert_true("\n    Ctrl+F                      open or close the search bar, or the\n                                diff's find bar when the diff has the\n                                focus\n" in Gittree.CommandLine.HELP);
+	assert_true("\n                                while it is shut\n    Ctrl+Shift+F                open the search bar on Changed lines\n    Enter, Ctrl+G" in Gittree.CommandLine.HELP);
+	assert_true("\n    Ctrl+F                      open or close the diff's find bar while\n                                the pane is open, or the search bar\n                                while it is shut\n" in Gittree.CommandLine.HELP);
 }
 
 private static void test_help_says_what_adds_or_removes_a_text()
