@@ -86,6 +86,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-find/the-switches-are-push-buttons", test_the_switches_are_push_buttons);
 	Test.add_func("/gitrlf/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
 	Test.add_func("/gitrlf/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
+	Test.add_func("/gitrlf/ui/diff-find/two-clicks-on-a-switch-leave-it-as-it-was", test_two_clicks_on_a_switch_leave_it_as_it_was);
 	Test.add_func("/gitrlf/ui/diff-find/enter-marks-every-match-and-goes-to-the-first", test_enter_marks_every_match_and_goes_to_the_first);
 
 	return Test.run();
@@ -1001,6 +1002,39 @@ private static void test_the_text_is_kept_from_commit_to_commit()
 
 		assert_cmpstr(bar.field.text, CompareOperator.EQ, "needle");
 		assert_cmpstr(bar.count, CompareOperator.EQ, "2 matches");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_two_clicks_on_a_switch_leave_it_as_it_was()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		bar.search_mode_enabled = true;
+		settle(300);
+
+		foreach (var label in new string[] { "Match case", "Regex" })
+		{
+			var button = toggle_labelled(bar, label);
+
+			click_widget(button);
+			settle(200);
+			click_widget(button);
+			settle(300);
+
+			assert_false(button.active);
+			assert_false(button.has_focus);
+		}
 
 		window.destroy();
 		repo.remove();

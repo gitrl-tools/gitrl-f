@@ -128,6 +128,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gitrlf/ui/search/tick-searches-again", test_tick_searches_again);
 	Test.add_func("/gitrlf/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
+	Test.add_func("/gitrlf/ui/search/two-clicks-on-a-switch-leave-it-as-it-was", test_two_clicks_on_a_switch_leave_it_as_it_was);
 	Test.add_func("/gitrlf/ui/search/typing-moves-nothing", test_typing_moves_nothing);
 
 	return Test.run();
@@ -1171,6 +1172,38 @@ private static void test_ticking_nothing_counts_no_match()
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 3 in others");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_two_clicks_on_a_switch_leave_it_as_it_was()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		window.history.search_visible = true;
+		settle(300);
+
+		foreach (var label in new string[] { "Match case", "Regex", "Display matches only" })
+		{
+			var button = toggle_labelled(list_bar(window), label);
+
+			click_widget(button);
+			settle(200);
+			click_widget(button);
+			settle(300);
+
+			assert_false(button.active);
+			assert_false(button.has_focus);
+		}
 
 		window.destroy();
 		repo.remove();

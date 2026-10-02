@@ -332,6 +332,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_only_matches = new Gtk.ToggleButton.with_label(_("Display matches only"));
 		d_only_matches.tooltip_text = _("Hide the commits that do not match");
+		d_only_matches.focus_on_click = false;
 		d_only_toggled = d_only_matches.toggled.connect(() => {
 			show_ticks();
 			show_path_bar();

@@ -50,6 +50,7 @@ public class SearchSwitches : Object
 		var button = new Gtk.ToggleButton.with_label(label);
 
 		button.tooltip_text = tooltip;
+		button.focus_on_click = false;
 		button.toggled.connect(() => changed());
 		box.add(button);
 
