@@ -353,6 +353,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_search_bar = new Gtk.SearchBar();
 		d_search_bar.show_close_button = true;
+		BarEdge.drop(d_search_bar, Gtk.PositionType.BOTTOM);
 		d_search_bar.add(new BarRow(search_box));
 		d_search_bar.notify["search-mode-enabled"].connect(() => {
 			spacer.active = d_search_bar.search_mode_enabled;

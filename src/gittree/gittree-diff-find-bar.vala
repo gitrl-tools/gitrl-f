@@ -117,6 +117,7 @@ public class DiffFindBar : Gtk.SearchBar
 		add(holder);
 		no_show_all = true;
 		show_close_button = true;
+		BarEdge.drop(this, Gtk.PositionType.TOP);
 
 		d_field.changed.connect(show_count);
 

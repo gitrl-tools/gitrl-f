@@ -79,6 +79,21 @@ private static void click_row(Gittree.Window window, int row, int count = 1)
 	settle(300);
 }
 
+private static Gtk.Widget close_button(Gtk.SearchBar bar, Gtk.Widget field)
+{
+	var row = field.get_ancestor(typeof(Gtk.ScrolledWindow));
+
+	foreach (var widget in find_all(bar, typeof(Gtk.Button)))
+	{
+		if (!widget.is_ancestor(row) && widget.get_mapped())
+		{
+			return widget;
+		}
+	}
+
+	error("no close button");
+}
+
 private static void commit_two_files(Repo repo, string subject) throws Error
 {
 	FileUtils.set_contents(repo.path.get_child("c").get_path(), subject + "\n");
@@ -201,6 +216,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
 	Test.add_func("/gittree/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
 	Test.add_func("/gittree/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
+	Test.add_func("/gittree/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
 	Test.add_func("/gittree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
 	Test.add_func("/gittree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
 	Test.add_func("/gittree/ui/history-activity/ticks-given-at-the-start-are-not-kept", test_ticks_given_at_the_start_are_not_kept);
@@ -214,6 +230,13 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/window-with-nothing-ticked-shows-the-empty-notice", test_window_with_nothing_ticked_shows_the_empty_notice);
 
 	return Test.run();
+}
+
+private static Gtk.Border line(Gtk.Widget close)
+{
+	var box = ((Gtk.Bin)close.get_ancestor(typeof(Gtk.Revealer))).get_child();
+
+	return box.get_style_context().get_border(box.get_state_flags());
 }
 
 private static bool only_details_shown(Gittree.Window window)
@@ -1805,6 +1828,51 @@ private static void test_the_ref_menu_goes_to_where_two_refs_split()
 		choose_split(window, "feature/scan", "master");
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "base two");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_search_bars_meet_without_a_border()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.commit("second");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var history = window.history;
+		var list_bar = (Gtk.SearchBar)history.search_field.get_ancestor(typeof(Gtk.SearchBar));
+		int bar_y;
+		int close_y;
+		int x;
+
+		history.search_visible = true;
+		history.paned.details_visible = true;
+		settle(300);
+		history.paned.details_only = true;
+		history.find_bar.search_mode_enabled = true;
+		settle(600);
+
+		var close = close_button(list_bar, history.search_field);
+
+		list_bar.translate_coordinates(window, 0, 0, out x, out bar_y);
+		close.translate_coordinates(window, 0, 0, out x, out close_y);
+
+		assert_cmpint(close_y + close.get_allocated_height() + line(close).bottom, CompareOperator.EQ, bar_y + list_bar.get_allocated_height());
+
+		close = close_button(history.find_bar, history.find_bar.field);
+
+		history.find_bar.translate_coordinates(window, 0, 0, out x, out bar_y);
+		close.translate_coordinates(window, 0, 0, out x, out close_y);
+
+		assert_cmpint(close_y, CompareOperator.EQ, bar_y + line(close).top);
 
 		window.destroy();
 		repo.remove();
