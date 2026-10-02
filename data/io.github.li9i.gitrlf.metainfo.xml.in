@@ -63,6 +63,58 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.5.0" date="2026-10-02">
+      <description>
+        <ul>
+          <li>
+            The name of the program changes from gittree to gitrl-f. The
+            package is gitrl-f and the command is gitrlf. When you install the
+            package gitrl-f, it removes the package gittree.
+          </li>
+          <li>
+            The command git tree is removed. Use gitrlf.
+          </li>
+          <li>
+            The PPA is ppa:li9i/gitrl-f. If you added ppa:li9i/gittree, remove
+            it.
+          </li>
+          <li>
+            The settings, the ticks and the list of repositories of gittree do
+            not move to gitrl-f. Set them again.
+          </li>
+          <li>
+            With no ref and no tick option, the ticks that you last chose in a
+            repository come back.
+          </li>
+          <li>
+            One search bar above the list, opened with Ctrl+F, searches the
+            messages, the changed lines or the files. Each search waits for
+            Enter. Display matches only hides the other commits. The command
+            line takes -S, -G and -i, as git log does.
+          </li>
+          <li>
+            While the pane is open, Ctrl+F finds a text in the diff, with
+            Match case and Regex.
+          </li>
+          <li>
+            A right click on a file in the diff shows the history of the file,
+            through its renames. A right click on a line shows the history of
+            the line or of the selected lines, or goes to the commit that last
+            changed the line.
+          </li>
+          <li>
+            The menu of a commit gives the branches and tags that have it, the
+            first tag with it, and the merge that brought it into the branch
+            of HEAD. The menu of a ref goes to where it splits from another
+            ticked ref.
+          </li>
+          <li>
+            When a messages search finds a commit only on a ref that is not
+            ticked, Tick and show ticks that ref and selects the commit.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-10-01">
       <description>
         <ul>
