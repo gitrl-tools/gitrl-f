@@ -20,45 +20,11 @@
 namespace Gittree
 {
 
-public class BarSpacer : Gtk.Box
+public enum SearchChoice
 {
-	private bool d_active;
-	private Gtk.Widget d_before;
-	private Gtk.Widget d_mirror;
-
-	public bool active
-	{
-		get { return d_active; }
-		set
-		{
-			d_active = value;
-			queue_resize();
-		}
-	}
-
-	public BarSpacer(Gtk.Widget mirror, Gtk.Widget before)
-	{
-		d_before = before;
-		d_mirror = mirror;
-	}
-
-	public override void get_preferred_width(out int minimum, out int natural)
-	{
-		int ignored;
-
-		minimum = 0;
-		natural = 0;
-
-		if (d_active)
-		{
-			var box = get_parent() as Gtk.Box;
-			int left;
-
-			d_mirror.get_preferred_width(out ignored, out natural);
-			d_before.get_preferred_width(out ignored, out left);
-			natural = int.max(natural - left - (box != null ? box.spacing : 0), 0);
-		}
-	}
+	MESSAGES,
+	LINES,
+	FILES
 }
 
 }

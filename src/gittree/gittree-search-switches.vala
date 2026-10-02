@@ -37,6 +37,15 @@ public class SearchSwitches : Object
 		set { d_regex.active = value; }
 	}
 
+	public bool sensitive
+	{
+		set
+		{
+			d_case.sensitive = value;
+			d_regex.sensitive = value;
+		}
+	}
+
 	public signal void changed();
 
 	public SearchSwitches(Gtk.Box box)
@@ -54,16 +63,6 @@ public class SearchSwitches : Object
 		box.add(button);
 
 		return button;
-	}
-
-	public TextMatch match(string text)
-	{
-		return new TextMatch(text, match_case, regex);
-	}
-
-	public SearchQuery query(string text)
-	{
-		return new SearchQuery(text, match_case, regex);
 	}
 }
 

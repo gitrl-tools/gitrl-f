@@ -162,7 +162,7 @@ private static void test_header_bar_order()
 	}
 
 	assert_cmpstr(string.joinv(",", start), CompareOperator.EQ, "GtkButton,GtkStackSwitcher(hidden)");
-	assert_cmpstr(string.joinv(",", end), CompareOperator.EQ, "GtkMenuButton,GtkToggleButton,GtkToggleButton");
+	assert_cmpstr(string.joinv(",", end), CompareOperator.EQ, "GtkMenuButton,GtkToggleButton");
 
 	window.destroy();
 	repo.remove();

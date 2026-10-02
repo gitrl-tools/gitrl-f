@@ -214,9 +214,11 @@ private static void test_a_typed_file_is_followed_too()
 		var repo = fixture();
 		var window = opened(repo, {});
 
-		window.history.filter_visible = true;
-		window.history.filter_bar.paths_field.text = "new.c";
-		window.history.filter_bar.paths_field.activate();
+		window.history.only_matches = true;
+		window.history.search_visible = true;
+		window.history.search_choice = Gittree.SearchChoice.FILES;
+		window.history.search_field.text = "new.c";
+		window.history.search_field.activate();
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "edit new,rename,edit old,add old");

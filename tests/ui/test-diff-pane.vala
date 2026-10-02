@@ -482,7 +482,9 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		var repo = renamed_repo();
 		var window = opened(repo, {"refs/heads/master"});
 
-		window.history.filter_bar.field.text = "something";
+		window.history.search_visible = true;
+		window.history.search_choice = Gittree.SearchChoice.LINES;
+		window.history.search_field.text = "something";
 		select_subject(window, "edit new");
 		window.history.paned.details_visible = true;
 		settle(400);
@@ -505,8 +507,14 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 
 		assert_cmpstr(string.joinv(",", subjects), CompareOperator.EQ, "edit new,rename,add old");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change new.c, following renames");
-		assert_cmpstr(window.history.filter_bar.paths_field.text, CompareOperator.EQ, "new.c");
-		assert_cmpstr(window.history.filter_bar.field.text, CompareOperator.EQ, "");
+		assert_true(window.history.search_visible);
+		assert_true(window.history.only_matches);
+		assert_true(window.history.search_choice == Gittree.SearchChoice.FILES);
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "new.c");
+
+		window.history.search_choice = Gittree.SearchChoice.LINES;
+
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();
@@ -688,6 +696,7 @@ private static void test_closing_the_history_of_lines_returns_to_the_filter()
 		var window = lines_window(repo);
 
 		window.history.paned.details_only = false;
+		window.history.only_matches = true;
 		window.history.apply_filter("D", false);
 		settle(800);
 
@@ -1451,6 +1460,7 @@ private static void test_the_commit_that_last_changed_a_line_can_be_hidden_by_th
 		var window = opened(repo, {"refs/heads/master"});
 		var two = repo.git({"rev-parse", "--short", "HEAD~2"}).strip();
 
+		window.history.only_matches = true;
 		window.history.apply_filter("D", false);
 		settle(800);
 		select_subject(window, "three");
@@ -1460,11 +1470,11 @@ private static void test_the_commit_that_last_changed_a_line_can_be_hidden_by_th
 		right_click_text(window, "B", 0);
 		activate_item("Go to the commit that last changed this line");
 
-		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "%s last changed this line. The filter hides it.".printf(two));
+		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "%s last changed this line. The search hides it.".printf(two));
 
 		foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
 		{
-			if (((Gtk.Button)widget).label == "Lift the filter")
+			if (((Gtk.Button)widget).label == "Show every commit")
 			{
 				((Gtk.Button)widget).clicked();
 			}
@@ -1472,7 +1482,7 @@ private static void test_the_commit_that_last_changed_a_line_can_be_hidden_by_th
 
 		settle(400);
 
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that add or remove D");
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two");
 		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "");
 

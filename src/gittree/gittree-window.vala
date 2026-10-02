@@ -36,8 +36,6 @@ public class Window : Gtk.ApplicationWindow
 	[GtkChild]
 	private unowned Gtk.Button d_dash_button;
 	[GtkChild]
-	private unowned Gtk.ToggleButton d_filter_button;
-	[GtkChild]
 	private unowned Gtk.MenuButton d_gear_menu;
 	[GtkChild]
 	private unowned Gtk.HeaderBar d_header_bar;
@@ -120,7 +118,6 @@ public class Window : Gtk.ApplicationWindow
 
 		d_history = new HistoryActivity();
 		d_history.bind_property("search-visible", d_search_button, "active", BindingFlags.BIDIRECTIONAL | BindingFlags.SYNC_CREATE);
-		d_history.bind_property("filter-visible", d_filter_button, "active", BindingFlags.BIDIRECTIONAL | BindingFlags.SYNC_CREATE);
 		d_history.show_error.connect((primary, secondary) => {
 			show_infobar(primary, secondary, Gtk.MessageType.ERROR);
 		});
@@ -194,7 +191,7 @@ public class Window : Gtk.ApplicationWindow
 
 	private void on_filter_activated(SimpleAction action, Variant? parameter)
 	{
-		if (d_filter_button.visible)
+		if (d_search_button.visible)
 		{
 			d_history.toggle_filter();
 		}
@@ -267,7 +264,6 @@ public class Window : Gtk.ApplicationWindow
 
 		d_dash_button.visible = true;
 		d_activities_switcher.visible = d_stack_activities.get_children().length() > 1;
-		d_filter_button.visible = true;
 		d_search_button.visible = true;
 	}
 
@@ -278,7 +274,6 @@ public class Window : Gtk.ApplicationWindow
 
 		d_dash_button.visible = false;
 		d_activities_switcher.visible = false;
-		d_filter_button.visible = false;
 		d_search_button.visible = false;
 
 		d_repository = null;

@@ -2,7 +2,6 @@ data/io.github.li9i.gittree.gschema.xml.in
 src/gittree/gittree-application.vala
 src/gittree/gittree-dash-view.vala
 src/gittree/gittree-diff-find-bar.vala
-src/gittree/gittree-filter-bar.vala
 src/gittree/gittree-history-activity.vala
 src/gittree/gittree-history.vala
 src/gittree/gittree-preferences-dialog.vala

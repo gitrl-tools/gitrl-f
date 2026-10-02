@@ -33,6 +33,24 @@ public static Gtk.CheckButton check_labelled(Gtk.Widget root, string label)
 	error("no check button %s", label);
 }
 
+public static string choice_labels(Gittree.Window window)
+{
+	var buttons = find_all(list_bar(window), typeof(Gtk.MenuButton));
+	var labels = new string[0];
+
+	if (buttons.length != 1)
+	{
+		error("no choice button");
+	}
+
+	foreach (var child in ((Gtk.MenuButton)buttons[0]).popup.get_children())
+	{
+		labels += ((Gtk.MenuItem)child).label;
+	}
+
+	return string.joinv(",", labels);
+}
+
 public static Gtk.MenuItem? copy_item()
 {
 	foreach (var toplevel in Gtk.Window.list_toplevels())
@@ -87,6 +105,59 @@ public static Gtk.Label label_with(Gtk.Widget root, string text)
 	}
 
 	error("no label %s", text);
+}
+
+public static Gtk.Widget list_bar(Gittree.Window window)
+{
+	return window.history.search_field.get_parent();
+}
+
+public static string marked_rows(Gittree.Window window)
+{
+	var view = window.history.paned.commit_list_view;
+	var column = view.get_column(0);
+	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, view.get_allocated_width(), view.get_allocated_height());
+	var context = new Cairo.Context(surface);
+	var rows = window.history.rows();
+	var names = new string[0];
+
+	view.draw(context);
+	surface.flush();
+
+	var data = (uint8*)surface.get_data();
+	var stride = surface.get_stride();
+	var end = int.min(column.get_x_offset() + column.get_width(), surface.get_width());
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		Gdk.Rectangle area;
+		int x;
+		int top;
+		var count = 0;
+
+		view.get_background_area(new Gtk.TreePath.from_indices(i), column, out area);
+		view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out top);
+
+		for (var y = int.max(top, 0); y < int.min(top + area.height, surface.get_height()); y++)
+		{
+			for (var column_x = column.get_x_offset(); column_x < end; column_x++)
+			{
+				var pixel = data + y * stride + column_x * 4;
+
+				if (pixel[2] == 0xfc && pixel[1] == 0xe9 && pixel[0] == 0x4f)
+				{
+					count++;
+				}
+			}
+		}
+
+		if (count > 0)
+		{
+			names += rows[i].get_subject();
+		}
+	}
+
+	return string.joinv(",", names);
 }
 
 public static Gtk.MenuItem? menu_item(string label)

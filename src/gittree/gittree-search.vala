@@ -113,6 +113,11 @@ public class Search : Object
 		return result.str;
 	}
 
+	public static string marked_whole(string text)
+	{
+		return MARK.printf(Markup.escape_text(text));
+	}
+
 	public static bool matches(Gitg.Commit commit, TextMatch match)
 	{
 		var author = commit.get_author();

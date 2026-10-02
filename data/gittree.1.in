@@ -85,10 +85,10 @@ A commit adds or removes the text when the number of times it appears in
 a file the commit changes goes up or down, as in
 .BR "git log \-S" .
 A merge never does. The graph joins across the commits that it leaves out.
-The search runs in the background, and the Changed lines field of the
-filter bar changes the text later. The filter bar ignores case unless its Match case switch is on.
-Enter with both fields of the filter bar empty, or the close button of
-the yellow bar above the list, lifts the filter and the path limit.
+The search runs in the background, and Changed lines in the search bar
+changes the text later (see
+.BR SEARCH ).
+The bar ignores case unless its Match case switch is on.
 .TP
 .BR \-G ", " \-\-regex " \fIREGEX\fR"
 Draw only the commits whose added or removed lines match
@@ -96,8 +96,8 @@ Draw only the commits whose added or removed lines match
 a POSIX extended regular expression, as in
 .BR "git log \-G" .
 A commit that moves a line, or edits a line that still matches, is drawn
-too. A merge never is. The filter bar's Regex switch does the
-same in the window.
+too. A merge never is. The Regex switch of Changed lines does the same in
+the window.
 .TP
 .BR \-i ", " \-\-ignore\-case
 With
@@ -110,12 +110,13 @@ ignore case.
 Draw only the commits that change these files or folders. With one file,
 the history follows it through its earlier names, as
 .B git log \-\-follow
-does, and shows no merges. The In files field
-of the filter bar changes them in the window. It splits paths at spaces,
-as the shell does, and takes globs such as
+does, and shows no merges. Files in the search bar changes them in the
+window. It splits paths at spaces, as the shell does, and takes globs such
+as
 .BR '*.yaml' .
-A right click on a file in the diff offers Show history of this file,
-which puts that file in the field.
+The diff of a commit that matches shows only those files. A right click on
+a file in the diff offers Show history of this file, which puts that file
+in Files.
 .TP
 .B \-\-no\-wd
 Open the list of repositories, not the repository of the current folder.
@@ -133,12 +134,17 @@ Options add up:
 ticks every local branch and
 .BR origin/master .
 .SH SEARCH
-Ctrl+F opens the search bar of the list. It looks in the subject, the
-message, the author and the hash of each commit in the list. Match case
-and Regex narrow the search, and Display matches only hides the commits
-that do not match. A regex is a POSIX extended regular expression, as in
+Ctrl+F opens the search bar of the list. The choice on the left of its
+field picks what the field searches: Messages, authors and hashes, Changed
+lines, or Files. Each choice keeps its own text, Match case and Regex, and
+their searches add up: a commit matches when it meets every choice that
+holds a text. The matches are marked in the list, and Display matches only
+hides the commits that do not match. A regex is a POSIX extended regular
+expression, as in
 .BR "git log \-G" .
-Words narrow it further:
+Changed lines and Files search when Enter is pressed; Messages, authors
+and hashes searches as you type. It looks in the subject, the message, the
+author and the hash of each commit in the list. Words narrow it further:
 .BI author: TEXT
 looks in the name and the email of the author,
 .BI message: TEXT
@@ -151,9 +157,10 @@ and
 keep the commits whose author date is before, or on or after, the start of
 a year, a month or a day, given as YYYY, YYYY\-MM or YYYY\-MM\-DD in local
 time. A value with spaces goes in double quotes. Every part must hold.
-The bar keeps its text when it closes. When
-no commit of the ticked refs matches, the bar counts the matches on the
-other refs, and Tick and show ticks a ref that holds the newest of them and
+The bar keeps every search when it closes, and the yellow bar above the
+list then says what is in force. Its close button lifts every search. When
+no commit of the ticked refs matches a messages search, the bar counts the
+matches on the other refs, and Tick and show ticks a ref that holds the newest of them and
 selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
 .PP
@@ -186,8 +193,8 @@ list as it was.
 On a line that the commit did not add, the same menu offers Go to the
 commit that last changed this line, as
 .B git blame
-finds it. When the filter hides that commit, a bar says so and offers to
-lift the filter.
+finds it. When Display matches only hides that commit, a bar says so and
+offers Show every commit.
 .SH KEYS
 .TP
 .BR Click ", " Enter
@@ -203,8 +210,8 @@ window, open or close the find bar of the diff instead. With text selected
 on one line of the diff, search the diff for that text.
 .TP
 .B Ctrl+Shift+F
-Open or close the filter bar. With text selected on one line of the diff,
-put that text in the filter bar.
+Open the search bar on Changed lines, or close it when it is open there.
+With text selected on one line of the diff, put that text in the field.
 .TP
 .BR Enter ", " Ctrl+G
 Go to the next commit that matches. In the find bar of the diff, go to the
@@ -216,9 +223,9 @@ the match before.
 .TP
 .B Escape
 Close one thing, from the bottom of the window up: the find bar of the
-diff, then the full diff, then the details of the commit, then the filter
-bar, then the search bar. A field that has the focus does not change this
-order. Escape never lifts the filter.
+diff, then the full diff, then the details of the commit, then the search
+bar. A field that has the focus does not change this order. Escape never
+lifts a search.
 .TP
 .B F5
 Read the repository again.

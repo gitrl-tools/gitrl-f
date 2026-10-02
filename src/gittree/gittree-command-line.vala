@@ -68,7 +68,7 @@ Keys
     Ctrl+F                      open or close the search bar, or the
                                 diff's find bar when the diff has the
                                 focus
-    Ctrl+Shift+F                open or close the filter bar
+    Ctrl+Shift+F                open the search bar on Changed lines
     Enter, Ctrl+G               go to the next commit that matches
     Shift+Enter, Ctrl+Shift+G   go to the one before
     Escape                      close a bar, the full diff or the details

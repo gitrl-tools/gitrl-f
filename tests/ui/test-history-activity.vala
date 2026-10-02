@@ -149,7 +149,7 @@ private static void lift_hidden(Gittree.Window window)
 {
 	foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
 	{
-		if (((Gtk.Button)widget).label == "Lift the filter" && widget.get_mapped())
+		if (((Gtk.Button)widget).label == "Show every commit" && widget.get_mapped())
 		{
 			((Gtk.Button)widget).clicked();
 		}
@@ -1778,7 +1778,7 @@ private static void test_two_refs_that_share_no_commit_say_so()
 
 		foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
 		{
-			if (((Gtk.Button)widget).label == "Lift the filter")
+			if (((Gtk.Button)widget).label == "Show every commit")
 			{
 				assert_false(widget.get_mapped());
 			}
@@ -1839,16 +1839,18 @@ private static void test_where_two_refs_split_can_be_hidden_by_the_filter()
 		var window = opened(repo, {"refs/heads/master", "refs/heads/feature/scan"});
 		var base_two = repo.git({"rev-parse", "--short", "v1"}).strip();
 
+		window.history.only_matches = true;
 		window.history.apply_filter("fix", false);
 		settle(800);
 		choose_split(window, "feature/scan", "master");
 
-		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "%s is where they split. The filter hides it.".printf(base_two));
+		assert_cmpstr(window.history.hidden_text, CompareOperator.EQ, "%s is where they split. The search hides it.".printf(base_two));
 
 		lift_hidden(window);
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "base two");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_false(window.history.only_matches);
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that add or remove fix");
 
 		window.destroy();
 		repo.remove();

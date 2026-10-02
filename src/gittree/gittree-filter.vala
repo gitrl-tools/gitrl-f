@@ -77,6 +77,18 @@ public class Filter : Object
 		}
 	}
 
+	public static string joined(string[] paths)
+	{
+		var words = new string[0];
+
+		foreach (var path in paths)
+		{
+			words += Regex.match_simple("^[^\\s'\"\\\\]+$", path) ? path : Shell.quote(path);
+		}
+
+		return string.joinv(" ", words);
+	}
+
 	public string[] log_arguments()
 	{
 		string[] argv = { "log", "-z", "--stdin", "--no-textconv", "--format=%x01%H" };
@@ -127,6 +139,25 @@ public class Filter : Object
 		}
 
 		return ret;
+	}
+
+	public static bool split(string text, out string[] paths)
+	{
+		paths = new string[0];
+
+		if (text.strip() == "")
+		{
+			return true;
+		}
+
+		try
+		{
+			return Shell.parse_argv(text, out paths);
+		}
+		catch (ShellError e)
+		{
+			return false;
+		}
 	}
 }
 

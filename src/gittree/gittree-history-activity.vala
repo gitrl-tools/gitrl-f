@@ -27,11 +27,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.Button d_beyond_button;
 	private Cancellable? d_blame;
 	private Gtk.Box d_box;
+	private bool[] d_cases;
+	private SearchChoice d_choice;
+	private Gtk.RadioMenuItem[] d_choice_items;
+	private Gtk.Label d_choice_label;
+	private bool d_choosing;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
 	private Gtk.GestureMultiPress d_file_press;
-	private FilterBar d_filter_bar;
 	private DiffFindBar d_find_bar;
 	private bool d_find_closed;
 	private bool d_find_with_pane;
@@ -63,6 +67,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Ggit.OId? d_hidden_target;
 	private Gee.Map<Ggit.OId, Gee.List<string>>? d_names;
 	private Gtk.CheckButton d_only_matches;
+	private ulong d_only_toggled;
 	private string[] d_paths;
 	private Gtk.GestureMultiPress d_press;
 	private bool d_press_on_row;
@@ -70,6 +75,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string[]? d_reading;
 	private Gee.List<Ref> d_refs;
 	private bool d_regex;
+	private bool[] d_regexes;
 	private Gitg.Repository? d_repository;
 	private Cancellable? d_search;
 	private Settings d_settings;
@@ -78,6 +84,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private SearchSwitches d_search_switches;
 	private string? d_text;
 	private Gee.Set<string> d_ticks;
+	private string[] d_typed;
 	private Ggit.OId? d_unfold_commit;
 	private string? d_unfold_path;
 	private bool d_waiting;
@@ -99,17 +106,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public string display_name
 	{
 		owned get { return _("History"); }
-	}
-
-	public FilterBar filter_bar
-	{
-		get { return d_filter_bar; }
-	}
-
-	public bool filter_visible
-	{
-		get { return d_filter_bar.search_mode_enabled; }
-		set { d_filter_bar.search_mode_enabled = value; }
 	}
 
 	public DiffFindBar find_bar
@@ -135,6 +131,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public string notice_text
 	{
 		owned get { return d_paned.notice.get_text(); }
+	}
+
+	public bool only_matches
+	{
+		get { return d_only_matches.active; }
+		set { d_only_matches.active = value; }
 	}
 
 	public HistoryPaned paned
@@ -171,6 +173,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	public bool search_available
 	{
 		get { return true; }
+	}
+
+	public SearchChoice search_choice
+	{
+		get { return d_choice; }
+		set { choose(value); }
 	}
 
 	public Gtk.Entry? search_entry
@@ -237,6 +245,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
 
 		d_beyond = new Ggit.OId[0];
+		d_cases = { false, false, false };
+		d_regexes = { false, false, false };
+		d_typed = { "", "", "" };
 		d_query = new SearchQuery("", false, false);
 		d_matches = new int[0];
 		d_narrow_key = "";
@@ -249,8 +260,39 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.width_chars = 40;
-		d_search_entry.placeholder_text = _("Search commit messages, authors and hashes");
-		d_search_entry.tooltip_text = _("Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: Ctrl+Shift+F filters by what the commits changed.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
+
+		var choices = new Gtk.Menu();
+		unowned SList<Gtk.RadioMenuItem>? group = null;
+
+		d_choice_items = new Gtk.RadioMenuItem[0];
+
+		foreach (var choice in new SearchChoice[] { SearchChoice.MESSAGES, SearchChoice.LINES, SearchChoice.FILES })
+		{
+			var item = new Gtk.RadioMenuItem.with_label(group, choice_name(choice));
+			var picked = choice;
+
+			group = item.get_group();
+			item.toggled.connect(() => {
+				if (item.active && !d_choosing)
+				{
+					choose(picked);
+				}
+			});
+			item.show();
+			choices.add(item);
+			d_choice_items += item;
+		}
+
+		d_choice_label = new Gtk.Label(null);
+
+		var choice_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+		choice_box.add(d_choice_label);
+		choice_box.add(new Gtk.Image.from_icon_name("pan-down-symbolic", Gtk.IconSize.BUTTON));
+
+		var choice_button = new Gtk.MenuButton();
+		choice_button.popup = choices;
+		choice_button.tooltip_text = _("What the field searches");
+		choice_button.add(choice_box);
 
 		d_match_count = new Gtk.Label(null);
 		d_match_count.width_chars = 12;
@@ -258,13 +300,33 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		var after_field = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 
-		SearchKeys.attach(d_search_entry, after_field, step);
+		SearchKeys.attach(d_search_entry, after_field, go);
 		d_search_switches = new SearchSwitches(after_field);
-		d_search_switches.changed.connect(find_matches);
+		d_search_switches.changed.connect(() => {
+			if (d_choosing)
+			{
+				return;
+			}
+
+			d_cases[d_choice] = d_search_switches.match_case;
+			d_regexes[d_choice] = d_search_switches.regex;
+
+			if (d_choice == SearchChoice.MESSAGES)
+			{
+				find_matches();
+			}
+			else
+			{
+				show_match_count();
+			}
+		});
 
 		d_only_matches = new Gtk.CheckButton.with_label(_("Display matches only"));
 		d_only_matches.tooltip_text = _("Hide the commits that do not match");
-		d_only_matches.toggled.connect(find_matches);
+		d_only_toggled = d_only_matches.toggled.connect(() => {
+			show_ticks();
+			show_path_bar();
+		});
 		after_field.add(d_only_matches);
 		after_field.add(d_match_count);
 
@@ -274,9 +336,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_beyond_button.clicked.connect(tick_and_show);
 		after_field.add(d_beyond_button);
 
-		var spacer = new BarSpacer(after_field);
+		var spacer = new BarSpacer(after_field, choice_button);
 		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		search_box.add(spacer);
+		search_box.add(choice_button);
 		search_box.add(d_search_entry);
 		search_box.add(after_field);
 
@@ -296,19 +359,27 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				d_paned.commit_list_view.grab_focus();
 			}
 
-			find_matches();
+			show_path_bar();
 			notify_property("search-visible");
 		});
-		d_search_entry.search_changed.connect(() => {
-			find_matches();
-		});
+		d_search_entry.changed.connect(() => {
+			if (d_choosing)
+			{
+				return;
+			}
 
-		d_filter_bar = new FilterBar();
-		d_filter_bar.applied.connect((text, match_case, regex, paths) => {
-			apply(text, !match_case, regex, paths);
+			d_typed[d_choice] = d_search_entry.text;
+
+			if (d_choice != SearchChoice.MESSAGES)
+			{
+				show_match_count();
+			}
 		});
-		d_filter_bar.notify["search-mode-enabled"].connect(() => {
-			notify_property("filter-visible");
+		d_search_entry.search_changed.connect(() => {
+			if (d_choice == SearchChoice.MESSAGES)
+			{
+				find_matches();
+			}
 		});
 
 		d_hidden_label = new Gtk.Label(null);
@@ -320,7 +391,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_hidden_bar.show_close_button = true;
 		d_hidden_bar.no_show_all = true;
 		d_hidden_bar.get_content_area().add(d_hidden_label);
-		d_lift_button = d_hidden_bar.add_button(_("Lift the filter"), Gtk.ResponseType.ACCEPT);
+		d_lift_button = d_hidden_bar.add_button(_("Show every commit"), Gtk.ResponseType.ACCEPT);
 		d_hidden_bar.response.connect((response) => {
 			d_hidden_bar.hide();
 
@@ -332,7 +403,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
 		d_box.add(d_search_bar);
-		d_box.add(d_filter_bar);
 		d_box.add(d_hidden_bar);
 		d_box.add(d_paned);
 		d_box.show_all();
@@ -426,7 +496,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 		d_paned.box_details.add(d_find_bar);
 
-		foreach (var field in new Gtk.SearchEntry[] { d_search_entry, d_filter_bar.field, d_find_bar.field })
+		foreach (var field in new Gtk.SearchEntry[] { d_search_entry, d_find_bar.field })
 		{
 			field.stop_search.connect(() => {
 				escape();
@@ -492,7 +562,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 			else if (response == Gtk.ResponseType.CLOSE)
 			{
-				lift_filter();
+				lift_all();
 			}
 		});
 
@@ -525,6 +595,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_settings.changed["collapse-inactive-lanes-enabled"].connect(() => {
 			show_ticks();
 		});
+
+		show_choice();
 	}
 
 	private void add_first_tag_item(Ggit.OId commit)
@@ -839,6 +911,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_base();
 	}
 
+	private void apply_choice()
+	{
+		string[] paths;
+
+		if (choice_problem() != null)
+		{
+			return;
+		}
+
+		if (d_choice == SearchChoice.LINES)
+		{
+			apply(d_typed[SearchChoice.LINES], !d_cases[SearchChoice.LINES], d_regexes[SearchChoice.LINES], d_paths);
+			return;
+		}
+
+		Filter.split(d_typed[SearchChoice.FILES], out paths);
+		apply(d_text != null ? d_text : "", d_ignore_case, d_regex, paths);
+	}
+
 	public void apply_filter(string text, bool ignore_case, bool regex = false)
 	{
 		if (d_repository == null || d_full == null)
@@ -882,6 +973,104 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return string.joinv(", ", names);
+	}
+
+	private bool changes_apply()
+	{
+		return d_lines == null && (d_text != null || d_paths.length > 0);
+	}
+
+	private static string choice_name(SearchChoice choice)
+	{
+		switch (choice)
+		{
+		case SearchChoice.LINES:
+			return _("Changed lines");
+		case SearchChoice.FILES:
+			return _("Files");
+		default:
+			return _("Messages, authors and hashes");
+		}
+	}
+
+	private string? choice_problem()
+	{
+		string[] paths;
+
+		if (d_choice == SearchChoice.LINES && new TextMatch(d_typed[SearchChoice.LINES], d_cases[SearchChoice.LINES], d_regexes[SearchChoice.LINES]).error != null)
+		{
+			return _("Bad regex");
+		}
+
+		if (d_choice == SearchChoice.FILES && !Filter.split(d_typed[SearchChoice.FILES], out paths))
+		{
+			return _("A quote is not closed");
+		}
+
+		return null;
+	}
+
+	private void choose(SearchChoice choice)
+	{
+		d_choice = choice;
+		show_typed();
+		show_choice();
+		show_match_count();
+
+		if (d_search_bar.search_mode_enabled)
+		{
+			d_search_entry.grab_focus();
+		}
+	}
+
+	private string clauses(bool singular)
+	{
+		var parts = new string[0];
+		var whose = new bool[0];
+
+		if (messages_apply())
+		{
+			var text = bold_list({ d_typed[SearchChoice.MESSAGES].strip() });
+
+			parts += singular ? _("matches %s in the message, author or hash").printf(text) : _("match %s in the message, author or hash").printf(text);
+			whose += false;
+		}
+
+		if (d_paths.length > 0)
+		{
+			parts += singular ? _("changes %s").printf(bold_list(d_paths)) : _("change %s").printf(bold_list(d_paths));
+			whose += false;
+		}
+
+		if (d_text != null && d_regex)
+		{
+			parts += _("added or removed lines match %s").printf(bold_list({ d_text }));
+			whose += true;
+		}
+		else if (d_text != null)
+		{
+			parts += singular ? _("adds or removes %s").printf(bold_list({ d_text })) : _("add or remove %s").printf(bold_list({ d_text }));
+			whose += false;
+		}
+
+		for (var i = 0; i < parts.length; i++)
+		{
+			if (whose[i])
+			{
+				parts[i] = _("whose %s").printf(parts[i]);
+			}
+			else if (i == 0)
+			{
+				parts[i] = _("that %s").printf(parts[i]);
+			}
+		}
+
+		if (parts.length == 3)
+		{
+			return _("%s, %s and %s").printf(parts[0], parts[1], parts[2]);
+		}
+
+		return parts.length == 2 ? _("%s and %s").printf(parts[0], parts[1]) : parts[0];
 	}
 
 	private Ggit.OId? diff_parent(Gitg.Commit commit)
@@ -964,13 +1153,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return true;
 		}
 
-		foreach (var bar in new Gtk.SearchBar[] { d_filter_bar, d_search_bar })
+		if (d_search_bar.search_mode_enabled)
 		{
-			if (bar.search_mode_enabled)
-			{
-				bar.search_mode_enabled = false;
-				return true;
-			}
+			d_search_bar.search_mode_enabled = false;
+			return true;
 		}
 
 		return false;
@@ -1094,15 +1280,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void find_matches()
 	{
-		d_query = d_search_switches.query(d_search_bar.search_mode_enabled ? d_search_entry.text.strip() : "");
+		d_query = new SearchQuery(d_typed[SearchChoice.MESSAGES].strip(), d_cases[SearchChoice.MESSAGES], d_regexes[SearchChoice.MESSAGES]);
 
 		if (narrow_key() != d_narrow_key)
 		{
 			show_ticks();
-			return;
+		}
+		else
+		{
+			mark_matches();
 		}
 
-		mark_matches();
+		show_path_bar();
 	}
 
 	private async string? find_merge(string commit, string branch, Cancellable cancellable) throws Error
@@ -1175,6 +1364,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return d_repository.get_location();
 	}
 
+	private void go(int direction)
+	{
+		if (pending())
+		{
+			apply_choice();
+			show_match_count();
+			return;
+		}
+
+		step(direction);
+	}
+
 	private void go_to(Ggit.OId id, string hidden)
 	{
 		if (d_model.path_from_commit(id) != null)
@@ -1224,7 +1425,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_blame = null;
 			d_unfold_commit = found;
 			d_unfold_path = name != null ? name : path;
-			go_to(found, _("%s last changed this line. The filter hides it.").printf(found.to_string().substring(0, 7)));
+			go_to(found, _("%s last changed this line. The search hides it.").printf(found.to_string().substring(0, 7)));
 		});
 	}
 
@@ -1272,7 +1473,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			var found = new Ggit.OId.from_string(records[0]);
 
-			go_to(found, _("%s is where they split. The filter hides it.").printf(records[0].substring(0, 7)));
+			go_to(found, _("%s is where they split. The search hides it.").printf(records[0].substring(0, 7)));
 		});
 	}
 
@@ -1377,10 +1578,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		lanes.next_commit = next_commit;
 		lanes.labels = d_labels;
 
-		if (!d_query.is_empty)
+		if (changes_apply() && !d_only_matches.active && matches_row(commit))
+		{
+			lanes.markup = Search.marked_whole(commit.get_subject());
+		}
+		else if (!d_query.is_empty)
 		{
 			lanes.markup = Search.marked(commit.get_subject(), d_query.subject_marks());
 		}
+	}
+
+	private void lift_all()
+	{
+		d_typed = { "", "", "" };
+		d_query = new SearchQuery("", false, false);
+		show_typed();
+		lift_filter();
 	}
 
 	public void lift_filter()
@@ -1420,25 +1633,56 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private History? listed_history()
+	{
+		if (d_line_history != null)
+		{
+			return d_line_history;
+		}
+
+		return changes_apply() && !d_only_matches.active ? unlimited_history() : d_history;
+	}
+
 	private void mark_matches()
 	{
-		d_matches = d_narrowed != null ? every_row() : Search.find(rows(), d_query);
-		d_beyond = d_matches.length == 0 ? find_beyond() : new Ggit.OId[0];
-		d_beyond_button.visible = d_beyond.length > 0;
-
-		var style = d_search_entry.get_style_context();
-
-		if (!d_query.is_empty && d_matches.length == 0)
+		if (d_narrowed != null || (changes_apply() && d_only_matches.active))
 		{
-			style.add_class("error");
+			d_matches = every_row();
+		}
+		else if (changes_apply())
+		{
+			d_matches = matching_rows();
 		}
 		else
 		{
-			style.remove_class("error");
+			d_matches = Search.find(rows(), d_query);
 		}
 
+		d_beyond = d_matches.length == 0 && !changes_apply() ? find_beyond() : new Ggit.OId[0];
+		d_beyond_button.visible = d_beyond.length > 0;
 		show_match_count();
 		d_paned.commit_list_view.queue_draw();
+	}
+
+	private bool matches_row(Gitg.Commit commit)
+	{
+		return d_history != null && d_history.index_of(commit.get_id()) >= 0 && (!messages_apply() || d_query.matches(commit));
+	}
+
+	private int[] matching_rows()
+	{
+		var found = new int[0];
+		var rows = rows();
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			if (matches_row(rows[i]))
+			{
+				found += i;
+			}
+		}
+
+		return found;
 	}
 
 	private Cancellable menu_search()
@@ -1451,6 +1695,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return d_menu_search;
 	}
 
+	private bool messages_apply()
+	{
+		return !d_query.is_empty && d_query.problem == null;
+	}
+
 	private string narrow_key()
 	{
 		if (!d_only_matches.active || d_query.is_empty || d_query.problem != null)
@@ -1458,7 +1707,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return "";
 		}
 
-		return "%s\n%d%d".printf(d_search_entry.text.strip(), (int)d_search_switches.match_case, (int)d_search_switches.regex);
+		return "%s\n%d%d".printf(d_typed[SearchChoice.MESSAGES].strip(), (int)d_cases[SearchChoice.MESSAGES], (int)d_regexes[SearchChoice.MESSAGES]);
 	}
 
 	private void offer_file_history()
@@ -1577,7 +1826,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_repository = repository;
 		d_paths = paths;
-		d_filter_bar.set_paths(paths);
+		d_typed[SearchChoice.FILES] = Filter.joined(paths);
 		this.directory = directory;
 		d_diff.repository = repository;
 		d_diff.options.pathspec = pathspec();
@@ -1603,10 +1852,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_text = text;
 			d_ignore_case = ignore_case;
 			d_regex = regex;
-			d_filter_bar.field.text = text;
-			d_filter_bar.match_case = !ignore_case;
-			d_filter_bar.regex = regex;
+			d_typed[SearchChoice.LINES] = text;
+			d_cases[SearchChoice.LINES] = !ignore_case;
+			d_regexes[SearchChoice.LINES] = regex;
 		}
+
+		if (text != null || paths.length > 0)
+		{
+			show_only_matches();
+		}
+
+		show_typed();
 
 		if (d_history != null && (d_text != null || follows()))
 		{
@@ -1651,6 +1907,27 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return Filter.relative_paths(d_repository, directory, d_paths);
+	}
+
+	private bool pending()
+	{
+		string[] paths;
+
+		if (d_choice == SearchChoice.LINES)
+		{
+			var text = d_typed[SearchChoice.LINES];
+
+			return text != (d_text != null ? d_text : "") || (text != "" && (d_cases[SearchChoice.LINES] == d_ignore_case || d_regexes[SearchChoice.LINES] != d_regex));
+		}
+
+		if (d_choice == SearchChoice.FILES)
+		{
+			var applied = d_reading != null ? d_reading : d_paths;
+
+			return !Filter.split(d_typed[SearchChoice.FILES], out paths) || string.joinv("\n", paths) != string.joinv("\n", applied);
+		}
+
+		return false;
 	}
 
 	private void queue_details()
@@ -1871,11 +2148,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_only_matches.active = false;
 		}
 
-		if (d_model.path_from_commit(id) == null && (d_text != null || d_paths.length > 0))
-		{
-			lift_filter();
-		}
-
 		select(id);
 	}
 
@@ -2038,6 +2310,29 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private void show_choice()
+	{
+		string[] placeholders = { _("Search commit messages, authors and hashes"), _("Lines that commits added or removed"), _("Files or folders, split by spaces") };
+		string[] tooltips = {
+			_("Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: pick Changed lines or Files for that.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01"),
+			_("Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regex. Enter searches"),
+			_("Files or folders, split by spaces. Globs such as '*.yaml' work. Enter searches")
+		};
+		string?[] texts = { messages_apply() ? d_typed[SearchChoice.MESSAGES].strip() : null, d_text, d_paths.length > 0 ? Filter.joined(d_paths) : null };
+
+		for (var i = 0; i < d_choice_items.length; i++)
+		{
+			var name = choice_name((SearchChoice)i);
+
+			d_choice_items[i].label = texts[i] != null ? "%s: %s".printf(name, texts[i]) : name;
+		}
+
+		d_choice_label.label = d_choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(d_choice);
+		d_search_entry.placeholder_text = placeholders[d_choice];
+		d_search_entry.tooltip_text = tooltips[d_choice];
+		d_search_switches.sensitive = d_choice != SearchChoice.FILES;
+	}
+
 	private void show_details()
 	{
 		var commit = selected;
@@ -2058,9 +2353,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		if (d_names != null && d_names.has_key(commit.get_id()))
+		if (d_paths.length > 0)
 		{
-			d_diff.options.pathspec = d_names[commit.get_id()].to_array();
+			var id = commit.get_id();
+
+			if (d_history.index_of(id) < 0)
+			{
+				d_diff.options.pathspec = null;
+			}
+			else
+			{
+				d_diff.options.pathspec = d_names != null && d_names.has_key(id) ? d_names[id].to_array() : pathspec();
+			}
 		}
 
 		d_diff.commit = commit;
@@ -2080,10 +2384,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			wanted = relative != null ? relative : file.get_path();
 		}
 
-		d_filter_bar.field.text = "";
-		d_filter_bar.set_paths({ wanted });
-		filter_visible = true;
-		apply("", !d_filter_bar.match_case, d_filter_bar.regex, { wanted });
+		d_typed[SearchChoice.LINES] = "";
+		d_typed[SearchChoice.FILES] = Filter.joined({ wanted });
+		show_only_matches();
+		choose(SearchChoice.FILES);
+		search_visible = true;
+		apply("", d_ignore_case, d_regex, { wanted });
 	}
 
 	private void show_hint(string text, bool lift)
@@ -2109,13 +2415,36 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_match_count()
 	{
-		if (d_matches.length == 0 && d_beyond.length > 0)
+		var problem = choice_problem();
+		var waiting = problem == null && pending();
+		var empty = d_query.is_empty && !changes_apply();
+		var style = d_search_entry.get_style_context();
+
+		if (problem != null)
+		{
+			d_match_count.label = problem;
+		}
+		else if (waiting)
+		{
+			d_match_count.label = _("Enter to search");
+		}
+		else if (d_matches.length == 0 && d_beyond.length > 0)
 		{
 			d_match_count.label = _("No match in the ticked refs. %d in others").printf(d_beyond.length);
-			return;
+		}
+		else
+		{
+			d_match_count.label = Search.count_text(d_matches, selected_row(), empty, d_query.problem);
 		}
 
-		d_match_count.label = Search.count_text(d_matches, selected_row(), d_query.is_empty, d_query.problem);
+		if (problem != null || (!waiting && !empty && d_matches.length == 0 && d_search == null))
+		{
+			style.add_class("error");
+		}
+		else
+		{
+			style.remove_class("error");
+		}
 	}
 
 	private void show_notice(string markup)
@@ -2125,8 +2454,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_details();
 	}
 
+	private void show_only_matches()
+	{
+		SignalHandler.block(d_only_matches, d_only_toggled);
+		d_only_matches.active = true;
+		SignalHandler.unblock(d_only_matches, d_only_toggled);
+	}
+
 	private void show_path_bar()
 	{
+		show_choice();
+
 		if (d_lines != null)
 		{
 			var reading = d_line_search != null;
@@ -2140,19 +2478,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		var searching = d_search != null;
+		var changes = d_text != null || d_paths.length > 0;
 
 		d_paned.path_spinner.visible = searching;
 		d_paned.path_spinner.active = searching;
-		d_paned.path_bar.show_close_button = d_text != null || d_paths.length > 0;
+		d_paned.path_bar.show_close_button = changes || messages_apply();
 
-		if (d_paths.length == 0 && d_text == null && d_reading == null)
+		if (!changes && d_reading == null && (!messages_apply() || d_search_bar.search_mode_enabled))
 		{
 			d_paned.path_bar.hide();
 			return;
 		}
 
 		var paths = bold_list(d_paths);
-		var text = d_text != null ? "<b>%s</b>".printf(Markup.escape_text(d_text)) : "";
+		var text = d_text != null ? bold_list({ d_text }) : "";
 		string markup;
 
 		if (d_reading != null)
@@ -2167,19 +2506,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			markup = _("Searching the changes for %s...").printf(text);
 		}
-		else if (d_text == null)
-		{
-			markup = _("Only commits that change %s").printf(paths);
-		}
-		else if (d_paths.length == 0)
-		{
-			markup = d_regex ? _("Only commits whose added or removed lines match %s").printf(text)
-			                 : _("Only commits that add or remove %s").printf(text);
-		}
 		else
 		{
-			markup = d_regex ? _("Only commits that change %s and whose added or removed lines match %s").printf(paths, text)
-			                 : _("Only commits that change %s and add or remove %s").printf(paths, text);
+			markup = d_only_matches.active ? _("Only commits %s").printf(clauses(false)) : _("Marked: commits %s").printf(clauses(false));
 		}
 
 		if (!searching && follows())
@@ -2233,7 +2562,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.model = d_model;
 		mark_matches();
 
-		var total = d_history != null ? d_history.size : 0;
+		var counted = changes_apply() && !d_only_matches.active ? unlimited_history() : d_history;
+		var total = counted != null ? counted.size : 0;
 		d_paned.summary.label = d_waiting ? "" : _("Showing %u of %d commits").printf(d_model.size, total);
 
 		if (d_waiting)
@@ -2255,33 +2585,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		if (d_model.size == 0 && d_narrowed != null)
+		if (d_model.size == 0 && d_narrowed != null && !changes_apply())
 		{
 			d_kept = kept;
-			show_notice(_("No commit in the ticked refs matches %s.").printf("<b>%s</b>".printf(Markup.escape_text(d_search_entry.text.strip()))));
+			show_notice(_("No commit in the ticked refs matches %s.").printf(bold_list({ d_typed[SearchChoice.MESSAGES].strip() })));
 			return;
 		}
 
-		if (d_model.size == 0 && d_text != null)
+		if (d_model.size == 0 && changes_apply())
 		{
-			var text = "<b>%s</b>".printf(Markup.escape_text(d_text));
-			var paths = Markup.escape_text(string.joinv(", ", d_paths));
-
-			if (d_regex)
-			{
-				show_notice(d_paths.length == 0 ? _("No ticked ref reaches a commit whose added or removed lines match %s.").printf(text)
-				                                : _("No ticked ref reaches a commit whose added or removed lines match %s in %s.").printf(text, paths));
-				return;
-			}
-
-			show_notice(d_paths.length == 0 ? _("No ticked ref reaches a commit that adds or removes %s.").printf(text)
-			                                : _("No ticked ref reaches a commit that adds or removes %s in %s.").printf(text, paths));
-			return;
-		}
-
-		if (d_model.size == 0 && d_paths.length > 0)
-		{
-			show_notice(Markup.escape_text(_("No ticked ref reaches a commit that changes %s.").printf(string.joinv(", ", d_paths))));
+			d_kept = d_narrowed != null ? kept : null;
+			show_notice(_("No ticked ref reaches a commit %s.").printf(clauses(true)));
 			return;
 		}
 
@@ -2300,10 +2614,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_details();
 	}
 
+	private void show_typed()
+	{
+		d_choosing = true;
+		d_search_entry.text = d_typed[d_choice];
+		d_search_switches.match_case = d_cases[d_choice];
+		d_search_switches.regex = d_regexes[d_choice];
+		d_choice_items[d_choice].active = true;
+		d_choosing = false;
+	}
+
 	private History? shown_history()
 	{
 		var key = narrow_key();
-		var source = d_line_history != null ? d_line_history : d_history;
+		var source = listed_history();
 
 		if (key == "" || source == null)
 		{
@@ -2453,14 +2777,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		int offset;
 		var text = diff_selection(out view, out offset);
 
-		if (text != null)
+		if (text == null && d_search_bar.search_mode_enabled && d_choice == SearchChoice.LINES)
 		{
-			d_filter_bar.field.text = text;
-			filter_visible = true;
+			search_visible = false;
 			return;
 		}
 
-		filter_visible = !filter_visible;
+		choose(SearchChoice.LINES);
+
+		if (text != null)
+		{
+			d_search_entry.text = text;
+		}
+
+		search_visible = true;
+		d_search_entry.grab_focus();
 	}
 
 	public void toggle_search()

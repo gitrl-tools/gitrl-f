@@ -96,11 +96,6 @@ private static Repo four_subjects() throws Error
 	return repo;
 }
 
-private static Gtk.Widget list_bar(Gittree.Window window)
-{
-	return window.history.search_field.get_parent();
-}
-
 public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
@@ -109,12 +104,12 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
 	Test.add_func("/gittree/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
-	Test.add_func("/gittree/ui/search/closing-the-bar-shows-every-commit-and-keeps-only-matches", test_closing_the_bar_shows_every_commit_and_keeps_only_matches);
+	Test.add_func("/gittree/ui/search/closing-the-bar-keeps-the-search-and-the-yellow-bar-says-it", test_closing_the_bar_keeps_the_search_and_the_yellow_bar_says_it);
+	Test.add_func("/gittree/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
 	Test.add_func("/gittree/ui/search/escape-closes-keeps-the-text-and-gives-the-focus-back", test_escape_closes_keeps_the_text_and_gives_the_focus_back);
 	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
-	Test.add_func("/gittree/ui/search/only-matches-and-a-filter-both-hold", test_only_matches_and_a_filter_both_hold);
 	Test.add_func("/gittree/ui/search/only-matches-keeps-the-selection-out-of-the-list", test_only_matches_keeps_the_selection_out_of_the_list);
 	Test.add_func("/gittree/ui/search/only-matches-narrows-as-you-type", test_only_matches_narrows_as_you_type);
 	Test.add_func("/gittree/ui/search/only-matches-with-nothing-shows-a-notice", test_only_matches_with_nothing_shows_a_notice);
@@ -350,7 +345,7 @@ private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 	}
 }
 
-private static void test_closing_the_bar_shows_every_commit_and_keeps_only_matches()
+private static void test_closing_the_bar_keeps_the_search_and_the_yellow_bar_says_it()
 {
 	try
 	{
@@ -362,17 +357,48 @@ private static void test_closing_the_bar_shows_every_commit_and_keeps_only_match
 		settle(200);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 
 		window.history.search_visible = false;
 		settle(200);
 
-		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that match parser in the message, author or hash");
 
 		window.history.search_visible = true;
 		settle(200);
 
 		assert_true(check_labelled(list_bar(window), "Display matches only").active);
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_display_matches_only_and_a_changed_lines_search_both_hold()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+
+		window.history.apply_filter("fix", false);
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+		assert_cmpstr(marked_rows(window), CompareOperator.EQ, "prefix work,Parser fix");
+
+		type_text(window, "parser");
+		check_labelled(list_bar(window), "Display matches only").active = true;
+		settle(200);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "Parser fix");
 
 		window.destroy();
 		repo.remove();
@@ -393,6 +419,9 @@ private static void test_escape_closes_keeps_the_text_and_gives_the_focus_back()
 		var window = opened(repo);
 
 		type_text(window, "fix");
+
+		var count = window.history.search_count;
+
 		window.history.search_field.grab_focus();
 		settle(50);
 
@@ -401,8 +430,9 @@ private static void test_escape_closes_keeps_the_text_and_gives_the_focus_back()
 
 		assert_false(window.history.search_visible);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "fix");
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "");
-		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, count);
+		assert_true(marked_pixels(window, 0) > 0);
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that match fix in the message, author or hash");
 		assert_true(window.history.paned.commit_list_view.has_focus);
 
 		window.destroy();
@@ -510,33 +540,6 @@ private static void test_no_match_turns_the_field_red()
 		type_text(window, "base");
 
 		assert_false(window.history.search_field.get_style_context().has_class("error"));
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_only_matches_and_a_filter_both_hold()
-{
-	try
-	{
-		var repo = four_subjects();
-		var window = opened(repo);
-
-		window.history.apply_filter("fix", false);
-		settle(800);
-
-		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
-
-		type_text(window, "parser");
-		check_labelled(list_bar(window), "Display matches only").active = true;
-		settle(200);
-
-		assert_cmpstr(subjects(window), CompareOperator.EQ, "Parser fix");
 
 		window.destroy();
 		repo.remove();
@@ -694,7 +697,7 @@ private static void test_search_words_narrow_the_list()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: Ctrl+Shift+F filters by what the commits changed.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
+		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: pick Changed lines or Files for that.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
 
 		type_text(window, "author:tester parser");
 
