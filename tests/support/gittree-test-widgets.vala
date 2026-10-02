@@ -149,16 +149,28 @@ public static Gee.Map<string, int> hash_ink(Gittree.Window window)
 		view.get_background_area(new Gtk.TreePath.from_indices(i), column, out area);
 		view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
 
+		var back = data + (y + area.height / 2) * stride + (x + area.width - 2) * 4;
+		var contrast = new int[area.width * area.height];
+		var strongest = 0;
+		var n = 0;
+
 		for (var j = int.max(y, 0); j < int.min(y + area.height, surface.get_height()); j++)
 		{
 			for (var k = x; k < int.min(x + area.width, surface.get_width()); k++)
 			{
 				var pixel = data + j * stride + k * 4;
 
-				if (pixel[0] + pixel[1] + pixel[2] < 384)
-				{
-					count++;
-				}
+				contrast[n] = ((int)pixel[0] - back[0]).abs() + ((int)pixel[1] - back[1]).abs() + ((int)pixel[2] - back[2]).abs();
+				strongest = int.max(strongest, contrast[n]);
+				n++;
+			}
+		}
+
+		for (var m = 0; m < n; m++)
+		{
+			if (contrast[m] * 2 > strongest)
+			{
+				count++;
 			}
 		}
 
