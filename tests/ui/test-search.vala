@@ -103,7 +103,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gitrlf/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
 	Test.add_func("/gitrlf/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
-	Test.add_func("/gitrlf/ui/search/a-messages-search-makes-the-hash-of-each-match-bold", test_a_messages_search_makes_the_hash_of_each_match_bold);
+	Test.add_func("/gitrlf/ui/search/a-messages-search-makes-each-matching-row-bold", test_a_messages_search_makes_each_matching_row_bold);
 	Test.add_func("/gitrlf/ui/search/a-messages-search-waits-for-enter", test_a_messages_search_waits_for_enter);
 	Test.add_func("/gitrlf/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
 	Test.add_func("/gitrlf/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
@@ -317,18 +317,25 @@ private static void test_a_match_on_an_unticked_ref_is_offered()
 	}
 }
 
-private static void test_a_messages_search_makes_the_hash_of_each_match_bold()
+private static void test_a_messages_search_makes_each_matching_row_bold()
 {
 	try
 	{
 		var repo = four_subjects();
 		var window = opened(repo);
-		var plain = hash_ink(window);
+		var paned = window.history.paned;
+		var subject = ink(window, paned.column_subject);
+		var hash = hash_ink(window);
+		var author = ink(window, paned.column_author);
+		var date = ink(window, paned.column_date);
 
 		search_for(window, "fix");
 
-		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "prefix work,Parser fix");
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "");
+		assert_cmpstr(bold_rows(window, paned.column_subject, subject), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(bold_hashes(window, hash), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(bold_rows(window, paned.column_author, author), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(bold_rows(window, paned.column_date, date), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(marked_rows(window, paned.column_hash), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();

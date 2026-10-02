@@ -23,7 +23,6 @@ namespace Gitrlf
 public class Search : Object
 {
 	private const string MARK = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
-	private const string EMPHASIS = "<span weight=\"bold\">%s</span>";
 
 	public static string count_text(int[] matches, int selected, bool empty, string? problem)
 	{
@@ -71,11 +70,6 @@ public class Search : Object
 		}
 
 		return found;
-	}
-
-	public static string emphasised(string markup)
-	{
-		return EMPHASIS.printf(markup);
 	}
 
 	public static string marked(string text, TextMatch[] matches)

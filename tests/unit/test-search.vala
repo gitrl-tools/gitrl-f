@@ -24,7 +24,6 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/search/count-wording", test_count_wording);
 	Test.add_func("/gitrlf/search/each-field-matches-without-regard-to-case", test_each_field_matches_without_regard_to_case);
-	Test.add_func("/gitrlf/search/emphasis-is-bold-and-keeps-the-marks", test_emphasis_is_bold_and_keeps_the_marks);
 	Test.add_func("/gitrlf/search/marks-follow-the-switches", test_marks_follow_the_switches);
 	Test.add_func("/gitrlf/search/marks-keep-the-case-of-the-text", test_marks_keep_the_case_of_the_text);
 	Test.add_func("/gitrlf/search/the-switches-narrow-the-fields", test_the_switches_narrow_the_fields);
@@ -73,12 +72,6 @@ private static void test_each_field_matches_without_regard_to_case()
 	{
 		Test.fail_printf("%s", e.message);
 	}
-}
-
-private static void test_emphasis_is_bold_and_keeps_the_marks()
-{
-	assert_cmpstr(Gitrlf.Search.emphasised(Gitrlf.Search.marked("ab<c", { plain("b") })), CompareOperator.EQ,
-	              "<span weight=\"bold\">a<span background=\"#fce94f\" foreground=\"#1a1a1a\">b</span>&lt;c</span>");
 }
 
 private static void test_marks_follow_the_switches()

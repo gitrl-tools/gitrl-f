@@ -34,6 +34,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_author;
 	[GtkChild]
+	private unowned Gtk.TreeViewColumn d_column_date;
+	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_hash;
 	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_subject;
@@ -60,6 +62,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.CellRendererText d_renderer_author;
 	[GtkChild]
+	private unowned Gtk.CellRendererText d_renderer_date;
+	[GtkChild]
 	private unowned Gtk.CellRendererText d_renderer_hash;
 	[GtkChild]
 	private unowned Gitg.CellRendererLanes d_renderer_subject;
@@ -83,6 +87,11 @@ public class HistoryPaned : Gtk.Box
 	public Gtk.TreeViewColumn column_author
 	{
 		get { return d_column_author; }
+	}
+
+	public Gtk.TreeViewColumn column_date
+	{
+		get { return d_column_date; }
 	}
 
 	public Gtk.TreeViewColumn column_hash
@@ -218,6 +227,11 @@ public class HistoryPaned : Gtk.Box
 	public Gtk.CellRendererText renderer_author
 	{
 		get { return d_renderer_author; }
+	}
+
+	public Gtk.CellRendererText renderer_date
+	{
+		get { return d_renderer_date; }
 	}
 
 	public Gtk.CellRendererText renderer_hash

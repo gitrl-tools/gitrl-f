@@ -22,9 +22,14 @@ namespace GitrlfTest
 
 public static string bold_hashes(Gitrlf.Window window, Gee.Map<string, int> plain)
 {
+	return bold_rows(window, window.history.paned.column_hash, plain);
+}
+
+public static string bold_rows(Gitrlf.Window window, Gtk.TreeViewColumn column, Gee.Map<string, int> plain)
+{
 	var names = new string[0];
 
-	foreach (var entry in hash_ink(window).entries)
+	foreach (var entry in ink(window, column).entries)
 	{
 		if (entry.value * 100 > plain[entry.key] * 115)
 		{
@@ -158,8 +163,12 @@ public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 
 public static Gee.Map<string, int> hash_ink(Gitrlf.Window window)
 {
+	return ink(window, window.history.paned.column_hash);
+}
+
+public static Gee.Map<string, int> ink(Gitrlf.Window window, Gtk.TreeViewColumn column)
+{
 	var view = window.history.paned.commit_list_view;
-	var column = window.history.paned.column_hash;
 	var surface = drawn(view);
 	var data = (uint8*)surface.get_data();
 	var stride = surface.get_stride();
@@ -176,7 +185,7 @@ public static Gee.Map<string, int> hash_ink(Gitrlf.Window window)
 		view.get_background_area(new Gtk.TreePath.from_indices(i), column, out area);
 		view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
 
-		var back = data + (y + area.height / 2) * stride + (x + area.width - 2) * 4;
+		var back = data + (y + area.height / 2) * stride + (int.min(x + area.width, surface.get_width()) - 2) * 4;
 		var contrast = new int[area.width * area.height];
 		var strongest = 0;
 		var n = 0;
