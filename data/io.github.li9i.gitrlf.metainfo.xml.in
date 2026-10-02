@@ -63,6 +63,33 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.6.0" date="2026-10-02">
+      <description>
+        <ul>
+          <li>
+            A search shows each matching row of the list in bold, not only its
+            hash.
+          </li>
+          <li>
+            The refs panel opens wide enough to show each name in full, to a
+            limit of 50 characters. After you drag its edge, it keeps the
+            width that you chose.
+          </li>
+          <li>
+            The search field of the list stays in place when the count
+            changes.
+          </li>
+          <li>
+            Match case, Regex and Display matches only are push buttons, not
+            check boxes.
+          </li>
+          <li>
+            In the find bar of the diff, the Enter that searches also goes to
+            the first match and opens its file.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-10-02">
       <description>
         <ul>

@@ -1,3 +1,16 @@
+gitrl-f (0.6.0-1) noble; urgency=medium
+
+  * A search shows each matching row of the list in bold, not only its hash.
+  * The refs panel opens wide enough to show each name in full, to a limit of
+    50 characters. After you drag its edge, it keeps the width that you chose.
+  * The search field of the list stays in place when the count changes.
+  * Match case, Regex and Display matches only are push buttons, not check
+    boxes.
+  * In the find bar of the diff, the Enter that searches also goes to the
+    first match and opens its file.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 02 Oct 2026 20:13:06 +0200
+
 gitrl-f (0.5.0-1) noble; urgency=medium
 
   * The name of the program changes from gittree to gitrl-f. The package is
