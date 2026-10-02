@@ -76,12 +76,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gee.List<Ref> d_refs;
 	private bool d_regex;
 	private bool[] d_regexes;
+	private bool d_remember;
 	private Gitg.Repository? d_repository;
 	private Cancellable? d_search;
 	private Settings d_settings;
 	private Gtk.SearchBar d_search_bar;
 	private Gtk.SearchEntry d_search_entry;
 	private SearchSwitches d_search_switches;
+	private Settings d_state;
 	private string? d_text;
 	private Gee.Set<string> d_ticks;
 	private string[] d_typed;
@@ -243,6 +245,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_refs = new Gee.ArrayList<Ref>();
 		d_ticks = new Gee.HashSet<string>();
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
+		d_state = new Settings(Config.APPLICATION_ID + ".state.history");
 
 		d_beyond = new Ggit.OId[0];
 		d_cases = { false, false, false };
@@ -1833,11 +1836,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		light_selection(d_paned.details_visible);
 		d_text = null;
 		d_regex = false;
+		d_remember = ticks == null;
 
 		try
 		{
 			refs = Refs.read(repository);
-			resolved = ticks != null ? ticks : Ticks.resolve(null, refs);
+			resolved = ticks != null ? ticks : remembered(repository, refs);
 		}
 		catch (Error e)
 		{
@@ -2129,18 +2133,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		var ticks = new Gee.HashSet<string>();
-
-		foreach (var reference in refs)
-		{
-			if (d_ticks.contains(reference.name) || (!previous.contains(reference.name) && reference.kind == RefKind.LOCAL))
-			{
-				ticks.add(reference.name);
-			}
-		}
-
 		d_refs = refs;
-		d_ticks = ticks;
+		d_ticks = Ticks.carry(d_ticks, previous, refs);
 		d_full = history;
 		d_all = null;
 
@@ -2161,6 +2155,44 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		show_ticks();
+	}
+
+	private void remember()
+	{
+		if (!d_remember)
+		{
+			return;
+		}
+
+		var known = new string[0];
+
+		foreach (var reference in d_refs)
+		{
+			known += reference.name;
+		}
+
+		var saved = new VariantDict(d_state.get_value("ticks"));
+
+		saved.insert_value(d_repository.get_location().get_path(), new Variant.tuple({ new Variant.strv(d_ticks.to_array()), new Variant.strv(known) }));
+		d_state.set_value("ticks", saved.end());
+	}
+
+	private Gee.Set<string> remembered(Gitg.Repository repository, Gee.List<Ref> refs) throws TicksError
+	{
+		var saved = new VariantDict(d_state.get_value("ticks")).lookup_value(repository.get_location().get_path(), new VariantType("(asas)"));
+
+		if (saved == null)
+		{
+			return Ticks.resolve(null, refs);
+		}
+
+		var ticked = new Gee.HashSet<string>();
+		var known = new Gee.HashSet<string>();
+
+		ticked.add_all_array(saved.get_child_value(0).get_strv());
+		known.add_all_array(saved.get_child_value(1).get_strv());
+
+		return Ticks.carry(ticked, known, refs);
 	}
 
 	private void reveal(Ggit.OId id)
@@ -2320,6 +2352,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_ticks = new Gee.HashSet<string>();
 		d_ticks.add_all(ticks);
 		d_paned.refs_list.set_ticks(d_ticks);
+		remember();
 		show_ticks();
 	}
 

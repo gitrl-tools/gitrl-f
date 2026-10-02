@@ -27,6 +27,21 @@ public errordomain TicksError
 
 public class Ticks : Object
 {
+	public static Gee.Set<string> carry(Gee.Set<string> ticked, Gee.Set<string> known, Gee.List<Ref> refs)
+	{
+		var ticks = new Gee.HashSet<string>();
+
+		foreach (var reference in refs)
+		{
+			if (ticked.contains(reference.name) || (!known.contains(reference.name) && reference.kind == RefKind.LOCAL))
+			{
+				ticks.add(reference.name);
+			}
+		}
+
+		return ticks;
+	}
+
 	public static bool glob_match(string pattern, string text)
 	{
 		try
@@ -117,7 +132,7 @@ public class Ticks : Object
 		var patterns = command_line != null ? command_line.refs : new string[0];
 		var ticks = new Gee.HashSet<string>();
 
-		if (!local && !remotes && !tags && patterns.length == 0)
+		if (command_line == null || !command_line.names_ticks)
 		{
 			foreach (var reference in refs)
 			{

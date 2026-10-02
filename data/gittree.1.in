@@ -52,8 +52,16 @@ index is written, and no working tree is touched.
 .PP
 With no
 .I REF
-and no option, every ref is ticked. Outside a repository, the window
-opens a list of the repositories that you opened before.
+and no tick option, gittree ticks the refs that you last chose in that
+repository. This works from any folder in the repository. A local branch
+that is new since then is ticked too, as it is in an open window. A new
+remote branch or a new tag is not. Until you change a tick, every ref is
+ticked. A run with a
+.I REF
+or a tick option ticks those refs, and gittree keeps none of the ticks
+that you change in that run. gittree keeps the ticks in its own settings,
+not in the repository. Outside a repository, the window opens a list of
+the repositories that you opened before.
 .PP
 .B git tree
 runs the same program, because the package installs

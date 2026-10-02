@@ -23,6 +23,7 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gittree/ticks/a-new-local-branch-is-ticked-and-other-new-refs-are-not", test_a_new_local_branch_is_ticked_and_other_new_refs_are_not);
 	Test.add_func("/gittree/ticks/detached-head-argument-ticks-the-head-row", test_detached_head_argument_ticks_the_head_row);
 	Test.add_func("/gittree/ticks/first-run-ticks-every-ref", test_first_run_ticks_every_ref);
 	Test.add_func("/gittree/ticks/glob-ticks-every-matching-branch", test_glob_ticks_every_matching_branch);
@@ -56,6 +57,40 @@ private static Gee.List<Gittree.Ref> refs_of(Repo repo) throws Error
 	var location = Gittree.Application.discover_repository(repo.path);
 
 	return Gittree.Refs.read(Gittree.Repository.open(location));
+}
+
+private static void test_a_new_local_branch_is_ticked_and_other_new_refs_are_not()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var known = new Gee.HashSet<string>();
+		var ticked = new Gee.HashSet<string>();
+
+		foreach (var reference in refs_of(repo))
+		{
+			known.add(reference.name);
+		}
+
+		ticked.add("refs/heads/master");
+		ticked.add("refs/tags/v1");
+		repo.branch("late");
+		repo.git({"tag", "v2"});
+		repo.git({"update-ref", "refs/remotes/origin/late", "master"});
+		repo.git({"tag", "--delete", "v1"});
+
+		var refs = refs_of(repo);
+
+		assert_cmpstr(names(refs, Gittree.Ticks.carry(ticked, known, refs)), CompareOperator.EQ, "late,master");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_detached_head_argument_ticks_the_head_row()

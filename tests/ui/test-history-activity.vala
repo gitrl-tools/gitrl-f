@@ -201,7 +201,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gittree/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
 	Test.add_func("/gittree/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
-	Test.add_func("/gittree/ui/history-activity/ticks-are-not-kept-between-runs", test_ticks_are_not_kept_between_runs);
+	Test.add_func("/gittree/ui/history-activity/ticks-given-at-the-start-are-not-kept", test_ticks_given_at_the_start_are_not_kept);
 	Test.add_func("/gittree/ui/history-activity/two-quick-ticks-keep-the-top-row", test_two_quick_ticks_keep_the_top_row);
 	Test.add_func("/gittree/ui/history-activity/two-refs-that-share-no-commit-say-so", test_two_refs_that_share_no_commit_say_so);
 	Test.add_func("/gittree/ui/history-activity/untick-of-the-top-row-puts-the-next-shown-row-at-the-top", test_untick_of_the_top_row_puts_the_next_shown_row_at_the_top);
@@ -1757,7 +1757,7 @@ private static void test_tick_keeps_the_top_row_in_place()
 	}
 }
 
-private static void test_ticks_are_not_kept_between_runs()
+private static void test_ticks_given_at_the_start_are_not_kept()
 {
 	try
 	{

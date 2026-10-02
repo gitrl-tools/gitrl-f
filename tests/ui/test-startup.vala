@@ -52,8 +52,45 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/ui/startup/gitg-style-reaches-a-window-started-in-a-repository", test_gitg_style_reaches_a_window_started_in_a_repository);
 	Test.add_func("/gittree/ui/startup/no-wd-opens-the-chooser-in-a-repository", test_no_wd_opens_the_chooser_in_a_repository);
+	Test.add_func("/gittree/ui/startup/ticks-are-kept-for-each-repository", test_ticks_are_kept_for_each_repository);
 
 	return Test.run();
+}
+
+private static string started(File directory, string[] arguments, string[] ticks)
+{
+	var app = new Gittree.Application();
+	var found = "";
+
+	app.window_added.connect((window) => {
+		Idle.add(() => {
+			var history = ((Gittree.Window)window).history;
+			var names = new Gee.ArrayList<string>();
+
+			names.add_all(history.ticks);
+			names.sort();
+			found = string.joinv(",", names.to_array());
+
+			if (ticks.length > 0)
+			{
+				var chosen = new Gee.HashSet<string>();
+
+				chosen.add_all_array(ticks);
+				history.set_ticks(chosen);
+			}
+
+			window.close();
+
+			return false;
+		});
+	});
+
+	var before = Environment.get_current_dir();
+	Environment.set_current_dir(directory.get_path());
+	app.run(arguments);
+	Environment.set_current_dir(before);
+
+	return found;
 }
 
 private static void test_gitg_style_reaches_a_window_started_in_a_repository()
@@ -100,7 +137,6 @@ private static void test_gitg_style_reaches_a_window_started_in_a_repository()
 	repo.remove();
 }
 
-
 private static void test_no_wd_opens_the_chooser_in_a_repository()
 {
 	Repo repo;
@@ -135,6 +171,53 @@ private static void test_no_wd_opens_the_chooser_in_a_repository()
 	Environment.set_current_dir(directory);
 
 	assert_true(chooser);
+
+	repo.remove();
+}
+
+private static void test_ticks_are_kept_for_each_repository()
+{
+	Repo repo;
+
+	try
+	{
+		repo = Repo.create();
+		repo.branched();
+	}
+	catch (Error e)
+	{
+		error("fixture failed: %s", e.message);
+	}
+
+	var below = repo.path.get_child("below");
+
+	try
+	{
+		below.make_directory();
+	}
+	catch (Error e)
+	{
+		error("fixture failed: %s", e.message);
+	}
+
+	assert_cmpstr(started(repo.path, {"gittree"}, {"refs/heads/feature/scan", "refs/heads/master", "refs/remotes/origin/master"}), CompareOperator.EQ, "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/origin/master,refs/tags/v1");
+
+	try
+	{
+		repo.branch("late");
+		repo.git({"tag", "v2"});
+		repo.git({"update-ref", "refs/remotes/origin/late", "master"});
+	}
+	catch (Error e)
+	{
+		error("fixture failed: %s", e.message);
+	}
+
+	var kept = "refs/heads/feature/scan,refs/heads/late,refs/heads/master,refs/remotes/origin/master";
+
+	assert_cmpstr(started(below, {"gittree"}, {}), CompareOperator.EQ, kept);
+	assert_cmpstr(started(below, {"gittree", "master"}, {"refs/heads/fix/stamp"}), CompareOperator.EQ, "refs/heads/master");
+	assert_cmpstr(started(repo.path, {"gittree"}, {}), CompareOperator.EQ, kept);
 
 	repo.remove();
 }

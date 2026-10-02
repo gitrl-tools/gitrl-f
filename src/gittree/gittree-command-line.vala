@@ -32,7 +32,9 @@ shows, as part of the ticked branch.
 
 git tree runs it too.
 
-With no <ref> and no option, every ref is ticked. Outside a
+With no <ref> and no tick option, the ticks that you last chose in
+this repository come back. A local branch that is new since then is
+ticked too. Until you change a tick, every ref is ticked. Outside a
 repository, it opens a list of the repositories you opened last.
 
     <ref>...        tick only these; a glob such as 'feature/*' works
@@ -118,6 +120,14 @@ One file after -- is followed through its renames, as in git log
 		get
 		{
 			return !all && !local && !remotes && !tags && text == null && regex == null && !ignore_case && refs.length == 0 && paths.length == 0;
+		}
+	}
+
+	public bool names_ticks
+	{
+		get
+		{
+			return all || local || remotes || tags || refs.length > 0;
 		}
 	}
 
