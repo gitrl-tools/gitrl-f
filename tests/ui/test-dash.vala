@@ -67,6 +67,21 @@ private static Gtk.Widget? find(Gtk.Widget widget, Type type)
 	return null;
 }
 
+private static Gitg.RepositoryListBox.Row? listed(Gitg.RepositoryListBox list, string name)
+{
+	foreach (var child in list.get_children())
+	{
+		var row = child as Gitg.RepositoryListBox.Row;
+
+		if (row != null && row.repository_name == name)
+		{
+			return row;
+		}
+	}
+
+	return null;
+}
+
 public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
@@ -75,6 +90,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/dash/a-folder-outside-a-repository-shows-an-error", test_a_folder_outside_a_repository_shows_an_error);
 	Test.add_func("/gittree/ui/dash/opened-repository-is-listed-and-opens", test_opened_repository_is_listed_and_opens);
 	Test.add_func("/gittree/ui/dash/shows-with-no-repository", test_shows_with_no_repository);
+	Test.add_func("/gittree/ui/dash/the-search-waits-for-enter", test_the_search_waits_for_enter);
 
 	return Test.run();
 }
@@ -180,17 +196,7 @@ private static void test_opened_repository_is_listed_and_opens()
 	var list = find(window, typeof(Gitg.RepositoryListBox)) as Gitg.RepositoryListBox;
 	assert_nonnull(list);
 
-	Gitg.RepositoryListBox.Row? row = null;
-
-	foreach (var child in list.get_children())
-	{
-		var candidate = child as Gitg.RepositoryListBox.Row;
-
-		if (candidate != null && candidate.repository_name == repo.path.get_basename())
-		{
-			row = candidate;
-		}
-	}
+	var row = listed(list, repo.path.get_basename());
 
 	assert_nonnull(row);
 
@@ -216,6 +222,60 @@ private static void test_shows_with_no_repository()
 	assert_true(dash.get_mapped());
 
 	window.destroy();
+}
+
+private static void test_the_search_waits_for_enter()
+{
+	Repo repo;
+
+	try
+	{
+		repo = Repo.create();
+		repo.commit("first");
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("fixture failed: %s", e.message);
+		return;
+	}
+
+	var first = new Gittree.Window(application());
+	first.open_repository(repo.path);
+	settle(500);
+	first.destroy();
+
+	var window = new Gittree.Window(application());
+	window.show();
+	settle(100);
+
+	var dash = find(window, typeof(Gittree.DashView));
+	var field = find(dash, typeof(Gtk.SearchEntry)) as Gtk.SearchEntry;
+	var row = listed(find(dash, typeof(Gitg.RepositoryListBox)) as Gitg.RepositoryListBox, repo.path.get_basename());
+
+	assert_nonnull(row);
+
+	field.text = "zzz";
+	settle(400);
+
+	assert_true(row.get_child_visible());
+
+	field.activate();
+	settle(400);
+
+	assert_false(row.get_child_visible());
+
+	field.text = "";
+	settle(400);
+
+	assert_false(row.get_child_visible());
+
+	field.activate();
+	settle(400);
+
+	assert_true(row.get_child_visible());
+
+	window.destroy();
+	repo.remove();
 }
 
 }

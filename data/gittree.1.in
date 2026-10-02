@@ -152,16 +152,14 @@ joined buttons on the left of its field pick what the field edits: Messages
 (messages, authors and hashes), Changed lines, or Files. Each keeps its own
 text, Match case and Regex, and their searches add up: a commit matches when
 it meets every search that is on. The box on each button turns its search
-on or off and keeps its text. Typing turns a Messages search on. The box of
-Changed lines or Files shows a dash while its text waits for Enter, and a
-click on the dash searches it too.
+on or off and keeps its text. Every search waits for Enter: until then, its
+box shows a dash, and a click on the dash searches too.
 The matches are marked in the list, and Display matches only
 hides the commits that do not match. A regex is a POSIX extended regular
 expression, as in
 .BR "git log \-G" .
-Changed lines and Files search when Enter is pressed; Messages, authors
-and hashes searches as you type. It looks in the subject, the message, the
-author and the hash of each commit in the list. Words narrow it further:
+A Messages search looks in the subject, the message, the author and the
+hash of each commit in the list. Words narrow it further:
 .BI author: TEXT
 looks in the name and the email of the author,
 .BI message: TEXT
@@ -184,8 +182,9 @@ matches on the other refs, and Tick and show ticks a ref that holds the newest o
 selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
 .PP
-The find bar of the diff has Match case and Regex too, and keeps its text
-when it closes. One scroll bar at the bottom of the pane moves the long
+The find bar of the diff has Match case and Regex too, searches when Enter
+is pressed, and keeps its text when it closes. One scroll bar at the bottom
+of the pane moves the long
 lines of the file that holds the current match, or else of the file in the
 middle of the pane.
 .SH THE MENU OF A COMMIT

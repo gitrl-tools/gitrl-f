@@ -104,6 +104,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
 	Test.add_func("/gittree/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
 	Test.add_func("/gittree/ui/search/a-messages-search-makes-the-hash-of-each-match-bold", test_a_messages_search_makes_the_hash_of_each_match_bold);
+	Test.add_func("/gittree/ui/search/a-messages-search-waits-for-enter", test_a_messages_search_waits_for_enter);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
 	Test.add_func("/gittree/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
 	Test.add_func("/gittree/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
@@ -112,7 +113,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
 	Test.add_func("/gittree/ui/search/only-matches-keeps-the-selection-out-of-the-list", test_only_matches_keeps_the_selection_out_of_the_list);
-	Test.add_func("/gittree/ui/search/only-matches-narrows-as-you-type", test_only_matches_narrows_as_you_type);
+	Test.add_func("/gittree/ui/search/only-matches-narrows-with-each-search", test_only_matches_narrows_with_each_search);
 	Test.add_func("/gittree/ui/search/only-matches-with-nothing-shows-a-notice", test_only_matches_with_nothing_shows_a_notice);
 	Test.add_func("/gittree/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
 	Test.add_func("/gittree/ui/search/search-words-narrow-the-list", test_search_words_narrow_the_list);
@@ -194,6 +195,14 @@ private static Gittree.Window opened_with(Repo repo, string[] ticked) throws Err
 	return window;
 }
 
+private static void search_for(Gittree.Window window, string text)
+{
+	window.history.search_visible = true;
+	window.history.search_field.text = text;
+	window.history.search_field.activate();
+	settle(400);
+}
+
 private static void settle(int milliseconds)
 {
 	for (var i = 0; i < milliseconds / 10; i++)
@@ -226,7 +235,7 @@ private static void test_a_bad_expression_turns_the_field_red()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		type_text(window, "(");
+		search_for(window, "(");
 		check_labelled(list_bar(window), "Regex").active = true;
 		settle(200);
 
@@ -252,7 +261,7 @@ private static void test_a_hash_on_an_unticked_ref_is_found()
 		var window = opened_with(repo, {"refs/heads/master"});
 		var hash = repo.git({"rev-parse", "--short", "v9"}).strip();
 
-		type_text(window, hash);
+		search_for(window, hash);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 1 in others");
 
@@ -280,7 +289,7 @@ private static void test_a_match_on_an_unticked_ref_is_offered()
 
 		assert_false(button.get_visible());
 
-		type_text(window, "secret");
+		search_for(window, "secret");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match in the ticked refs. 1 in others");
 		assert_true(button.get_visible());
@@ -293,7 +302,7 @@ private static void test_a_match_on_an_unticked_ref_is_offered()
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "secret work");
 		assert_false(button.get_visible());
 
-		type_text(window, "zzz");
+		search_for(window, "zzz");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
 		assert_false(button.get_visible());
@@ -315,10 +324,66 @@ private static void test_a_messages_search_makes_the_hash_of_each_match_bold()
 		var window = opened(repo);
 		var plain = hash_ink(window);
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 
 		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "prefix work,Parser fix");
 		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_messages_search_waits_for_enter()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var history = window.history;
+		var messages = choice_box(window, "Messages");
+
+		history.search_visible = true;
+		history.search_field.text = "parser";
+		settle(400);
+
+		assert_cmpstr(history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_true(messages.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+
+		history.search_field.activate();
+		settle(400);
+
+		assert_false(messages.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages");
+
+		check_labelled(list_bar(window), "Match case").active = true;
+		settle(400);
+
+		assert_cmpstr(history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_true(messages.inconsistent);
+
+		history.search_field.activate();
+		settle(400);
+
+		assert_false(messages.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages");
+
+		history.search_field.text = "";
+		settle(400);
+
+		assert_cmpstr(history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages");
+
+		history.search_field.activate();
+		settle(400);
+
+		assert_cmpstr(history.search_count, CompareOperator.EQ, "");
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();
@@ -378,7 +443,7 @@ private static void test_closing_the_bar_lifts_the_search_and_keeps_the_text()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 		check_labelled(list_bar(window), "Display matches only").active = true;
 		settle(200);
 
@@ -428,7 +493,7 @@ private static void test_display_matches_only_and_a_changed_lines_search_both_ho
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
 		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "prefix work,Parser fix");
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 		check_labelled(list_bar(window), "Display matches only").active = true;
 		settle(200);
 
@@ -452,7 +517,7 @@ private static void test_escape_lifts_the_search_keeps_the_text_and_gives_the_fo
 
 		var window = opened(repo);
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 
 		assert_true(marked_pixels(window, 0) > 0);
 
@@ -492,17 +557,17 @@ private static void test_marks_show_in_the_subject_hash_and_author_columns()
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.GT, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
 
-		type_text(window, sha.substring(0, 7));
+		search_for(window, sha.substring(0, 7));
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.GT, 0);
 		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
 
-		type_text(window, "tester");
+		search_for(window, "tester");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 2), CompareOperator.GT, 0);
@@ -527,7 +592,7 @@ private static void test_next_and_previous_wrap_and_count()
 		var next = button(window, "Next match (Enter)");
 		var previous = button(window, "Previous match (Shift+Enter)");
 
-		type_text(window, "FIX");
+		search_for(window, "FIX");
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "3 matches");
 
 		next.clicked();
@@ -566,12 +631,12 @@ private static void test_no_match_turns_the_field_red()
 
 		var window = opened(repo);
 
-		type_text(window, "zzz");
+		search_for(window, "zzz");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 
-		type_text(window, "base");
+		search_for(window, "base");
 
 		assert_false(window.history.search_field.get_style_context().has_class("error"));
 
@@ -597,18 +662,18 @@ private static void test_only_matches_keeps_the_selection_out_of_the_list()
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "issue 42");
 
 		check_labelled(list_bar(window), "Display matches only").active = true;
-		type_text(window, "parser");
+		search_for(window, "parser");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
 		assert_null(window.history.selected);
 		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "issue 42");
 
-		type_text(window, "42");
+		search_for(window, "42");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42");
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "issue 42");
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 		window.history.step(1);
 		settle(200);
 
@@ -623,7 +688,7 @@ private static void test_only_matches_keeps_the_selection_out_of_the_list()
 	}
 }
 
-private static void test_only_matches_narrows_as_you_type()
+private static void test_only_matches_narrows_with_each_search()
 {
 	try
 	{
@@ -633,22 +698,22 @@ private static void test_only_matches_narrows_as_you_type()
 
 		assert_cmpstr(toggle.tooltip_text, CompareOperator.EQ, "Hide the commits that do not match");
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 		toggle.active = true;
 		settle(200);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
 		assert_cmpstr(window.history.summary_text, CompareOperator.EQ, "Showing 2 of 4 commits");
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
 
-		type_text(window, "");
+		search_for(window, "");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 		toggle.active = false;
 		settle(200);
 
@@ -671,7 +736,7 @@ private static void test_only_matches_with_nothing_shows_a_notice()
 		var window = opened(repo);
 
 		check_labelled(list_bar(window), "Display matches only").active = true;
-		type_text(window, "zzz");
+		search_for(window, "zzz");
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
 		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "No commit in the ticked refs matches zzz.");
@@ -696,7 +761,7 @@ private static void test_opening_again_selects_the_kept_text()
 		int start;
 		int end;
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 
 		var count = window.history.search_count;
 
@@ -737,27 +802,27 @@ private static void test_search_words_narrow_the_list()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: pick Changed lines or Files for that.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01");
+		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the subject and the body of each commit message, the name and the email of the author, and the hash, in the commits of the list. It does not search the changed files: pick Changed lines or Files for that.\nNarrow with author:, message:, hash:, before: and after:, as in author:\"Jane Doe\" after:2026-01. Enter searches");
 
-		type_text(window, "author:tester parser");
+		search_for(window, "author:tester parser");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
 
-		type_text(window, "author:nobody parser");
+		search_for(window, "author:nobody parser");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
 
-		type_text(window, "message:tidy");
+		search_for(window, "message:tidy");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
 
-		type_text(window, "parser after:2026-13");
+		search_for(window, "parser after:2026-13");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad date");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 
 		check_labelled(list_bar(window), "Display matches only").active = true;
-		type_text(window, "author:tester fix before:2027");
+		search_for(window, "author:tester fix before:2027");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
 
@@ -777,7 +842,7 @@ private static void test_switches_keep_their_state_when_the_bar_closes()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 		check_labelled(list_bar(window), "Match case").active = true;
 		window.history.search_visible = false;
 		settle(100);
@@ -804,21 +869,23 @@ private static void test_switches_narrow_the_matches()
 		var window = opened(repo);
 		var bar = list_bar(window);
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
 
 		check_labelled(bar, "Match case").active = true;
+		window.history.search_field.activate();
 		settle(100);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
 
 		check_labelled(bar, "Match case").active = false;
-		type_text(window, "issue [0-9]+");
+		search_for(window, "issue [0-9]+");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
 
 		check_labelled(bar, "Regex").active = true;
+		window.history.search_field.activate();
 		settle(100);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 of 1");
@@ -862,7 +929,7 @@ private static void test_the_close_button_closes_the_bar_and_lifts_the_search()
 		var bar = list_bar(window).get_ancestor(typeof(Gtk.SearchBar));
 		Gtk.Button? close = null;
 
-		type_text(window, "parser");
+		search_for(window, "parser");
 
 		foreach (var widget in find_all(bar, typeof(Gtk.Button)))
 		{
@@ -900,7 +967,7 @@ private static void test_the_count_stands_apart_from_the_switches()
 
 		var window = opened(repo);
 
-		type_text(window, "zzz");
+		search_for(window, "zzz");
 
 		Gtk.Allocation check;
 		Gtk.Allocation count;
@@ -969,13 +1036,13 @@ private static void test_tick_and_show_prefers_heads_branch_then_remotes_then_ta
 		var repo = beyond_fixture();
 		var window = opened_with(repo, {"refs/heads/elsewhere"});
 
-		type_text(window, "master only");
+		search_for(window, "master only");
 		button_labelled(list_bar(window), "Tick and show").clicked();
 		settle(300);
 
 		assert_true(window.history.ticks.contains("refs/heads/master"));
 
-		type_text(window, "remote thing");
+		search_for(window, "remote thing");
 		button_labelled(list_bar(window), "Tick and show").clicked();
 		settle(300);
 
@@ -1001,7 +1068,7 @@ private static void test_tick_searches_again()
 
 		var window = opened(repo);
 
-		type_text(window, "feature");
+		search_for(window, "feature");
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
 
 		var ticks = window.history.ticks;
@@ -1028,7 +1095,7 @@ private static void test_ticking_nothing_counts_no_match()
 
 		var window = opened(repo);
 
-		type_text(window, "fix");
+		search_for(window, "fix");
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "3 matches");
 
 		window.history.set_ticks(new Gee.HashSet<string>());
@@ -1055,7 +1122,7 @@ private static void test_typing_moves_nothing()
 		var window = opened(repo);
 		var before = window.history.selected.get_subject();
 
-		type_text(window, "fix one");
+		search_for(window, "fix one");
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, before);
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
@@ -1069,11 +1136,5 @@ private static void test_typing_moves_nothing()
 	}
 }
 
-private static void type_text(Gittree.Window window, string text)
-{
-	window.history.search_visible = true;
-	window.history.search_field.text = text;
-	settle(400);
-}
 
 }

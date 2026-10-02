@@ -35,9 +35,15 @@ public class SearchQuery : Object
 		get { return d_empty; }
 	}
 
+	public bool match_case { get; private set; }
+
 	public string? problem { get; private set; }
 
+	public bool regex { get; private set; }
+
 	public string? regex_error { get; private set; }
+
+	public string text { get; private set; }
 
 	public SearchQuery(string text, bool match_case, bool regex)
 	{
@@ -45,6 +51,10 @@ public class SearchQuery : Object
 		var plain = new StringBuilder();
 		var start = 0;
 		MatchInfo info;
+
+		this.text = text;
+		this.match_case = match_case;
+		this.regex = regex;
 
 		d_authors = new TextMatch[0];
 		d_hashes = new TextMatch[0];

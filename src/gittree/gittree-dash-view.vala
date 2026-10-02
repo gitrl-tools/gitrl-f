@@ -39,7 +39,7 @@ public class DashView : Gtk.Box
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.placeholder_text = _("Search repositories");
 		d_search_entry.hexpand = true;
-		d_search_entry.search_changed.connect(on_search_changed);
+		d_search_entry.activate.connect(on_search_activated);
 		header.add(d_search_entry);
 
 		var open_button = new Gtk.Button.with_mnemonic(_("_Open Repository…"));
@@ -97,7 +97,7 @@ public class DashView : Gtk.Box
 		chooser.destroy();
 	}
 
-	private void on_search_changed()
+	private void on_search_activated()
 	{
 		d_repository_list.filter_text(d_search_entry.text);
 	}

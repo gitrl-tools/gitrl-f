@@ -611,7 +611,7 @@ private static void test_a_dash_marks_a_text_that_enter_has_not_searched()
 		history.search_field.text = "zzz";
 		settle(300);
 
-		assert_false(choice_box(window, "Messages").inconsistent);
+		assert_true(choice_box(window, "Messages").inconsistent);
 
 		window.destroy();
 		repo.remove();
@@ -1065,6 +1065,7 @@ private static void test_a_box_shows_each_choice_whose_search_applies()
 
 		choose(window, Gittree.SearchChoice.MESSAGES);
 		history.search_field.text = "c";
+		history.search_field.activate();
 		settle(400);
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages|Changed lines");
@@ -1124,6 +1125,7 @@ private static void test_a_box_switches_a_search_off_and_on_and_keeps_its_text()
 
 		choose(window, Gittree.SearchChoice.MESSAGES);
 		history.search_field.text = "c";
+		history.search_field.activate();
 		settle(400);
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages|Changed lines");
@@ -1911,6 +1913,7 @@ private static void test_the_choices_stack_and_the_list_shows_each_text()
 
 		choose(window, Gittree.SearchChoice.MESSAGES);
 		window.history.search_field.text = hash;
+		window.history.search_field.activate();
 		settle(400);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e");
@@ -2208,6 +2211,7 @@ private static void test_the_users_own_text_in_the_diff_bar_is_kept_across_commi
 		history.find_bar.field.text = "needle";
 		history.find_bar.match_case = false;
 		history.find_bar.field.text = "Needle";
+		history.find_bar.field.activate();
 		settle(300);
 		select_subject(window, "a");
 		settle(300);

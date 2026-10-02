@@ -38,6 +38,9 @@ public class DiffFindBar : Gtk.SearchBar
 	private Gtk.Widget? d_return_focus;
 	private bool d_scroll_pending;
 	private bool d_scrolling;
+	private bool d_searched_case;
+	private bool d_searched_regex;
+	private string d_searched_text;
 	private int[] d_sizes;
 	private bool[] d_split;
 	private bool d_step_pending;
@@ -77,6 +80,7 @@ public class DiffFindBar : Gtk.SearchBar
 	{
 		d_diff = diff;
 		d_find = new DiffFind("", true);
+		d_searched_text = "";
 		d_indexes = new Gee.HashMap<Gitg.DiffViewFile, int>();
 		d_sizes = new int[0];
 		d_split = new bool[0];
@@ -85,7 +89,7 @@ public class DiffFindBar : Gtk.SearchBar
 		d_field = new Gtk.SearchEntry();
 		d_field.width_chars = 30;
 		d_field.placeholder_text = _("Find in the changed lines of this commit");
-		d_field.tooltip_text = _("Searches the added, removed and unchanged lines of every file in the commit shown below, folded files too");
+		d_field.tooltip_text = _("Searches the added, removed and unchanged lines of every file in the commit shown below, folded files too. Enter searches");
 
 		d_count = new Gtk.Label(null);
 		d_count.width_chars = 12;
@@ -94,9 +98,9 @@ public class DiffFindBar : Gtk.SearchBar
 
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);
-		SearchKeys.attach(d_field, box, step);
+		SearchKeys.attach(d_field, box, go);
 		d_switches = new SearchSwitches(box);
-		d_switches.changed.connect(search);
+		d_switches.changed.connect(show_count);
 		box.add(d_count);
 
 		var viewport = new Gtk.Viewport(null, null);
@@ -114,7 +118,7 @@ public class DiffFindBar : Gtk.SearchBar
 		no_show_all = true;
 		show_close_button = true;
 
-		d_field.search_changed.connect(search);
+		d_field.changed.connect(show_count);
 
 		notify["search-mode-enabled"].connect(search_mode_changed);
 		d_diff.files_changed.connect(() => {
@@ -125,6 +129,14 @@ public class DiffFindBar : Gtk.SearchBar
 				search();
 			}
 		});
+	}
+
+	private void apply()
+	{
+		d_searched_text = d_field.text;
+		d_searched_case = d_switches.match_case;
+		d_searched_regex = d_switches.regex;
+		search();
 	}
 
 	private void adjustment_changed()
@@ -168,7 +180,22 @@ public class DiffFindBar : Gtk.SearchBar
 		d_field.text = text;
 		d_switches.match_case = match_case;
 		d_switches.regex = regex;
-		search();
+		apply();
+	}
+
+	private void go(int direction)
+	{
+		if (pending())
+		{
+			if (typed_error() == null)
+			{
+				apply();
+			}
+
+			return;
+		}
+
+		step(direction);
 	}
 
 	private void mark_file(int index, Gitg.DiffViewFile file)
@@ -235,6 +262,13 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 
 		mark_file(index, file);
+	}
+
+	private bool pending()
+	{
+		var text = d_field.text;
+
+		return text != d_searched_text || (text != "" && (d_switches.match_case != d_searched_case || d_switches.regex != d_searched_regex));
 	}
 
 	private static void raise_tags(Gtk.TextTagTable table)
@@ -359,7 +393,7 @@ public class DiffFindBar : Gtk.SearchBar
 		var files = d_diff.get_files();
 		var before = d_find;
 		var same_diff = d_diff_searched != null && d_diff_searched == d_diff_rows;
-		var text = search_mode_enabled ? d_field.text : "";
+		var text = search_mode_enabled ? d_searched_text : "";
 
 		d_scroll_pending = false;
 
@@ -368,7 +402,7 @@ public class DiffFindBar : Gtk.SearchBar
 			d_watched.clear();
 		}
 
-		d_find = new DiffFind(text, d_switches.match_case, d_switches.regex);
+		d_find = new DiffFind(text, d_searched_case, d_searched_regex);
 		d_indexes = new Gee.HashMap<Gitg.DiffViewFile, int>();
 		d_sizes = new int[files.size];
 		d_split = new bool[files.size];
@@ -468,10 +502,25 @@ public class DiffFindBar : Gtk.SearchBar
 	{
 		var style = d_field.get_style_context();
 
-		d_count.label = d_find.count_text();
-		d_count.tooltip_text = d_find.regex_error;
+		var error = typed_error();
+		var waiting = error == null && pending();
 
-		if (d_field.text != "" && d_find.length == 0)
+		if (error != null)
+		{
+			d_count.label = _("Bad regex");
+		}
+		else if (waiting)
+		{
+			d_count.label = _("Enter to search");
+		}
+		else
+		{
+			d_count.label = d_find.count_text();
+		}
+
+		d_count.tooltip_text = error;
+
+		if (error != null || (!waiting && d_field.text != "" && d_find.length == 0))
 		{
 			style.add_class("error");
 		}
@@ -553,7 +602,7 @@ public class DiffFindBar : Gtk.SearchBar
 	{
 		search_mode_enabled = true;
 		d_field.text = text;
-		search();
+		apply();
 
 		var files = d_diff.get_files();
 		var chosen = -1;
@@ -577,6 +626,11 @@ public class DiffFindBar : Gtk.SearchBar
 
 		d_find.current = chosen - 1;
 		step(1);
+	}
+
+	private string? typed_error()
+	{
+		return new TextMatch(d_field.text, d_switches.match_case, d_switches.regex).error;
 	}
 
 	private void watch(Gitg.DiffViewFile file)

@@ -41,11 +41,6 @@ public class DiffFind : Object
 		get { return d_matches.length; }
 	}
 
-	public string? regex_error
-	{
-		get { return d_match.error; }
-	}
-
 	public DiffFind(string text, bool match_case, bool regex = false)
 	{
 		d_match = new TextMatch(text, match_case, regex);

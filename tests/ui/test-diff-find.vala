@@ -81,10 +81,11 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
 	Test.add_func("/gittree/ui/diff-find/the-close-button-closes-the-bar-and-keeps-the-text", test_the_close_button_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
+	Test.add_func("/gittree/ui/diff-find/the-find-field-waits-for-enter", test_the_find_field_waits_for_enter);
 	Test.add_func("/gittree/ui/diff-find/the-scroll-bar-follows-the-file-in-the-middle-of-the-pane", test_the_scroll_bar_follows_the_file_in_the_middle_of_the_pane);
 	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
-	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
+	Test.add_func("/gittree/ui/diff-find/enter-marks-every-match-and-moves-nothing", test_enter_marks_every_match_and_moves_nothing);
 
 	return Test.run();
 }
@@ -191,6 +192,7 @@ private static void search_for(Gittree.Window window, string text)
 {
 	window.history.find_bar.search_mode_enabled = true;
 	window.history.find_bar.field.text = text;
+	window.history.find_bar.field.activate();
 	settle(400);
 }
 
@@ -340,6 +342,7 @@ private static void test_a_regex_narrows_the_marks()
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle in a|2:needle in c");
 
 		bar.match_case = true;
+		bar.field.activate();
 		settle(200);
 
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "2:needle in c");
@@ -408,7 +411,7 @@ private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 		assert_false(window.history.search_visible);
 		assert_true(bar.field.has_focus);
 		assert_cmpstr(bar.field.placeholder_text, CompareOperator.EQ, "Find in the changed lines of this commit");
-		assert_cmpstr(bar.field.tooltip_text, CompareOperator.EQ, "Searches the added, removed and unchanged lines of every file in the commit shown below, folded files too");
+		assert_cmpstr(bar.field.tooltip_text, CompareOperator.EQ, "Searches the added, removed and unchanged lines of every file in the commit shown below, folded files too. Enter searches");
 		assert_false(bar.match_case);
 
 		bar.field.text = "needle";
@@ -859,6 +862,61 @@ private static void test_the_count_stands_apart_from_the_switches()
 	}
 }
 
+private static void test_the_find_field_waits_for_enter()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		unfold_all(window);
+		bar.search_mode_enabled = true;
+		bar.field.text = "needle";
+		settle(400);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "Enter to search");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "");
+
+		bar.field.activate();
+		settle(400);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "2 matches");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle|2:needle");
+		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "");
+
+		bar.match_case = true;
+		settle(400);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "Enter to search");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:Needle|2:needle");
+
+		bar.field.activate();
+		settle(400);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 match");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "2:needle");
+
+		bar.field.text = "";
+		settle(400);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "Enter to search");
+
+		bar.field.activate();
+		settle(400);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_the_scroll_bar_follows_the_file_in_the_middle_of_the_pane()
 {
 	try
@@ -940,7 +998,7 @@ private static void test_the_text_is_kept_from_commit_to_commit()
 	}
 }
 
-private static void test_typing_marks_every_match_and_moves_nothing()
+private static void test_enter_marks_every_match_and_moves_nothing()
 {
 	try
 	{
@@ -964,6 +1022,7 @@ private static void test_typing_marks_every_match_and_moves_nothing()
 		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "");
 
 		bar.match_case = true;
+		bar.field.activate();
 		settle(100);
 
 		assert_cmpstr(bar.count, CompareOperator.EQ, "1 match");

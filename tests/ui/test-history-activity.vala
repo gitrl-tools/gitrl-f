@@ -186,6 +186,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gittree/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
 	Test.add_func("/gittree/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
+	Test.add_func("/gittree/ui/history-activity/refs-filter-waits-for-enter", test_refs_filter_waits_for_enter);
 	Test.add_func("/gittree/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
 	Test.add_func("/gittree/ui/history-activity/right-click-on-a-label-copies-its-name", test_right_click_on_a_label_copies_its_name);
 	Test.add_func("/gittree/ui/history-activity/right-click-on-the-hash-copies-the-full-hash", test_right_click_on_the_hash_copies_the_full_hash);
@@ -1252,6 +1253,46 @@ private static void test_path_bar_and_path_notice()
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
 		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "No ticked ref reaches a commit that changes a.");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_refs_filter_waits_for_enter()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var filter = window.history.paned.filter;
+		var master = row(window.history.paned.refs_list, "master");
+
+		filter.text = "zzz";
+		settle(400);
+
+		assert_true(master.get_child_visible());
+
+		filter.activate();
+		settle(400);
+
+		assert_false(master.get_child_visible());
+
+		filter.text = "";
+		settle(400);
+
+		assert_false(master.get_child_visible());
+
+		filter.activate();
+		settle(400);
+
+		assert_true(master.get_child_visible());
 
 		window.destroy();
 		repo.remove();
