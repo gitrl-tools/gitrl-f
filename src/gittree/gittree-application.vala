@@ -257,9 +257,12 @@ public class Application : Gtk.Application
 				Gtk.StyleContext.add_provider_for_screen(screen, gitg_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
 			}
 
-			var provider = new Gtk.CssProvider();
-			provider.load_from_resource("/io/github/li9i/gittree/ui/style.css");
-			Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+			foreach (var name in new string[] { "style.css", "gittree-style.css" })
+			{
+				var provider = new Gtk.CssProvider();
+				provider.load_from_resource("/io/github/li9i/gittree/ui/" + name);
+				Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+			}
 		}
 
 		Gtk.Window.set_default_icon_name(Config.APPLICATION_ID);

@@ -440,6 +440,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		});
 
+		d_paned.commit_list_view.move_cursor.connect(() => {
+			light_selection(true);
+			return false;
+		});
+
 		d_paned.commit_list_view.row_activated.connect(() => {
 			var event = Gtk.get_current_event();
 
@@ -481,6 +486,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				d_find_with_pane = false;
 			}
 
+			light_selection(d_paned.details_visible);
 			show_details();
 			fill_find_bar(false);
 		});
@@ -1639,6 +1645,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private void light_selection(bool lit)
+	{
+		var style = d_paned.commit_list_view.get_style_context();
+
+		if (lit)
+		{
+			style.remove_class("unlit");
+		}
+		else
+		{
+			style.add_class("unlit");
+		}
+	}
+
 	private History? listed_history()
 	{
 		if (d_line_history != null)
@@ -1810,6 +1830,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_all = null;
 		d_find_closed = false;
 		d_names = null;
+		light_selection(d_paned.details_visible);
 		d_text = null;
 		d_regex = false;
 
@@ -2277,6 +2298,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_hold = -1;
 		d_paned.commit_list_view.get_selection().select_path(path);
 		d_paned.commit_list_view.scroll_to_cell(path, null, false, 0, 0);
+		light_selection(true);
 	}
 
 	private int selected_row()

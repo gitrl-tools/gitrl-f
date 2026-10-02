@@ -69,6 +69,16 @@ public static Gtk.MenuItem? copy_item()
 	return null;
 }
 
+private static Cairo.ImageSurface drawn(Gtk.Widget widget)
+{
+	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, widget.get_allocated_width(), widget.get_allocated_height());
+
+	widget.draw(new Cairo.Context(surface));
+	surface.flush();
+
+	return surface;
+}
+
 public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 {
 	var found = new Gtk.Widget[0];
@@ -112,17 +122,43 @@ public static Gtk.Widget list_bar(Gittree.Window window)
 	return window.history.search_field.get_parent();
 }
 
+public static string lit_rows(Gittree.Window window)
+{
+	var view = window.history.paned.commit_list_view;
+	var surface = drawn(view);
+	var rows = window.history.rows();
+	var names = new string[0];
+	var data = (uint8*)surface.get_data();
+	var stride = surface.get_stride();
+	Gdk.Rectangle area;
+	int x;
+	int y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(rows.length - 1), window.history.paned.column_author, out area);
+	view.convert_bin_window_to_widget_coords(area.x + area.width - 2, area.y + area.height + 4, out x, out y);
+
+	var plain = *(uint32*)(data + y * stride + x * 4) & 0xffffff;
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		view.get_background_area(new Gtk.TreePath.from_indices(i), window.history.paned.column_author, out area);
+		view.convert_bin_window_to_widget_coords(area.x + area.width - 2, area.y + 1, out x, out y);
+
+		if ((*(uint32*)(data + y * stride + x * 4) & 0xffffff) != plain)
+		{
+			names += rows[i].get_subject();
+		}
+	}
+
+	return string.joinv(",", names);
+}
+
 public static string marked_rows(Gittree.Window window, Gtk.TreeViewColumn column)
 {
 	var view = window.history.paned.commit_list_view;
-	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, view.get_allocated_width(), view.get_allocated_height());
-	var context = new Cairo.Context(surface);
+	var surface = drawn(view);
 	var rows = window.history.rows();
 	var names = new string[0];
-
-	view.draw(context);
-	surface.flush();
-
 	var data = (uint8*)surface.get_data();
 	var stride = surface.get_stride();
 	var end = int.min(column.get_x_offset() + column.get_width(), surface.get_width());

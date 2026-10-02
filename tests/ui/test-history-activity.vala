@@ -162,6 +162,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gittree/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
 	Test.add_func("/gittree/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
 	Test.add_func("/gittree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
 	Test.add_func("/gittree/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
@@ -329,6 +330,61 @@ private static string subjects_of(Gittree.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_a_row_is_lit_only_once_the_user_picks_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+		commit_two_files(repo, "third");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		settle(300);
+
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+
+		click_row(window, 1);
+
+		assert_true(details_shown(window));
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "second");
+
+		click_row(window, 1);
+
+		assert_false(details_shown(window));
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Down, 0);
+		settle(100);
+
+		assert_false(details_shown(window));
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
+
+		window.history.paned.details_visible = true;
+		settle(100);
+		window.history.escape();
+		settle(100);
+
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+
+		window.history.jump("refs/heads/master");
+		settle(100);
+
+		assert_false(details_shown(window));
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "third");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_back_arrow_steps_back_from_the_full_diff()
