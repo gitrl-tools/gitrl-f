@@ -142,7 +142,7 @@ public static string lit_rows(Gittree.Window window)
 	for (var i = 0; i < rows.length; i++)
 	{
 		view.get_background_area(new Gtk.TreePath.from_indices(i), window.history.paned.column_author, out area);
-		view.convert_bin_window_to_widget_coords(area.x + area.width - 2, area.y + 1, out x, out y);
+		view.convert_bin_window_to_widget_coords(area.x + area.width - 2, area.y + area.height / 2, out x, out y);
 
 		if ((*(uint32*)(data + y * stride + x * 4) & 0xffffff) != plain)
 		{
