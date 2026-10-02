@@ -50,19 +50,6 @@ public static string bold_rows(Gitrlf.Window window, Gtk.TreeViewColumn column, 
 	return string.joinv(",", shown);
 }
 
-public static Gtk.CheckButton check_labelled(Gtk.Widget root, string label)
-{
-	foreach (var widget in find_all(root, typeof(Gtk.CheckButton)))
-	{
-		if (((Gtk.CheckButton)widget).label == label)
-		{
-			return (Gtk.CheckButton)widget;
-		}
-	}
-
-	error("no check button %s", label);
-}
-
 public static Gtk.CheckButton choice_box(Gitrlf.Window window, string label)
 {
 	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
@@ -477,6 +464,19 @@ public static string ticked_choices(Gitrlf.Window window)
 	}
 
 	return string.joinv("|", names);
+}
+
+public static Gtk.ToggleButton toggle_labelled(Gtk.Widget root, string label)
+{
+	foreach (var widget in find_all(root, typeof(Gtk.ToggleButton)))
+	{
+		if (((Gtk.ToggleButton)widget).label == label)
+		{
+			return (Gtk.ToggleButton)widget;
+		}
+	}
+
+	error("no toggle button %s", label);
 }
 
 public static string top_row(Gitrlf.Window window)

@@ -22,8 +22,8 @@ namespace Gitrlf
 
 public class SearchSwitches : Object
 {
-	private Gtk.CheckButton d_case;
-	private Gtk.CheckButton d_regex;
+	private Gtk.ToggleButton d_case;
+	private Gtk.ToggleButton d_regex;
 
 	public bool match_case
 	{
@@ -45,9 +45,9 @@ public class SearchSwitches : Object
 		d_regex = add(box, _("Regex"), _("Read the text as a regex, a POSIX extended regular expression, as git log -G does"));
 	}
 
-	private Gtk.CheckButton add(Gtk.Box box, string label, string tooltip)
+	private Gtk.ToggleButton add(Gtk.Box box, string label, string tooltip)
 	{
-		var button = new Gtk.CheckButton.with_label(label);
+		var button = new Gtk.ToggleButton.with_label(label);
 
 		button.tooltip_text = tooltip;
 		button.toggled.connect(() => changed());

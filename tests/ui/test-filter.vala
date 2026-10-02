@@ -97,7 +97,7 @@ private static void filter_with(Gitrlf.Window window, string text, bool regex)
 	history.only_matches = true;
 	choose(window, Gitrlf.SearchChoice.LINES);
 	history.search_field.text = text;
-	check_labelled(list_bar(window), "Regex").active = regex;
+	toggle_labelled(list_bar(window), "Regex").active = regex;
 	history.search_field.activate();
 	settle(800);
 }
@@ -410,7 +410,7 @@ private static void test_a_bad_regex_keeps_its_text_in_sight()
 		settle(300);
 		choose(window, Gitrlf.SearchChoice.FILES);
 		history.search_field.text = "*x";
-		check_labelled(list_bar(window), "Regex").active = true;
+		toggle_labelled(list_bar(window), "Regex").active = true;
 		history.paned.commit_list_view.grab_focus();
 		settle(300);
 
@@ -438,7 +438,7 @@ private static void test_a_bad_regex_names_its_fault_in_a_tooltip()
 		settle(300);
 		choose(window, Gitrlf.SearchChoice.FILES);
 		history.search_field.text = "*test*";
-		check_labelled(list_bar(window), "Regex").active = true;
+		toggle_labelled(list_bar(window), "Regex").active = true;
 		settle(300);
 
 		var count = label_with(list_bar(window), "Bad regex");
@@ -447,7 +447,7 @@ private static void test_a_bad_regex_names_its_fault_in_a_tooltip()
 
 		choose(window, Gitrlf.SearchChoice.LINES);
 		history.search_field.text = "(";
-		check_labelled(list_bar(window), "Regex").active = true;
+		toggle_labelled(list_bar(window), "Regex").active = true;
 		settle(300);
 
 		assert_cmpstr(count.label, CompareOperator.EQ, "Bad regex");
@@ -573,12 +573,12 @@ private static void test_a_dash_marks_a_text_that_enter_has_not_searched()
 		assert_false(lines.inconsistent);
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
 
-		check_labelled(list_bar(window), "Regex").active = true;
+		toggle_labelled(list_bar(window), "Regex").active = true;
 		settle(300);
 
 		assert_true(lines.inconsistent);
 
-		check_labelled(list_bar(window), "Regex").active = false;
+		toggle_labelled(list_bar(window), "Regex").active = false;
 		settle(300);
 
 		assert_false(lines.inconsistent);
@@ -692,7 +692,7 @@ private static void test_a_launch_puts_its_text_and_case_in_changed_lines()
 		assert_true(window.history.search_choice == Gitrlf.SearchChoice.LINES);
 		assert_true(window.history.only_matches);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
-		assert_false(check_labelled(list_bar(window), "Match case").active);
+		assert_false(toggle_labelled(list_bar(window), "Match case").active);
 
 		window.destroy();
 		repo.remove();
@@ -724,7 +724,7 @@ private static void test_a_launch_with_a_regex_filters_by_changed_lines()
 		choose(window, Gitrlf.SearchChoice.LINES);
 
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
-		assert_true(check_labelled(list_bar(window), "Regex").active);
+		assert_true(toggle_labelled(list_bar(window), "Regex").active);
 
 		window.destroy();
 		repo.remove();
@@ -822,7 +822,7 @@ private static void test_a_new_filter_stops_the_search_before_it()
 		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1", true);
 		window.history.only_matches = true;
 		choose(window, Gitrlf.SearchChoice.LINES);
-		check_labelled(list_bar(window), "Match case").active = true;
+		toggle_labelled(list_bar(window), "Match case").active = true;
 		field.text = "needle";
 		field.activate();
 		settle(300);
@@ -1239,7 +1239,7 @@ private static void test_closing_the_bar_lifts_the_filter_and_keeps_the_text()
 		settle(300);
 		window.history.only_matches = true;
 		choose(window, Gitrlf.SearchChoice.LINES);
-		check_labelled(list_bar(window), "Match case").active = true;
+		toggle_labelled(list_bar(window), "Match case").active = true;
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
 		settle(600);
@@ -1256,7 +1256,7 @@ private static void test_closing_the_bar_lifts_the_filter_and_keeps_the_text()
 		settle(100);
 
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
-		assert_true(check_labelled(list_bar(window), "Match case").active);
+		assert_true(toggle_labelled(list_bar(window), "Match case").active);
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
 
@@ -1332,7 +1332,7 @@ private static void test_ctrl_shift_f_opens_the_bar_on_changed_lines()
 		assert_true(history.search_choice == Gitrlf.SearchChoice.LINES);
 		assert_true(history.search_field.has_focus);
 		assert_cmpstr(history.search_field.placeholder_text, CompareOperator.EQ, "Lines that commits added or removed");
-		assert_false(check_labelled(list_bar(window), "Match case").active);
+		assert_false(toggle_labelled(list_bar(window), "Match case").active);
 
 		window.activate_action("filter", null);
 		settle(100);
@@ -1447,8 +1447,8 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 		var history = window.history;
 		var field = history.search_field;
 		var buttons = find_all(list_bar(window), typeof(Gtk.RadioButton));
-		var match_case = check_labelled(list_bar(window), "Match case");
-		var regex = check_labelled(list_bar(window), "Regex");
+		var match_case = toggle_labelled(list_bar(window), "Match case");
+		var regex = toggle_labelled(list_bar(window), "Regex");
 		int button_x;
 		int field_x;
 		int y;
@@ -1540,7 +1540,7 @@ private static void test_enter_applies_changed_lines_and_typing_does_not()
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "c");
 
-		check_labelled(list_bar(window), "Match case").active = true;
+		toggle_labelled(list_bar(window), "Match case").active = true;
 		settle(100);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
@@ -1725,8 +1725,8 @@ private static void test_files_match_case_and_regex_change_what_matches()
 		settle(300);
 		choose(window, Gitrlf.SearchChoice.FILES);
 
-		var match_case = check_labelled(list_bar(window), "Match case");
-		var regex = check_labelled(list_bar(window), "Regex");
+		var match_case = toggle_labelled(list_bar(window), "Match case");
+		var regex = toggle_labelled(list_bar(window), "Regex");
 
 		assert_true(match_case.sensitive);
 		assert_true(regex.sensitive);
@@ -2099,7 +2099,7 @@ private static void test_the_list_answers_while_a_search_runs()
 		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1.5", true);
 		window.history.only_matches = true;
 		choose(window, Gitrlf.SearchChoice.LINES);
-		check_labelled(list_bar(window), "Match case").active = true;
+		toggle_labelled(list_bar(window), "Match case").active = true;
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
 		settle(300);
@@ -2177,7 +2177,7 @@ private static void test_the_regex_switch_filters_by_changed_lines()
 
 		assert_cmpstr(window.history.search_field.placeholder_text, CompareOperator.EQ, "Lines that commits added or removed");
 		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regex. Enter searches");
-		assert_cmpstr(check_labelled(list_bar(window), "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
+		assert_cmpstr(toggle_labelled(list_bar(window), "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
 
 		filter_with(window, "needle", false);
 

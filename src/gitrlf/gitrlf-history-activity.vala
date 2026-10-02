@@ -68,7 +68,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.Widget d_lift_button;
 	private Ggit.OId? d_hidden_target;
 	private Gee.Map<Ggit.OId, Gee.List<string>>? d_names;
-	private Gtk.CheckButton d_only_matches;
+	private Gtk.ToggleButton d_only_matches;
 	private ulong d_only_toggled;
 	private string[] d_paths;
 	private Gtk.GestureMultiPress d_press;
@@ -330,7 +330,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			show_match_count();
 		});
 
-		d_only_matches = new Gtk.CheckButton.with_label(_("Display matches only"));
+		d_only_matches = new Gtk.ToggleButton.with_label(_("Display matches only"));
 		d_only_matches.tooltip_text = _("Hide the commits that do not match");
 		d_only_toggled = d_only_matches.toggled.connect(() => {
 			show_ticks();

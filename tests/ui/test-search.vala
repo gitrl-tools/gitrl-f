@@ -118,6 +118,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
 	Test.add_func("/gitrlf/ui/search/search-words-narrow-the-list", test_search_words_narrow_the_list);
 	Test.add_func("/gitrlf/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
+	Test.add_func("/gitrlf/ui/search/switches-are-push-buttons", test_switches_are_push_buttons);
 	Test.add_func("/gitrlf/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gitrlf/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
 	Test.add_func("/gitrlf/ui/search/the-close-button-closes-the-bar-and-lifts-the-search", test_the_close_button_closes_the_bar_and_lifts_the_search);
@@ -237,7 +238,7 @@ private static void test_a_bad_expression_turns_the_field_red()
 		var window = opened(repo);
 
 		search_for(window, "(");
-		check_labelled(list_bar(window), "Regex").active = true;
+		toggle_labelled(list_bar(window), "Regex").active = true;
 		settle(200);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad regex");
@@ -369,7 +370,7 @@ private static void test_a_messages_search_waits_for_enter()
 		assert_false(messages.inconsistent);
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages");
 
-		check_labelled(list_bar(window), "Match case").active = true;
+		toggle_labelled(list_bar(window), "Match case").active = true;
 		settle(400);
 
 		assert_cmpstr(history.search_count, CompareOperator.EQ, "Enter to search");
@@ -452,7 +453,7 @@ private static void test_closing_the_bar_lifts_the_search_and_keeps_the_text()
 		var window = opened(repo);
 
 		search_for(window, "parser");
-		check_labelled(list_bar(window), "Display matches only").active = true;
+		toggle_labelled(list_bar(window), "Display matches only").active = true;
 		settle(200);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
@@ -467,7 +468,7 @@ private static void test_closing_the_bar_lifts_the_search_and_keeps_the_text()
 		window.history.search_visible = true;
 		settle(200);
 
-		assert_true(check_labelled(list_bar(window), "Display matches only").active);
+		assert_true(toggle_labelled(list_bar(window), "Display matches only").active);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "parser");
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
@@ -502,7 +503,7 @@ private static void test_display_matches_only_and_a_changed_lines_search_both_ho
 		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "prefix work,Parser fix");
 
 		search_for(window, "parser");
-		check_labelled(list_bar(window), "Display matches only").active = true;
+		toggle_labelled(list_bar(window), "Display matches only").active = true;
 		settle(200);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "Parser fix");
@@ -669,7 +670,7 @@ private static void test_only_matches_keeps_the_selection_out_of_the_list()
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "issue 42");
 
-		check_labelled(list_bar(window), "Display matches only").active = true;
+		toggle_labelled(list_bar(window), "Display matches only").active = true;
 		search_for(window, "parser");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
@@ -702,7 +703,7 @@ private static void test_only_matches_narrows_with_each_search()
 	{
 		var repo = four_subjects();
 		var window = opened(repo);
-		var toggle = check_labelled(list_bar(window), "Display matches only");
+		var toggle = toggle_labelled(list_bar(window), "Display matches only");
 
 		assert_cmpstr(toggle.tooltip_text, CompareOperator.EQ, "Hide the commits that do not match");
 
@@ -743,7 +744,7 @@ private static void test_only_matches_with_nothing_shows_a_notice()
 		var repo = four_subjects();
 		var window = opened(repo);
 
-		check_labelled(list_bar(window), "Display matches only").active = true;
+		toggle_labelled(list_bar(window), "Display matches only").active = true;
 		search_for(window, "zzz");
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
@@ -829,7 +830,7 @@ private static void test_search_words_narrow_the_list()
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad date");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 
-		check_labelled(list_bar(window), "Display matches only").active = true;
+		toggle_labelled(list_bar(window), "Display matches only").active = true;
 		search_for(window, "author:tester fix before:2027");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "prefix work,Parser fix");
@@ -851,14 +852,35 @@ private static void test_switches_keep_their_state_when_the_bar_closes()
 		var window = opened(repo);
 
 		search_for(window, "parser");
-		check_labelled(list_bar(window), "Match case").active = true;
+		toggle_labelled(list_bar(window), "Match case").active = true;
 		window.history.search_visible = false;
 		settle(100);
 		window.history.search_visible = true;
 		settle(100);
 
-		assert_true(check_labelled(list_bar(window), "Match case").active);
-		assert_false(check_labelled(list_bar(window), "Regex").active);
+		assert_true(toggle_labelled(list_bar(window), "Match case").active);
+		assert_false(toggle_labelled(list_bar(window), "Regex").active);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_switches_are_push_buttons()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var bar = list_bar(window);
+
+		assert_false(toggle_labelled(bar, "Match case") is Gtk.CheckButton);
+		assert_false(toggle_labelled(bar, "Regex") is Gtk.CheckButton);
+		assert_false(toggle_labelled(bar, "Display matches only") is Gtk.CheckButton);
 
 		window.destroy();
 		repo.remove();
@@ -881,18 +903,18 @@ private static void test_switches_narrow_the_matches()
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
 
-		check_labelled(bar, "Match case").active = true;
+		toggle_labelled(bar, "Match case").active = true;
 		window.history.search_field.activate();
 		settle(100);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 match");
 
-		check_labelled(bar, "Match case").active = false;
+		toggle_labelled(bar, "Match case").active = false;
 		search_for(window, "issue [0-9]+");
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "No match");
 
-		check_labelled(bar, "Regex").active = true;
+		toggle_labelled(bar, "Regex").active = true;
 		window.history.search_field.activate();
 		settle(100);
 
@@ -916,8 +938,8 @@ private static void test_switches_say_what_they_do()
 		var window = opened(repo);
 		var bar = list_bar(window);
 
-		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
-		assert_cmpstr(check_labelled(bar, "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
+		assert_cmpstr(toggle_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
+		assert_cmpstr(toggle_labelled(bar, "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
 
 		window.destroy();
 		repo.remove();
@@ -980,7 +1002,7 @@ private static void test_the_count_stands_apart_from_the_switches()
 		Gtk.Allocation check;
 		Gtk.Allocation count;
 
-		check_labelled(list_bar(window), "Display matches only").get_allocation(out check);
+		toggle_labelled(list_bar(window), "Display matches only").get_allocation(out check);
 		label_with(list_bar(window), "No match").get_allocation(out count);
 
 		assert_cmpint(count.x - (check.x + check.width), CompareOperator.GE, 18);
@@ -1001,7 +1023,7 @@ private static void test_the_field_sits_at_the_centre_of_the_bar()
 		var repo = four_subjects();
 		var window = opened(repo);
 		var field = window.history.search_field;
-		var last = check_labelled(list_bar(window), "Display matches only");
+		var last = toggle_labelled(list_bar(window), "Display matches only");
 		int x;
 		int y;
 		int right;

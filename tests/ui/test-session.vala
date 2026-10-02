@@ -171,10 +171,10 @@ private static void stage_four(File location, Repo repo)
 
 	foreach (var label in new string[] { "Match case", "Regex", "Display matches only" })
 	{
-		check_labelled(bar, label).active = true;
+		toggle_labelled(bar, label).active = true;
 		history.search_field.text = "f[a-z]+";
 		settle(300);
-		check_labelled(bar, label).active = false;
+		toggle_labelled(bar, label).active = false;
 	}
 
 	history.search_field.text = "author:tester after:2026-01 fix";
