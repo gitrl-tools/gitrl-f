@@ -79,6 +79,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
 	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
 	Test.add_func("/gittree/ui/diff-find/the-close-button-closes-the-bar-and-keeps-the-text", test_the_close_button_closes_the_bar_and_keeps_the_text);
+	Test.add_func("/gittree/ui/diff-find/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
 	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
 	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
@@ -763,6 +764,33 @@ private static void test_the_close_button_closes_the_bar_and_keeps_the_text()
 		assert_false(bar.search_mode_enabled);
 		assert_cmpstr(bar.field.text, CompareOperator.EQ, "keep");
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_count_stands_apart_from_the_switches()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		search_for(window, "zzz");
+
+		Gtk.Allocation check;
+		Gtk.Allocation count;
+
+		check_labelled(bar, "Regex").get_allocation(out check);
+		label_with(bar, "No match").get_allocation(out count);
+
+		assert_cmpint(count.x - (check.x + check.width), CompareOperator.GE, 18);
 
 		window.destroy();
 		repo.remove();

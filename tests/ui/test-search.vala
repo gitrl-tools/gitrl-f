@@ -120,6 +120,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/search/the-close-button-closes-the-bar-and-lifts-the-search", test_the_close_button_closes_the_bar_and_lifts_the_search);
+	Test.add_func("/gittree/ui/search/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
 	Test.add_func("/gittree/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
 	Test.add_func("/gittree/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
@@ -875,6 +876,34 @@ private static void test_the_close_button_closes_the_bar_and_lifts_the_search()
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "parser");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_count_stands_apart_from_the_switches()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo);
+
+		type_text(window, "zzz");
+
+		Gtk.Allocation check;
+		Gtk.Allocation count;
+
+		check_labelled(list_bar(window), "Display matches only").get_allocation(out check);
+		label_with(list_bar(window), "No match").get_allocation(out count);
+
+		assert_cmpint(count.x - (check.x + check.width), CompareOperator.GE, 18);
 
 		window.destroy();
 		repo.remove();

@@ -83,6 +83,7 @@ public class DiffFindBar : Gtk.SearchBar
 		d_count = new Gtk.Label(null);
 		d_count.width_chars = 12;
 		d_count.xalign = 0;
+		d_count.margin_start = 12;
 
 		var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		box.add(d_field);

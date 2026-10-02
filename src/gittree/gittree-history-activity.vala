@@ -300,6 +300,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_match_count = new Gtk.Label(null);
 		d_match_count.width_chars = 12;
 		d_match_count.xalign = 0;
+		d_match_count.margin_start = 12;
 
 		var after_field = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 
