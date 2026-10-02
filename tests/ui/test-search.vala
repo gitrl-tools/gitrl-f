@@ -118,6 +118,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
+	Test.add_func("/gittree/ui/search/the-close-button-closes-the-bar-and-keeps-the-search", test_the_close_button_closes_the_bar_and_keeps_the_search);
 	Test.add_func("/gittree/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
 	Test.add_func("/gittree/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
@@ -803,6 +804,43 @@ private static void test_switches_say_what_they_do()
 
 		assert_cmpstr(check_labelled(bar, "Match case").tooltip_text, CompareOperator.EQ, "Tell capital and small letters apart");
 		assert_cmpstr(check_labelled(bar, "Regex").tooltip_text, CompareOperator.EQ, "Read the text as a regex, a POSIX extended regular expression, as git log -G does");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_close_button_closes_the_bar_and_keeps_the_search()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var bar = list_bar(window).get_ancestor(typeof(Gtk.SearchBar));
+		Gtk.Button? close = null;
+
+		type_text(window, "parser");
+
+		foreach (var widget in find_all(bar, typeof(Gtk.Button)))
+		{
+			if (!widget.is_ancestor(list_bar(window)) && widget.get_mapped())
+			{
+				close = (Gtk.Button)widget;
+			}
+		}
+
+		assert_nonnull(close);
+
+		close.clicked();
+		settle(200);
+
+		assert_false(window.history.search_visible);
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "parser");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that match parser in the message, author or hash");
 
 		window.destroy();
 		repo.remove();
