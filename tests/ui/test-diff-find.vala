@@ -76,6 +76,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
 	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
 	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
+	Test.add_func("/gittree/ui/diff-find/the-close-button-closes-the-bar-and-keeps-the-text", test_the_close_button_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
 	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
@@ -665,6 +666,44 @@ private static void test_the_bar_closes_with_the_pane()
 		settle(100);
 
 		assert_false(window.history.find_bar.search_mode_enabled);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_close_button_closes_the_bar_and_keeps_the_text()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+		var row = bar.field.get_parent();
+		Gtk.Button? close = null;
+
+		search_for(window, "keep");
+
+		foreach (var widget in find_all(bar, typeof(Gtk.Button)))
+		{
+			if (!widget.is_ancestor(row) && widget.get_mapped())
+			{
+				close = (Gtk.Button)widget;
+			}
+		}
+
+		assert_nonnull(close);
+
+		close.clicked();
+		settle(100);
+
+		assert_false(bar.search_mode_enabled);
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "keep");
+		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();

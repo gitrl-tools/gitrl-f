@@ -104,6 +104,7 @@ public class DiffFindBar : Gtk.SearchBar
 
 		add(holder);
 		no_show_all = true;
+		show_close_button = true;
 
 		d_field.search_changed.connect(search);
 
