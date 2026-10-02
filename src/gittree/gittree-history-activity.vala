@@ -283,6 +283,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			group = group != null ? group : button;
 			button.set_mode(false);
+			button.get_style_context().remove_class(Gtk.STYLE_CLASS_RADIO);
+			button.map.connect_after(() => box.get_event_window().raise());
 			box.tooltip_text = _("Turn this search on or off. Its text is kept");
 			row.add(box);
 			row.add(new Gtk.Label(choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(choice)));

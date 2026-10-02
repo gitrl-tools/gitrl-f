@@ -213,6 +213,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
 	Test.add_func("/gittree/ui/filter/a-box-shows-each-choice-whose-search-applies", test_a_box_shows_each_choice_whose_search_applies);
 	Test.add_func("/gittree/ui/filter/a-box-switches-a-search-off-and-on-and-keeps-its-text", test_a_box_switches_a_search_off_and_on_and_keeps_its_text);
+	Test.add_func("/gittree/ui/filter/a-click-on-a-box-switches-its-search-and-keeps-the-choice", test_a_click_on_a_box_switches_its_search_and_keeps_the_choice);
 	Test.add_func("/gittree/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
 	Test.add_func("/gittree/ui/filter/closing-the-bar-lifts-the-filter-and-keeps-the-text", test_closing_the_bar_lifts_the_filter_and_keeps_the_text);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
@@ -227,6 +228,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/escape-in-the-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_the_field_closes_from_the_bottom_up_and_keeps_the_focus);
 	Test.add_func("/gittree/ui/filter/files-match-case-and-regex-change-what-matches", test_files_match_case_and_regex_change_what_matches);
 	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
+	Test.add_func("/gittree/ui/filter/holding-a-choice-down-keeps-its-size", test_holding_a_choice_down_keeps_its_size);
 	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
 	Test.add_func("/gittree/ui/filter/the-choices-stack-and-the-list-shows-each-text", test_the_choices_stack_and_the_list_shows_each_text);
 	Test.add_func("/gittree/ui/filter/the-close-button-lifts-every-search", test_the_close_button_lifts_every_search);
@@ -993,6 +995,48 @@ private static void test_a_box_switches_a_search_off_and_on_and_keeps_its_text()
 	}
 }
 
+private static void test_a_click_on_a_box_switches_its_search_and_keeps_the_choice()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		history.only_matches = true;
+		choose(window, Gittree.SearchChoice.LINES);
+		history.search_field.text = "needle";
+		history.search_field.activate();
+		settle(800);
+		choose(window, Gittree.SearchChoice.MESSAGES);
+		settle(300);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
+
+		click_widget(choice_box(window, "Changed lines"));
+		settle(800);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
+		assert_true(history.search_choice == Gittree.SearchChoice.MESSAGES);
+
+		click_widget(choice_box(window, "Changed lines"));
+		settle(800);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
+		assert_true(history.search_choice == Gittree.SearchChoice.MESSAGES);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_typed_path_draws_what_the_command_line_draws()
 {
 	try
@@ -1633,6 +1677,45 @@ private static void test_globs_and_quoted_paths_work_in_the_field()
 
 		window.destroy();
 		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_holding_a_choice_down_keeps_its_size()
+{
+	try
+	{
+		var theme = new Gtk.CssProvider();
+		var screen = Gdk.Screen.get_default();
+
+		theme.load_from_data(".radio { border-style: none; } .radio:active { border-style: solid; }");
+		Gtk.StyleContext.add_provider_for_screen(screen, theme, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS);
+
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+
+		settle(300);
+		window.history.search_visible = true;
+		settle(300);
+
+		var button = find_all(list_bar(window), typeof(Gtk.RadioButton))[1];
+		var width = button.get_allocated_width();
+		var height = button.get_allocated_height();
+
+		hold_widget(button);
+		settle(300);
+
+		assert_cmpint(button.get_allocated_width(), CompareOperator.EQ, width);
+		assert_cmpint(button.get_allocated_height(), CompareOperator.EQ, height);
+
+		release_pointer();
+		settle(300);
+		window.destroy();
+		repo.remove();
+		Gtk.StyleContext.remove_provider_for_screen(screen, theme);
 	}
 	catch (Error e)
 	{

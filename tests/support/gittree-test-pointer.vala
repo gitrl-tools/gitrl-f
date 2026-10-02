@@ -20,6 +20,17 @@
 namespace GittreeTest
 {
 
+private static void centre(Gtk.Widget widget, out int x, out int y)
+{
+	int origin_x;
+	int origin_y;
+
+	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
+	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+	x += origin_x;
+	y += origin_y;
+}
+
 public static void click_at(int x, int y, int count, int button = 1)
 {
 	xdotool({"mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", button.to_string()});
@@ -29,18 +40,28 @@ public static void click_widget(Gtk.Widget widget, int button = 1)
 {
 	int x;
 	int y;
-	int origin_x;
-	int origin_y;
 
-	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
-	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+	centre(widget, out x, out y);
+	click_at(x, y, 1, button);
+}
 
-	click_at(origin_x + x, origin_y + y, 1, button);
+public static void hold_widget(Gtk.Widget widget)
+{
+	int x;
+	int y;
+
+	centre(widget, out x, out y);
+	xdotool({"mousemove", x.to_string(), y.to_string(), "mousedown", "1"});
 }
 
 public static void press_key(string name)
 {
 	xdotool({"key", name});
+}
+
+public static void release_pointer()
+{
+	xdotool({"mouseup", "1"});
 }
 
 private static void xdotool(string[] arguments)
