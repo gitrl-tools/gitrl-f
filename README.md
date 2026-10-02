@@ -4,6 +4,9 @@
 
 `gitrl-f` is a stripped-down version of `gitg`: it shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does: the same lanes, the same labels and the same diff. A commit is drawn when a ticked ref reaches it. A commit that a ticked branch shares with an unticked one is still drawn, as part of the ticked branch. Only the ticked refs get a label.
 
+> [!TIP]
+> gitrl-f is pronounced git-ROL-EFF, after ctrl-f said aloud: control eff.
+
 ![Refs ticked and unticked on the left, and the history redrawn on the right each time](docs/screenshots/demo-ticks.gif)
 
 ## What it does
