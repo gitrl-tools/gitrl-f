@@ -191,6 +191,11 @@ public class DiffFindBar : Gtk.SearchBar
 			if (typed_error() == null)
 			{
 				apply();
+
+				if (d_find.current < 0)
+				{
+					step(1);
+				}
 			}
 
 			return;

@@ -165,8 +165,8 @@ matches on the other refs, and Tick and show ticks a ref that holds the newest o
 selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
 .PP
-The find bar of the diff has Match case and Regex too, searches when Enter
-is pressed, and keeps its text when it closes. One scroll bar at the bottom
+The find bar of the diff has Match case and Regex too. Enter searches and
+goes to the first match, and the bar keeps its text when it closes. One scroll bar at the bottom
 of the pane moves the long
 lines of the file that holds the current match, or else of the file in the
 middle of the pane.
