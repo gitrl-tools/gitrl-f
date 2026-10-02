@@ -2,7 +2,7 @@
 
 > The git history only of the refs that you want to see
 
-`gitrl-f` is a stripped-down version of `gitg`: it shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does: the same lanes, the same labels and the same diff. A commit is drawn when a ticked ref reaches it. A commit that a ticked branch shares with an unticked one is still drawn, as part of the ticked branch. Only the ticked refs get a label.
+`gitrl-f` is a stripped-down version of `gitg`. It shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does, with the same lanes, labels and diff.
 
 > [!TIP]
 > gitrl-f is pronounced git-ROL-EFF, after ctrl-f said aloud: control eff.
@@ -11,18 +11,20 @@
 
 ## What it does
 
-- **A checkbox for each ref.** The refs are on the left, in three groups: branches, remote branches under each remote, and tags. A name with slashes, such as `feature/lexer`, goes into a group `feature`, to any depth. The box of a group ticks every ref in it and opens the group, or unticks them all and folds it. At each level the refs come first, then the groups. Both follow the order of the graph: a ref whose commit is higher in the history comes first, and a group takes the place of its highest ref. Refs on the same commit are sorted by name. The panel opens wide enough to show each name in full, to a limit of 50 characters. After you drag its edge, it keeps the width that you chose.
-- **Your ticks come back.** With no ref and no tick option on the command line, gitrl-f ticks the refs that you last chose in that repository. This works from any folder in the repository. A local branch that is new since then is ticked too, as it is in an open window. A new remote branch or a new tag is not. Until you change a tick, every ref is ticked. A run with a ref or a tick option ticks those refs, and gitrl-f keeps none of the ticks that you change in that run. gitrl-f keeps the ticks in its own settings, not in the repository.
-- **The details on a click.** The pane under the history is hidden until you click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A click on the same commit, Enter or Escape hides it again. A double-click is two clicks: it shows the pane and hides it again. A click that opens a file, or a click on Expand all, fills the window with the diff. A click that closes a file does not change the window. When the commit changes only one file, Enter fills the window at once. Escape, the back arrow or the close button at the top right of the diff brings back the refs and the list.
-- **One search bar.** When the pane below the list is shut, Ctrl+F opens one bar above the list. The search button at the top opens it at any time. Three joined buttons on its left pick what the field edits: **Messages** (messages, authors and hashes), **Changed lines** or **Files**. Each keeps its own text and its own **Match case** and **Regex**, and their searches add up: a commit matches when it meets every search that is on. The box on each button turns its search on or off and keeps its text. Every search waits for Enter: until then, its box shows a dash, and a click on the dash searches too. The matches are marked in the list, their rows in bold, and the next Enter goes to the next one. **Display matches only** hides the other commits, and the graph joins across them. A regex is a POSIX extended regular expression, as in `git log -G`. Words narrow a messages search: `author:`, `message:`, `hash:`, `before:` and `after:`, as in `author:"Jane Doe" after:2026-01`. When the bar closes, every search in it is lifted. The bar keeps its texts and switches, so when it opens again its text is selected, and Enter searches again. While a search of the changed lines or the files applies, the yellow bar above the list says so. Its close button lifts every search and empties the fields. When nothing in the ticked refs matches a messages search, the bar counts the matches on unticked refs, and **Tick and show** ticks one of them and selects it, so a pasted hash always lands.
-- **Find in the diff.** While the pane is open, Ctrl+F opens a find bar above the details, wherever the focus is. Enter marks every match in every file of the commit, folded files too, and goes to the first one and opens its file. The next Enter goes to the next match. It ignores case unless you turn **Match case** on, and **Regex** works as in the search bar. Ctrl+F with text selected on one line of the diff searches for that text, and the bar keeps its text when it closes. One scroll bar at the bottom of the pane moves the long lines of the file that holds the current match, or else of the file in the middle of the pane.
-- **Changed lines.** `gitrlf -S parse_args` draws only the commits that add or remove `parse_args`, as `git log -S` does, and the graph joins across the other commits. With **Regex**, or `-G`, it takes the commits whose added or removed lines match, as `git log -G` does. In the window, pick **Changed lines** in the bar, or press Ctrl+Shift+F, type the text and press Enter. git runs in the background, so the window stays in use. The bar ignores case unless you turn **Match case** on, while `-S` matches case unless you add `-i`. A launch with `-S`, `-G` or paths turns **Display matches only** on. Under such a search, the find bar of the diff opens with the same text.
-- **Files.** `gitrlf -- src/parser.py` draws only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does. With one file, the history follows it through its earlier names, as `git log --follow` does, and shows no merges. **Files** in the bar takes paths too, split by spaces, with globs such as `'*.yaml'`, so a new path limit needs no new launch. It ignores case unless **Match case** is on. With **Regex** on, the field is one regex that a path must match, such as `src/.*_test\.vala`. gitrl-f then reads the files that each commit of the ticked refs changed, and keeps the commits that changed a path that matches. The diff of a commit that matches shows only those files. A right click on a file in the diff offers **Show history of this file**.
-- **The history of lines.** A right click on a line of the diff, or on lines you selected, offers **Show history of this line** or **Show history of the selected lines**. The list then shows only the commits that changed those lines, as `git log -L` does, through renames too. The close button of the yellow bar brings back the list as it was. On a line that the commit did not add, the same menu offers **Go to the commit that last changed this line**, as `git blame` finds it.
-- **Where a commit is.** A right click on a commit in the list copies its hash, or the name of the ref under the pointer. The same menu lists **Branches and tags with this commit**, with a tick for each, names the **First tag with this commit**, and says which merge brought it into the branch of HEAD. A right click on a ref in the panel offers **Go to where it splits from** another ticked ref, as `git merge-base` finds it.
-- **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same commit at the top of the list.
+- **A checkbox for each ref.** The panel on the left lists each branch, remote branch and tag, grouped by the slashes in their names.
+- **Your ticks come back.** With no ref and no tick option on the command line, gitrl-f ticks the refs that you last chose in that repository.
+- **The details on a click.** A click on a commit shows gitg's details and diff of that commit below the history. Escape hides them.
 
 ![A click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
+
+- **One search bar.** The search button at the top opens one bar above the list. Three buttons on its left pick what it searches: **Messages** (messages, authors and hashes), **Changed lines**, as `git log -S` and `git log -G` do, or **Files**. The matches are in bold, and **Display matches only** hides the other commits. When only unticked refs hold a match, **Tick and show** ticks one of those refs and selects the match.
+
+![A word typed in the search bar, its matches in bold, then only the matching commits shown](docs/screenshots/demo-search.gif)
+
+- **Find in the diff.** While the pane is open, Ctrl+F opens a find bar that marks every match in every file of the commit, folded files too.
+- **The history of lines.** A right click on lines of the diff offers to show only the commits that changed them, as `git log -L` does.
+- **Where a commit is.** A right click on a commit shows its branches and tags, its first tag, and the merge that brought it into the branch of HEAD.
+- **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks and the same commit selected.
 
 `gitrl-f` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries, and the graph, the labels and the diff are gitg's own code.
 
@@ -39,28 +41,12 @@ sudo apt-get install gitrl-f
 
 The package is `gitrl-f`. The command is `gitrlf`. In bash, TAB completes its options, then the names of the refs, and after `--` the paths.
 
-Before 0.5.0, the name was `gittree` and the PPA was `ppa:li9i/gittree`. Before 0.4.0, it was `gitree` and `ppa:li9i/gitree`. Those PPAs are closed. If you added one, remove it:
-
-```bash
-sudo add-apt-repository --remove ppa:li9i/gittree
-sudo add-apt-repository --remove ppa:li9i/gitree
-```
-
-The `gitrl-f` package removes the `gittree` and `gitree` packages when you install it.
-
 ### `.deb` package
 
 Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/li9i/gitrl-f/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
 
 ```bash
 sudo apt-get install ./gitrl-f_*_amd64.deb
-```
-
-If you installed gitrl-f into `~/.local` from source before, remove that copy first, so that it does not come before the package on your `PATH`:
-
-```bash
-rm -f ~/.local/bin/gitrlf
-rm -f ~/.local/share/bash-completion/completions/gitrlf
 ```
 
 ### AppImage
@@ -102,11 +88,11 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-`~/.local/bin` must be on the `PATH`. The install puts `gitrlf` there. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas`, and bash finds the TAB completion in `~/.local/share/bash-completion/completions`, with no more configuration.
+The install puts `gitrlf` in `~/.local/bin`, which must be on the `PATH`. GLib and bash find the settings schema and the TAB completion with no more configuration.
 
 ### `.deb` package
 
-Built in a container of the Ubuntu release that the package is for, so that it links the libraries of that release. You need Docker:
+This needs Docker. Each package builds in a container of its Ubuntu release, so that it links the libraries of that release:
 
 ```bash
 ./scripts/build-deb.sh 24.04
@@ -145,17 +131,15 @@ gitrlf -S 'parse_args' -- src/parser.py
 gitrlf -G 'parse_[a-z]+'        # only the commits whose changed lines match
 ```
 
-Outside a repository, `gitrlf` opens a list of the repositories that you opened before. `gitrlf -h` prints every option, and `man gitrlf` gives the whole of it.
+Outside a repository, `gitrlf` opens a list of the repositories that you opened before. `gitrlf -h` prints every option and key, and `man gitrlf` gives the whole of it.
 
 | Key | What it does |
 |-----|--------------|
-| Click, `Enter` in the list | Shows or hides the details and the diff of a commit. `Enter` also fills the window when the commit changes one file |
-| Click that opens a file, or on Expand all | Fills the window with the diff |
-| `Escape` | Closes one thing, from the bottom of the window up: the find bar of the diff, then the full diff, then the details, then the search bar, which lifts every search in it. A field that has the focus does not change this order |
-| `Ctrl+F` | Opens or closes the find bar of the diff while the pane is open, and the search bar while it is shut |
-| `Ctrl+Shift+F` | Opens the search bar on **Changed lines**, or closes it when it is open there |
-| `Enter`, `Ctrl+G` | Goes to the next commit that matches, or in the find bar of the diff, to the next match |
-| `Shift+Enter`, `Ctrl+Shift+G` | Goes to the one before, in the list or in the find bar of the diff |
+| Click, `Enter` in the list | Shows or hides the details and the diff of a commit |
+| `Escape` | Closes one thing, from the bottom of the window up |
+| `Ctrl+F` | Opens the find bar of the diff, or the search bar when the pane is shut |
+| `Ctrl+Shift+F` | Opens the search bar on **Changed lines** |
+| `Enter`, `Ctrl+G`, `Shift+Enter`, `Ctrl+Shift+G` | Goes to the next match, or with `Shift` to the one before |
 | `F5` | Reads the repository again |
 | `Ctrl+Q` | Quits |
 
