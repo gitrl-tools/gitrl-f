@@ -70,9 +70,14 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.ScrolledWindow d_scrolled_window_commit_list;
 	[GtkChild]
+	private unowned Gtk.ScrolledWindow d_scrolled_window_refs;
+	[GtkChild]
 	private unowned Gtk.Stack d_stack_list;
 	[GtkChild]
 	private unowned Gtk.Label d_summary;
+
+	private int d_pressed;
+	private Settings d_state_settings;
 
 	public Gtk.Button all_button
 	{
@@ -268,17 +273,48 @@ public class HistoryPaned : Gtk.Box
 
 	construct
 	{
-		var state_settings = new Settings(Config.APPLICATION_ID + ".state.history");
+		d_state_settings = new Settings(Config.APPLICATION_ID + ".state.history");
 
-		d_paned_sidebar.position = state_settings.get_int("paned-sidebar-position");
+		if (d_state_settings.get_boolean("paned-sidebar-dragged"))
+		{
+			d_paned_sidebar.position = d_state_settings.get_int("paned-sidebar-position");
+		}
 
-		d_paned_sidebar.notify["position"].connect(() => {
-			state_settings.set_int("paned-sidebar-position", d_paned_sidebar.position);
+		d_paned_sidebar.button_press_event.connect((event) => {
+			d_pressed = d_paned_sidebar.position;
+			return false;
+		});
+		d_paned_sidebar.button_release_event.connect((event) => {
+			if (event.window == d_paned_sidebar.get_handle_window() && d_paned_sidebar.position != d_pressed)
+			{
+				d_state_settings.set_int("paned-sidebar-position", d_paned_sidebar.position);
+				d_state_settings.set_boolean("paned-sidebar-dragged", true);
+			}
+
+			return false;
 		});
 
 		var interface_settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");
 
 		interface_settings.bind("orientation", this, "inner_orientation", SettingsBindFlags.GET);
+	}
+
+	public void fit_sidebar()
+	{
+		int minimum;
+		int natural;
+		int list;
+		int scrolled;
+
+		if (d_state_settings.get_boolean("paned-sidebar-dragged"))
+		{
+			return;
+		}
+
+		d_refs_list.get_preferred_width(out list, out natural);
+		d_scrolled_window_refs.get_preferred_width(out scrolled, out natural);
+		d_box_sidebar.get_preferred_width(out minimum, out natural);
+		d_paned_sidebar.position = int.max(natural, d_refs_list.widest_row() + scrolled - list);
 	}
 }
 

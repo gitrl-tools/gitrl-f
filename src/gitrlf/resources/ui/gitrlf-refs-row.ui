@@ -25,6 +25,7 @@
           <object class="GtkLabel" id="d_label">
             <property name="visible">True</property>
             <property name="ellipsize">middle</property>
+            <property name="max_width_chars">50</property>
             <property name="halign">start</property>
           </object>
         </child>

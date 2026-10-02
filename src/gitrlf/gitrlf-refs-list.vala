@@ -428,6 +428,22 @@ public class RefsList : Gtk.ListBox
 		d_ticks.clear();
 		changed_by_user();
 	}
+
+	public int widest_row()
+	{
+		var widest = 0;
+
+		foreach (var child in get_children())
+		{
+			int minimum;
+			int natural;
+
+			child.get_preferred_width(out minimum, out natural);
+			widest = int.max(widest, natural);
+		}
+
+		return widest;
+	}
 }
 
 }

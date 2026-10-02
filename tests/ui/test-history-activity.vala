@@ -177,6 +177,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-plain-again-under-a-theme-that-paints-the-selection", test_a_row_is_plain_again_under_a_theme_that_paints_the_selection);
 	Test.add_func("/gitrlf/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
@@ -208,6 +209,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
 	Test.add_func("/gitrlf/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
 	Test.add_func("/gitrlf/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
+	Test.add_func("/gitrlf/ui/history-activity/sidebar-fits-every-ref-up-to-fifty-characters", test_sidebar_fits_every_ref_up_to_fifty_characters);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitrlf/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
@@ -382,6 +384,54 @@ private static string subjects_of(Gitrlf.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_a_dragged_sidebar_keeps_its_width()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var repo = Repo.create();
+
+		repo.commit("first");
+		settings.reset("paned-sidebar-dragged");
+		settings.reset("paned-sidebar-position");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned.paned_sidebar;
+		int x;
+		int y;
+		int width;
+		int height;
+
+		settle(400);
+
+		var fitted = paned.position;
+
+		paned.get_handle_window().get_origin(out x, out y);
+		paned.get_handle_window().get_geometry(null, null, out width, out height);
+		drag(x + width / 2, y + height / 2, x + width / 2 + 60, y + height / 2);
+		settle(400);
+
+		assert_cmpint(paned.position, CompareOperator.EQ, fitted + 60);
+		assert_true(settings.get_boolean("paned-sidebar-dragged"));
+		assert_cmpint(settings.get_int("paned-sidebar-position"), CompareOperator.EQ, fitted + 60);
+
+		window.destroy();
+		window = opened(repo, {"refs/heads/master"});
+		settle(400);
+
+		assert_cmpint(window.history.paned.paned_sidebar.position, CompareOperator.EQ, fitted + 60);
+
+		settings.reset("paned-sidebar-dragged");
+		settings.reset("paned-sidebar-position");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_a_row_is_lit_only_once_the_user_picks_it()
@@ -1541,6 +1591,43 @@ private static void test_selection_with_the_pane_hidden_builds_no_diff()
 	}
 }
 
+private static void test_sidebar_fits_every_ref_up_to_fifty_characters()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var tag = "a-tag-in-the-folded-group-of-forty-three-ch";
+		var branch = "a-branch-whose-name-runs-past-the-fifty-characters-that-the-pane-allows";
+		var repo = Repo.create();
+
+		repo.commit("first");
+		repo.git({"tag", tag});
+		repo.branch(branch);
+		settings.reset("paned-sidebar-dragged");
+		settings.reset("paned-sidebar-position");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var refs = window.history.paned.refs_list;
+
+		foreach (var header in find_all(refs, typeof(Gitrlf.RefsHeader)))
+		{
+			((Gitrlf.RefsHeader)header).expanded = true;
+		}
+
+		settle(400);
+
+		assert_false(label_with(refs, tag).get_layout().is_ellipsized());
+		assert_true(label_with(refs, branch).get_layout().is_ellipsized());
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_sidebar_layout()
 {
 	try
@@ -1583,15 +1670,14 @@ private static void test_sidebar_position_is_kept()
 		repo.commit("first");
 
 		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		settings.set_boolean("paned-sidebar-dragged", true);
 		settings.set_int("paned-sidebar-position", 231);
 
 		var window = opened(repo, {"refs/heads/master"});
 
 		assert_cmpint(window.history.paned.paned_sidebar.position, CompareOperator.EQ, 231);
 
-		window.history.paned.paned_sidebar.position = 250;
-		assert_cmpint(settings.get_int("paned-sidebar-position"), CompareOperator.EQ, 250);
-
+		settings.reset("paned-sidebar-dragged");
 		settings.reset("paned-sidebar-position");
 		window.destroy();
 		repo.remove();

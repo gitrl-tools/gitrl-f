@@ -169,6 +169,9 @@
     </key>
   </schema>
   <schema gettext-domain="@GETTEXT_PACKAGE@" id="@APPLICATION_ID@.state.history" path="@SCHEMA_PATH@/state/history/">
+    <key name="paned-sidebar-dragged" type="b">
+      <default>false</default>
+    </key>
     <key name="paned-sidebar-position" type="i">
       <default>200</default>
     </key>

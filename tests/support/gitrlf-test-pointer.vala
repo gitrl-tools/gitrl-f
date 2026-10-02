@@ -45,6 +45,11 @@ public static void click_widget(Gtk.Widget widget, int button = 1)
 	click_at(x, y, 1, button);
 }
 
+public static void drag(int x, int y, int to_x, int to_y)
+{
+	xdotool({"mousemove", x.to_string(), y.to_string(), "mousedown", "1", "mousemove", to_x.to_string(), to_y.to_string(), "mouseup", "1"});
+}
+
 public static void hold_widget(Gtk.Widget widget)
 {
 	int x;
