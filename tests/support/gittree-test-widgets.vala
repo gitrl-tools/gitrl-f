@@ -423,6 +423,36 @@ public static string submenu_labels(Gtk.MenuItem item)
 	return string.joinv(",", labels);
 }
 
+public static int text_ink(Gtk.Entry field)
+{
+	var surface = drawn(field);
+	var data = (uint32*)surface.get_data();
+	var row = surface.get_stride() / 4;
+	var count = 0;
+	int x;
+	int y;
+	int width;
+	int height;
+
+	field.get_layout_offsets(out x, out y);
+	field.get_layout().get_pixel_size(out width, out height);
+
+	var fill = data[(y + height / 2) * row + x + width + 4] & 0xffffff;
+
+	for (var j = y; j < y + height; j++)
+	{
+		for (var i = x; i < x + width; i++)
+		{
+			if ((data[j * row + i] & 0xffffff) != fill)
+			{
+				count++;
+			}
+		}
+	}
+
+	return count;
+}
+
 public static string ticked_choices(Gittree.Window window)
 {
 	var names = new string[0];

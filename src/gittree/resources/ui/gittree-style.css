@@ -6,3 +6,7 @@ treeview.view.unlit:selected:not(.branch):not(.remote):not(.tag):not(.stash) {
 	background-color: @theme_base_color;
 	color: @theme_text_color;
 }
+
+entry.error {
+	background-image: none;
+}

@@ -196,6 +196,7 @@ public static int main(string[] args)
 	install_wrapper();
 
 	Test.add_func("/gittree/ui/filter/a-bad-expression-in-the-bar-applies-nothing", test_a_bad_expression_in_the_bar_applies_nothing);
+	Test.add_func("/gittree/ui/filter/a-bad-regex-keeps-its-text-in-sight", test_a_bad_regex_keeps_its_text_in_sight);
 	Test.add_func("/gittree/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
 	Test.add_func("/gittree/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
 	Test.add_func("/gittree/ui/filter/a-failed-search-shows-git-and-the-plain-history", test_a_failed_search_shows_git_and_the_plain_history);
@@ -383,6 +384,40 @@ private static void test_a_bad_expression_in_the_bar_applies_nothing()
 
 		window.destroy();
 		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_bad_regex_keeps_its_text_in_sight()
+{
+	try
+	{
+		var theme = new Gtk.CssProvider();
+		var screen = Gdk.Screen.get_default();
+
+		theme.load_from_data("entry { background-image: linear-gradient(#ffffff, #ffffff); } entry:focus { background-image: none; } .error { background-color: #800000; color: #ffffff; }");
+		Gtk.StyleContext.add_provider_for_screen(screen, theme, Gtk.STYLE_PROVIDER_PRIORITY_SETTINGS);
+
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		choose(window, Gittree.SearchChoice.FILES);
+		history.search_field.text = "*x";
+		check_labelled(list_bar(window), "Regex").active = true;
+		history.paned.commit_list_view.grab_focus();
+		settle(300);
+
+		assert_true(history.search_field.get_style_context().has_class("error"));
+		assert_cmpint(text_ink(history.search_field), CompareOperator.GT, 0);
+
+		window.destroy();
+		repo.remove();
+		Gtk.StyleContext.remove_provider_for_screen(screen, theme);
 	}
 	catch (Error e)
 	{
