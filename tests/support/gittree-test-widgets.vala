@@ -112,10 +112,9 @@ public static Gtk.Widget list_bar(Gittree.Window window)
 	return window.history.search_field.get_parent();
 }
 
-public static string marked_rows(Gittree.Window window)
+public static string marked_rows(Gittree.Window window, Gtk.TreeViewColumn column)
 {
 	var view = window.history.paned.commit_list_view;
-	var column = view.get_column(0);
 	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, view.get_allocated_width(), view.get_allocated_height());
 	var context = new Cairo.Context(surface);
 	var rows = window.history.rows();

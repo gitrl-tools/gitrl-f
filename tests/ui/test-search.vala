@@ -393,7 +393,7 @@ private static void test_display_matches_only_and_a_changed_lines_search_both_ho
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
-		assert_cmpstr(marked_rows(window), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "prefix work,Parser fix");
 
 		type_text(window, "parser");
 		check_labelled(list_bar(window), "Display matches only").active = true;

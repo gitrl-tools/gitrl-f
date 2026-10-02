@@ -1485,7 +1485,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit != null)
 		{
 			var hash = commit.get_id().to_string().substring(0, 7);
-			((Gtk.CellRendererText)cell).markup = Search.marked(hash, d_query.hash_marks());
+			var text = (Gtk.CellRendererText)cell;
+
+			if (changes_apply() && !d_only_matches.active && matches_row(commit))
+			{
+				text.markup = Search.marked_whole(hash);
+			}
+			else
+			{
+				text.markup = Search.marked(hash, d_query.hash_marks());
+			}
 		}
 	}
 
@@ -1579,11 +1588,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		lanes.next_commit = next_commit;
 		lanes.labels = d_labels;
 
-		if (changes_apply() && !d_only_matches.active && matches_row(commit))
-		{
-			lanes.markup = Search.marked_whole(commit.get_subject());
-		}
-		else if (!d_query.is_empty)
+		if (!d_query.is_empty)
 		{
 			lanes.markup = Search.marked(commit.get_subject(), d_query.subject_marks());
 		}
