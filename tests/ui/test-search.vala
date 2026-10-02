@@ -123,6 +123,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/search/the-close-button-closes-the-bar-and-lifts-the-search", test_the_close_button_closes_the_bar_and_lifts_the_search);
 	Test.add_func("/gitrlf/ui/search/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
 	Test.add_func("/gitrlf/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
+	Test.add_func("/gitrlf/ui/search/the-field-stays-put-when-the-count-changes", test_the_field_stays_put_when_the_count_changes);
 	Test.add_func("/gitrlf/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gitrlf/ui/search/tick-searches-again", test_tick_searches_again);
 	Test.add_func("/gitrlf/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
@@ -1020,6 +1021,45 @@ private static void test_the_field_sits_at_the_centre_of_the_bar()
 
 		assert_true(minimum < 400);
 
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_field_stays_put_when_the_count_changes()
+{
+	try
+	{
+		var repo = four_subjects();
+		var window = opened(repo);
+		var field = window.history.search_field;
+		var settings = Gtk.Settings.get_default();
+		var font = settings.gtk_font_name;
+		int waiting;
+		int counted;
+		int y;
+
+		settings.gtk_font_name = "DejaVu Sans 11";
+		window.history.search_visible = true;
+		window.resize(1642, 1022);
+		field.text = "fix";
+		settle(400);
+		field.translate_coordinates(window.history.widget, 0, 0, out waiting, out y);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
+
+		field.activate();
+		settle(400);
+		field.translate_coordinates(window.history.widget, 0, 0, out counted, out y);
+
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "2 matches");
+		assert_cmpint(counted, CompareOperator.EQ, waiting);
+
+		settings.gtk_font_name = font;
 		window.destroy();
 		repo.remove();
 	}
