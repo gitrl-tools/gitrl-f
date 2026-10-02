@@ -1483,16 +1483,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (commit != null)
 		{
-			var hash = commit.get_id().to_string().substring(0, 7);
+			var hash = Search.marked(commit.get_id().to_string().substring(0, 7), d_query.hash_marks());
 			var text = (Gtk.CellRendererText)cell;
 
 			if ((changes_apply() || messages_apply()) && !d_only_matches.active && matches_row(commit))
 			{
-				text.markup = Search.marked_whole(hash);
+				text.markup = Search.emphasised(hash);
 			}
 			else
 			{
-				text.markup = Search.marked(hash, d_query.hash_marks());
+				text.markup = hash;
 			}
 		}
 	}

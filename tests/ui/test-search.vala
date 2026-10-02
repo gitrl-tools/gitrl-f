@@ -103,7 +103,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gittree/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
 	Test.add_func("/gittree/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
-	Test.add_func("/gittree/ui/search/a-messages-search-marks-the-hash-of-each-match", test_a_messages_search_marks_the_hash_of_each_match);
+	Test.add_func("/gittree/ui/search/a-messages-search-makes-the-hash-of-each-match-bold", test_a_messages_search_makes_the_hash_of_each_match_bold);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
 	Test.add_func("/gittree/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
 	Test.add_func("/gittree/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
@@ -306,16 +306,18 @@ private static void test_a_match_on_an_unticked_ref_is_offered()
 	}
 }
 
-private static void test_a_messages_search_marks_the_hash_of_each_match()
+private static void test_a_messages_search_makes_the_hash_of_each_match_bold()
 {
 	try
 	{
 		var repo = four_subjects();
 		var window = opened(repo);
+		var plain = hash_ink(window);
 
 		type_text(window, "fix");
 
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();
@@ -417,11 +419,13 @@ private static void test_display_matches_only_and_a_changed_lines_search_both_ho
 		var repo = four_subjects();
 		var window = opened(repo);
 
+		var plain = hash_ink(window);
+
 		window.history.apply_filter("fix", false);
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "prefix work,Parser fix");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "prefix work,Parser fix");
 
 		type_text(window, "parser");
 		check_labelled(list_bar(window), "Display matches only").active = true;
@@ -489,7 +493,7 @@ private static void test_marks_show_in_the_subject_hash_and_author_columns()
 
 		type_text(window, "fix");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.GT, 0);
-		assert_cmpint(marked_pixels(window, 1), CompareOperator.GT, 0);
+		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
 
 		type_text(window, sha.substring(0, 7));
@@ -499,7 +503,7 @@ private static void test_marks_show_in_the_subject_hash_and_author_columns()
 
 		type_text(window, "tester");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
-		assert_cmpint(marked_pixels(window, 1), CompareOperator.GT, 0);
+		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 2), CompareOperator.GT, 0);
 
 		window.destroy();

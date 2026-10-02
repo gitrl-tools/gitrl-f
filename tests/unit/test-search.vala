@@ -22,9 +22,9 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/search/a-whole-mark-is-bold", test_a_whole_mark_is_bold);
 	Test.add_func("/gittree/search/count-wording", test_count_wording);
 	Test.add_func("/gittree/search/each-field-matches-without-regard-to-case", test_each_field_matches_without_regard_to_case);
+	Test.add_func("/gittree/search/emphasis-is-bold-and-keeps-the-marks", test_emphasis_is_bold_and_keeps_the_marks);
 	Test.add_func("/gittree/search/marks-follow-the-switches", test_marks_follow_the_switches);
 	Test.add_func("/gittree/search/marks-keep-the-case-of-the-text", test_marks_keep_the_case_of_the_text);
 	Test.add_func("/gittree/search/the-switches-narrow-the-fields", test_the_switches_narrow_the_fields);
@@ -36,12 +36,6 @@ public static int main(string[] args)
 private static Gittree.TextMatch plain(string text)
 {
 	return new Gittree.TextMatch(text, false, false);
-}
-
-private static void test_a_whole_mark_is_bold()
-{
-	assert_cmpstr(Gittree.Search.marked_whole("a<b"), CompareOperator.EQ,
-	              "<span background=\"#fce94f\" foreground=\"#1a1a1a\" weight=\"bold\">a&lt;b</span>");
 }
 
 private static void test_count_wording()
@@ -79,6 +73,12 @@ private static void test_each_field_matches_without_regard_to_case()
 	{
 		Test.fail_printf("%s", e.message);
 	}
+}
+
+private static void test_emphasis_is_bold_and_keeps_the_marks()
+{
+	assert_cmpstr(Gittree.Search.emphasised(Gittree.Search.marked("ab<c", { plain("b") })), CompareOperator.EQ,
+	              "<span weight=\"bold\">a<span background=\"#fce94f\" foreground=\"#1a1a1a\">b</span>&lt;c</span>");
 }
 
 private static void test_marks_follow_the_switches()

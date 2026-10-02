@@ -1103,13 +1103,15 @@ private static void test_display_matches_only_hides_and_shows_without_git()
 		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
 
 		settle(300);
+
+		var plain = hash_ink(window);
 		choose(window, Gittree.SearchChoice.LINES);
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "e,c,a");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "e,c,a");
 
 		var before = git_calls();
 
@@ -1117,7 +1119,7 @@ private static void test_display_matches_only_hides_and_shows_without_git()
 		settle(100);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle, ignoring case");
 
 		window.history.only_matches = false;
@@ -1208,6 +1210,8 @@ private static void test_enter_applies_changed_lines_and_typing_does_not()
 		var field = window.history.search_field;
 
 		settle(300);
+
+		var plain = hash_ink(window);
 		choose(window, Gittree.SearchChoice.LINES);
 
 		var before = git_calls(" -S");
@@ -1223,7 +1227,7 @@ private static void test_enter_applies_changed_lines_and_typing_does_not()
 		settle(600);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "e,c,a");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "e,c,a");
 		assert_cmpstr(marked_rows(window, window.history.paned.column_subject), CompareOperator.EQ, "");
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "1 of 3");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that add or remove needle, ignoring case");
@@ -1242,7 +1246,7 @@ private static void test_enter_applies_changed_lines_and_typing_does_not()
 		button_tooltipped(list_bar(window), "Next match (Enter)").clicked();
 		settle(600);
 
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "c,a");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "c,a");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that add or remove needle");
 
 		window.destroy();
@@ -1610,13 +1614,15 @@ private static void test_the_diff_of_a_commit_the_files_search_does_not_match_is
 		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
 
 		settle(300);
+
+		var plain = hash_ink(window);
 		choose(window, Gittree.SearchChoice.FILES);
 		window.history.search_field.text = "p";
 		window.history.search_field.activate();
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "both,only q,first");
-		assert_cmpstr(marked_rows(window, window.history.paned.column_hash), CompareOperator.EQ, "both,first");
+		assert_cmpstr(bold_hashes(window, plain), CompareOperator.EQ, "both,first");
 
 		select_subject(window, "both");
 		window.history.paned.details_visible = true;

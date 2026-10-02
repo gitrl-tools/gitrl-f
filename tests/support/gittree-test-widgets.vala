@@ -20,6 +20,31 @@
 namespace GittreeTest
 {
 
+public static string bold_hashes(Gittree.Window window, Gee.Map<string, int> plain)
+{
+	var names = new string[0];
+
+	foreach (var entry in hash_ink(window).entries)
+	{
+		if (entry.value * 100 > plain[entry.key] * 115)
+		{
+			names += entry.key;
+		}
+	}
+
+	var shown = new string[0];
+
+	foreach (var commit in window.history.rows())
+	{
+		if (commit.get_subject() in names)
+		{
+			shown += commit.get_subject();
+		}
+	}
+
+	return string.joinv(",", shown);
+}
+
 public static Gtk.CheckButton check_labelled(Gtk.Widget root, string label)
 {
 	foreach (var widget in find_all(root, typeof(Gtk.CheckButton)))
@@ -102,6 +127,45 @@ public static Gtk.Widget[] find_all(Gtk.Widget widget, Type type)
 	}
 
 	return found;
+}
+
+public static Gee.Map<string, int> hash_ink(Gittree.Window window)
+{
+	var view = window.history.paned.commit_list_view;
+	var column = window.history.paned.column_hash;
+	var surface = drawn(view);
+	var data = (uint8*)surface.get_data();
+	var stride = surface.get_stride();
+	var rows = window.history.rows();
+	var ink = new Gee.HashMap<string, int>();
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		Gdk.Rectangle area;
+		int x;
+		int y;
+		var count = 0;
+
+		view.get_background_area(new Gtk.TreePath.from_indices(i), column, out area);
+		view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
+
+		for (var j = int.max(y, 0); j < int.min(y + area.height, surface.get_height()); j++)
+		{
+			for (var k = x; k < int.min(x + area.width, surface.get_width()); k++)
+			{
+				var pixel = data + j * stride + k * 4;
+
+				if (pixel[0] + pixel[1] + pixel[2] < 384)
+				{
+					count++;
+				}
+			}
+		}
+
+		ink[rows[i].get_subject()] = count;
+	}
+
+	return ink;
 }
 
 public static Gtk.Label label_with(Gtk.Widget root, string text)
