@@ -279,6 +279,24 @@ public class RefsList : Gtk.ListBox
 		return true;
 	}
 
+	public void fold_unticked()
+	{
+		foreach (var header in d_headers)
+		{
+			var ticked = false;
+
+			foreach (var name in leaves(header))
+			{
+				ticked = ticked || d_ticks.contains(name);
+			}
+
+			if (!ticked)
+			{
+				header.expanded = false;
+			}
+		}
+	}
+
 	private Gee.List<string> leaves(RefsHeader header)
 	{
 		var names = new Gee.ArrayList<string>();

@@ -113,6 +113,23 @@ private static void drain()
 	}
 }
 
+private static string folded(Gitrlf.Window window)
+{
+	var keys = new string[0];
+
+	foreach (var widget in find_all(window.history.paned.refs_list, typeof(Gitrlf.RefsHeader)))
+	{
+		var header = (Gitrlf.RefsHeader)widget;
+
+		if (!header.expanded)
+		{
+			keys += header.key;
+		}
+	}
+
+	return string.joinv("|", keys);
+}
+
 private static int label_x(Gitrlf.Window window, int row, string name)
 {
 	var view = window.history.paned.commit_list_view;
@@ -178,6 +195,7 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
+	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-plain-again-under-a-theme-that-paints-the-selection", test_a_row_is_plain_again_under_a_theme_that_paints_the_selection);
 	Test.add_func("/gitrlf/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
@@ -425,6 +443,26 @@ private static void test_a_dragged_sidebar_keeps_its_width()
 
 		settings.reset("paned-sidebar-dragged");
 		settings.reset("paned-sidebar-position");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_group_with_no_tick_opens_folded()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature/scan"});
+
+		assert_cmpstr(folded(window), CompareOperator.EQ, "local:fix|section:remotes|remote:origin|section:tags");
+
 		window.destroy();
 		repo.remove();
 	}
