@@ -50,7 +50,7 @@ The first command runs every suite: `data`, which validates the settings schema,
 ./scripts/capture-demo.sh
 ```
 
-The script builds a repository with fixed names and dates with `scripts/demo-fixture.sh`, starts the built `gitrlf` on it in a private Xvfb with a private D-Bus, drives it with xdotool, and records it with ffmpeg. It writes `docs/screenshots/demo-ticks.gif`, `docs/screenshots/demo-pane.gif`, and `docs/screenshots/gitrlf.png`, which the metainfo names as its screenshot. `./scripts/capture-demo.sh ticks` makes one of them only. The clicks are at fixed places in a 1210x781 window, so a change to the layout needs the places found again.
+The script builds a repository with fixed names and dates with `scripts/demo-fixture.sh`, starts the built `gitrlf` on it in a private Xvfb with a private D-Bus, drives it with xdotool, and records it with ffmpeg. It writes `docs/screenshots/demo-ticks.gif`, `docs/screenshots/demo-pane.gif`, `docs/screenshots/demo-search.gif`, and `docs/screenshots/gitrlf.png`, which the metainfo names as its screenshot. `./scripts/capture-demo.sh ticks` makes one of them only. The clicks are at fixed places in a 1210x781 window, so a change to the layout needs the places found again.
 
 `./scripts/regen-icons.sh` renders the three PNG icons from `data/icons/io.github.li9i.gitrlf.svg`.
 

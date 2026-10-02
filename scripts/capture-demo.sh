@@ -9,14 +9,14 @@ scene=${1:-all}
 binary=$root/_build/src/gitrlf/gitrlf
 
 case "$scene" in
-ticks|pane|still)
+ticks|pane|search|still)
 	scenes=$scene
 	;;
 all)
-	scenes="ticks pane still"
+	scenes="ticks pane search still"
 	;;
 *)
-	echo "usage: capture-demo.sh [ticks|pane|still|all]" >&2
+	echo "usage: capture-demo.sh [ticks|pane|search|still|all]" >&2
 	exit 2
 	;;
 esac
@@ -127,6 +127,26 @@ record() {
 			xdotool key Escape
 			sleep 2.5
 			;;
+		search)
+			glide 700 700 1012 27
+			xdotool click 1
+			sleep 0.5
+
+			glide 1012 27 700 600
+			sleep 0.5
+
+			xdotool type --delay 150 parse
+			sleep 0.5
+			xdotool key Return
+			sleep 3.0
+
+			glide 700 600 937 73
+			xdotool click 1
+			sleep 0.5
+
+			glide 937 73 700 600
+			sleep 3.5
+			;;
 		esac
 
 		wait "$grab"
@@ -181,6 +201,9 @@ for name in $scenes; do
 		seconds=18
 		;;
 	pane)
+		seconds=14
+		;;
+	search)
 		seconds=14
 		;;
 	esac
