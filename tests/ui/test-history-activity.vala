@@ -277,6 +277,33 @@ private static int row_of(Gittree.Window window, string subject)
 	error("no row %s", subject);
 }
 
+private static string row_strip(Gittree.Window window, int row, int from, int to)
+{
+	var view = window.history.paned.commit_list_view;
+	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, view.get_allocated_width(), view.get_allocated_height());
+	var text = new StringBuilder();
+	Gdk.Rectangle area;
+	int x;
+	int y;
+
+	view.draw(new Cairo.Context(surface));
+	surface.flush();
+	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out area);
+	view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
+
+	var data = (uint8*)surface.get_data();
+
+	for (var j = y; j < y + area.height; j++)
+	{
+		for (var i = x + from; i < x + to; i++)
+		{
+			text.append("%06x".printf(*(uint32*)(data + j * surface.get_stride() + i * 4) & 0xffffff));
+		}
+	}
+
+	return text.str;
+}
+
 private static void settle(int milliseconds)
 {
 	for (var i = 0; i < milliseconds / 10; i++)
@@ -413,6 +440,17 @@ private static void test_a_row_is_plain_again_under_a_theme_that_paints_the_sele
 
 		assert_false(details_shown(window));
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+
+		var middle = label_x(window, 0, "master");
+
+		click_row(window, 0);
+		click_row(window, 0);
+
+		var unlit = row_strip(window, 0, middle - 8, middle + 8);
+
+		click_row(window, 1);
+
+		assert_cmpstr(row_strip(window, 0, middle - 8, middle + 8), CompareOperator.EQ, unlit);
 
 		window.destroy();
 		repo.remove();
