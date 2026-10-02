@@ -58,22 +58,49 @@ public static Gtk.CheckButton check_labelled(Gtk.Widget root, string label)
 	error("no check button %s", label);
 }
 
-public static string choice_labels(Gittree.Window window)
+public static Gtk.CheckButton choice_box(Gittree.Window window, string label)
 {
-	var buttons = find_all(list_bar(window), typeof(Gtk.MenuButton));
-	var labels = new string[0];
-
-	if (buttons.length != 1)
+	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
 	{
-		error("no choice button");
+		if (((Gtk.Label)find_all(widget, typeof(Gtk.Label))[0]).label != label)
+		{
+			continue;
+		}
+
+		foreach (var inner in find_all(widget, typeof(Gtk.CheckButton)))
+		{
+			if (!(inner is Gtk.RadioButton))
+			{
+				return (Gtk.CheckButton)inner;
+			}
+		}
 	}
 
-	foreach (var child in ((Gtk.MenuButton)buttons[0]).popup.get_children())
+	error("no choice %s", label);
+}
+
+public static string choice_labels(Gittree.Window window)
+{
+	var labels = new string[0];
+
+	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
 	{
-		labels += ((Gtk.Label)find_all(child, typeof(Gtk.Label))[0]).label;
+		labels += ((Gtk.Label)find_all(widget, typeof(Gtk.Label))[0]).label;
 	}
 
 	return string.joinv(",", labels);
+}
+
+public static string choice_tips(Gittree.Window window)
+{
+	var tips = new string[0];
+
+	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
+	{
+		tips += widget.tooltip_text;
+	}
+
+	return string.joinv("|", tips);
 }
 
 public static Gtk.MenuItem? copy_item()
@@ -398,16 +425,15 @@ public static string submenu_labels(Gtk.MenuItem item)
 
 public static string ticked_choices(Gittree.Window window)
 {
-	var button = (Gtk.MenuButton)find_all(list_bar(window), typeof(Gtk.MenuButton))[0];
 	var names = new string[0];
 
-	foreach (var child in button.popup.get_children())
+	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
 	{
-		var tick = (Gtk.Image)find_all(child, typeof(Gtk.Image))[0];
+		var label = ((Gtk.Label)find_all(widget, typeof(Gtk.Label))[0]).label;
 
-		if (tick.visible)
+		if (choice_box(window, label).active)
 		{
-			names += ((Gtk.Label)find_all(child, typeof(Gtk.Label))[0]).label.split(":")[0];
+			names += label;
 		}
 	}
 

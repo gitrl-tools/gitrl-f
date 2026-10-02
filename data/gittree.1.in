@@ -147,13 +147,13 @@ ticks every local branch and
 .BR origin/master .
 .SH SEARCH
 When the pane below the list is shut, Ctrl+F opens the search bar of the
-list. The search button in the header bar opens it at any time. The
-choice on the left of its
-field picks what the field searches: Messages, authors and hashes, Changed
-lines, or Files. Each choice keeps its own text, Match case and Regex, and
-their searches add up: a commit matches when it meets every choice that
-holds a text. In the menu of the choice, a tick marks each choice whose
-search applies. The matches are marked in the list, and Display matches only
+list. The search button in the header bar opens it at any time. Three
+joined buttons on the left of its field pick what the field edits: Messages
+(messages, authors and hashes), Changed lines, or Files. Each keeps its own
+text, Match case and Regex, and their searches add up: a commit matches when
+it meets every search that is on. The box on each button turns its search
+on or off and keeps its text, and typing in the field turns its search on.
+The matches are marked in the list, and Display matches only
 hides the commits that do not match. A regex is a POSIX extended regular
 expression, as in
 .BR "git log \-G" .

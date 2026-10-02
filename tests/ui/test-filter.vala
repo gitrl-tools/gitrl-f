@@ -211,7 +211,8 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
 	Test.add_func("/gittree/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
-	Test.add_func("/gittree/ui/filter/a-tick-marks-each-choice-whose-search-applies", test_a_tick_marks_each_choice_whose_search_applies);
+	Test.add_func("/gittree/ui/filter/a-box-shows-each-choice-whose-search-applies", test_a_box_shows_each_choice_whose_search_applies);
+	Test.add_func("/gittree/ui/filter/a-box-switches-a-search-off-and-on-and-keeps-its-text", test_a_box_switches_a_search_off_and_on_and_keeps_its_text);
 	Test.add_func("/gittree/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
 	Test.add_func("/gittree/ui/filter/closing-the-bar-lifts-the-filter-and-keeps-the-text", test_closing_the_bar_lifts_the_filter_and_keeps_the_text);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
@@ -272,13 +273,11 @@ private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths,
 
 private static void pick(Gittree.Window window, string label)
 {
-	var button = (Gtk.MenuButton)find_all(list_bar(window), typeof(Gtk.MenuButton))[0];
-
-	foreach (var child in button.popup.get_children())
+	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
 	{
-		if (((Gtk.Label)find_all(child, typeof(Gtk.Label))[0]).label.has_prefix(label))
+		if (((Gtk.Label)find_all(widget, typeof(Gtk.Label))[0]).label == label)
 		{
-			((Gtk.MenuItem)child).activate();
+			((Gtk.Button)widget).clicked();
 		}
 	}
 
@@ -890,7 +889,7 @@ private static void test_a_tick_under_a_filter_asks_git_nothing()
 	}
 }
 
-private static void test_a_tick_marks_each_choice_whose_search_applies()
+private static void test_a_box_shows_each_choice_whose_search_applies()
 {
 	try
 	{
@@ -917,12 +916,73 @@ private static void test_a_tick_marks_each_choice_whose_search_applies()
 		history.search_field.text = "c";
 		settle(400);
 
-		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages, authors and hashes|Changed lines");
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages|Changed lines");
 
 		history.search_visible = false;
 		settle(300);
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_box_switches_a_search_off_and_on_and_keeps_its_text()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		history.only_matches = true;
+		choose(window, Gittree.SearchChoice.LINES);
+
+		assert_false(choice_box(window, "Changed lines").sensitive);
+
+		history.search_field.text = "needle";
+		settle(300);
+
+		assert_true(choice_box(window, "Changed lines").sensitive);
+		assert_false(choice_box(window, "Files").sensitive);
+
+		history.search_field.activate();
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
+
+		choice_box(window, "Changed lines").active = false;
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpstr(history.search_field.text, CompareOperator.EQ, "needle");
+
+		choice_box(window, "Changed lines").active = true;
+		settle(800);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
+
+		choose(window, Gittree.SearchChoice.MESSAGES);
+		history.search_field.text = "c";
+		settle(400);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages|Changed lines");
+
+		choice_box(window, "Messages").active = false;
+		settle(300);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
+		assert_cmpstr(history.search_field.text, CompareOperator.EQ, "c");
 
 		window.destroy();
 		repo.remove();
@@ -1191,7 +1251,7 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
 		var history = window.history;
 		var field = history.search_field;
-		var buttons = find_all(list_bar(window), typeof(Gtk.MenuButton));
+		var buttons = find_all(list_bar(window), typeof(Gtk.RadioButton));
 		var match_case = check_labelled(list_bar(window), "Match case");
 		var regex = check_labelled(list_bar(window), "Regex");
 		int button_x;
@@ -1201,14 +1261,14 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 		history.search_visible = true;
 		settle(300);
 
-		assert_cmpint(buttons.length, CompareOperator.EQ, 1);
+		assert_cmpint(buttons.length, CompareOperator.EQ, 3);
 
 		buttons[0].translate_coordinates(list_bar(window), 0, 0, out button_x, out y);
 		field.translate_coordinates(list_bar(window), 0, 0, out field_x, out y);
 
 		assert_cmpint(button_x, CompareOperator.LT, field_x);
-		assert_cmpstr(choice_labels(window), CompareOperator.EQ, "Messages, authors and hashes,Changed lines,Files");
-		assert_cmpstr(((Gtk.Label)find_all(buttons[0], typeof(Gtk.Label))[0]).label, CompareOperator.EQ, "Messages");
+		assert_cmpstr(choice_labels(window), CompareOperator.EQ, "Messages,Changed lines,Files");
+		assert_true(((Gtk.ToggleButton)buttons[0]).active);
 
 		field.text = "fix";
 		settle(300);
@@ -1216,7 +1276,8 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 
 		assert_true(history.search_choice == Gittree.SearchChoice.LINES);
 		assert_cmpstr(field.text, CompareOperator.EQ, "");
-		assert_cmpstr(((Gtk.Label)find_all(buttons[0], typeof(Gtk.Label))[0]).label, CompareOperator.EQ, "Changed lines");
+		assert_true(((Gtk.ToggleButton)buttons[1]).active);
+		assert_false(((Gtk.ToggleButton)buttons[0]).active);
 
 		field.text = "needle";
 		match_case.active = true;
@@ -1227,7 +1288,7 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 		assert_true(regex.sensitive);
 		assert_false(match_case.active);
 
-		pick(window, "Messages, authors and hashes");
+		pick(window, "Messages");
 
 		assert_cmpstr(field.text, CompareOperator.EQ, "fix");
 		assert_false(match_case.active);
@@ -1621,7 +1682,7 @@ private static void test_the_choices_stack_and_the_list_shows_each_text()
 		settle(400);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e");
-		assert_cmpstr(choice_labels(window), CompareOperator.EQ, "Messages, authors and hashes: %s,Changed lines: needle,Files: q".printf(hash));
+		assert_cmpstr(choice_tips(window), CompareOperator.EQ, "Messages, authors and hashes: %s|Changed lines: needle|Files: q".printf(hash));
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that match %s in the message, author or hash, change q and add or remove needle, following renames, ignoring case".printf(hash));
 
 		window.destroy();

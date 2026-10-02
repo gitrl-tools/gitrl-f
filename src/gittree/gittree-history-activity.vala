@@ -29,10 +29,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.Box d_box;
 	private bool[] d_cases;
 	private SearchChoice d_choice;
-	private Gtk.RadioMenuItem[] d_choice_items;
-	private Gtk.Label d_choice_label;
-	private Gtk.Label[] d_choice_names;
-	private Gtk.Image[] d_choice_ticks;
+	private Gtk.CheckButton[] d_choice_boxes;
+	private Gtk.RadioButton[] d_choice_buttons;
 	private bool d_choosing;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
@@ -266,56 +264,45 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 
 		d_search_entry = new Gtk.SearchEntry();
-		d_search_entry.width_chars = 40;
+		d_search_entry.width_chars = 20;
+		d_search_entry.max_width_chars = 40;
 
-		var choices = new Gtk.Menu();
-		unowned SList<Gtk.RadioMenuItem>? group = null;
+		var choices = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+		Gtk.RadioButton? group = null;
 
-		d_choice_items = new Gtk.RadioMenuItem[0];
-		d_choice_names = new Gtk.Label[0];
-		d_choice_ticks = new Gtk.Image[0];
+		choices.get_style_context().add_class("linked");
+		d_choice_boxes = new Gtk.CheckButton[0];
+		d_choice_buttons = new Gtk.RadioButton[0];
 
 		foreach (var choice in new SearchChoice[] { SearchChoice.MESSAGES, SearchChoice.LINES, SearchChoice.FILES })
 		{
-			var item = new Gtk.RadioMenuItem(group);
-			var name = new Gtk.Label(choice_name(choice));
-			var tick = new Gtk.Image.from_icon_name("object-select-symbolic", Gtk.IconSize.MENU);
-			var row = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 12);
+			var button = new Gtk.RadioButton.from_widget(group);
+			var box = new Gtk.CheckButton();
+			var row = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 4);
 			var picked = choice;
 
-			name.xalign = 0;
-			name.hexpand = true;
-			tick.no_show_all = true;
-			tick.tooltip_text = _("This search applies");
-			row.add(name);
-			row.add(tick);
-			row.show_all();
-			item.add(row);
-			d_choice_names += name;
-			d_choice_ticks += tick;
-
-			group = item.get_group();
-			item.toggled.connect(() => {
-				if (item.active && !d_choosing)
+			group = group != null ? group : button;
+			button.set_mode(false);
+			box.tooltip_text = _("Turn this search on or off. Its text is kept");
+			row.add(box);
+			row.add(new Gtk.Label(choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(choice)));
+			button.add(row);
+			button.toggled.connect(() => {
+				if (button.active && !d_choosing)
 				{
 					choose(picked);
 				}
 			});
-			item.show();
-			choices.add(item);
-			d_choice_items += item;
+			box.toggled.connect(() => {
+				if (!d_choosing)
+				{
+					switch_choice(picked, box.active);
+				}
+			});
+			choices.add(button);
+			d_choice_boxes += box;
+			d_choice_buttons += button;
 		}
-
-		d_choice_label = new Gtk.Label(null);
-
-		var choice_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-		choice_box.add(d_choice_label);
-		choice_box.add(new Gtk.Image.from_icon_name("pan-down-symbolic", Gtk.IconSize.BUTTON));
-
-		var choice_button = new Gtk.MenuButton();
-		choice_button.popup = choices;
-		choice_button.tooltip_text = _("What the field searches");
-		choice_button.add(choice_box);
 
 		d_match_count = new Gtk.Label(null);
 		d_match_count.width_chars = 12;
@@ -360,10 +347,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_beyond_button.clicked.connect(tick_and_show);
 		after_field.add(d_beyond_button);
 
-		var spacer = new BarSpacer(after_field, choice_button);
+		var spacer = new BarSpacer(after_field, choices);
 		var search_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
 		search_box.add(spacer);
-		search_box.add(choice_button);
+		search_box.add(choices);
 		search_box.add(d_search_entry);
 		search_box.add(after_field);
 
@@ -395,6 +382,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 
 			d_typed[d_choice] = d_search_entry.text;
+			show_choice();
 
 			if (d_choice != SearchChoice.MESSAGES)
 			{
@@ -946,27 +934,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void apply_choice()
 	{
-		string[] paths;
-
 		if (choice_problem() != null)
 		{
 			return;
 		}
 
-		if (d_choice == SearchChoice.MESSAGES)
-		{
-			find_matches();
-			return;
-		}
-
-		if (d_choice == SearchChoice.LINES)
-		{
-			apply(d_typed[SearchChoice.LINES], !d_cases[SearchChoice.LINES], d_regexes[SearchChoice.LINES], d_paths);
-			return;
-		}
-
-		typed_paths(out paths);
-		apply(d_text != null ? d_text : "", d_ignore_case, d_regex, paths);
+		switch_choice(d_choice, true);
 	}
 
 	public void apply_filter(string text, bool ignore_case, bool regex = false)
@@ -1326,18 +1299,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void find_matches()
 	{
-		d_query = new SearchQuery(d_typed[SearchChoice.MESSAGES].strip(), d_cases[SearchChoice.MESSAGES], d_regexes[SearchChoice.MESSAGES]);
-
-		if (narrow_key() != d_narrow_key)
-		{
-			show_ticks();
-		}
-		else
-		{
-			mark_matches();
-		}
-
-		show_path_bar();
+		show_query(new SearchQuery(d_typed[SearchChoice.MESSAGES].strip(), d_cases[SearchChoice.MESSAGES], d_regexes[SearchChoice.MESSAGES]));
 	}
 
 	private async string? find_merge(string commit, string branch, Cancellable cancellable) throws Error
@@ -2441,15 +2403,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		};
 		string?[] texts = { messages_apply() ? d_typed[SearchChoice.MESSAGES].strip() : null, d_text, d_paths.length > 0 ? Filter.joined(d_paths) : null };
 
-		for (var i = 0; i < d_choice_items.length; i++)
+		var was = d_choosing;
+
+		d_choosing = true;
+
+		for (var i = 0; i < d_choice_buttons.length; i++)
 		{
 			var name = choice_name((SearchChoice)i);
+			var typed = d_typed[i].strip();
 
-			d_choice_names[i].label = texts[i] != null ? "%s: %s".printf(name, texts[i]) : name;
-			d_choice_ticks[i].visible = texts[i] != null;
+			d_choice_buttons[i].tooltip_text = typed != "" ? "%s: %s".printf(name, typed) : name;
+			d_choice_boxes[i].active = texts[i] != null;
+			d_choice_boxes[i].sensitive = texts[i] != null || typed != "";
 		}
 
-		d_choice_label.label = d_choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(d_choice);
+		d_choosing = was;
 		d_search_entry.placeholder_text = placeholders[d_choice];
 		d_search_entry.tooltip_text = tooltips[d_choice];
 	}
@@ -2646,6 +2614,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.path_bar.show();
 	}
 
+	private void show_query(SearchQuery query)
+	{
+		d_query = query;
+
+		if (narrow_key() != d_narrow_key)
+		{
+			show_ticks();
+		}
+		else
+		{
+			mark_matches();
+		}
+
+		show_path_bar();
+	}
+
 	private void show_ticks(bool from_top = false)
 	{
 		var kept = selected != null ? selected.get_id() : d_kept;
@@ -2741,7 +2725,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search_entry.text = d_typed[d_choice];
 		d_search_switches.match_case = d_cases[d_choice];
 		d_search_switches.regex = d_regexes[d_choice];
-		d_choice_items[d_choice].active = true;
+		d_choice_buttons[d_choice].active = true;
 		d_choosing = false;
 	}
 
@@ -2817,6 +2801,36 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_reading = null;
 		d_waiting = false;
+	}
+
+	private void switch_choice(SearchChoice choice, bool on)
+	{
+		string[] paths = new string[0];
+
+		if (choice == SearchChoice.MESSAGES && on)
+		{
+			find_matches();
+			return;
+		}
+
+		if (choice == SearchChoice.MESSAGES)
+		{
+			show_query(new SearchQuery("", false, false));
+			return;
+		}
+
+		if (choice == SearchChoice.LINES)
+		{
+			apply(on ? d_typed[SearchChoice.LINES] : "", !d_cases[SearchChoice.LINES], d_regexes[SearchChoice.LINES], d_paths);
+			return;
+		}
+
+		if (on)
+		{
+			typed_paths(out paths);
+		}
+
+		apply(d_text != null ? d_text : "", d_ignore_case, d_regex, paths);
 	}
 
 	private void tick_and_show()
