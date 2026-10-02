@@ -49,6 +49,11 @@ public class DiffFindBar : Gtk.SearchBar
 		owned get { return d_count.label; }
 	}
 
+	public int current_file
+	{
+		get { return search_mode_enabled && d_find.current >= 0 ? d_find.get_match(d_find.current).file : -1; }
+	}
+
 	public Gtk.SearchEntry field
 	{
 		get { return d_field; }
@@ -65,6 +70,8 @@ public class DiffFindBar : Gtk.SearchBar
 		get { return d_switches.regex; }
 		set { d_switches.regex = value; }
 	}
+
+	public signal void moved();
 
 	public DiffFindBar(Gitg.DiffView diff)
 	{
@@ -471,6 +478,8 @@ public class DiffFindBar : Gtk.SearchBar
 		{
 			style.remove_class("error");
 		}
+
+		moved();
 	}
 
 	public void step(int direction)

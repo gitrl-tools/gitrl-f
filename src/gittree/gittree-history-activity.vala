@@ -520,6 +520,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		overlay.add_overlay(close);
 		overlay.show_all();
 		d_paned.box_details.add(overlay);
+		d_paned.box_details.add(new DiffScrollBar(d_diff, d_find_bar));
 
 		d_file_press = new Gtk.GestureMultiPress(d_diff);
 		d_file_press.button = Gdk.BUTTON_PRIMARY;

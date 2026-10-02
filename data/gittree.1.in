@@ -178,7 +178,9 @@ selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
 .PP
 The find bar of the diff has Match case and Regex too, and keeps its text
-when it closes.
+when it closes. One scroll bar at the bottom of the pane moves the long
+lines of the file that holds the current match, or else of the file in the
+middle of the pane.
 .SH THE MENU OF A COMMIT
 A right click on a commit in the list opens its menu. Copy hash copies its
 hash, and Copy name, on a label, the name of that ref. Branches and tags

@@ -77,9 +77,11 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-keeps-the-text", test_escape_in_the_field_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
 	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gittree/ui/diff-find/one-bar-at-the-bottom-scrolls-the-file-of-the-current-match", test_one_bar_at_the_bottom_scrolls_the_file_of_the_current_match);
 	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
 	Test.add_func("/gittree/ui/diff-find/the-close-button-closes-the-bar-and-keeps-the-text", test_the_close_button_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
+	Test.add_func("/gittree/ui/diff-find/the-scroll-bar-follows-the-file-in-the-middle-of-the-pane", test_the_scroll_bar_follows_the_file_in_the_middle_of_the_pane);
 	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
 	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
 	Test.add_func("/gittree/ui/diff-find/typing-marks-every-match-and-moves-nothing", test_typing_marks_every_match_and_moves_nothing);
@@ -168,6 +170,21 @@ private static Gittree.Window opened(Repo repo, string subject) throws Error
 	select_subject(window, subject);
 
 	return window;
+}
+
+private static Gittree.DiffScrollBar pane_bar(Gittree.Window window)
+{
+	return (Gittree.DiffScrollBar)find_all(window.history.paned.box_details, typeof(Gittree.DiffScrollBar))[0];
+}
+
+private static Gtk.ScrolledWindow pane_of(Gittree.Window window)
+{
+	return (Gtk.ScrolledWindow)find_all(window.history.diff_view, typeof(Gtk.ScrolledWindow))[0];
+}
+
+private static Gtk.ScrolledWindow scroller(Gitg.DiffViewFile file)
+{
+	return (Gtk.ScrolledWindow)file.get_text_views()[0].get_parent();
 }
 
 private static void search_for(Gittree.Window window, string text)
@@ -714,6 +731,46 @@ private static void test_no_match_turns_the_field_red()
 	}
 }
 
+private static void test_one_bar_at_the_bottom_scrolls_the_file_of_the_current_match()
+{
+	try
+	{
+		var repo = wide_files();
+		var window = opened(repo, "wide");
+
+		unfold_all(window);
+		search_for(window, "needle");
+		window.history.find_bar.step(1);
+		settle(300);
+
+		var files = window.history.diff_view.get_files();
+		var bar = pane_bar(window);
+		var box = window.history.paned.box_details;
+		int x;
+		int y;
+
+		assert_true(bar.get_mapped());
+		assert_true(bar.adjustment == scroller(files[1]).hadjustment);
+		assert_cmpfloat(bar.adjustment.value, CompareOperator.GT, 0);
+
+		foreach (var file in files)
+		{
+			assert_false(scroller(file).get_hscrollbar().get_mapped());
+		}
+
+		bar.translate_coordinates(box, 0, 0, out x, out y);
+
+		assert_cmpint(y + bar.get_allocated_height(), CompareOperator.EQ, box.get_allocated_height());
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_the_bar_closes_with_the_pane()
 {
 	try
@@ -791,6 +848,39 @@ private static void test_the_count_stands_apart_from_the_switches()
 		label_with(bar, "No match").get_allocation(out count);
 
 		assert_cmpint(count.x - (check.x + check.width), CompareOperator.GE, 18);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_scroll_bar_follows_the_file_in_the_middle_of_the_pane()
+{
+	try
+	{
+		var repo = wide_files();
+		var window = opened(repo, "wide");
+
+		unfold_all(window);
+
+		var files = window.history.diff_view.get_files();
+		var bar = pane_bar(window);
+		var vertical = pane_of(window).vadjustment;
+
+		vertical.value = top_of(window, files[0]) + 40 - vertical.page_size / 2;
+		settle(200);
+
+		assert_false(bar.get_mapped());
+
+		vertical.value = vertical.upper - vertical.page_size;
+		settle(200);
+
+		assert_true(bar.get_mapped());
+		assert_true(bar.adjustment == scroller(files[2]).hadjustment);
 
 		window.destroy();
 		repo.remove();
@@ -918,6 +1008,17 @@ private static Repo three_files() throws Error
 	return repo;
 }
 
+private static int top_of(Gittree.Window window, Gtk.Widget widget)
+{
+	var content = ((Gtk.Bin)pane_of(window).get_child()).get_child();
+	int x;
+	int y;
+
+	widget.translate_coordinates(content, 0, 0, out x, out y);
+
+	return y;
+}
+
 private static void unfold_all(Gittree.Window window)
 {
 	foreach (var file in window.history.diff_view.get_files())
@@ -926,6 +1027,38 @@ private static void unfold_all(Gittree.Window window)
 	}
 
 	settle(300);
+}
+
+private static Repo wide_files() throws Error
+{
+	var repo = Repo.create();
+	var filler = new StringBuilder();
+	var lines = new StringBuilder();
+
+	for (var i = 0; i < 60; i++)
+	{
+		filler.append("filler ");
+	}
+
+	for (var i = 0; i < 40; i++)
+	{
+		lines.append("line %d\n".printf(i));
+	}
+
+	foreach (var name in new string[] { "a.txt", "b.txt", "c.txt" })
+	{
+		FileUtils.set_contents(repo.path.get_child(name).get_path(), "keep\n");
+	}
+
+	repo.git({"add", "--all"});
+	repo.git({"commit", "--quiet", "-m", "start"});
+
+	FileUtils.set_contents(repo.path.get_child("a.txt").get_path(), "keep\n" + lines.str);
+	FileUtils.set_contents(repo.path.get_child("b.txt").get_path(), "keep\n" + lines.str + filler.str + "needle\n");
+	FileUtils.set_contents(repo.path.get_child("c.txt").get_path(), "keep\n" + lines.str + filler.str + "wide\n");
+	repo.git({"commit", "--quiet", "-am", "wide"});
+
+	return repo;
 }
 
 }
