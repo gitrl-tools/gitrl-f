@@ -221,6 +221,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/enter-applies-changed-lines-and-typing-does-not", test_enter_applies_changed_lines_and_typing_does_not);
 	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
 	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-lifts-the-filter-with-the-bar", test_escape_closes_in_order_and_lifts_the_filter_with_the_bar);
+	Test.add_func("/gittree/ui/filter/escape-in-a-filled-diff-bar-selects-no-text", test_escape_in_a_filled_diff_bar_selects_no_text);
 	Test.add_func("/gittree/ui/filter/escape-in-the-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_the_field_closes_from_the_bottom_up_and_keeps_the_focus);
 	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
 	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
@@ -1315,6 +1316,37 @@ private static void test_escape_closes_in_order_and_lifts_the_filter_with_the_ba
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
 
 		assert_false(history.escape());
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_escape_in_a_filled_diff_bar_selects_no_text()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
+		var history = window.history;
+
+		settle(800);
+		history.paned.details_visible = true;
+		settle(400);
+
+		assert_true(history.find_bar.search_mode_enabled);
+
+		history.find_bar.field.grab_focus();
+		Gtk.test_widget_send_key(history.find_bar.field, Gdk.Key.Escape, 0);
+		settle(100);
+
+		assert_false(history.find_bar.search_mode_enabled);
+		assert_true(window.get_focus().is_ancestor(history.diff_view));
+		assert_cmpstr(selected_label_text(history.diff_view), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();

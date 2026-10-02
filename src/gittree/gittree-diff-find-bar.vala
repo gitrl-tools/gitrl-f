@@ -419,7 +419,7 @@ public class DiffFindBar : Gtk.SearchBar
 
 			if (!d_quiet)
 			{
-				d_return_focus = focus != null && focus.is_ancestor(d_diff) ? focus : null;
+				d_return_focus = focus;
 				d_field.grab_focus();
 				d_field.select_region(0, -1);
 			}
@@ -437,13 +437,20 @@ public class DiffFindBar : Gtk.SearchBar
 			return;
 		}
 
-		if (d_return_focus != null && d_return_focus.is_ancestor(d_diff) && d_return_focus.get_mapped())
+		if (d_return_focus != null && d_return_focus.get_mapped())
 		{
 			d_return_focus.grab_focus();
 		}
 		else
 		{
 			d_diff.child_focus(Gtk.DirectionType.TAB_FORWARD);
+
+			var label = window != null ? window.get_focus() as Gtk.Label : null;
+
+			if (label != null)
+			{
+				label.select_region(0, 0);
+			}
 		}
 
 		d_return_focus = null;

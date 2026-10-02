@@ -73,6 +73,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-pane-open-finds-in-the-diff-from-the-list", test_ctrl_f_with_the_pane_open_finds_in_the_diff_from_the_list);
 	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-pane-shut-opens-the-list-bar", test_ctrl_f_with_the_pane_shut_opens_the_list_bar);
+	Test.add_func("/gittree/ui/diff-find/escape-after-ctrl-f-in-the-list-gives-the-focus-back-to-the-list", test_escape_after_ctrl_f_in_the_list_gives_the_focus_back_to_the_list);
 	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-keeps-the-text", test_escape_in_the_field_closes_the_bar_and_keeps_the_text);
 	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
 	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
@@ -537,6 +538,36 @@ private static void test_ctrl_f_with_the_pane_shut_opens_the_list_bar()
 	}
 }
 
+private static void test_escape_after_ctrl_f_in_the_list_gives_the_focus_back_to_the_list()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		window.history.paned.commit_list_view.grab_focus();
+		window.activate_action("search", null);
+		settle(100);
+
+		assert_true(bar.field.has_focus);
+
+		Gtk.test_widget_send_key(bar.field, Gdk.Key.Escape, 0);
+		settle(100);
+
+		assert_false(bar.search_mode_enabled);
+		assert_true(window.history.paned.commit_list_view.has_focus);
+		assert_cmpstr(selected_label_text(window.history.diff_view), CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_escape_in_the_field_closes_the_bar_and_keeps_the_text()
 {
 	try
@@ -544,6 +575,7 @@ private static void test_escape_in_the_field_closes_the_bar_and_keeps_the_text()
 		var repo = three_files();
 		var window = opened(repo, "change");
 		var bar = window.history.find_bar;
+		var before = window.get_focus();
 
 		search_for(window, "keep");
 		unfold_all(window);
@@ -557,7 +589,8 @@ private static void test_escape_in_the_field_closes_the_bar_and_keeps_the_text()
 		assert_false(bar.search_mode_enabled);
 		assert_cmpstr(bar.field.text, CompareOperator.EQ, "keep");
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "");
-		assert_true(focus_in(window, window.history.diff_view));
+		assert_nonnull(before);
+		assert_true(window.get_focus() == before);
 
 		window.activate_action("search", null);
 		settle(300);

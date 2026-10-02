@@ -284,6 +284,23 @@ public static void scroll_to_row(Gittree.Window window, string subject, int hidd
 	error("no row %s", subject);
 }
 
+public static string selected_label_text(Gtk.Widget root)
+{
+	foreach (var widget in find_all(root, typeof(Gtk.Label)))
+	{
+		var label = (Gtk.Label)widget;
+		var start = 0;
+		var end = 0;
+
+		if (label.selectable && label.get_selection_bounds(out start, out end) && start != end)
+		{
+			return label.get_text();
+		}
+	}
+
+	return "";
+}
+
 public static string submenu_labels(Gtk.MenuItem item)
 {
 	var labels = new string[0];
