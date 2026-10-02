@@ -140,7 +140,8 @@ foreach name : ui_tests
       'XDG_DATA_HOME': join_paths(test_home, '.local', 'share'),
     },
     depends: [gschemas_compiled],
-    timeout: 120,
+    # ui-filter run alone: 106.5 s with 43 tests, 122.1 s with 48 tests.
+    timeout: name == 'filter' ? 240 : 120,
   )
 endforeach
 
