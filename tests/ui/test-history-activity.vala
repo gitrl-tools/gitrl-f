@@ -163,6 +163,7 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gittree/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
+	Test.add_func("/gittree/ui/history-activity/a-row-is-plain-again-under-a-theme-that-paints-the-selection", test_a_row_is_plain_again_under_a_theme_that_paints_the_selection);
 	Test.add_func("/gittree/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
 	Test.add_func("/gittree/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
 	Test.add_func("/gittree/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
@@ -380,6 +381,42 @@ private static void test_a_row_is_lit_only_once_the_user_picks_it()
 
 		window.destroy();
 		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_row_is_plain_again_under_a_theme_that_paints_the_selection()
+{
+	try
+	{
+		var theme = new Gtk.CssProvider();
+		var screen = Gdk.Screen.get_default();
+
+		theme.load_from_data(".cell:selected { background-image: linear-gradient(#ff0000, #ff0000); }");
+		Gtk.StyleContext.add_provider_for_screen(screen, theme, Gtk.STYLE_PROVIDER_PRIORITY_THEME);
+
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		settle(300);
+		click_row(window, 1);
+
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
+
+		click_row(window, 1);
+
+		assert_false(details_shown(window));
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+
+		window.destroy();
+		repo.remove();
+		Gtk.StyleContext.remove_provider_for_screen(screen, theme);
 	}
 	catch (Error e)
 	{

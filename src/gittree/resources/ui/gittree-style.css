@@ -1,4 +1,5 @@
 treeview.view.unlit:selected:not(.branch):not(.remote):not(.tag):not(.stash) {
 	background-color: @theme_base_color;
+	background-image: none;
 	color: @theme_text_color;
 }
