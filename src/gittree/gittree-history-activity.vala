@@ -1485,7 +1485,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			var hash = commit.get_id().to_string().substring(0, 7);
 			var text = (Gtk.CellRendererText)cell;
 
-			if (changes_apply() && !d_only_matches.active && matches_row(commit))
+			if ((changes_apply() || messages_apply()) && !d_only_matches.active && matches_row(commit))
 			{
 				text.markup = Search.marked_whole(hash);
 			}
