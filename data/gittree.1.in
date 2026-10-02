@@ -152,7 +152,8 @@ choice on the left of its
 field picks what the field searches: Messages, authors and hashes, Changed
 lines, or Files. Each choice keeps its own text, Match case and Regex, and
 their searches add up: a commit matches when it meets every choice that
-holds a text. The matches are marked in the list, and Display matches only
+holds a text. In the menu of the choice, a tick marks each choice whose
+search applies. The matches are marked in the list, and Display matches only
 hides the commits that do not match. A regex is a POSIX extended regular
 expression, as in
 .BR "git log \-G" .

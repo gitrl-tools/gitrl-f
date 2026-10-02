@@ -211,6 +211,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
 	Test.add_func("/gittree/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
+	Test.add_func("/gittree/ui/filter/a-tick-marks-each-choice-whose-search-applies", test_a_tick_marks_each_choice_whose_search_applies);
 	Test.add_func("/gittree/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
 	Test.add_func("/gittree/ui/filter/closing-the-bar-lifts-the-filter-and-keeps-the-text", test_closing_the_bar_lifts_the_filter_and_keeps_the_text);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
@@ -275,7 +276,7 @@ private static void pick(Gittree.Window window, string label)
 
 	foreach (var child in button.popup.get_children())
 	{
-		if (((Gtk.MenuItem)child).label.has_prefix(label))
+		if (((Gtk.Label)find_all(child, typeof(Gtk.Label))[0]).label.has_prefix(label))
 		{
 			((Gtk.MenuItem)child).activate();
 		}
@@ -879,6 +880,49 @@ private static void test_a_tick_under_a_filter_asks_git_nothing()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "a");
 		assert_cmpint(git_calls(), CompareOperator.EQ, before);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_tick_marks_each_choice_whose_search_applies()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		choose(window, Gittree.SearchChoice.LINES);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+
+		history.search_field.text = "needle";
+		settle(300);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+
+		history.search_field.activate();
+		settle(800);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
+
+		choose(window, Gittree.SearchChoice.MESSAGES);
+		history.search_field.text = "c";
+		settle(400);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Messages, authors and hashes|Changed lines");
+
+		history.search_visible = false;
+		settle(300);
+
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();

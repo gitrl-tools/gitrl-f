@@ -70,7 +70,7 @@ public static string choice_labels(Gittree.Window window)
 
 	foreach (var child in ((Gtk.MenuButton)buttons[0]).popup.get_children())
 	{
-		labels += ((Gtk.MenuItem)child).label;
+		labels += ((Gtk.Label)find_all(child, typeof(Gtk.Label))[0]).label;
 	}
 
 	return string.joinv(",", labels);
@@ -394,6 +394,24 @@ public static string submenu_labels(Gtk.MenuItem item)
 	}
 
 	return string.joinv(",", labels);
+}
+
+public static string ticked_choices(Gittree.Window window)
+{
+	var button = (Gtk.MenuButton)find_all(list_bar(window), typeof(Gtk.MenuButton))[0];
+	var names = new string[0];
+
+	foreach (var child in button.popup.get_children())
+	{
+		var tick = (Gtk.Image)find_all(child, typeof(Gtk.Image))[0];
+
+		if (tick.visible)
+		{
+			names += ((Gtk.Label)find_all(child, typeof(Gtk.Label))[0]).label.split(":")[0];
+		}
+	}
+
+	return string.joinv("|", names);
 }
 
 public static string top_row(Gittree.Window window)

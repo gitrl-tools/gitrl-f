@@ -31,6 +31,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private SearchChoice d_choice;
 	private Gtk.RadioMenuItem[] d_choice_items;
 	private Gtk.Label d_choice_label;
+	private Gtk.Label[] d_choice_names;
+	private Gtk.Image[] d_choice_ticks;
 	private bool d_choosing;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
@@ -270,11 +272,27 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		unowned SList<Gtk.RadioMenuItem>? group = null;
 
 		d_choice_items = new Gtk.RadioMenuItem[0];
+		d_choice_names = new Gtk.Label[0];
+		d_choice_ticks = new Gtk.Image[0];
 
 		foreach (var choice in new SearchChoice[] { SearchChoice.MESSAGES, SearchChoice.LINES, SearchChoice.FILES })
 		{
-			var item = new Gtk.RadioMenuItem.with_label(group, choice_name(choice));
+			var item = new Gtk.RadioMenuItem(group);
+			var name = new Gtk.Label(choice_name(choice));
+			var tick = new Gtk.Image.from_icon_name("object-select-symbolic", Gtk.IconSize.MENU);
+			var row = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 12);
 			var picked = choice;
+
+			name.xalign = 0;
+			name.hexpand = true;
+			tick.no_show_all = true;
+			tick.tooltip_text = _("This search applies");
+			row.add(name);
+			row.add(tick);
+			row.show_all();
+			item.add(row);
+			d_choice_names += name;
+			d_choice_ticks += tick;
 
 			group = item.get_group();
 			item.toggled.connect(() => {
@@ -2427,7 +2445,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			var name = choice_name((SearchChoice)i);
 
-			d_choice_items[i].label = texts[i] != null ? "%s: %s".printf(name, texts[i]) : name;
+			d_choice_names[i].label = texts[i] != null ? "%s: %s".printf(name, texts[i]) : name;
+			d_choice_ticks[i].visible = texts[i] != null;
 		}
 
 		d_choice_label.label = d_choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(d_choice);
