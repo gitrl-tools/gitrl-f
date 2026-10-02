@@ -91,6 +91,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string[] d_typed;
 	private Ggit.OId? d_unfold_commit;
 	private string? d_unfold_path;
+	private string[] d_unticked;
 	private bool d_waiting;
 
 	public GitgExt.Application? application { owned get; construct set; }
@@ -253,6 +254,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_cases = { false, false, false };
 		d_regexes = { false, false, false };
 		d_typed = { "", "", "" };
+		d_unticked = { "", "", "" };
 		d_query = new SearchQuery("", false, false);
 		d_matches = new int[0];
 		d_narrow_key = "";
@@ -285,7 +287,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			button.set_mode(false);
 			button.get_style_context().remove_class(Gtk.STYLE_CLASS_RADIO);
 			button.map.connect_after(() => box.get_event_window().raise());
-			box.tooltip_text = _("Turn this search on or off. Its text is kept");
 			row.add(box);
 			row.add(new Gtk.Label(choice == SearchChoice.MESSAGES ? _("Messages") : choice_name(choice)));
 			button.add(row);
@@ -298,6 +299,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			box.toggled.connect(() => {
 				if (!d_choosing)
 				{
+					d_unticked[picked] = box.active ? "" : d_typed[picked];
 					switch_choice(picked, box.active);
 				}
 			});
@@ -330,6 +332,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 			else
 			{
+				show_choice();
 				show_match_count();
 			}
 		});
@@ -1363,7 +1366,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void go(int direction)
 	{
-		if (pending())
+		if (pending(d_choice))
 		{
 			apply_choice();
 			show_match_count();
@@ -1951,18 +1954,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return Filter.relative_paths(d_repository, directory, d_paths);
 	}
 
-	private bool pending()
+	private bool pending(SearchChoice choice)
 	{
 		string[] paths;
 
-		if (d_choice == SearchChoice.LINES)
+		if (choice == SearchChoice.LINES)
 		{
 			var text = d_typed[SearchChoice.LINES];
 
 			return text != (d_text != null ? d_text : "") || (text != "" && (d_cases[SearchChoice.LINES] == d_ignore_case || d_regexes[SearchChoice.LINES] != d_regex));
 		}
 
-		if (d_choice == SearchChoice.FILES)
+		if (choice == SearchChoice.FILES)
 		{
 			var applied = d_reading != null ? d_reading : d_paths;
 
@@ -2413,9 +2416,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			var name = choice_name((SearchChoice)i);
 			var typed = d_typed[i].strip();
+			var dash = i != SearchChoice.MESSAGES && typed != "" && d_typed[i] != d_unticked[i] && pending((SearchChoice)i);
 
 			d_choice_buttons[i].tooltip_text = typed != "" ? "%s: %s".printf(name, typed) : name;
-			d_choice_boxes[i].active = texts[i] != null;
+			d_choice_boxes[i].active = texts[i] != null && !dash;
+			d_choice_boxes[i].inconsistent = dash;
+			d_choice_boxes[i].tooltip_text = dash ? _("Not searched yet. Press Enter or click the box to search it") : _("Turn this search on or off. Its text is kept");
 			d_choice_boxes[i].sensitive = texts[i] != null || typed != "";
 		}
 
@@ -2507,7 +2513,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private void show_match_count()
 	{
 		var problem = choice_problem();
-		var waiting = problem == null && pending();
+		var waiting = problem == null && pending(d_choice);
 		var empty = d_query.is_empty && !changes_apply();
 		var style = d_search_entry.get_style_context();
 

@@ -152,7 +152,9 @@ joined buttons on the left of its field pick what the field edits: Messages
 (messages, authors and hashes), Changed lines, or Files. Each keeps its own
 text, Match case and Regex, and their searches add up: a commit matches when
 it meets every search that is on. The box on each button turns its search
-on or off and keeps its text, and typing in the field turns its search on.
+on or off and keeps its text. Typing turns a Messages search on. The box of
+Changed lines or Files shows a dash while its text waits for Enter, and a
+click on the dash searches it too.
 The matches are marked in the list, and Display matches only
 hides the commits that do not match. A regex is a POSIX extended regular
 expression, as in

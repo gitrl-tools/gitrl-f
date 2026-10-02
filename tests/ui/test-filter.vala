@@ -199,6 +199,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-bad-regex-keeps-its-text-in-sight", test_a_bad_regex_keeps_its_text_in_sight);
 	Test.add_func("/gittree/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
 	Test.add_func("/gittree/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
+	Test.add_func("/gittree/ui/filter/a-dash-marks-a-text-that-enter-has-not-searched", test_a_dash_marks_a_text_that_enter_has_not_searched);
 	Test.add_func("/gittree/ui/filter/a-failed-search-shows-git-and-the-plain-history", test_a_failed_search_shows_git_and_the_plain_history);
 	Test.add_func("/gittree/ui/filter/a-filter-after-a-failed-open-does-nothing", test_a_filter_after_a_failed_open_does_nothing);
 	Test.add_func("/gittree/ui/filter/a-launch-puts-its-text-and-case-in-changed-lines", test_a_launch_puts_its_text_and_case_in_changed_lines);
@@ -498,6 +499,78 @@ private static void test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the
 
 		assert_true(history.find_bar.search_mode_enabled);
 		assert_cmpstr(history.find_bar.field.text, CompareOperator.EQ, "plain");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_dash_marks_a_text_that_enter_has_not_searched()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+		var lines = choice_box(window, "Changed lines");
+
+		settle(300);
+		choose(window, Gittree.SearchChoice.LINES);
+		history.search_field.text = "needle";
+		settle(300);
+
+		assert_true(lines.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+
+		history.search_field.activate();
+		settle(800);
+
+		assert_false(lines.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
+
+		check_labelled(list_bar(window), "Regex").active = true;
+		settle(300);
+
+		assert_true(lines.inconsistent);
+
+		check_labelled(list_bar(window), "Regex").active = false;
+		settle(300);
+
+		assert_false(lines.inconsistent);
+
+		click_widget(lines);
+		settle(800);
+
+		assert_false(lines.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
+
+		history.search_field.text = "plain";
+		settle(300);
+
+		assert_true(lines.inconsistent);
+
+		click_widget(lines);
+		settle(800);
+
+		assert_false(lines.inconsistent);
+		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
+		assert_cmpstr(choice_tips(window).split("|")[1], CompareOperator.EQ, "Changed lines: plain");
+
+		choose(window, Gittree.SearchChoice.FILES);
+		history.search_field.text = "q";
+		settle(300);
+
+		assert_true(choice_box(window, "Files").inconsistent);
+
+		choose(window, Gittree.SearchChoice.MESSAGES);
+		history.search_field.text = "zzz";
+		settle(300);
+
+		assert_false(choice_box(window, "Messages").inconsistent);
 
 		window.destroy();
 		repo.remove();
