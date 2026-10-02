@@ -231,6 +231,7 @@ private static void test_a_bad_expression_turns_the_field_red()
 		settle(200);
 
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Bad regex");
+		assert_cmpstr(label_with(list_bar(window), "Bad regex").tooltip_text, CompareOperator.EQ, "Unmatched ( or \\(");
 		assert_true(window.history.search_field.get_style_context().has_class("error"));
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 

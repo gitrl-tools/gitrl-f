@@ -469,6 +469,7 @@ public class DiffFindBar : Gtk.SearchBar
 		var style = d_field.get_style_context();
 
 		d_count.label = d_find.count_text();
+		d_count.tooltip_text = d_find.regex_error;
 
 		if (d_field.text != "" && d_find.length == 0)
 		{

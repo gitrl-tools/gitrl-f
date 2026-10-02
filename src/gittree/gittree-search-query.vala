@@ -37,6 +37,8 @@ public class SearchQuery : Object
 
 	public string? problem { get; private set; }
 
+	public string? regex_error { get; private set; }
+
 	public SearchQuery(string text, bool match_case, bool regex)
 	{
 		var words = /(?<![^\s])(author|message|hash|before|after):("([^"]*)"|(\S*))/;
@@ -98,6 +100,7 @@ public class SearchQuery : Object
 			if (match.error != null && problem == null)
 			{
 				problem = _("Bad regex");
+				regex_error = match.error;
 			}
 		}
 
@@ -110,6 +113,7 @@ public class SearchQuery : Object
 		if (d_plain.error != null && problem == null)
 		{
 			problem = _("Bad regex");
+			regex_error = d_plain.error;
 		}
 	}
 

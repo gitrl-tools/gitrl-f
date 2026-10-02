@@ -248,6 +248,7 @@ private static void test_a_bad_expression_turns_the_field_red()
 		search_for(window, "(");
 
 		assert_cmpstr(bar.count, CompareOperator.EQ, "Bad regex");
+		assert_cmpstr(label_with(bar, "Bad regex").tooltip_text, CompareOperator.EQ, "Unmatched ( or \\(");
 		assert_true(bar.field.get_style_context().has_class("error"));
 
 		unfold_all(window);

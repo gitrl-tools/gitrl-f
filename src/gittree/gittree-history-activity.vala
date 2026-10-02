@@ -1014,12 +1014,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		string[] paths;
 
-		if (d_choice == SearchChoice.LINES && new TextMatch(d_typed[SearchChoice.LINES], d_cases[SearchChoice.LINES], d_regexes[SearchChoice.LINES]).error != null)
-		{
-			return _("Bad regex");
-		}
-
-		if (d_choice == SearchChoice.FILES && d_regexes[SearchChoice.FILES] && new TextMatch(d_typed[SearchChoice.FILES].strip(), d_cases[SearchChoice.FILES], true).error != null)
+		if (choice_regex_error() != null)
 		{
 			return _("Bad regex");
 		}
@@ -1027,6 +1022,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (d_choice == SearchChoice.FILES && !typed_paths(out paths))
 		{
 			return _("A quote is not closed");
+		}
+
+		return null;
+	}
+
+	private string? choice_regex_error()
+	{
+		if (d_choice == SearchChoice.LINES)
+		{
+			return new TextMatch(d_typed[SearchChoice.LINES], d_cases[SearchChoice.LINES], d_regexes[SearchChoice.LINES]).error;
+		}
+
+		if (d_choice == SearchChoice.FILES && d_regexes[SearchChoice.FILES])
+		{
+			return new TextMatch(d_typed[SearchChoice.FILES].strip(), d_cases[SearchChoice.FILES], true).error;
 		}
 
 		return null;
@@ -2533,6 +2543,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			d_match_count.label = Search.count_text(d_matches, selected_row(), empty, d_query.problem);
 		}
+
+		d_match_count.tooltip_text = problem != null ? choice_regex_error() : (waiting ? null : d_query.regex_error);
 
 		if (problem != null || (!waiting && !empty && d_matches.length == 0 && d_search == null))
 		{

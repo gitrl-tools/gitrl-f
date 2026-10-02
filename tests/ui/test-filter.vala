@@ -197,6 +197,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gittree/ui/filter/a-bad-expression-in-the-bar-applies-nothing", test_a_bad_expression_in_the_bar_applies_nothing);
 	Test.add_func("/gittree/ui/filter/a-bad-regex-keeps-its-text-in-sight", test_a_bad_regex_keeps_its_text_in_sight);
+	Test.add_func("/gittree/ui/filter/a-bad-regex-names-its-fault-in-a-tooltip", test_a_bad_regex_names_its_fault_in_a_tooltip);
 	Test.add_func("/gittree/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
 	Test.add_func("/gittree/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
 	Test.add_func("/gittree/ui/filter/a-dash-marks-a-text-that-enter-has-not-searched", test_a_dash_marks_a_text_that_enter_has_not_searched);
@@ -419,6 +420,46 @@ private static void test_a_bad_regex_keeps_its_text_in_sight()
 		window.destroy();
 		repo.remove();
 		Gtk.StyleContext.remove_provider_for_screen(screen, theme);
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_bad_regex_names_its_fault_in_a_tooltip()
+{
+	try
+	{
+		var repo = fixture();
+		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
+		var history = window.history;
+
+		settle(300);
+		choose(window, Gittree.SearchChoice.FILES);
+		history.search_field.text = "*test*";
+		check_labelled(list_bar(window), "Regex").active = true;
+		settle(300);
+
+		var count = label_with(list_bar(window), "Bad regex");
+
+		assert_cmpstr(count.tooltip_text, CompareOperator.EQ, "Invalid preceding regular expression");
+
+		choose(window, Gittree.SearchChoice.LINES);
+		history.search_field.text = "(";
+		check_labelled(list_bar(window), "Regex").active = true;
+		settle(300);
+
+		assert_cmpstr(count.label, CompareOperator.EQ, "Bad regex");
+		assert_cmpstr(count.tooltip_text, CompareOperator.EQ, "Unmatched ( or \\(");
+
+		history.search_field.text = "needle";
+		settle(300);
+
+		assert_null(count.tooltip_text);
+
+		window.destroy();
+		repo.remove();
 	}
 	catch (Error e)
 	{
