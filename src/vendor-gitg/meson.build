@@ -71,13 +71,13 @@ vendor_gitg_sources = files(
 
 vendor_gitg_sources += files('libgitg/gitg-platform-support.c')
 
-vendor_gitg_sources += files('gittree-dazzle-compat.vala')
+vendor_gitg_sources += files('gitrlf-dazzle-compat.vala')
 
 vendor_gitg_resources = gnome.compile_resources(
-  'gittree-vendor-resources',
+  'gitrlf-vendor-resources',
   'libgitg/resources/resources.xml',
   source_dir: join_paths(meson.current_source_dir(), 'libgitg/resources'),
-  c_name: 'gittree_vendor',
+  c_name: 'gitrlf_vendor',
 )
 
 vendor_gitg_deps = [
@@ -101,13 +101,13 @@ vendor_gitg_vala_flags = [
 vendor_gitg_inc = include_directories('.')
 
 libvendor_gitg = static_library(
-  'gittree-vendor-gitg',
+  'gitrlf-vendor-gitg',
   vendor_gitg_sources,
   include_directories: [top_inc, vendor_gitg_inc],
   dependencies: vendor_gitg_deps,
   vala_args: vala_flags + vendor_gitg_vala_flags,
-  vala_header: 'gittree-vendor-gitg.h',
-  vala_vapi: 'gittree-vendor-gitg.vapi',
+  vala_header: 'gitrlf-vendor-gitg.h',
+  vala_vapi: 'gitrlf-vendor-gitg.vapi',
   install: false,
 )
 

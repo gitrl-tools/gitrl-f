@@ -1,29 +1,29 @@
 project(
-  'gittree', ['c', 'vala'],
+  'gitrl-f', ['c', 'vala'],
   version: '0.4.0',
   license: 'GPL-2.0-or-later',
   default_options: 'buildtype=debugoptimized',
   meson_version: '>= 0.61.0',
 )
 
-application_id = 'io.github.li9i.gittree'
-gittree_name = meson.project_name()
-gittree_binary = 'gittree'
-gittree_version = meson.project_version()
-gittree_gettext = gittree_name
+application_id = 'io.github.li9i.gitrlf'
+gitrlf_name = meson.project_name()
+gitrlf_binary = 'gitrlf'
+gitrlf_version = meson.project_version()
+gitrlf_gettext = gitrlf_name
 
 if get_option('profile') == 'development'
-  application_id = 'io.github.li9i.gittreeDevel'
+  application_id = 'io.github.li9i.gitrlfDevel'
 endif
 
-gittree_prefix = get_option('prefix')
-gittree_bindir = join_paths(gittree_prefix, get_option('bindir'))
-gittree_datadir = join_paths(gittree_prefix, get_option('datadir'))
-gittree_libdir = join_paths(gittree_prefix, get_option('libdir'))
-gittree_localedir = join_paths(gittree_prefix, get_option('localedir'))
+gitrlf_prefix = get_option('prefix')
+gitrlf_bindir = join_paths(gitrlf_prefix, get_option('bindir'))
+gitrlf_datadir = join_paths(gitrlf_prefix, get_option('datadir'))
+gitrlf_libdir = join_paths(gitrlf_prefix, get_option('libdir'))
+gitrlf_localedir = join_paths(gitrlf_prefix, get_option('localedir'))
 
-gittree_pkgdatadir = join_paths(gittree_datadir, gittree_name)
-gittree_pkglibdir = join_paths(gittree_libdir, gittree_name)
+gitrlf_pkgdatadir = join_paths(gitrlf_datadir, gitrlf_name)
+gitrlf_pkglibdir = join_paths(gitrlf_libdir, gitrlf_name)
 
 cc = meson.get_compiler('c')
 valac = meson.get_compiler('vala')
@@ -54,15 +54,15 @@ libm_dep = cc.find_library('m', required: false)
 config_h = configuration_data()
 config_h.set_quoted('APPLICATION_ID', application_id)
 config_h.set_quoted('PROFILE', get_option('profile'))
-config_h.set_quoted('GETTEXT_PACKAGE', gittree_gettext)
-config_h.set_quoted('PACKAGE_NAME', gittree_name)
-config_h.set_quoted('PACKAGE_VERSION', gittree_version)
-config_h.set_quoted('PACKAGE_URL', 'https://github.com/li9i/gittree')
-config_h.set_quoted('VERSION', gittree_version)
+config_h.set_quoted('GETTEXT_PACKAGE', gitrlf_gettext)
+config_h.set_quoted('PACKAGE_NAME', gitrlf_name)
+config_h.set_quoted('PACKAGE_VERSION', gitrlf_version)
+config_h.set_quoted('PACKAGE_URL', 'https://github.com/li9i/gitrl-f')
+config_h.set_quoted('VERSION', gitrlf_version)
 config_h.set_quoted('PLATFORM_NAME', 'unix')
-config_h.set_quoted('GITG_DATADIR', gittree_pkgdatadir)
-config_h.set_quoted('GITG_LOCALEDIR', gittree_localedir)
-config_h.set_quoted('GITG_LIBDIR', gittree_pkglibdir)
+config_h.set_quoted('GITG_DATADIR', gitrlf_pkgdatadir)
+config_h.set_quoted('GITG_LOCALEDIR', gitrlf_localedir)
+config_h.set_quoted('GITG_LIBDIR', gitrlf_pkglibdir)
 
 configure_file(
   output: 'config.h',
@@ -98,8 +98,8 @@ gnome.post_install(
 )
 
 summary({
-  'prefix': gittree_prefix,
-  'binary': gittree_binary,
+  'prefix': gitrlf_prefix,
+  'binary': gitrlf_binary,
   'application id': application_id,
   'profile': get_option('profile'),
   'visual tests': get_option('visual_tests'),

@@ -1,21 +1,21 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private static void activate_item(string label)
@@ -28,13 +28,13 @@ private static void activate_item(string label)
 	settle(800);
 }
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -90,7 +90,7 @@ private static string? header_of(Gtk.Widget file)
 	return null;
 }
 
-private static string[] headers(Gittree.Window window)
+private static string[] headers(Gitrlf.Window window)
 {
 	var names = new string[0];
 
@@ -131,7 +131,7 @@ private static Repo lines_repo() throws Error
 	return repo;
 }
 
-private static Gittree.Window lines_window(Repo repo) throws Error
+private static Gitrlf.Window lines_window(Repo repo) throws Error
 {
 	var window = opened(repo, {"refs/heads/master"});
 
@@ -147,46 +147,46 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
-	Test.add_func("/gittree/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
-	Test.add_func("/gittree/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
-	Test.add_func("/gittree/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
-	Test.add_func("/gittree/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
-	Test.add_func("/gittree/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
-	Test.add_func("/gittree/ui/diff-pane/an-added-line-offers-no-commit-that-last-changed-it", test_an_added_line_offers_no_commit_that_last_changed_it);
-	Test.add_func("/gittree/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
-	Test.add_func("/gittree/ui/diff-pane/another-commit-stops-the-rows-of-the-last", test_another_commit_stops_the_rows_of_the_last);
-	Test.add_func("/gittree/ui/diff-pane/closing-the-history-of-lines-returns-to-the-filter", test_closing_the_history_of_lines_returns_to_the_filter);
-	Test.add_func("/gittree/ui/diff-pane/details-are-gitgs", test_details_are_gitgs);
-	Test.add_func("/gittree/ui/diff-pane/details-survive-bytes-that-are-not-utf8", test_details_survive_bytes_that_are_not_utf8);
-	Test.add_func("/gittree/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
-	Test.add_func("/gittree/ui/diff-pane/diff-is-limited-to-the-paths-from-a-subfolder", test_diff_is_limited_to_the_paths_from_a_subfolder);
-	Test.add_func("/gittree/ui/diff-pane/diff-names-renames-and-binary-files", test_diff_names_renames_and_binary_files);
-	Test.add_func("/gittree/ui/diff-pane/file-folds-and-unfolds-at-once", test_file_folds_and_unfolds_at_once);
-	Test.add_func("/gittree/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
-	Test.add_func("/gittree/ui/diff-pane/file-types-of-the-repository-load-while-idle", test_file_types_of_the_repository_load_while_idle);
-	Test.add_func("/gittree/ui/diff-pane/folded-file-builds-no-text-until-it-opens", test_folded_file_builds_no_text_until_it_opens);
-	Test.add_func("/gittree/ui/diff-pane/folded-section-gives-a-text-view-once-it-unfolds", test_folded_section_gives_a_text_view_once_it_unfolds);
-	Test.add_func("/gittree/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
-	Test.add_func("/gittree/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
-	Test.add_func("/gittree/ui/diff-pane/line-offsets-point-at-the-text-of-each-line", test_line_offsets_point_at_the_text_of_each_line);
-	Test.add_func("/gittree/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
-	Test.add_func("/gittree/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
-	Test.add_func("/gittree/ui/diff-pane/sections-list-the-files-in-order-with-their-lines", test_sections_list_the_files_in_order_with_their_lines);
-	Test.add_func("/gittree/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
-	Test.add_func("/gittree/ui/diff-pane/selected-lines-show-their-history", test_selected_lines_show_their_history);
-	Test.add_func("/gittree/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
-	Test.add_func("/gittree/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
-	Test.add_func("/gittree/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
-	Test.add_func("/gittree/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
-	Test.add_func("/gittree/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
-	Test.add_func("/gittree/ui/diff-pane/word-mark-colours", test_word_mark_colours);
-	Test.add_func("/gittree/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
-	Test.add_func("/gittree/ui/diff-pane/word-marks-reach-across-a-no-newline-marker", test_word_marks_reach_across_a_no_newline_marker);
+	Test.add_func("/gitrlf/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
+	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
+	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
+	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
+	Test.add_func("/gitrlf/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
+	Test.add_func("/gitrlf/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
+	Test.add_func("/gitrlf/ui/diff-pane/an-added-line-offers-no-commit-that-last-changed-it", test_an_added_line_offers_no_commit_that_last_changed_it);
+	Test.add_func("/gitrlf/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
+	Test.add_func("/gitrlf/ui/diff-pane/another-commit-stops-the-rows-of-the-last", test_another_commit_stops_the_rows_of_the_last);
+	Test.add_func("/gitrlf/ui/diff-pane/closing-the-history-of-lines-returns-to-the-filter", test_closing_the_history_of_lines_returns_to_the_filter);
+	Test.add_func("/gitrlf/ui/diff-pane/details-are-gitgs", test_details_are_gitgs);
+	Test.add_func("/gitrlf/ui/diff-pane/details-survive-bytes-that-are-not-utf8", test_details_survive_bytes_that_are_not_utf8);
+	Test.add_func("/gitrlf/ui/diff-pane/diff-is-limited-to-the-paths", test_diff_is_limited_to_the_paths);
+	Test.add_func("/gitrlf/ui/diff-pane/diff-is-limited-to-the-paths-from-a-subfolder", test_diff_is_limited_to_the_paths_from_a_subfolder);
+	Test.add_func("/gitrlf/ui/diff-pane/diff-names-renames-and-binary-files", test_diff_names_renames_and_binary_files);
+	Test.add_func("/gitrlf/ui/diff-pane/file-folds-and-unfolds-at-once", test_file_folds_and_unfolds_at_once);
+	Test.add_func("/gitrlf/ui/diff-pane/file-names-with-spaces-or-quotes-are-read-whole", test_file_names_with_spaces_or_quotes_are_read_whole);
+	Test.add_func("/gitrlf/ui/diff-pane/file-types-of-the-repository-load-while-idle", test_file_types_of_the_repository_load_while_idle);
+	Test.add_func("/gitrlf/ui/diff-pane/folded-file-builds-no-text-until-it-opens", test_folded_file_builds_no_text_until_it_opens);
+	Test.add_func("/gitrlf/ui/diff-pane/folded-section-gives-a-text-view-once-it-unfolds", test_folded_section_gives_a_text_view_once_it_unfolds);
+	Test.add_func("/gitrlf/ui/diff-pane/known-language-is-highlighted", test_known_language_is_highlighted);
+	Test.add_func("/gitrlf/ui/diff-pane/line-numbers-follow-the-hunk-header", test_line_numbers_follow_the_hunk_header);
+	Test.add_func("/gitrlf/ui/diff-pane/line-offsets-point-at-the-text-of-each-line", test_line_offsets_point_at_the_text_of_each_line);
+	Test.add_func("/gitrlf/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
+	Test.add_func("/gitrlf/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
+	Test.add_func("/gitrlf/ui/diff-pane/sections-list-the-files-in-order-with-their-lines", test_sections_list_the_files_in_order_with_their_lines);
+	Test.add_func("/gitrlf/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
+	Test.add_func("/gitrlf/ui/diff-pane/selected-lines-show-their-history", test_selected_lines_show_their_history);
+	Test.add_func("/gitrlf/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
+	Test.add_func("/gitrlf/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
+	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
+	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
+	Test.add_func("/gitrlf/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
+	Test.add_func("/gitrlf/ui/diff-pane/word-mark-colours", test_word_mark_colours);
+	Test.add_func("/gitrlf/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
+	Test.add_func("/gitrlf/ui/diff-pane/word-marks-reach-across-a-no-newline-marker", test_word_marks_reach_across_a_no_newline_marker);
 	return Test.run();
 }
 
-private static string marked_words(Gittree.Window window, string tag_name, bool shown = false)
+private static string marked_words(Gitrlf.Window window, string tag_name, bool shown = false)
 {
 	var words = new string[0];
 
@@ -258,7 +258,7 @@ private static string offsets_in(Gitg.DiffViewFile file, Gtk.TextView view)
 	return string.joinv("|", texts);
 }
 
-private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths = {}, File? directory = null) throws Error
+private static Gitrlf.Window opened(Repo repo, string[] ticked, string[] paths = {}, File? directory = null) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 
@@ -267,9 +267,9 @@ private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths 
 		ticks.add(name);
 	}
 
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	window.set_default_size(1200, 900);
-	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, paths, directory != null ? directory : repo.path);
+	window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, paths, directory != null ? directory : repo.path);
 	window.show();
 	settle(300);
 	window.history.paned.details_visible = true;
@@ -291,7 +291,7 @@ private static Repo renamed_repo() throws Error
 	return repo;
 }
 
-private static void right_click_file(Gittree.Window window, string name)
+private static void right_click_file(Gitrlf.Window window, string name)
 {
 	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.Label)))
 	{
@@ -306,7 +306,7 @@ private static void right_click_file(Gittree.Window window, string name)
 	error("no file %s in the diff", name);
 }
 
-private static void right_click_text(Gittree.Window window, string text, int side)
+private static void right_click_text(Gitrlf.Window window, string text, int side)
 {
 	var view = window.history.diff_view.get_files()[0].get_text_views()[side];
 	Gtk.TextIter start;
@@ -349,7 +349,7 @@ private static Repo seam_repo() throws Error
 	return repo;
 }
 
-private static void select_subject(Gittree.Window window, string subject)
+private static void select_subject(Gitrlf.Window window, string subject)
 {
 	var rows = window.history.rows();
 
@@ -377,7 +377,7 @@ private static void settle(int milliseconds)
 	}
 }
 
-private static void show_split(Gittree.Window window)
+private static void show_split(Gitrlf.Window window)
 {
 	foreach (var widget in find_all(window.history.diff_view, typeof(Gtk.ToggleButton)))
 	{
@@ -406,7 +406,7 @@ private static bool shows_text(Gtk.Widget file)
 	return false;
 }
 
-private static string source_text(Gittree.Window window)
+private static string source_text(Gitrlf.Window window)
 {
 	var text = new StringBuilder();
 
@@ -423,7 +423,7 @@ private static string source_text(Gittree.Window window)
 	return text.str;
 }
 
-private static string subjects(Gittree.Window window)
+private static string subjects(Gitrlf.Window window)
 {
 	var names = new string[0];
 
@@ -447,10 +447,10 @@ private static void test_a_bare_repository_offers_only_the_history_of_a_file()
 		var ticks = new Gee.HashSet<string>();
 		ticks.add("refs/heads/master");
 
-		var window = new Gittree.Window(application());
+		var window = new Gitrlf.Window(application());
 
 		window.set_default_size(1200, 800);
-		window.open_repository(Gittree.Application.discover_repository(bare), ticks);
+		window.open_repository(Gitrlf.Application.discover_repository(bare), ticks);
 		window.show();
 		settle(300);
 		select_subject(window, "edit new");
@@ -484,7 +484,7 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		var window = opened(repo, {"refs/heads/master"});
 
 		window.history.search_visible = true;
-		window.history.search_choice = Gittree.SearchChoice.LINES;
+		window.history.search_choice = Gitrlf.SearchChoice.LINES;
 		window.history.search_field.text = "something";
 		select_subject(window, "edit new");
 		window.history.paned.details_visible = true;
@@ -510,10 +510,10 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that change new.c, following renames");
 		assert_true(window.history.search_visible);
 		assert_true(window.history.only_matches);
-		assert_true(window.history.search_choice == Gittree.SearchChoice.FILES);
+		assert_true(window.history.search_choice == Gitrlf.SearchChoice.FILES);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "new.c");
 
-		window.history.search_choice = Gittree.SearchChoice.LINES;
+		window.history.search_choice = Gitrlf.SearchChoice.LINES;
 
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "");
 
@@ -568,10 +568,10 @@ private static void test_a_long_line_of_the_message_wraps()
 
 		repo.commit_bytes("long\n\n" + words.str + "\n" + words.str + "\n" + words.str, "f.c", "a\n".data);
 
-		var window = new Gittree.Window(application());
+		var window = new Gitrlf.Window(application());
 
 		window.set_default_size(1200, 900);
-		window.open_repository(Gittree.Application.discover_repository(repo.path), null, {}, repo.path);
+		window.open_repository(Gitrlf.Application.discover_repository(repo.path), null, {}, repo.path);
 		window.show();
 		settle(300);
 		select_subject(window, "long");
@@ -1275,7 +1275,7 @@ private static void test_orientation_follows_the_layout_setting()
 		var repo = Repo.create();
 		repo.commit("first");
 
-		var settings = new Settings(Gittree.Config.APPLICATION_ID + ".preferences.interface");
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".preferences.interface");
 		var window = opened(repo, {"refs/heads/master"});
 		var panels = window.history.paned.paned_panels;
 

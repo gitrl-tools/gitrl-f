@@ -1,30 +1,30 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -58,7 +58,7 @@ private static Repo beyond_fixture() throws Error
 	return repo;
 }
 
-private static Gtk.Button button(Gittree.Window window, string tooltip)
+private static Gtk.Button button(Gitrlf.Window window, string tooltip)
 {
 	foreach (var widget in find_all(window.history.widget, typeof(Gtk.Button)))
 	{
@@ -100,38 +100,38 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
-	Test.add_func("/gittree/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
-	Test.add_func("/gittree/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
-	Test.add_func("/gittree/ui/search/a-messages-search-makes-the-hash-of-each-match-bold", test_a_messages_search_makes_the_hash_of_each_match_bold);
-	Test.add_func("/gittree/ui/search/a-messages-search-waits-for-enter", test_a_messages_search_waits_for_enter);
-	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
-	Test.add_func("/gittree/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
-	Test.add_func("/gittree/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
-	Test.add_func("/gittree/ui/search/escape-lifts-the-search-keeps-the-text-and-gives-the-focus-back", test_escape_lifts_the_search_keeps_the_text_and_gives_the_focus_back);
-	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
-	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
-	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
-	Test.add_func("/gittree/ui/search/only-matches-keeps-the-selection-out-of-the-list", test_only_matches_keeps_the_selection_out_of_the_list);
-	Test.add_func("/gittree/ui/search/only-matches-narrows-with-each-search", test_only_matches_narrows_with_each_search);
-	Test.add_func("/gittree/ui/search/only-matches-with-nothing-shows-a-notice", test_only_matches_with_nothing_shows_a_notice);
-	Test.add_func("/gittree/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
-	Test.add_func("/gittree/ui/search/search-words-narrow-the-list", test_search_words_narrow_the_list);
-	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
-	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
-	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
-	Test.add_func("/gittree/ui/search/the-close-button-closes-the-bar-and-lifts-the-search", test_the_close_button_closes_the_bar_and_lifts_the_search);
-	Test.add_func("/gittree/ui/search/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
-	Test.add_func("/gittree/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
-	Test.add_func("/gittree/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
-	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
-	Test.add_func("/gittree/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
-	Test.add_func("/gittree/ui/search/typing-moves-nothing", test_typing_moves_nothing);
+	Test.add_func("/gitrlf/ui/search/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
+	Test.add_func("/gitrlf/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
+	Test.add_func("/gitrlf/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
+	Test.add_func("/gitrlf/ui/search/a-messages-search-makes-the-hash-of-each-match-bold", test_a_messages_search_makes_the_hash_of_each_match_bold);
+	Test.add_func("/gitrlf/ui/search/a-messages-search-waits-for-enter", test_a_messages_search_waits_for_enter);
+	Test.add_func("/gitrlf/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
+	Test.add_func("/gitrlf/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
+	Test.add_func("/gitrlf/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
+	Test.add_func("/gitrlf/ui/search/escape-lifts-the-search-keeps-the-text-and-gives-the-focus-back", test_escape_lifts_the_search_keeps_the_text_and_gives_the_focus_back);
+	Test.add_func("/gitrlf/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
+	Test.add_func("/gitrlf/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
+	Test.add_func("/gitrlf/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gitrlf/ui/search/only-matches-keeps-the-selection-out-of-the-list", test_only_matches_keeps_the_selection_out_of_the_list);
+	Test.add_func("/gitrlf/ui/search/only-matches-narrows-with-each-search", test_only_matches_narrows_with_each_search);
+	Test.add_func("/gitrlf/ui/search/only-matches-with-nothing-shows-a-notice", test_only_matches_with_nothing_shows_a_notice);
+	Test.add_func("/gitrlf/ui/search/opening-again-selects-the-kept-text", test_opening_again_selects_the_kept_text);
+	Test.add_func("/gitrlf/ui/search/search-words-narrow-the-list", test_search_words_narrow_the_list);
+	Test.add_func("/gitrlf/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
+	Test.add_func("/gitrlf/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
+	Test.add_func("/gitrlf/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
+	Test.add_func("/gitrlf/ui/search/the-close-button-closes-the-bar-and-lifts-the-search", test_the_close_button_closes_the_bar_and_lifts_the_search);
+	Test.add_func("/gitrlf/ui/search/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
+	Test.add_func("/gitrlf/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
+	Test.add_func("/gitrlf/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
+	Test.add_func("/gitrlf/ui/search/tick-searches-again", test_tick_searches_again);
+	Test.add_func("/gitrlf/ui/search/ticking-nothing-counts-no-match", test_ticking_nothing_counts_no_match);
+	Test.add_func("/gitrlf/ui/search/typing-moves-nothing", test_typing_moves_nothing);
 
 	return Test.run();
 }
 
-private static int marked_pixels(Gittree.Window window, int index)
+private static int marked_pixels(Gitrlf.Window window, int index)
 {
 	var view = window.history.paned.commit_list_view;
 	var column = view.get_column(index);
@@ -162,14 +162,14 @@ private static int marked_pixels(Gittree.Window window, int index)
 	return count;
 }
 
-private static Gittree.Window opened(Repo repo) throws Error
+private static Gitrlf.Window opened(Repo repo) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 	ticks.add("refs/heads/master");
 	ticks.add("refs/heads/feature/scan");
 
-	var window = new Gittree.Window(application());
-	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path);
+	var window = new Gitrlf.Window(application());
+	window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, {}, repo.path);
 	window.set_default_size(1000, 600);
 	window.show();
 	settle(100);
@@ -177,7 +177,7 @@ private static Gittree.Window opened(Repo repo) throws Error
 	return window;
 }
 
-private static Gittree.Window opened_with(Repo repo, string[] ticked) throws Error
+private static Gitrlf.Window opened_with(Repo repo, string[] ticked) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 
@@ -186,8 +186,8 @@ private static Gittree.Window opened_with(Repo repo, string[] ticked) throws Err
 		ticks.add(name);
 	}
 
-	var window = new Gittree.Window(application());
-	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path);
+	var window = new Gitrlf.Window(application());
+	window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, {}, repo.path);
 	window.set_default_size(1000, 600);
 	window.show();
 	settle(100);
@@ -195,7 +195,7 @@ private static Gittree.Window opened_with(Repo repo, string[] ticked) throws Err
 	return window;
 }
 
-private static void search_for(Gittree.Window window, string text)
+private static void search_for(Gitrlf.Window window, string text)
 {
 	window.history.search_visible = true;
 	window.history.search_field.text = text;
@@ -216,7 +216,7 @@ private static void settle(int milliseconds)
 	}
 }
 
-private static string subjects(Gittree.Window window)
+private static string subjects(Gitrlf.Window window)
 {
 	var names = new string[0];
 

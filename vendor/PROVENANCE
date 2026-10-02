@@ -1,11 +1,11 @@
 # Vendored source provenance
 
-gittree vendors part of the source of gitg. This file records what was
+gitrl-f vendors part of the source of gitg. This file records what was
 vendored and where it came from. It also gives the evidence that it is the
 source of the gitg installed on the target platform.
 
 Recorded: 2026-07-21, for gitrl-z, which vendors the same source.
-Checked again: 2026-09-25, for gittree.
+Checked again: 2026-09-25, for gitrl-f.
 
 ## Upstream
 
@@ -18,10 +18,10 @@ Checked again: 2026-09-25, for gittree.
 
 `./fetch-upstream.sh` fetches the tarball again, verifies it and extracts it
 into `vendor/upstream/`. That tree is not committed. It is 19 MB of code that
-gittree does not change, and the checksum above makes it again on demand. The
+gitrl-f does not change, and the checksum above makes it again on demand. The
 repository holds the part cut from it, in `src/vendor-gitg/`, and each patch
 to that part, in `vendor/patches/`. Four more files are gitg 44's, byte for
-byte: `src/gittree/resources/ui/style.css`, and `config.vapi`,
+byte: `src/gitrlf/resources/ui/style.css`, and `config.vapi`,
 `gitg-platform-support.vapi` and `gsettings-desktop-schemas.vapi` in `vapi/`.
 `tests/vendor/check-closure.sh` compares them with upstream.
 
@@ -37,7 +37,7 @@ on both dates.
 ## Does the vendored source match the installed gitg?
 
 Yes, exactly. This was checked, not assumed, because the comparison of
-gittree's window with gitg's depends on it.
+gitrl-f's window with gitg's depends on it.
 
 Ubuntu's `gitg_44.orig.tar.xz` is not the same tarball as GNOME's
 `gitg-44.tar.xz`. Ubuntu's tarballs are in
@@ -78,7 +78,7 @@ Thus GNOME's `gitg-44.tar.xz` is byte for byte the source that Ubuntu built
 patch is necessary.
 
 gitrl-z took this evidence on 2026-07-21. On 2026-09-25 each step was done
-again for gittree, from fresh downloads of the three tarballs, and each result
+again for gitrl-f, from fresh downloads of the three tarballs, and each result
 above was the same.
 
 ## Ubuntu packaging tarball
@@ -91,5 +91,5 @@ packaging for this version, kept for reference. Its `Build-Depends` lists
 
 ## Licence
 
-gitg is GPL-2.0-or-later. Because gittree vendors its source, gittree is
+gitg is GPL-2.0-or-later. Because gitrl-f vendors its source, gitrl-f is
 GPL-2.0-or-later too. Refer to `COPYING`.

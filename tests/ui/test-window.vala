@@ -1,31 +1,31 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GittreeTest
+namespace GitrlfTest
 {
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -75,13 +75,13 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/window/about-credits-the-logo-and-links-the-site", test_about_credits_the_logo_and_links_the_site);
-	Test.add_func("/gittree/ui/window/header-bar-order", test_header_bar_order);
-	Test.add_func("/gittree/ui/window/menu-entries", test_menu_entries);
-	Test.add_func("/gittree/ui/window/shortcuts", test_shortcuts);
-	Test.add_func("/gittree/ui/window/size-is-kept", test_size_is_kept);
-	Test.add_func("/gittree/ui/window/title-and-subtitle", test_title_and_subtitle);
-	Test.add_func("/gittree/ui/window/two-runs-are-two-processes", test_two_runs_are_two_processes);
+	Test.add_func("/gitrlf/ui/window/about-credits-the-logo-and-links-the-site", test_about_credits_the_logo_and_links_the_site);
+	Test.add_func("/gitrlf/ui/window/header-bar-order", test_header_bar_order);
+	Test.add_func("/gitrlf/ui/window/menu-entries", test_menu_entries);
+	Test.add_func("/gitrlf/ui/window/shortcuts", test_shortcuts);
+	Test.add_func("/gitrlf/ui/window/size-is-kept", test_size_is_kept);
+	Test.add_func("/gitrlf/ui/window/title-and-subtitle", test_title_and_subtitle);
+	Test.add_func("/gitrlf/ui/window/two-runs-are-two-processes", test_two_runs_are_two_processes);
 
 	return Test.run();
 }
@@ -103,7 +103,7 @@ private static Repo new_repository()
 private static void test_about_credits_the_logo_and_links_the_site()
 {
 	var app = application();
-	var window = new Gittree.Window(app);
+	var window = new Gitrlf.Window(app);
 
 	window.show();
 	drain();
@@ -122,10 +122,10 @@ private static void test_about_credits_the_logo_and_links_the_site()
 	}
 
 	assert_nonnull(about);
-	assert_cmpstr(about.logo_icon_name, CompareOperator.EQ, Gittree.Config.APPLICATION_ID);
-	assert_cmpstr(about.website, CompareOperator.EQ, "https://github.com/li9i/gittree");
+	assert_cmpstr(about.logo_icon_name, CompareOperator.EQ, Gitrlf.Config.APPLICATION_ID);
+	assert_cmpstr(about.website, CompareOperator.EQ, "https://github.com/li9i/gitrl-f");
 	assert_true("Git logo by Jason Long, CC BY 3.0" in string.joinv("|", about.artists));
-	assert_cmpstr(Gtk.Window.get_default_icon_name(), CompareOperator.EQ, Gittree.Config.APPLICATION_ID);
+	assert_cmpstr(Gtk.Window.get_default_icon_name(), CompareOperator.EQ, Gitrlf.Config.APPLICATION_ID);
 
 	about.destroy();
 	window.destroy();
@@ -133,7 +133,7 @@ private static void test_about_credits_the_logo_and_links_the_site()
 
 private static void test_header_bar_order()
 {
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	var repo = new_repository();
 
 	window.open_repository(repo.path);
@@ -170,7 +170,7 @@ private static void test_header_bar_order()
 
 private static void test_menu_entries()
 {
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	Gtk.MenuButton? menu_button = null;
 
 	var bar = window.get_titlebar() as Gtk.HeaderBar;
@@ -186,7 +186,7 @@ private static void test_menu_entries()
 
 	assert_nonnull(menu_button);
 	assert_cmpstr(string.joinv("|", labels_of(menu_button.menu_model)), CompareOperator.EQ,
-	              "0:_New Window:app.new-window|1:_Reload:win.reload|2:_Preferences:win.preferences|2:_About gittree:app.about|2:_Quit:app.quit");
+	              "0:_New Window:app.new-window|1:_Reload:win.reload|2:_Preferences:win.preferences|2:_About gitrl-f:app.about|2:_Quit:app.quit");
 
 	window.destroy();
 }
@@ -201,10 +201,10 @@ private static void test_shortcuts()
 
 private static void test_size_is_kept()
 {
-	var settings = new Settings(Gittree.Config.APPLICATION_ID + ".state.window");
+	var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
 	settings.set_value("size", new Variant("(ii)", 700, 520));
 
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	window.show();
 	drain();
 
@@ -235,10 +235,10 @@ private static void test_size_is_kept()
 
 private static void test_title_and_subtitle()
 {
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	var bar = window.get_titlebar() as Gtk.HeaderBar;
 
-	assert_cmpstr(bar.title, CompareOperator.EQ, "gittree");
+	assert_cmpstr(bar.title, CompareOperator.EQ, "gitrl-f");
 	assert_null(bar.subtitle);
 
 	var repo = new_repository();
@@ -249,7 +249,7 @@ private static void test_title_and_subtitle()
 
 	window.show_dash();
 
-	assert_cmpstr(bar.title, CompareOperator.EQ, "gittree");
+	assert_cmpstr(bar.title, CompareOperator.EQ, "gitrl-f");
 	assert_null(bar.subtitle);
 
 	window.destroy();
@@ -259,7 +259,7 @@ private static void test_title_and_subtitle()
 private static void test_two_runs_are_two_processes()
 {
 	var repo = new_repository();
-	string[] argv = { Environment.get_variable("GITTREE_BINARY"), null };
+	string[] argv = { Environment.get_variable("GITRLF_BINARY"), null };
 	Pid first;
 	Pid second;
 

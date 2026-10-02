@@ -1,24 +1,24 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
-private static string[] all_names(Gee.List<Gittree.Ref> refs)
+private static string[] all_names(Gee.List<Gitrlf.Ref> refs)
 {
 	var names = new string[0];
 
@@ -44,7 +44,7 @@ private static string[] args_with_paths(string[] arguments, string[] paths)
 	return all;
 }
 
-private static void check(Repo repo, Gittree.History history, Gee.List<Gittree.Ref> refs, Gee.Set<string> found, string[] paths, string drawn) throws Error
+private static void check(Repo repo, Gitrlf.History history, Gee.List<Gitrlf.Ref> refs, Gee.Set<string> found, string[] paths, string drawn) throws Error
 {
 	var rows = ticked(history, refs, all_names(refs));
 	var shown = new Gee.HashSet<string>();
@@ -60,14 +60,14 @@ private static void check(Repo repo, Gittree.History history, Gee.List<Gittree.R
 	assert_cmpstr(lines_of(history, rows), CompareOperator.EQ, drawn);
 }
 
-private static Gittree.History filtered(Repo repo, string text, bool ignore_case, string[] paths, out Gee.List<Gittree.Ref> refs, out Gee.Set<string> found) throws Error
+private static Gitrlf.History filtered(Repo repo, string text, bool ignore_case, string[] paths, out Gee.List<Gitrlf.Ref> refs, out Gee.Set<string> found) throws Error
 {
-	var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
+	var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
 
-	refs = Gittree.Refs.read(repository);
+	refs = Gitrlf.Refs.read(repository);
 
-	var base_history = paths.length > 0 ? new Gittree.History.with_paths(repository, refs, paths, repo.path, false)
-	                                    : new Gittree.History(repository, refs, false);
+	var base_history = paths.length > 0 ? new Gitrlf.History.with_paths(repository, refs, paths, repo.path, false)
+	                                    : new Gitrlf.History(repository, refs, false);
 	string[] search = { "log", "--branches", "--tags", "--remotes", "--format=%H", "-S" + text };
 
 	if (ignore_case)
@@ -75,7 +75,7 @@ private static Gittree.History filtered(Repo repo, string text, bool ignore_case
 		search += "-i";
 	}
 
-	var matches = Gittree.History.id_set();
+	var matches = Gitrlf.History.id_set();
 
 	found = new Gee.HashSet<string>();
 
@@ -88,7 +88,7 @@ private static Gittree.History filtered(Repo repo, string text, bool ignore_case
 		}
 	}
 
-	return new Gittree.History.filtered(base_history, matches, refs);
+	return new Gitrlf.History.filtered(base_history, matches, refs);
 }
 
 private static string joined(Repo repo, string[] paths, Gee.Set<string> found) throws Error
@@ -167,7 +167,7 @@ private static string joined(Repo repo, string[] paths, Gee.Set<string> found) t
 	return string.joinv(" ", lines);
 }
 
-private static string lines_of(Gittree.History history, Gitg.Commit[] rows)
+private static string lines_of(Gitrlf.History history, Gitg.Commit[] rows)
 {
 	var lines = new string[0];
 
@@ -190,13 +190,13 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/filter-history/a-commit-that-only-moves-the-text-is-not-shown", test_a_commit_that_only_moves_the_text_is_not_shown);
-	Test.add_func("/gittree/filter-history/a-merge-tip-starts-from-the-matches-of-both-sides", test_a_merge_tip_starts_from_the_matches_of_both_sides);
-	Test.add_func("/gittree/filter-history/a-path-limit-applies-as-well", test_a_path_limit_applies_as_well);
-	Test.add_func("/gittree/filter-history/a-side-branch-with-no-match-draws-no-second-line", test_a_side_branch_with_no_match_draws_no_second_line);
-	Test.add_func("/gittree/filter-history/a-straight-line-joins-across-the-commits-left-out", test_a_straight_line_joins_across_the_commits_left_out);
-	Test.add_func("/gittree/filter-history/case-is-matched-unless-it-is-ignored", test_case_is_matched_unless_it_is_ignored);
-	Test.add_func("/gittree/filter-history/path-limit-starts-stay-lists-of-one", test_path_limit_starts_stay_lists_of_one);
+	Test.add_func("/gitrlf/filter-history/a-commit-that-only-moves-the-text-is-not-shown", test_a_commit_that_only_moves_the_text_is_not_shown);
+	Test.add_func("/gitrlf/filter-history/a-merge-tip-starts-from-the-matches-of-both-sides", test_a_merge_tip_starts_from_the_matches_of_both_sides);
+	Test.add_func("/gitrlf/filter-history/a-path-limit-applies-as-well", test_a_path_limit_applies_as_well);
+	Test.add_func("/gitrlf/filter-history/a-side-branch-with-no-match-draws-no-second-line", test_a_side_branch_with_no_match_draws_no_second_line);
+	Test.add_func("/gitrlf/filter-history/a-straight-line-joins-across-the-commits-left-out", test_a_straight_line_joins_across_the_commits_left_out);
+	Test.add_func("/gitrlf/filter-history/case-is-matched-unless-it-is-ignored", test_case_is_matched_unless_it_is_ignored);
+	Test.add_func("/gitrlf/filter-history/path-limit-starts-stay-lists-of-one", test_path_limit_starts_stay_lists_of_one);
 
 	return Test.run();
 }
@@ -241,7 +241,7 @@ private static void test_a_commit_that_only_moves_the_text_is_not_shown()
 	try
 	{
 		var repo = Repo.create();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		Gee.Set<string> found;
 
 		set_file(repo, "f", "needle\nplain\n", "a");
@@ -264,7 +264,7 @@ private static void test_a_merge_tip_starts_from_the_matches_of_both_sides()
 	try
 	{
 		var repo = Repo.create();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		Gee.Set<string> found;
 
 		repo.commit("r", "f", "needle");
@@ -296,7 +296,7 @@ private static void test_a_path_limit_applies_as_well()
 	try
 	{
 		var repo = Repo.create();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		Gee.Set<string> found;
 
 		repo.commit("a", "p", "needle");
@@ -324,7 +324,7 @@ private static void test_a_side_branch_with_no_match_draws_no_second_line()
 	try
 	{
 		var repo = Repo.create();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		Gee.Set<string> found;
 
 		repo.commit("m1", "f", "needle");
@@ -355,7 +355,7 @@ private static void test_a_straight_line_joins_across_the_commits_left_out()
 	try
 	{
 		var repo = Repo.create();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		Gee.Set<string> found;
 
 		repo.commit("a", "f", "needle");
@@ -383,7 +383,7 @@ private static void test_case_is_matched_unless_it_is_ignored()
 	try
 	{
 		var repo = Repo.create();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		Gee.Set<string> found;
 
 		repo.commit("c1", "f", "Needle");
@@ -414,9 +414,9 @@ private static void test_path_limit_starts_stay_lists_of_one()
 		repo.commit("a", "p", "one");
 		repo.commit("b", "q", "two");
 
-		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
-		var refs = Gittree.Refs.read(repository);
-		var history = new Gittree.History.with_paths(repository, refs, {"p"}, repo.path, false);
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var refs = Gitrlf.Refs.read(repository);
+		var history = new Gitrlf.History.with_paths(repository, refs, {"p"}, repo.path, false);
 		var master = new Ggit.OId.from_string(repo.git({"rev-parse", "master"}).strip());
 
 		assert_cmpint(history.starts_of(master).length, CompareOperator.EQ, 1);
@@ -430,7 +430,7 @@ private static void test_path_limit_starts_stay_lists_of_one()
 	}
 }
 
-private static Gitg.Commit[] ticked(Gittree.History history, Gee.List<Gittree.Ref> refs, string[] names)
+private static Gitg.Commit[] ticked(Gitrlf.History history, Gee.List<Gitrlf.Ref> refs, string[] names)
 {
 	var tips = new Ggit.OId[0];
 

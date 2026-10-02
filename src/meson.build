@@ -1,2 +1,2 @@
 subdir('vendor-gitg')
-subdir('gittree')
+subdir('gitrlf')

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Time the window of the Python prototype as gittree-bench --window times gittree's.
+"""Time the window of the Python prototype as gitrlf-bench --window times gitrl-f's.
 
 The prototype is read from commit 5ccd222 of the dotfiles repository, as
 tests/parity/dump-prototype.py reads it. The script opens its window on a
 repository, ticks every ref, ticks each named ref alone, reloads, and prints
-each time and the peak resident memory in the words gittree-bench uses. Each
+each time and the peak resident memory in the words gitrlf-bench uses. Each
 step is timed until GTK has no more events to handle, so the draw is included.
 
     prototype-window.py <repository> [<full ref name>...]

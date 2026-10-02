@@ -6,7 +6,7 @@ root=$(dirname "$(dirname "$(readlink -f "$0")")")
 
 scene=${1:-all}
 
-binary=$root/_build/src/gittree/gittree
+binary=$root/_build/src/gitrlf/gitrlf
 
 case "$scene" in
 ticks|pane|still)
@@ -22,7 +22,7 @@ all)
 esac
 
 if [ ! -x "$binary" ]; then
-	echo "capture-demo.sh: gittree not built; run scripts/dev.sh build first" >&2
+	echo "capture-demo.sh: gitrlf not built; run scripts/dev.sh build first" >&2
 	exit 1
 fi
 
@@ -173,8 +173,8 @@ mkdir -p "$root/docs/screenshots"
 for name in $scenes; do
 	case "$name" in
 	still)
-		record "$root/docs/screenshots/gittree.png" still 0
-		echo "captured $root/docs/screenshots/gittree.png"
+		record "$root/docs/screenshots/gitrlf.png" still 0
+		echo "captured $root/docs/screenshots/gitrlf.png"
 		continue
 		;;
 	ticks)

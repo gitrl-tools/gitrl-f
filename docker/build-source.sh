@@ -8,9 +8,9 @@ suffix=${2:-}
 src=/src
 full=$(dpkg-parsechangelog -l "$src/debian/changelog" -S Version)
 upstream=${full%-*}
-orig="gittree_$upstream.orig.tar.gz"
-work=/tmp/gittree-build-source
-pkgdir="$work/gittree-$upstream"
+orig="gitrl-f_$upstream.orig.tar.gz"
+work=/tmp/gitrlf-build-source
+pkgdir="$work/gitrl-f-$upstream"
 
 rm -rf "$work"
 mkdir -p "$pkgdir" "$src/_build/ppa"
@@ -32,7 +32,7 @@ fi
 
 if [ -n "$series" ] || [ -n "$suffix" ]; then
     target=${series:-$(dpkg-parsechangelog -l "$pkgdir/debian/changelog" -S Distribution)}
-    sed -i "1s|.*|gittree ($full$suffix) $target; urgency=medium|" \
+    sed -i "1s|.*|gitrl-f ($full$suffix) $target; urgency=medium|" \
         "$pkgdir/debian/changelog"
     echo "retargeted to $full$suffix $target"
 fi
@@ -41,10 +41,10 @@ cd "$pkgdir"
 
 dpkg-buildpackage -S $saflag -us -uc
 
-cp "$work"/gittree_*.dsc \
-   "$work"/gittree_*.debian.tar.* \
-   "$work"/gittree_*_source.changes \
-   "$work"/gittree_*_source.buildinfo \
+cp "$work"/gitrl-f_*.dsc \
+   "$work"/gitrl-f_*.debian.tar.* \
+   "$work"/gitrl-f_*_source.changes \
+   "$work"/gitrl-f_*_source.buildinfo \
    "$src/_build/ppa/" 2>/dev/null || true
 
 echo "--- source package ---"

@@ -1,30 +1,30 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -39,7 +39,7 @@ private static Gittree.Application application()
 	return app;
 }
 
-private static Gtk.Button button(Gittree.DiffFindBar bar, string tooltip)
+private static Gtk.Button button(Gitrlf.DiffFindBar bar, string tooltip)
 {
 	foreach (var widget in find_all(bar, typeof(Gtk.Button)))
 	{
@@ -52,7 +52,7 @@ private static Gtk.Button button(Gittree.DiffFindBar bar, string tooltip)
 	error("no button %s", tooltip);
 }
 
-private static bool focus_in(Gittree.Window window, Gtk.Widget area)
+private static bool focus_in(Gitrlf.Window window, Gtk.Widget area)
 {
 	var focus = window.get_focus();
 
@@ -63,29 +63,29 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/diff-find/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
-	Test.add_func("/gittree/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
-	Test.add_func("/gittree/ui/diff-find/a-regex-narrows-the-marks", test_a_regex_narrows_the_marks);
-	Test.add_func("/gittree/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-leaves-a-selection-over-two-lines", test_ctrl_f_leaves_a_selection_over_two_lines);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-takes-a-selection-on-one-line", test_ctrl_f_takes_a_selection_on_one_line);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-pane-open-finds-in-the-diff-from-the-list", test_ctrl_f_with_the_pane_open_finds_in_the_diff_from_the_list);
-	Test.add_func("/gittree/ui/diff-find/ctrl-f-with-the-pane-shut-opens-the-list-bar", test_ctrl_f_with_the_pane_shut_opens_the_list_bar);
-	Test.add_func("/gittree/ui/diff-find/escape-after-ctrl-f-in-the-list-gives-the-focus-back-to-the-list", test_escape_after_ctrl_f_in_the_list_gives_the_focus_back_to_the_list);
-	Test.add_func("/gittree/ui/diff-find/escape-in-the-field-closes-the-bar-and-keeps-the-text", test_escape_in_the_field_closes_the_bar_and_keeps_the_text);
-	Test.add_func("/gittree/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
-	Test.add_func("/gittree/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
-	Test.add_func("/gittree/ui/diff-find/one-bar-at-the-bottom-scrolls-the-file-of-the-current-match", test_one_bar_at_the_bottom_scrolls_the_file_of_the_current_match);
-	Test.add_func("/gittree/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
-	Test.add_func("/gittree/ui/diff-find/the-close-button-closes-the-bar-and-keeps-the-text", test_the_close_button_closes_the_bar_and_keeps_the_text);
-	Test.add_func("/gittree/ui/diff-find/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
-	Test.add_func("/gittree/ui/diff-find/the-find-field-waits-for-enter", test_the_find_field_waits_for_enter);
-	Test.add_func("/gittree/ui/diff-find/the-scroll-bar-follows-the-file-in-the-middle-of-the-pane", test_the_scroll_bar_follows_the_file_in_the_middle_of_the_pane);
-	Test.add_func("/gittree/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
-	Test.add_func("/gittree/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
-	Test.add_func("/gittree/ui/diff-find/enter-marks-every-match-and-moves-nothing", test_enter_marks_every_match_and_moves_nothing);
+	Test.add_func("/gitrlf/ui/diff-find/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
+	Test.add_func("/gitrlf/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
+	Test.add_func("/gitrlf/ui/diff-find/a-regex-narrows-the-marks", test_a_regex_narrows_the_marks);
+	Test.add_func("/gitrlf/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-leaves-a-selection-over-two-lines", test_ctrl_f_leaves_a_selection_over_two_lines);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-takes-a-selection-on-one-line", test_ctrl_f_takes_a_selection_on_one_line);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-with-the-pane-open-finds-in-the-diff-from-the-list", test_ctrl_f_with_the_pane_open_finds_in_the_diff_from_the_list);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-with-the-pane-shut-opens-the-list-bar", test_ctrl_f_with_the_pane_shut_opens_the_list_bar);
+	Test.add_func("/gitrlf/ui/diff-find/escape-after-ctrl-f-in-the-list-gives-the-focus-back-to-the-list", test_escape_after_ctrl_f_in_the_list_gives_the_focus_back_to_the_list);
+	Test.add_func("/gitrlf/ui/diff-find/escape-in-the-field-closes-the-bar-and-keeps-the-text", test_escape_in_the_field_closes_the_bar_and_keeps_the_text);
+	Test.add_func("/gitrlf/ui/diff-find/next-and-previous-cross-files-and-wrap", test_next_and_previous_cross_files_and_wrap);
+	Test.add_func("/gitrlf/ui/diff-find/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
+	Test.add_func("/gitrlf/ui/diff-find/one-bar-at-the-bottom-scrolls-the-file-of-the-current-match", test_one_bar_at_the_bottom_scrolls_the_file_of_the_current_match);
+	Test.add_func("/gitrlf/ui/diff-find/the-bar-closes-with-the-pane", test_the_bar_closes_with_the_pane);
+	Test.add_func("/gitrlf/ui/diff-find/the-close-button-closes-the-bar-and-keeps-the-text", test_the_close_button_closes_the_bar_and_keeps_the_text);
+	Test.add_func("/gitrlf/ui/diff-find/the-count-stands-apart-from-the-switches", test_the_count_stands_apart_from_the_switches);
+	Test.add_func("/gitrlf/ui/diff-find/the-find-field-waits-for-enter", test_the_find_field_waits_for_enter);
+	Test.add_func("/gitrlf/ui/diff-find/the-scroll-bar-follows-the-file-in-the-middle-of-the-pane", test_the_scroll_bar_follows_the_file_in_the_middle_of_the_pane);
+	Test.add_func("/gitrlf/ui/diff-find/the-switches-say-what-they-do", test_the_switches_say_what_they_do);
+	Test.add_func("/gitrlf/ui/diff-find/the-text-is-kept-from-commit-to-commit", test_the_text_is_kept_from_commit_to_commit);
+	Test.add_func("/gitrlf/ui/diff-find/enter-marks-every-match-and-moves-nothing", test_enter_marks_every_match_and_moves_nothing);
 
 	return Test.run();
 }
@@ -119,7 +119,7 @@ private static Repo many_files() throws Error
 	return repo;
 }
 
-private static string marks(Gittree.Window window, string tag_name)
+private static string marks(Gitrlf.Window window, string tag_name)
 {
 	var words = new string[0];
 	var files = window.history.diff_view.get_files();
@@ -156,14 +156,14 @@ private static string marks(Gittree.Window window, string tag_name)
 	return string.joinv("|", words);
 }
 
-private static Gittree.Window opened(Repo repo, string subject) throws Error
+private static Gitrlf.Window opened(Repo repo, string subject) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 	ticks.add("refs/heads/master");
 
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	window.set_default_size(1200, 900);
-	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path);
+	window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, {}, repo.path);
 	window.show();
 	settle(300);
 	window.history.paned.details_visible = true;
@@ -173,12 +173,12 @@ private static Gittree.Window opened(Repo repo, string subject) throws Error
 	return window;
 }
 
-private static Gittree.DiffScrollBar pane_bar(Gittree.Window window)
+private static Gitrlf.DiffScrollBar pane_bar(Gitrlf.Window window)
 {
-	return (Gittree.DiffScrollBar)find_all(window.history.paned.box_details, typeof(Gittree.DiffScrollBar))[0];
+	return (Gitrlf.DiffScrollBar)find_all(window.history.paned.box_details, typeof(Gitrlf.DiffScrollBar))[0];
 }
 
-private static Gtk.ScrolledWindow pane_of(Gittree.Window window)
+private static Gtk.ScrolledWindow pane_of(Gitrlf.Window window)
 {
 	return (Gtk.ScrolledWindow)find_all(window.history.diff_view, typeof(Gtk.ScrolledWindow))[0];
 }
@@ -188,7 +188,7 @@ private static Gtk.ScrolledWindow scroller(Gitg.DiffViewFile file)
 	return (Gtk.ScrolledWindow)file.get_text_views()[0].get_parent();
 }
 
-private static void search_for(Gittree.Window window, string text)
+private static void search_for(Gitrlf.Window window, string text)
 {
 	window.history.find_bar.search_mode_enabled = true;
 	window.history.find_bar.field.text = text;
@@ -196,7 +196,7 @@ private static void search_for(Gittree.Window window, string text)
 	settle(400);
 }
 
-private static void select_subject(Gittree.Window window, string subject)
+private static void select_subject(Gitrlf.Window window, string subject)
 {
 	var rows = window.history.rows();
 
@@ -211,7 +211,7 @@ private static void select_subject(Gittree.Window window, string subject)
 	settle(400);
 }
 
-private static void select_text(Gittree.Window window, int file, string text)
+private static void select_text(Gitrlf.Window window, int file, string text)
 {
 	var view = window.history.diff_view.get_files()[file].get_text_views()[0];
 	Gtk.TextIter start;
@@ -1068,7 +1068,7 @@ private static Repo three_files() throws Error
 	return repo;
 }
 
-private static int top_of(Gittree.Window window, Gtk.Widget widget)
+private static int top_of(Gitrlf.Window window, Gtk.Widget widget)
 {
 	var content = ((Gtk.Bin)pane_of(window).get_child()).get_child();
 	int x;
@@ -1079,7 +1079,7 @@ private static int top_of(Gittree.Window window, Gtk.Widget widget)
 	return y;
 }
 
-private static void unfold_all(Gittree.Window window)
+private static void unfold_all(Gitrlf.Window window)
 {
 	foreach (var file in window.history.diff_view.get_files())
 	{

@@ -1,28 +1,28 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private const Ggit.DiffLineType ADDED = Ggit.DiffLineType.ADDITION;
 private const Ggit.DiffLineType CONTEXT = Ggit.DiffLineType.CONTEXT;
 private const Ggit.DiffLineType REMOVED = Ggit.DiffLineType.DELETION;
 
-private static string found(Gittree.DiffFind find)
+private static string found(Gitrlf.DiffFind find)
 {
 	var parts = new string[0];
 
@@ -40,24 +40,24 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/diff-find/a-binary-file-has-no-match", test_a_binary_file_has_no_match);
-	Test.add_func("/gittree/diff-find/a-context-line-counts-once-unified-and-twice-split", test_a_context_line_counts_once_unified_and_twice_split);
-	Test.add_func("/gittree/diff-find/added-and-removed-lines-match-on-their-own-side", test_added_and_removed_lines_match_on_their_own_side);
-	Test.add_func("/gittree/diff-find/case-is-matched-unless-the-switch-is-off", test_case_is_matched_unless_the_switch_is_off);
-	Test.add_func("/gittree/diff-find/count-wording", test_count_wording);
-	Test.add_func("/gittree/diff-find/expressions-follow-the-switch", test_expressions_follow_the_switch);
-	Test.add_func("/gittree/diff-find/files-come-in-the-order-they-are-added", test_files_come_in_the_order_they_are_added);
-	Test.add_func("/gittree/diff-find/headers-and-no-newline-markers-do-not-match", test_headers_and_no_newline_markers_do_not_match);
-	Test.add_func("/gittree/diff-find/next-and-previous-wrap", test_next_and_previous_wrap);
-	Test.add_func("/gittree/diff-find/offsets-count-characters-as-the-pane-shows-them", test_offsets_count_characters_as_the_pane_shows_them);
-	Test.add_func("/gittree/diff-find/several-matches-on-one-line", test_several_matches_on_one_line);
+	Test.add_func("/gitrlf/diff-find/a-binary-file-has-no-match", test_a_binary_file_has_no_match);
+	Test.add_func("/gitrlf/diff-find/a-context-line-counts-once-unified-and-twice-split", test_a_context_line_counts_once_unified_and_twice_split);
+	Test.add_func("/gitrlf/diff-find/added-and-removed-lines-match-on-their-own-side", test_added_and_removed_lines_match_on_their_own_side);
+	Test.add_func("/gitrlf/diff-find/case-is-matched-unless-the-switch-is-off", test_case_is_matched_unless_the_switch_is_off);
+	Test.add_func("/gitrlf/diff-find/count-wording", test_count_wording);
+	Test.add_func("/gitrlf/diff-find/expressions-follow-the-switch", test_expressions_follow_the_switch);
+	Test.add_func("/gitrlf/diff-find/files-come-in-the-order-they-are-added", test_files_come_in_the_order_they_are_added);
+	Test.add_func("/gitrlf/diff-find/headers-and-no-newline-markers-do-not-match", test_headers_and_no_newline_markers_do_not_match);
+	Test.add_func("/gitrlf/diff-find/next-and-previous-wrap", test_next_and_previous_wrap);
+	Test.add_func("/gitrlf/diff-find/offsets-count-characters-as-the-pane-shows-them", test_offsets_count_characters_as_the_pane_shows_them);
+	Test.add_func("/gitrlf/diff-find/several-matches-on-one-line", test_several_matches_on_one_line);
 
 	return Test.run();
 }
 
 private static void test_a_binary_file_has_no_match()
 {
-	var find = new Gittree.DiffFind("x", true);
+	var find = new Gitrlf.DiffFind("x", true);
 
 	find.add_file(0, {}, {}, false);
 
@@ -67,8 +67,8 @@ private static void test_a_binary_file_has_no_match()
 
 private static void test_a_context_line_counts_once_unified_and_twice_split()
 {
-	var unified = new Gittree.DiffFind("b", true);
-	var split = new Gittree.DiffFind("b", true);
+	var unified = new Gitrlf.DiffFind("b", true);
+	var split = new Gitrlf.DiffFind("b", true);
 
 	unified.add_file(0, { CONTEXT }, { "abc\n" }, false);
 	split.add_file(0, { CONTEXT }, { "abc\n" }, true);
@@ -81,8 +81,8 @@ private static void test_added_and_removed_lines_match_on_their_own_side()
 {
 	Ggit.DiffLineType[] origins = { REMOVED, ADDED, CONTEXT };
 	string[] texts = { "x old\n", "x new\n", "x kept\n" };
-	var unified = new Gittree.DiffFind("x", true);
-	var split = new Gittree.DiffFind("x", true);
+	var unified = new Gitrlf.DiffFind("x", true);
+	var split = new Gitrlf.DiffFind("x", true);
 
 	unified.add_file(0, origins, texts, false);
 	split.add_file(0, origins, texts, true);
@@ -93,9 +93,9 @@ private static void test_added_and_removed_lines_match_on_their_own_side()
 
 private static void test_case_is_matched_unless_the_switch_is_off()
 {
-	var exact = new Gittree.DiffFind("foo", true);
-	var loose = new Gittree.DiffFind("foo", false);
-	var accents = new Gittree.DiffFind("école", false);
+	var exact = new Gitrlf.DiffFind("foo", true);
+	var loose = new Gitrlf.DiffFind("foo", false);
+	var accents = new Gitrlf.DiffFind("école", false);
 
 	exact.add_file(0, { CONTEXT, ADDED }, { "Foo bar\n", "foo\n" }, false);
 	loose.add_file(0, { CONTEXT, ADDED }, { "Foo bar\n", "foo\n" }, false);
@@ -108,10 +108,10 @@ private static void test_case_is_matched_unless_the_switch_is_off()
 
 private static void test_count_wording()
 {
-	var empty = new Gittree.DiffFind("", true);
-	var none = new Gittree.DiffFind("zzz", true);
-	var one = new Gittree.DiffFind("a", true);
-	var three = new Gittree.DiffFind("a", true);
+	var empty = new Gitrlf.DiffFind("", true);
+	var none = new Gitrlf.DiffFind("zzz", true);
+	var one = new Gitrlf.DiffFind("a", true);
+	var three = new Gitrlf.DiffFind("a", true);
 
 	empty.add_file(0, { ADDED }, { "a\n" }, false);
 	none.add_file(0, { ADDED }, { "a\n" }, false);
@@ -132,8 +132,8 @@ private static void test_count_wording()
 
 private static void test_expressions_follow_the_switch()
 {
-	var expression = new Gittree.DiffFind("^ne+d", true, true);
-	var bad = new Gittree.DiffFind("(", false, true);
+	var expression = new Gitrlf.DiffFind("^ne+d", true, true);
+	var bad = new Gitrlf.DiffFind("(", false, true);
 
 	expression.add_file(0, { ADDED, CONTEXT }, { "need it\n", "a need\n" }, false);
 	bad.add_file(0, { ADDED }, { "(\n" }, false);
@@ -145,7 +145,7 @@ private static void test_expressions_follow_the_switch()
 
 private static void test_files_come_in_the_order_they_are_added()
 {
-	var find = new Gittree.DiffFind("k", true);
+	var find = new Gitrlf.DiffFind("k", true);
 
 	find.add_file(0, { ADDED }, { "k\n" }, false);
 	find.add_file(2, { CONTEXT }, { "k\n" }, true);
@@ -172,8 +172,8 @@ private static void test_headers_and_no_newline_markers_do_not_match()
 		"\n\\ No newline at end of file\n",
 		"\n\\ No newline at end of file\n"
 	};
-	var unified = new Gittree.DiffFind("newline", false);
-	var split = new Gittree.DiffFind("newline", false);
+	var unified = new Gitrlf.DiffFind("newline", false);
+	var split = new Gitrlf.DiffFind("newline", false);
 
 	unified.add_file(0, origins, texts, false);
 	split.add_file(0, origins, texts, true);
@@ -184,9 +184,9 @@ private static void test_headers_and_no_newline_markers_do_not_match()
 
 private static void test_next_and_previous_wrap()
 {
-	var forward = new Gittree.DiffFind("a", true);
-	var backward = new Gittree.DiffFind("a", true);
-	var nothing = new Gittree.DiffFind("z", true);
+	var forward = new Gitrlf.DiffFind("a", true);
+	var backward = new Gitrlf.DiffFind("a", true);
+	var nothing = new Gitrlf.DiffFind("z", true);
 
 	forward.add_file(0, { ADDED, ADDED, ADDED }, { "a\n", "a\n", "a\n" }, false);
 	backward.add_file(0, { ADDED, ADDED, ADDED }, { "a\n", "a\n", "a\n" }, false);
@@ -215,9 +215,9 @@ private static void test_next_and_previous_wrap()
 
 private static void test_offsets_count_characters_as_the_pane_shows_them()
 {
-	var accent = new Gittree.DiffFind("x", true);
-	var carriage = new Gittree.DiffFind("ab", true);
-	var newline = new Gittree.DiffFind("b\n", true);
+	var accent = new Gitrlf.DiffFind("x", true);
+	var carriage = new Gitrlf.DiffFind("ab", true);
+	var newline = new Gitrlf.DiffFind("b\n", true);
 
 	accent.add_file(0, { ADDED }, { "café x\n" }, false);
 	carriage.add_file(0, { ADDED }, { "a\rb\r\n" }, false);
@@ -230,8 +230,8 @@ private static void test_offsets_count_characters_as_the_pane_shows_them()
 
 private static void test_several_matches_on_one_line()
 {
-	var spaced = new Gittree.DiffFind("ab", true);
-	var overlapping = new Gittree.DiffFind("aa", true);
+	var spaced = new Gitrlf.DiffFind("ab", true);
+	var overlapping = new Gitrlf.DiffFind("aa", true);
 
 	spaced.add_file(0, { CONTEXT }, { "abab ab\n" }, false);
 	overlapping.add_file(0, { CONTEXT }, { "aaaaa\n" }, false);

@@ -1,21 +1,21 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private static string git_log(Repo repo, string directory, string[] paths) throws Error
@@ -30,17 +30,17 @@ private static string git_log(Repo repo, string directory, string[] paths) throw
 	return repo.git(argv).strip();
 }
 
-private static Gittree.History history_for(Repo repo, string directory, string[] paths, out Gee.List<Gittree.Ref> refs) throws Error
+private static Gitrlf.History history_for(Repo repo, string directory, string[] paths, out Gee.List<Gitrlf.Ref> refs) throws Error
 {
-	var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
+	var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
 	var start = directory == "" ? repo.path : repo.path.resolve_relative_path(directory);
 
-	refs = Gittree.Refs.read(repository);
+	refs = Gitrlf.Refs.read(repository);
 
-	return new Gittree.History.with_paths(repository, refs, paths, start, false);
+	return new Gitrlf.History.with_paths(repository, refs, paths, start, false);
 }
 
-private static string logged(Gittree.History history, Gitg.Commit[] rows)
+private static string logged(Gitrlf.History history, Gitg.Commit[] rows)
 {
 	var lines = new string[0];
 
@@ -63,14 +63,14 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/path-history/a-failed-git-run-gives-its-message", test_a_failed_git_run_gives_its_message);
-	Test.add_func("/gittree/path-history/a-failed-git-run-with-a-long-input-gives-its-message", test_a_failed_git_run_with_a_long_input_gives_its_message);
-	Test.add_func("/gittree/path-history/commits-and-parents-are-git-logs", test_commits_and_parents_are_git_logs);
-	Test.add_func("/gittree/path-history/history-with-a-path-is-freed", test_history_with_a_path_is_freed);
-	Test.add_func("/gittree/path-history/parent-link-under-a-path-limit-goes-to-a-shown-commit", test_parent_link_under_a_path_limit_goes_to_a_shown_commit);
-	Test.add_func("/gittree/path-history/path-keeps-only-commits-that-change-it-and-joins-the-graph", test_path_keeps_only_commits_that_change_it_and_joins_the_graph);
-	Test.add_func("/gittree/path-history/path-limit-ticks-a-branch-whose-tip-misses-the-path", test_path_limit_ticks_a_branch_whose_tip_misses_the_path);
-	Test.add_func("/gittree/path-history/ref-with-nothing-under-the-path-adds-nothing", test_ref_with_nothing_under_the_path_adds_nothing);
+	Test.add_func("/gitrlf/path-history/a-failed-git-run-gives-its-message", test_a_failed_git_run_gives_its_message);
+	Test.add_func("/gitrlf/path-history/a-failed-git-run-with-a-long-input-gives-its-message", test_a_failed_git_run_with_a_long_input_gives_its_message);
+	Test.add_func("/gitrlf/path-history/commits-and-parents-are-git-logs", test_commits_and_parents_are_git_logs);
+	Test.add_func("/gitrlf/path-history/history-with-a-path-is-freed", test_history_with_a_path_is_freed);
+	Test.add_func("/gitrlf/path-history/parent-link-under-a-path-limit-goes-to-a-shown-commit", test_parent_link_under_a_path_limit_goes_to_a_shown_commit);
+	Test.add_func("/gitrlf/path-history/path-keeps-only-commits-that-change-it-and-joins-the-graph", test_path_keeps_only_commits_that_change_it_and_joins_the_graph);
+	Test.add_func("/gitrlf/path-history/path-limit-ticks-a-branch-whose-tip-misses-the-path", test_path_limit_ticks_a_branch_whose_tip_misses_the_path);
+	Test.add_func("/gitrlf/path-history/ref-with-nothing-under-the-path-adds-nothing", test_ref_with_nothing_under_the_path_adds_nothing);
 
 	return Test.run();
 }
@@ -94,13 +94,13 @@ private static void test_a_failed_git_run_gives_its_message()
 		var repo = Repo.create();
 		repo.commit("a one", "a");
 
-		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
-		var refs = Gittree.Refs.read(repository);
-		var outside = File.new_for_path(DirUtils.make_tmp("gittree-outside-XXXXXX"));
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var refs = Gitrlf.Refs.read(repository);
+		var outside = File.new_for_path(DirUtils.make_tmp("gitrlf-outside-XXXXXX"));
 
 		try
 		{
-			new Gittree.History.with_paths(repository, refs, {"a"}, outside, false);
+			new Gitrlf.History.with_paths(repository, refs, {"a"}, outside, false);
 			Test.fail_printf("git ran outside a repository");
 		}
 		catch (Error e)
@@ -145,15 +145,15 @@ private static void test_a_failed_git_run_with_a_long_input_gives_its_message()
 		import.communicate_utf8(stream.str, null, null, null);
 		assert_true(import.get_successful());
 
-		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
-		var refs = Gittree.Refs.read(repository);
-		var outside = File.new_for_path(DirUtils.make_tmp("gittree-outside-XXXXXX"));
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var refs = Gitrlf.Refs.read(repository);
+		var outside = File.new_for_path(DirUtils.make_tmp("gitrlf-outside-XXXXXX"));
 
 		assert_cmpint(refs.size, CompareOperator.EQ, 2000);
 
 		try
 		{
-			new Gittree.History.with_paths(repository, refs, {"a"}, outside, false);
+			new Gitrlf.History.with_paths(repository, refs, {"a"}, outside, false);
 			Test.fail_printf("git ran outside a repository");
 		}
 		catch (Error e)
@@ -189,7 +189,7 @@ private static void test_commits_and_parents_are_git_logs()
 		{
 			var parts = row.split("|");
 			var paths = parts[1].split(",");
-			Gee.List<Gittree.Ref> refs;
+			Gee.List<Gitrlf.Ref> refs;
 			var history = history_for(repo, parts[0], paths, out refs);
 			var every = new Ggit.OId[0];
 
@@ -220,8 +220,8 @@ private static void test_history_with_a_path_is_freed()
 		var repo = Repo.create();
 		repo.commit("a one", "a");
 
-		Gee.List<Gittree.Ref> refs;
-		Gittree.History? history = history_for(repo, "", {"a"}, out refs);
+		Gee.List<Gitrlf.Ref> refs;
+		Gitrlf.History? history = history_for(repo, "", {"a"}, out refs);
 		var freed = false;
 
 		history.weak_ref(() => { freed = true; });
@@ -246,7 +246,7 @@ private static void test_parent_link_under_a_path_limit_goes_to_a_shown_commit()
 		repo.commit("other", "b");
 		repo.commit("sub two", "sub/a");
 
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var history = history_for(repo, "", {"sub"}, out refs);
 		var rows = history.tick(tips(refs, {"master"}), {});
 
@@ -271,9 +271,9 @@ private static void test_path_keeps_only_commits_that_change_it_and_joins_the_gr
 		repo.commit("touch b", "b");
 		repo.commit("touch a again", "a");
 
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var history = history_for(repo, "", {"a"}, out refs);
-		var rows = history.tick(tips(refs, {"master"}), Gittree.History.mainline(Gittree.Repository.open(Gittree.Application.discover_repository(repo.path)), true));
+		var rows = history.tick(tips(refs, {"master"}), Gitrlf.History.mainline(Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path)), true));
 
 		assert_cmpstr(subjects(rows), CompareOperator.EQ, "touch a again,touch a");
 		assert_true(history.parents_of(rows[0])[0].equal(rows[1].get_id()));
@@ -309,7 +309,7 @@ private static void test_path_limit_ticks_a_branch_whose_tip_misses_the_path()
 		repo.commit("a two", "a");
 		repo.commit("b two", "b");
 
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var history = history_for(repo, "", {"a"}, out refs);
 
 		assert_cmpstr(subjects(history.tick(tips(refs, {"master"}), {})), CompareOperator.EQ, "a one");
@@ -339,7 +339,7 @@ private static void test_ref_with_nothing_under_the_path_adds_nothing()
 		repo.commit("b only", "b");
 		repo.checkout("master");
 
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var history = history_for(repo, "", {"a"}, out refs);
 		var lonely = tips(refs, {"lonely"})[0];
 
@@ -355,7 +355,7 @@ private static void test_ref_with_nothing_under_the_path_adds_nothing()
 	}
 }
 
-private static Ggit.OId[] tips(Gee.List<Gittree.Ref> refs, string[] shorts)
+private static Ggit.OId[] tips(Gee.List<Gitrlf.Ref> refs, string[] shorts)
 {
 	var ret = new Ggit.OId[0];
 

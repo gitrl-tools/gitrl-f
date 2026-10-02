@@ -1,34 +1,34 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private static string s_log;
 
 private static string s_wrapper_directory;
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -69,33 +69,33 @@ private static Gtk.Button button_tooltipped(Gtk.Widget root, string tooltip)
 	error("no button %s", tooltip);
 }
 
-private static void choose(Gittree.Window window, Gittree.SearchChoice choice)
+private static void choose(Gitrlf.Window window, Gitrlf.SearchChoice choice)
 {
 	window.history.search_visible = true;
 	window.history.search_choice = choice;
 }
 
-private static void filter_paths(Gittree.Window window, string text, string paths)
+private static void filter_paths(Gitrlf.Window window, string text, string paths)
 {
 	var history = window.history;
 
 	history.only_matches = true;
-	choose(window, Gittree.SearchChoice.FILES);
+	choose(window, Gitrlf.SearchChoice.FILES);
 	history.search_field.text = paths;
 	history.search_field.activate();
 	settle(800);
-	choose(window, Gittree.SearchChoice.LINES);
+	choose(window, Gitrlf.SearchChoice.LINES);
 	history.search_field.text = text;
 	history.search_field.activate();
 	settle(800);
 }
 
-private static void filter_with(Gittree.Window window, string text, bool regex)
+private static void filter_with(Gitrlf.Window window, string text, bool regex)
 {
 	var history = window.history;
 
 	history.only_matches = true;
-	choose(window, Gittree.SearchChoice.LINES);
+	choose(window, Gitrlf.SearchChoice.LINES);
 	history.search_field.text = text;
 	check_labelled(list_bar(window), "Regex").active = regex;
 	history.search_field.activate();
@@ -153,7 +153,7 @@ private static void install_wrapper()
 {
 	try
 	{
-		s_wrapper_directory = DirUtils.make_tmp("gittree-git-XXXXXX");
+		s_wrapper_directory = DirUtils.make_tmp("gitrlf-git-XXXXXX");
 	}
 	catch (FileError e)
 	{
@@ -166,9 +166,9 @@ private static void install_wrapper()
 echo "$*" >> "%s"
 case "$*" in
 *" -S"* | *" -G"* | *" --parents "*)
-	sleep "${GITTREE_TEST_GIT_DELAY:-0}"
-	if [ -n "$GITTREE_TEST_GIT_FAIL" ]; then
-		echo "$GITTREE_TEST_GIT_FAIL" >&2
+	sleep "${GITRLF_TEST_GIT_DELAY:-0}"
+	if [ -n "$GITRLF_TEST_GIT_FAIL" ]; then
+		echo "$GITRLF_TEST_GIT_FAIL" >&2
 		exit 128
 	fi
 	;;
@@ -195,54 +195,54 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 	install_wrapper();
 
-	Test.add_func("/gittree/ui/filter/a-bad-expression-in-the-bar-applies-nothing", test_a_bad_expression_in_the_bar_applies_nothing);
-	Test.add_func("/gittree/ui/filter/a-bad-regex-keeps-its-text-in-sight", test_a_bad_regex_keeps_its_text_in_sight);
-	Test.add_func("/gittree/ui/filter/a-bad-regex-names-its-fault-in-a-tooltip", test_a_bad_regex_names_its_fault_in_a_tooltip);
-	Test.add_func("/gittree/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
-	Test.add_func("/gittree/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
-	Test.add_func("/gittree/ui/filter/a-dash-marks-a-text-that-enter-has-not-searched", test_a_dash_marks_a_text_that_enter_has_not_searched);
-	Test.add_func("/gittree/ui/filter/a-failed-search-shows-git-and-the-plain-history", test_a_failed_search_shows_git_and_the_plain_history);
-	Test.add_func("/gittree/ui/filter/a-filter-after-a-failed-open-does-nothing", test_a_filter_after_a_failed_open_does_nothing);
-	Test.add_func("/gittree/ui/filter/a-launch-puts-its-text-and-case-in-changed-lines", test_a_launch_puts_its_text_and_case_in_changed_lines);
-	Test.add_func("/gittree/ui/filter/a-launch-with-a-regex-filters-by-changed-lines", test_a_launch_with_a_regex_filters_by_changed_lines);
-	Test.add_func("/gittree/ui/filter/a-launch-with-a-text-shows-the-notice-until-the-search-ends", test_a_launch_with_a_text_shows_the_notice_until_the_search_ends);
-	Test.add_func("/gittree/ui/filter/a-new-filter-puts-its-text-in-the-diff-bar", test_a_new_filter_puts_its_text_in_the_diff_bar);
-	Test.add_func("/gittree/ui/filter/a-new-filter-stops-the-search-before-it", test_a_new_filter_stops_the_search_before_it);
-	Test.add_func("/gittree/ui/filter/a-path-outside-the-repository-shows-git-and-keeps-the-filter", test_a_path_outside_the_repository_shows_git_and_keeps_the_filter);
-	Test.add_func("/gittree/ui/filter/a-regex-filter-fills-the-diff-bar-with-its-switch", test_a_regex_filter_fills_the_diff_bar_with_its_switch);
-	Test.add_func("/gittree/ui/filter/a-reload-during-a-slow-search-stops-it-first", test_a_reload_during_a_slow_search_stops_it_first);
-	Test.add_func("/gittree/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
-	Test.add_func("/gittree/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
-	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
-	Test.add_func("/gittree/ui/filter/a-box-shows-each-choice-whose-search-applies", test_a_box_shows_each_choice_whose_search_applies);
-	Test.add_func("/gittree/ui/filter/a-box-switches-a-search-off-and-on-and-keeps-its-text", test_a_box_switches_a_search_off_and_on_and_keeps_its_text);
-	Test.add_func("/gittree/ui/filter/a-click-on-a-box-switches-its-search-and-keeps-the-choice", test_a_click_on_a_box_switches_its_search_and_keeps_the_choice);
-	Test.add_func("/gittree/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
-	Test.add_func("/gittree/ui/filter/closing-the-bar-lifts-the-filter-and-keeps-the-text", test_closing_the_bar_lifts_the_filter_and_keeps_the_text);
-	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
-	Test.add_func("/gittree/ui/filter/ctrl-shift-f-opens-the-bar-on-changed-lines", test_ctrl_shift_f_opens_the_bar_on_changed_lines);
-	Test.add_func("/gittree/ui/filter/ctrl-shift-f-takes-a-selection-and-applies-nothing", test_ctrl_shift_f_takes_a_selection_and_applies_nothing);
-	Test.add_func("/gittree/ui/filter/display-matches-only-hides-and-shows-without-git", test_display_matches_only_hides_and_shows_without_git);
-	Test.add_func("/gittree/ui/filter/each-choice-keeps-its-own-text-and-switches", test_each_choice_keeps_its_own_text_and_switches);
-	Test.add_func("/gittree/ui/filter/enter-applies-changed-lines-and-typing-does-not", test_enter_applies_changed_lines_and_typing_does_not);
-	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
-	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-lifts-the-filter-with-the-bar", test_escape_closes_in_order_and_lifts_the_filter_with_the_bar);
-	Test.add_func("/gittree/ui/filter/escape-in-a-filled-diff-bar-selects-no-text", test_escape_in_a_filled_diff_bar_selects_no_text);
-	Test.add_func("/gittree/ui/filter/escape-in-the-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_the_field_closes_from_the_bottom_up_and_keeps_the_focus);
-	Test.add_func("/gittree/ui/filter/files-match-case-and-regex-change-what-matches", test_files_match_case_and_regex_change_what_matches);
-	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
-	Test.add_func("/gittree/ui/filter/holding-a-choice-down-keeps-its-size", test_holding_a_choice_down_keeps_its_size);
-	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
-	Test.add_func("/gittree/ui/filter/the-choices-stack-and-the-list-shows-each-text", test_the_choices_stack_and_the_list_shows_each_text);
-	Test.add_func("/gittree/ui/filter/the-close-button-lifts-every-search", test_the_close_button_lifts_every_search);
-	Test.add_func("/gittree/ui/filter/the-diff-bar-opens-with-the-text-and-the-case-of-the-filter", test_the_diff_bar_opens_with_the_text_and_the_case_of_the_filter);
-	Test.add_func("/gittree/ui/filter/the-diff-of-a-commit-the-files-search-does-not-match-is-whole", test_the_diff_of_a_commit_the_files_search_does_not_match_is_whole);
-	Test.add_func("/gittree/ui/filter/the-files-choice-holds-the-command-line-paths", test_the_files_choice_holds_the_command_line_paths);
-	Test.add_func("/gittree/ui/filter/the-list-answers-while-a-search-runs", test_the_list_answers_while_a_search_runs);
-	Test.add_func("/gittree/ui/filter/the-paths-are-read-in-the-background", test_the_paths_are_read_in_the_background);
-	Test.add_func("/gittree/ui/filter/the-regex-switch-filters-by-changed-lines", test_the_regex_switch_filters_by_changed_lines);
-	Test.add_func("/gittree/ui/filter/the-users-own-text-in-the-diff-bar-is-kept-across-commits", test_the_users_own_text_in_the_diff_bar_is_kept_across_commits);
-	Test.add_func("/gittree/ui/filter/the-yellow-bar-names-the-paths-and-the-case", test_the_yellow_bar_names_the_paths_and_the_case);
+	Test.add_func("/gitrlf/ui/filter/a-bad-expression-in-the-bar-applies-nothing", test_a_bad_expression_in_the_bar_applies_nothing);
+	Test.add_func("/gitrlf/ui/filter/a-bad-regex-keeps-its-text-in-sight", test_a_bad_regex_keeps_its_text_in_sight);
+	Test.add_func("/gitrlf/ui/filter/a-bad-regex-names-its-fault-in-a-tooltip", test_a_bad_regex_names_its_fault_in_a_tooltip);
+	Test.add_func("/gitrlf/ui/filter/a-bare-repository-opened-from-the-list-can-be-filtered", test_a_bare_repository_opened_from_the_list_can_be_filtered);
+	Test.add_func("/gitrlf/ui/filter/a-close-by-the-user-keeps-the-diff-bar-closed-until-the-filter-changes", test_a_close_by_the_user_keeps_the_diff_bar_closed_until_the_filter_changes);
+	Test.add_func("/gitrlf/ui/filter/a-dash-marks-a-text-that-enter-has-not-searched", test_a_dash_marks_a_text_that_enter_has_not_searched);
+	Test.add_func("/gitrlf/ui/filter/a-failed-search-shows-git-and-the-plain-history", test_a_failed_search_shows_git_and_the_plain_history);
+	Test.add_func("/gitrlf/ui/filter/a-filter-after-a-failed-open-does-nothing", test_a_filter_after_a_failed_open_does_nothing);
+	Test.add_func("/gitrlf/ui/filter/a-launch-puts-its-text-and-case-in-changed-lines", test_a_launch_puts_its_text_and_case_in_changed_lines);
+	Test.add_func("/gitrlf/ui/filter/a-launch-with-a-regex-filters-by-changed-lines", test_a_launch_with_a_regex_filters_by_changed_lines);
+	Test.add_func("/gitrlf/ui/filter/a-launch-with-a-text-shows-the-notice-until-the-search-ends", test_a_launch_with_a_text_shows_the_notice_until_the_search_ends);
+	Test.add_func("/gitrlf/ui/filter/a-new-filter-puts-its-text-in-the-diff-bar", test_a_new_filter_puts_its_text_in_the_diff_bar);
+	Test.add_func("/gitrlf/ui/filter/a-new-filter-stops-the-search-before-it", test_a_new_filter_stops_the_search_before_it);
+	Test.add_func("/gitrlf/ui/filter/a-path-outside-the-repository-shows-git-and-keeps-the-filter", test_a_path_outside_the_repository_shows_git_and_keeps_the_filter);
+	Test.add_func("/gitrlf/ui/filter/a-regex-filter-fills-the-diff-bar-with-its-switch", test_a_regex_filter_fills_the_diff_bar_with_its_switch);
+	Test.add_func("/gitrlf/ui/filter/a-reload-during-a-slow-search-stops-it-first", test_a_reload_during_a_slow_search_stops_it_first);
+	Test.add_func("/gitrlf/ui/filter/a-reload-or-a-new-filter-keeps-the-launch-notice", test_a_reload_or_a_new_filter_keeps_the_launch_notice);
+	Test.add_func("/gitrlf/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
+	Test.add_func("/gitrlf/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
+	Test.add_func("/gitrlf/ui/filter/a-box-shows-each-choice-whose-search-applies", test_a_box_shows_each_choice_whose_search_applies);
+	Test.add_func("/gitrlf/ui/filter/a-box-switches-a-search-off-and-on-and-keeps-its-text", test_a_box_switches_a_search_off_and_on_and_keeps_its_text);
+	Test.add_func("/gitrlf/ui/filter/a-click-on-a-box-switches-its-search-and-keeps-the-choice", test_a_click_on_a_box_switches_its_search_and_keeps_the_choice);
+	Test.add_func("/gitrlf/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
+	Test.add_func("/gitrlf/ui/filter/closing-the-bar-lifts-the-filter-and-keeps-the-text", test_closing_the_bar_lifts_the_filter_and_keeps_the_text);
+	Test.add_func("/gitrlf/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
+	Test.add_func("/gitrlf/ui/filter/ctrl-shift-f-opens-the-bar-on-changed-lines", test_ctrl_shift_f_opens_the_bar_on_changed_lines);
+	Test.add_func("/gitrlf/ui/filter/ctrl-shift-f-takes-a-selection-and-applies-nothing", test_ctrl_shift_f_takes_a_selection_and_applies_nothing);
+	Test.add_func("/gitrlf/ui/filter/display-matches-only-hides-and-shows-without-git", test_display_matches_only_hides_and_shows_without_git);
+	Test.add_func("/gitrlf/ui/filter/each-choice-keeps-its-own-text-and-switches", test_each_choice_keeps_its_own_text_and_switches);
+	Test.add_func("/gitrlf/ui/filter/enter-applies-changed-lines-and-typing-does-not", test_enter_applies_changed_lines_and_typing_does_not);
+	Test.add_func("/gitrlf/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
+	Test.add_func("/gitrlf/ui/filter/escape-closes-in-order-and-lifts-the-filter-with-the-bar", test_escape_closes_in_order_and_lifts_the_filter_with_the_bar);
+	Test.add_func("/gitrlf/ui/filter/escape-in-a-filled-diff-bar-selects-no-text", test_escape_in_a_filled_diff_bar_selects_no_text);
+	Test.add_func("/gitrlf/ui/filter/escape-in-the-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_the_field_closes_from_the_bottom_up_and_keeps_the_focus);
+	Test.add_func("/gitrlf/ui/filter/files-match-case-and-regex-change-what-matches", test_files_match_case_and_regex_change_what_matches);
+	Test.add_func("/gitrlf/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
+	Test.add_func("/gitrlf/ui/filter/holding-a-choice-down-keeps-its-size", test_holding_a_choice_down_keeps_its_size);
+	Test.add_func("/gitrlf/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
+	Test.add_func("/gitrlf/ui/filter/the-choices-stack-and-the-list-shows-each-text", test_the_choices_stack_and_the_list_shows_each_text);
+	Test.add_func("/gitrlf/ui/filter/the-close-button-lifts-every-search", test_the_close_button_lifts_every_search);
+	Test.add_func("/gitrlf/ui/filter/the-diff-bar-opens-with-the-text-and-the-case-of-the-filter", test_the_diff_bar_opens_with_the_text_and_the_case_of_the_filter);
+	Test.add_func("/gitrlf/ui/filter/the-diff-of-a-commit-the-files-search-does-not-match-is-whole", test_the_diff_of_a_commit_the_files_search_does_not_match_is_whole);
+	Test.add_func("/gitrlf/ui/filter/the-files-choice-holds-the-command-line-paths", test_the_files_choice_holds_the_command_line_paths);
+	Test.add_func("/gitrlf/ui/filter/the-list-answers-while-a-search-runs", test_the_list_answers_while_a_search_runs);
+	Test.add_func("/gitrlf/ui/filter/the-paths-are-read-in-the-background", test_the_paths_are_read_in_the_background);
+	Test.add_func("/gitrlf/ui/filter/the-regex-switch-filters-by-changed-lines", test_the_regex_switch_filters_by_changed_lines);
+	Test.add_func("/gitrlf/ui/filter/the-users-own-text-in-the-diff-bar-is-kept-across-commits", test_the_users_own_text_in_the_diff_bar_is_kept_across_commits);
+	Test.add_func("/gitrlf/ui/filter/the-yellow-bar-names-the-paths-and-the-case", test_the_yellow_bar_names_the_paths_and_the_case);
 
 	return Test.run();
 }
@@ -258,7 +258,7 @@ private static Repo moved_fixture() throws Error
 	return repo;
 }
 
-private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths, string? text, bool ignore_case) throws Error
+private static Gitrlf.Window opened(Repo repo, string[] ticked, string[] paths, string? text, bool ignore_case) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 
@@ -267,16 +267,16 @@ private static Gittree.Window opened(Repo repo, string[] ticked, string[] paths,
 		ticks.add(name);
 	}
 
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 
 	window.set_default_size(1200, 800);
-	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, paths, repo.path, text, ignore_case);
+	window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, paths, repo.path, text, ignore_case);
 	window.show();
 
 	return window;
 }
 
-private static void pick(Gittree.Window window, string label)
+private static void pick(Gitrlf.Window window, string label)
 {
 	foreach (var widget in find_all(list_bar(window), typeof(Gtk.RadioButton)))
 	{
@@ -289,7 +289,7 @@ private static void pick(Gittree.Window window, string label)
 	settle(100);
 }
 
-private static void select_in_diff(Gittree.Window window, string text)
+private static void select_in_diff(Gitrlf.Window window, string text)
 {
 	foreach (var file in window.history.diff_view.get_files())
 	{
@@ -321,7 +321,7 @@ private static void select_in_diff(Gittree.Window window, string text)
 	error("no %s in the diff", text);
 }
 
-private static void select_subject(Gittree.Window window, string subject)
+private static void select_subject(Gitrlf.Window window, string subject)
 {
 	var rows = window.history.rows();
 
@@ -349,7 +349,7 @@ private static void settle(int milliseconds)
 	}
 }
 
-private static string subjects(Gittree.Window window)
+private static string subjects(Gitrlf.Window window)
 {
 	var names = new string[0];
 
@@ -408,7 +408,7 @@ private static void test_a_bad_regex_keeps_its_text_in_sight()
 		var history = window.history;
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		history.search_field.text = "*x";
 		check_labelled(list_bar(window), "Regex").active = true;
 		history.paned.commit_list_view.grab_focus();
@@ -436,7 +436,7 @@ private static void test_a_bad_regex_names_its_fault_in_a_tooltip()
 		var history = window.history;
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		history.search_field.text = "*test*";
 		check_labelled(list_bar(window), "Regex").active = true;
 		settle(300);
@@ -445,7 +445,7 @@ private static void test_a_bad_regex_names_its_fault_in_a_tooltip()
 
 		assert_cmpstr(count.tooltip_text, CompareOperator.EQ, "Invalid preceding regular expression");
 
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		history.search_field.text = "(";
 		check_labelled(list_bar(window), "Regex").active = true;
 		settle(300);
@@ -479,9 +479,9 @@ private static void test_a_bare_repository_opened_from_the_list_can_be_filtered(
 		var ticks = new Gee.HashSet<string>();
 		ticks.add("refs/heads/master");
 
-		var window = new Gittree.Window(application());
+		var window = new Gitrlf.Window(application());
 
-		window.open_repository(Gittree.Application.discover_repository(bare), ticks);
+		window.open_repository(Gitrlf.Application.discover_repository(bare), ticks);
 		window.show();
 		settle(300);
 		window.history.only_matches = true;
@@ -560,7 +560,7 @@ private static void test_a_dash_marks_a_text_that_enter_has_not_searched()
 		var lines = choice_box(window, "Changed lines");
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		history.search_field.text = "needle";
 		settle(300);
 
@@ -601,13 +601,13 @@ private static void test_a_dash_marks_a_text_that_enter_has_not_searched()
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
 		assert_cmpstr(choice_tips(window).split("|")[1], CompareOperator.EQ, "Changed lines: plain");
 
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		history.search_field.text = "q";
 		settle(300);
 
 		assert_true(choice_box(window, "Files").inconsistent);
 
-		choose(window, Gittree.SearchChoice.MESSAGES);
+		choose(window, Gitrlf.SearchChoice.MESSAGES);
 		history.search_field.text = "zzz";
 		settle(300);
 
@@ -628,12 +628,12 @@ private static void test_a_failed_search_shows_git_and_the_plain_history()
 	{
 		var repo = fixture();
 
-		Environment.set_variable("GITTREE_TEST_GIT_FAIL", "fatal: the search broke", true);
+		Environment.set_variable("GITRLF_TEST_GIT_FAIL", "fatal: the search broke", true);
 
 		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
 
 		settle(500);
-		Environment.unset_variable("GITTREE_TEST_GIT_FAIL");
+		Environment.unset_variable("GITRLF_TEST_GIT_FAIL");
 
 		assert_true(window.error_shown);
 		assert_cmpstr(window.error_text, CompareOperator.EQ, "fatal: the search broke");
@@ -689,7 +689,7 @@ private static void test_a_launch_puts_its_text_and_case_in_changed_lines()
 		settle(800);
 
 		assert_true(window.history.search_visible);
-		assert_true(window.history.search_choice == Gittree.SearchChoice.LINES);
+		assert_true(window.history.search_choice == Gitrlf.SearchChoice.LINES);
 		assert_true(window.history.only_matches);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
 		assert_false(check_labelled(list_bar(window), "Match case").active);
@@ -711,17 +711,17 @@ private static void test_a_launch_with_a_regex_filters_by_changed_lines()
 		var ticks = new Gee.HashSet<string>();
 		ticks.add("refs/heads/master");
 
-		var window = new Gittree.Window(application());
+		var window = new Gitrlf.Window(application());
 
 		window.set_default_size(1200, 800);
-		window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, {}, repo.path, "needle", false, true);
+		window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, {}, repo.path, "needle", false, true);
 		window.show();
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "two,one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits whose added or removed lines match needle");
 
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
 		assert_true(check_labelled(list_bar(window), "Regex").active);
@@ -741,7 +741,7 @@ private static void test_a_launch_with_a_text_shows_the_notice_until_the_search_
 	{
 		var repo = fixture();
 
-		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1.5", true);
+		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1.5", true);
 
 		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
 
@@ -763,7 +763,7 @@ private static void test_a_launch_with_a_text_shows_the_notice_until_the_search_
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
 
 		settle(2000);
-		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+		Environment.unset_variable("GITRLF_TEST_GIT_DELAY");
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "list");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
@@ -819,9 +819,9 @@ private static void test_a_new_filter_stops_the_search_before_it()
 		var field = window.history.search_field;
 
 		settle(300);
-		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
+		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1", true);
 		window.history.only_matches = true;
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		check_labelled(list_bar(window), "Match case").active = true;
 		field.text = "needle";
 		field.activate();
@@ -829,7 +829,7 @@ private static void test_a_new_filter_stops_the_search_before_it()
 		field.text = "NEEDLE";
 		field.activate();
 		settle(1500);
-		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+		Environment.unset_variable("GITRLF_TEST_GIT_DELAY");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove NEEDLE");
@@ -851,7 +851,7 @@ private static void test_a_path_outside_the_repository_shows_git_and_keeps_the_f
 		var window = opened(repo, {"refs/heads/master"}, {"p"}, null, false);
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		window.history.search_field.text = "../elsewhere";
 		window.history.search_field.activate();
 		settle(800);
@@ -906,7 +906,7 @@ private static void test_a_reload_during_a_slow_search_stops_it_first()
 		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
 
 		settle(300);
-		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
+		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1", true);
 
 		var before = git_calls(" -S");
 
@@ -916,7 +916,7 @@ private static void test_a_reload_during_a_slow_search_stops_it_first()
 		repo.commit("f", "q", "needle again");
 		window.activate_action("reload", null);
 		settle(1500);
-		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+		Environment.unset_variable("GITRLF_TEST_GIT_DELAY");
 
 		assert_cmpint(git_calls(" -S"), CompareOperator.EQ, before + 2);
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "f,c,a");
@@ -936,7 +936,7 @@ private static void test_a_reload_or_a_new_filter_keeps_the_launch_notice()
 	{
 		var repo = fixture();
 
-		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
+		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1", true);
 
 		var window = opened(repo, {"refs/heads/master"}, {}, "needle", false);
 
@@ -954,7 +954,7 @@ private static void test_a_reload_or_a_new_filter_keeps_the_launch_notice()
 		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "Searching the changes for NEEDLE...");
 
 		settle(1500);
-		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+		Environment.unset_variable("GITRLF_TEST_GIT_DELAY");
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "list");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e");
@@ -1049,7 +1049,7 @@ private static void test_a_box_shows_each_choice_whose_search_applies()
 		var history = window.history;
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
 
@@ -1063,7 +1063,7 @@ private static void test_a_box_shows_each_choice_whose_search_applies()
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
 
-		choose(window, Gittree.SearchChoice.MESSAGES);
+		choose(window, Gitrlf.SearchChoice.MESSAGES);
 		history.search_field.text = "c";
 		history.search_field.activate();
 		settle(400);
@@ -1094,7 +1094,7 @@ private static void test_a_box_switches_a_search_off_and_on_and_keeps_its_text()
 
 		settle(300);
 		history.only_matches = true;
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 
 		assert_false(choice_box(window, "Changed lines").sensitive);
 
@@ -1123,7 +1123,7 @@ private static void test_a_box_switches_a_search_off_and_on_and_keeps_its_text()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
 
-		choose(window, Gittree.SearchChoice.MESSAGES);
+		choose(window, Gitrlf.SearchChoice.MESSAGES);
 		history.search_field.text = "c";
 		history.search_field.activate();
 		settle(400);
@@ -1156,11 +1156,11 @@ private static void test_a_click_on_a_box_switches_its_search_and_keeps_the_choi
 
 		settle(300);
 		history.only_matches = true;
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		history.search_field.text = "needle";
 		history.search_field.activate();
 		settle(800);
-		choose(window, Gittree.SearchChoice.MESSAGES);
+		choose(window, Gitrlf.SearchChoice.MESSAGES);
 		settle(300);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
@@ -1170,14 +1170,14 @@ private static void test_a_click_on_a_box_switches_its_search_and_keeps_the_choi
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
-		assert_true(history.search_choice == Gittree.SearchChoice.MESSAGES);
+		assert_true(history.search_choice == Gitrlf.SearchChoice.MESSAGES);
 
 		click_widget(choice_box(window, "Changed lines"));
 		settle(800);
 
 		assert_cmpstr(ticked_choices(window), CompareOperator.EQ, "Changed lines");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c,a");
-		assert_true(history.search_choice == Gittree.SearchChoice.MESSAGES);
+		assert_true(history.search_choice == Gitrlf.SearchChoice.MESSAGES);
 
 		window.destroy();
 		repo.remove();
@@ -1197,7 +1197,7 @@ private static void test_a_typed_path_draws_what_the_command_line_draws()
 		var given = opened(repo, {"refs/heads/master"}, {"p"}, null, false);
 
 		settle(300);
-		choose(typed, Gittree.SearchChoice.FILES);
+		choose(typed, Gitrlf.SearchChoice.FILES);
 
 		assert_cmpstr(typed.history.search_field.placeholder_text, CompareOperator.EQ, "Files or folders, split by spaces");
 		assert_cmpstr(typed.history.search_field.tooltip_text, CompareOperator.EQ, "Files or folders, split by spaces. Globs such as '*.yaml' work. With Regex, the field is one regex for the whole path. Enter searches");
@@ -1238,7 +1238,7 @@ private static void test_closing_the_bar_lifts_the_filter_and_keeps_the_text()
 
 		settle(300);
 		window.history.only_matches = true;
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		check_labelled(list_bar(window), "Match case").active = true;
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
@@ -1329,7 +1329,7 @@ private static void test_ctrl_shift_f_opens_the_bar_on_changed_lines()
 		settle(100);
 
 		assert_true(history.search_visible);
-		assert_true(history.search_choice == Gittree.SearchChoice.LINES);
+		assert_true(history.search_choice == Gitrlf.SearchChoice.LINES);
 		assert_true(history.search_field.has_focus);
 		assert_cmpstr(history.search_field.placeholder_text, CompareOperator.EQ, "Lines that commits added or removed");
 		assert_false(check_labelled(list_bar(window), "Match case").active);
@@ -1339,14 +1339,14 @@ private static void test_ctrl_shift_f_opens_the_bar_on_changed_lines()
 
 		assert_false(history.search_visible);
 
-		history.search_choice = Gittree.SearchChoice.MESSAGES;
+		history.search_choice = Gitrlf.SearchChoice.MESSAGES;
 		window.activate_action("search", null);
 		settle(100);
 		window.activate_action("filter", null);
 		settle(100);
 
 		assert_true(history.search_visible);
-		assert_true(history.search_choice == Gittree.SearchChoice.LINES);
+		assert_true(history.search_choice == Gitrlf.SearchChoice.LINES);
 
 		history.search_field.text = "kept";
 		Gtk.test_widget_send_key(history.search_field, Gdk.Key.Escape, 0);
@@ -1381,7 +1381,7 @@ private static void test_ctrl_shift_f_takes_a_selection_and_applies_nothing()
 		settle(300);
 
 		assert_true(history.search_visible);
-		assert_true(history.search_choice == Gittree.SearchChoice.LINES);
+		assert_true(history.search_choice == Gitrlf.SearchChoice.LINES);
 		assert_cmpstr(history.search_field.text, CompareOperator.EQ, "needle");
 		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
@@ -1405,7 +1405,7 @@ private static void test_display_matches_only_hides_and_shows_without_git()
 		settle(300);
 
 		var plain = hash_ink(window);
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
 		settle(800);
@@ -1469,7 +1469,7 @@ private static void test_each_choice_keeps_its_own_text_and_switches()
 		settle(300);
 		pick(window, "Changed lines");
 
-		assert_true(history.search_choice == Gittree.SearchChoice.LINES);
+		assert_true(history.search_choice == Gitrlf.SearchChoice.LINES);
 		assert_cmpstr(field.text, CompareOperator.EQ, "");
 		assert_true(((Gtk.ToggleButton)buttons[1]).active);
 		assert_false(((Gtk.ToggleButton)buttons[0]).active);
@@ -1514,7 +1514,7 @@ private static void test_enter_applies_changed_lines_and_typing_does_not()
 		settle(300);
 
 		var plain = hash_ink(window);
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 
 		var before = git_calls(" -S");
 
@@ -1571,7 +1571,7 @@ private static void test_enter_on_an_empty_field_lifts_the_filter()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
 
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		window.history.search_field.text = "";
 		window.history.search_field.activate();
 		settle(200);
@@ -1723,7 +1723,7 @@ private static void test_files_match_case_and_regex_change_what_matches()
 		var history = window.history;
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 
 		var match_case = check_labelled(list_bar(window), "Match case");
 		var regex = check_labelled(list_bar(window), "Regex");
@@ -1736,7 +1736,7 @@ private static void test_files_match_case_and_regex_change_what_matches()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "lower,upper");
 		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that change *test*, ignoring case");
 
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		match_case.active = true;
 		history.search_field.activate();
 		settle(800);
@@ -1764,14 +1764,14 @@ private static void test_files_match_case_and_regex_change_what_matches()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "other,lower");
 
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		history.search_field.text = "three";
 		history.search_field.activate();
 		settle(800);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "other");
 
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		history.search_field.text = "src/(";
 		settle(300);
 
@@ -1814,7 +1814,7 @@ private static void test_globs_and_quoted_paths_work_in_the_field()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "text,top");
 
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		window.history.search_field.text = "'a b";
 		settle(300);
 
@@ -1911,7 +1911,7 @@ private static void test_the_choices_stack_and_the_list_shows_each_text()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,c");
 
-		choose(window, Gittree.SearchChoice.MESSAGES);
+		choose(window, Gitrlf.SearchChoice.MESSAGES);
 		window.history.search_field.text = hash;
 		window.history.search_field.activate();
 		settle(400);
@@ -1951,7 +1951,7 @@ private static void test_the_close_button_lifts_every_search()
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 		assert_cmpint(git_calls(), CompareOperator.EQ, before);
 
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "");
 
@@ -1967,7 +1967,7 @@ private static void test_the_close_button_lifts_every_search()
 		assert_cmpstr(subjects(limited), CompareOperator.EQ, "e,d,c,b,a");
 		assert_cmpstr(limited.history.path_bar_text, CompareOperator.EQ, "");
 
-		choose(limited, Gittree.SearchChoice.FILES);
+		choose(limited, Gitrlf.SearchChoice.FILES);
 
 		assert_cmpstr(limited.history.search_field.text, CompareOperator.EQ, "");
 
@@ -2036,7 +2036,7 @@ private static void test_the_diff_of_a_commit_the_files_search_does_not_match_is
 		settle(300);
 
 		var plain = hash_ink(window);
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		window.history.search_field.text = "p";
 		window.history.search_field.activate();
 		settle(800);
@@ -2074,7 +2074,7 @@ private static void test_the_files_choice_holds_the_command_line_paths()
 		var window = opened(repo, {"refs/heads/master"}, {"p", "a b"}, null, false);
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "p 'a b'");
 
@@ -2096,9 +2096,9 @@ private static void test_the_list_answers_while_a_search_runs()
 
 		settle(300);
 		window.history.paned.details_visible = true;
-		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1.5", true);
+		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1.5", true);
 		window.history.only_matches = true;
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 		check_labelled(list_bar(window), "Match case").active = true;
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
@@ -2114,7 +2114,7 @@ private static void test_the_list_answers_while_a_search_runs()
 		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "b");
 
 		settle(1800);
-		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+		Environment.unset_variable("GITRLF_TEST_GIT_DELAY");
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "c");
@@ -2136,13 +2136,13 @@ private static void test_the_paths_are_read_in_the_background()
 		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
 
 		settle(300);
-		Environment.set_variable("GITTREE_TEST_GIT_DELAY", "1", true);
+		Environment.set_variable("GITRLF_TEST_GIT_DELAY", "1", true);
 		window.history.only_matches = true;
-		choose(window, Gittree.SearchChoice.FILES);
+		choose(window, Gitrlf.SearchChoice.FILES);
 		window.history.search_field.text = "p";
 		window.history.search_field.activate();
 		settle(300);
-		Environment.unset_variable("GITTREE_TEST_GIT_DELAY");
+		Environment.unset_variable("GITRLF_TEST_GIT_DELAY");
 
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Reading the history of p...");
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
@@ -2173,7 +2173,7 @@ private static void test_the_regex_switch_filters_by_changed_lines()
 		var window = opened(repo, {"refs/heads/master"}, {}, null, false);
 
 		settle(300);
-		choose(window, Gittree.SearchChoice.LINES);
+		choose(window, Gitrlf.SearchChoice.LINES);
 
 		assert_cmpstr(window.history.search_field.placeholder_text, CompareOperator.EQ, "Lines that commits added or removed");
 		assert_cmpstr(window.history.search_field.tooltip_text, CompareOperator.EQ, "Searches the lines that each commit added or removed, in every file of every ref, as git log -S does, or git log -G with Regex. Enter searches");

@@ -15,6 +15,6 @@ esac
 
 cd "$(dirname "$0")/.."
 
-docker build --target build --build-arg UBUNTU="$version" -t "gittree-build:$version" .
+docker build --target build --build-arg UBUNTU="$version" -t "gitrlf-build:$version" .
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src" -w /src \
-	"gittree-build:$version" ./docker/build-deb.sh "$series" "~ubuntu$version.1"
+	"gitrlf-build:$version" ./docker/build-deb.sh "$series" "~ubuntu$version.1"

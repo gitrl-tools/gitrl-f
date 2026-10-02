@@ -1,9 +1,9 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: gittree
+Upstream-Name: gitrl-f
 Upstream-Contact: alexandros filotheou <alexandros.filotheou@gmail.com>
-Source: https://github.com/li9i/gittree
+Source: https://github.com/li9i/gitrl-f
 Comment:
- gittree is built from a vendored subtree of gitg 44, which lives under
+ gitrl-f is built from a vendored subtree of gitg 44, which lives under
  src/vendor-gitg/ and keeps its original copyright and licensing. The exact
  provenance, and the fact that the vendored source is byte for byte the source
  the installed gitg 44 was built from, are recorded in vendor/PROVENANCE. Every
@@ -25,11 +25,11 @@ Comment:
  the headers of the vendored files.
 License: GPL-2+
 
-Files: data/icons/io.github.li9i.gittree.svg
-       data/icons/io.github.li9i.gittree-128.png
-       data/icons/io.github.li9i.gittree-64.png
-       data/icons/io.github.li9i.gittree-48.png
-       data/icons/io.github.li9i.gittree-symbolic.svg
+Files: data/icons/io.github.li9i.gitrlf.svg
+       data/icons/io.github.li9i.gitrlf-128.png
+       data/icons/io.github.li9i.gitrlf-64.png
+       data/icons/io.github.li9i.gitrlf-48.png
+       data/icons/io.github.li9i.gitrlf-symbolic.svg
 Copyright: 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
            Jason Long
 License: CC-BY-3.0

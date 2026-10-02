@@ -5,7 +5,7 @@ The prototype lived in ~/dotfiles as git/.local/bin/git-tree. This script
 reads it from commit 5ccd222 with git show, so it still runs after the file
 is removed. It uses the prototype's own functions to read the refs and the
 history, to resolve the ticks and to find the commits a tick reaches, and
-prints the same lines as gittree-dump:
+prints the same lines as gitrlf-dump:
 
     <hash> TAB <parents that the graph joins> TAB <ticked refs at the commit>
     Showing N of M commits
@@ -20,7 +20,7 @@ import subprocess
 import sys
 import types
 
-DOTFILES = os.environ.get("GITTREE_DOTFILES", os.path.expanduser("~/dotfiles"))
+DOTFILES = os.environ.get("GITRLF_DOTFILES", os.path.expanduser("~/dotfiles"))
 PROTOTYPE = "5ccd222:git/.local/bin/git-tree"
 
 

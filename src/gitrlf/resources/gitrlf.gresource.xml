@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/io/github/li9i/gitrlf">
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitrlf-window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitrlf-history-paned.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitrlf-menus.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitrlf-refs-header.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/gitrlf-refs-row.ui</file>
+
+    <file compressed="true">ui/style.css</file>
+    <file compressed="true">ui/gitrlf-style.css</file>
+  </gresource>
+</gresources>

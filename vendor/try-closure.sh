@@ -4,18 +4,18 @@ set -eu
 
 here=$(dirname "$(readlink -f "$0")")
 root=$(dirname "$here")
-out=$(mktemp -d "${TMPDIR:-/tmp}/gittree-closure.XXXXXX")
+out=$(mktemp -d "${TMPDIR:-/tmp}/gitrlf-closure.XXXXXX")
 
 cat > "$out/config.h" <<'EOF'
-#define APPLICATION_ID "io.github.li9i.gittree"
+#define APPLICATION_ID "io.github.li9i.gitrlf"
 #define PROFILE ""
-#define GETTEXT_PACKAGE "gittree"
-#define PACKAGE_NAME "gittree"
+#define GETTEXT_PACKAGE "gitrl-f"
+#define PACKAGE_NAME "gitrl-f"
 #define PACKAGE_VERSION "0.1.0"
 #define PACKAGE_URL ""
-#define GITG_DATADIR "/usr/share/gittree"
+#define GITG_DATADIR "/usr/share/gitrl-f"
 #define GITG_LOCALEDIR "/usr/share/locale"
-#define GITG_LIBDIR "/usr/lib/gittree"
+#define GITG_LIBDIR "/usr/lib/gitrl-f"
 #define VERSION "0.1.0"
 #define PLATFORM_NAME "unix"
 EOF

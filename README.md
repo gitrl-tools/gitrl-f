@@ -1,27 +1,27 @@
-# `gittree`
+# `gitrl-f`
 
 > The git history only of the refs that you want to see
 
-`gittree` is a stripped-down version of `gitg`: it shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does: the same lanes, the same labels and the same diff. A commit is drawn when a ticked ref reaches it. A commit that a ticked branch shares with an unticked one is still drawn, as part of the ticked branch. Only the ticked refs get a label.
+`gitrl-f` is a stripped-down version of `gitg`: it shows the history of the branches, remote branches and tags that you tick, and nothing else. It draws that history as gitg does: the same lanes, the same labels and the same diff. A commit is drawn when a ticked ref reaches it. A commit that a ticked branch shares with an unticked one is still drawn, as part of the ticked branch. Only the ticked refs get a label.
 
 ![Refs ticked and unticked on the left, and the history redrawn on the right each time](docs/screenshots/demo-ticks.gif)
 
 ## What it does
 
 - **A checkbox for each ref.** The refs are on the left, in three groups: branches, remote branches under each remote, and tags. A name with slashes, such as `feature/lexer`, goes into a group `feature`, to any depth. The box of a group ticks every ref in it and opens the group, or unticks them all and folds it. At each level the refs come first, then the groups. Both follow the order of the graph: a ref whose commit is higher in the history comes first, and a group takes the place of its highest ref. Refs on the same commit are sorted by name.
-- **Your ticks come back.** With no ref and no tick option on the command line, gittree ticks the refs that you last chose in that repository. This works from any folder in the repository. A local branch that is new since then is ticked too, as it is in an open window. A new remote branch or a new tag is not. Until you change a tick, every ref is ticked. A run with a ref or a tick option ticks those refs, and gittree keeps none of the ticks that you change in that run. gittree keeps the ticks in its own settings, not in the repository.
+- **Your ticks come back.** With no ref and no tick option on the command line, gitrl-f ticks the refs that you last chose in that repository. This works from any folder in the repository. A local branch that is new since then is ticked too, as it is in an open window. A new remote branch or a new tag is not. Until you change a tick, every ref is ticked. A run with a ref or a tick option ticks those refs, and gitrl-f keeps none of the ticks that you change in that run. gitrl-f keeps the ticks in its own settings, not in the repository.
 - **The details on a click.** The pane under the history is hidden until you click a commit, or press Enter on it. Then it shows gitg's details and diff of that commit. A click on the same commit, Enter or Escape hides it again. A double-click is two clicks: it shows the pane and hides it again. A click that opens a file, or a click on Expand all, fills the window with the diff. A click that closes a file does not change the window. When the commit changes only one file, Enter fills the window at once. Escape, the back arrow or the close button at the top right of the diff brings back the refs and the list.
 - **One search bar.** When the pane below the list is shut, Ctrl+F opens one bar above the list. The search button at the top opens it at any time. Three joined buttons on its left pick what the field edits: **Messages** (messages, authors and hashes), **Changed lines** or **Files**. Each keeps its own text and its own **Match case** and **Regex**, and their searches add up: a commit matches when it meets every search that is on. The box on each button turns its search on or off and keeps its text. Every search waits for Enter: until then, its box shows a dash, and a click on the dash searches too. The matches are marked in the list, and the next Enter goes to the next one. **Display matches only** hides the other commits, and the graph joins across them. A regex is a POSIX extended regular expression, as in `git log -G`. Words narrow a messages search: `author:`, `message:`, `hash:`, `before:` and `after:`, as in `author:"Jane Doe" after:2026-01`. When the bar closes, every search in it is lifted. The bar keeps its texts and switches, so when it opens again its text is selected, and Enter searches again. While a search of the changed lines or the files applies, the yellow bar above the list says so. Its close button lifts every search and empties the fields. When nothing in the ticked refs matches a messages search, the bar counts the matches on unticked refs, and **Tick and show** ticks one of them and selects it, so a pasted hash always lands.
 - **Find in the diff.** While the pane is open, Ctrl+F opens a find bar above the details, wherever the focus is. Enter marks every match in every file of the commit, folded files too, and the next Enter goes to the next match and opens its file. It ignores case unless you turn **Match case** on, and **Regex** works as in the search bar. Ctrl+F with text selected on one line of the diff searches for that text, and the bar keeps its text when it closes. One scroll bar at the bottom of the pane moves the long lines of the file that holds the current match, or else of the file in the middle of the pane.
-- **Changed lines.** `gittree -S parse_args` draws only the commits that add or remove `parse_args`, as `git log -S` does, and the graph joins across the other commits. With **Regex**, or `-G`, it takes the commits whose added or removed lines match, as `git log -G` does. In the window, pick **Changed lines** in the bar, or press Ctrl+Shift+F, type the text and press Enter. git runs in the background, so the window stays in use. The bar ignores case unless you turn **Match case** on, while `-S` matches case unless you add `-i`. A launch with `-S`, `-G` or paths turns **Display matches only** on. Under such a search, the find bar of the diff opens with the same text.
-- **Files.** `gittree -- src/parser.py` draws only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does. With one file, the history follows it through its earlier names, as `git log --follow` does, and shows no merges. **Files** in the bar takes paths too, split by spaces, with globs such as `'*.yaml'`, so a new path limit needs no new launch. It ignores case unless **Match case** is on. With **Regex** on, the field is one regex that a path must match, such as `src/.*_test\.vala`. gittree then reads the files that each commit of the ticked refs changed, and keeps the commits that changed a path that matches. The diff of a commit that matches shows only those files. A right click on a file in the diff offers **Show history of this file**.
+- **Changed lines.** `gitrlf -S parse_args` draws only the commits that add or remove `parse_args`, as `git log -S` does, and the graph joins across the other commits. With **Regex**, or `-G`, it takes the commits whose added or removed lines match, as `git log -G` does. In the window, pick **Changed lines** in the bar, or press Ctrl+Shift+F, type the text and press Enter. git runs in the background, so the window stays in use. The bar ignores case unless you turn **Match case** on, while `-S` matches case unless you add `-i`. A launch with `-S`, `-G` or paths turns **Display matches only** on. Under such a search, the find bar of the diff opens with the same text.
+- **Files.** `gitrlf -- src/parser.py` draws only the commits that change that file, and the graph joins across the commits that it leaves out, as `git log` does. With one file, the history follows it through its earlier names, as `git log --follow` does, and shows no merges. **Files** in the bar takes paths too, split by spaces, with globs such as `'*.yaml'`, so a new path limit needs no new launch. It ignores case unless **Match case** is on. With **Regex** on, the field is one regex that a path must match, such as `src/.*_test\.vala`. gitrl-f then reads the files that each commit of the ticked refs changed, and keeps the commits that changed a path that matches. The diff of a commit that matches shows only those files. A right click on a file in the diff offers **Show history of this file**.
 - **The history of lines.** A right click on a line of the diff, or on lines you selected, offers **Show history of this line** or **Show history of the selected lines**. The list then shows only the commits that changed those lines, as `git log -L` does, through renames too. The close button of the yellow bar brings back the list as it was. On a line that the commit did not add, the same menu offers **Go to the commit that last changed this line**, as `git blame` finds it.
 - **Where a commit is.** A right click on a commit in the list copies its hash, or the name of the ref under the pointer. The same menu lists **Branches and tags with this commit**, with a tick for each, names the **First tag with this commit**, and says which merge brought it into the branch of HEAD. A right click on a ref in the panel offers **Go to where it splits from** another ticked ref, as `git merge-base` finds it.
 - **It follows the repository.** A commit, a fetch, a checkout or a rebase in another terminal redraws the window, with the same ticks, the same commit selected and the same commit at the top of the list.
 
 ![A click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
 
-`gittree` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries, and the graph, the labels and the diff are gitg's own code.
+`gitrl-f` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries, and the graph, the labels and the diff are gitg's own code.
 
 ## Installation
 
@@ -30,55 +30,55 @@
 The PPA is for Ubuntu 24.04 and 26.04:
 
 ```bash
-sudo add-apt-repository ppa:li9i/gittree
-sudo apt-get install gittree
+sudo add-apt-repository ppa:li9i/gitrl-f
+sudo apt-get install gitrl-f
 ```
 
-The package is `gittree`. The command is `gittree`, and `git tree` runs it too. In bash, TAB completes the options of both, then the names of the refs, and after `--` the paths.
+The package is `gitrl-f`. The command is `gitrlf`. In bash, TAB completes its options, then the names of the refs, and after `--` the paths.
 
-Before 0.4.0, the name was `gitree` and the PPA was `ppa:li9i/gitree`. That PPA is closed. If you added it, remove it:
+Before 0.5.0, the name was `gittree` and the PPA was `ppa:li9i/gittree`. Before 0.4.0, it was `gitree` and `ppa:li9i/gitree`. Those PPAs are closed. If you added one, remove it:
 
 ```bash
+sudo add-apt-repository --remove ppa:li9i/gittree
 sudo add-apt-repository --remove ppa:li9i/gitree
 ```
 
-The `gittree` package removes the `gitree` package when you install it.
+The `gitrl-f` package removes the `gittree` and `gitree` packages when you install it.
 
 ### `.deb` package
 
-Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/li9i/gittree/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
+Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/li9i/gitrl-f/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
 
 ```bash
-sudo apt-get install ./gittree_*_amd64.deb
+sudo apt-get install ./gitrl-f_*_amd64.deb
 ```
 
-If you installed gittree into `~/.local` from source before, remove that copy first, so that it does not come before the package on your `PATH`:
+If you installed gitrl-f into `~/.local` from source before, remove that copy first, so that it does not come before the package on your `PATH`:
 
 ```bash
-rm -f ~/.local/bin/gittree ~/.local/bin/git-tree
-rm -f ~/.local/share/bash-completion/completions/gittree ~/.local/share/bash-completion/completions/git-tree
+rm -f ~/.local/bin/gitrlf
+rm -f ~/.local/share/bash-completion/completions/gitrlf
 ```
 
 ### AppImage
 
-Download the AppImage from the [releases page](https://github.com/li9i/gittree/releases). It is one file, and it is not necessary to install it. Make it executable, then run it from a repository:
+Download the AppImage from the [releases page](https://github.com/li9i/gitrl-f/releases). It is one file, and it is not necessary to install it. Make it executable, then run it from a repository:
 
 ```bash
-chmod +x gittree-*-x86_64.AppImage
-./gittree-*-x86_64.AppImage
+chmod +x gitrl-f-*-x86_64.AppImage
+./gitrl-f-*-x86_64.AppImage
 ```
 
 If your machine has no FUSE, run it unpacked. This needs no other software:
 
 ```bash
-./gittree-*-x86_64.AppImage --appimage-extract-and-run
+./gitrl-f-*-x86_64.AppImage --appimage-extract-and-run
 ```
 
-To call it as `gittree` and as `git tree` from any directory, link it into `~/.local/bin` under both names, from the folder that holds it:
+To call it as `gitrlf` from any directory, link it into `~/.local/bin`, from the folder that holds it:
 
 ```bash
-ln -s "$PWD"/gittree-*-x86_64.AppImage ~/.local/bin/gittree
-ln -s "$PWD"/gittree-*-x86_64.AppImage ~/.local/bin/git-tree
+ln -s "$PWD"/gitrl-f-*-x86_64.AppImage ~/.local/bin/gitrlf
 ```
 
 The AppImage has no TAB completion. The package and a build from source have it.
@@ -86,8 +86,8 @@ The AppImage has no TAB completion. The package and a build from source have it.
 ## Build from source
 
 ```bash
-git clone https://github.com/li9i/gittree.git
-cd gittree
+git clone https://github.com/li9i/gitrl-f.git
+cd gitrl-f
 ```
 
 `CONTRIBUTING.md` gives the packages that the build needs.
@@ -99,7 +99,7 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-`~/.local/bin` must be on the `PATH`. The install puts `gittree` there, and `git-tree` as a second name for it. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas`, and bash finds the TAB completion in `~/.local/share/bash-completion/completions`, with no more configuration.
+`~/.local/bin` must be on the `PATH`. The install puts `gitrlf` there. GLib finds the settings schema in `~/.local/share/glib-2.0/schemas`, and bash finds the TAB completion in `~/.local/share/bash-completion/completions`, with no more configuration.
 
 ### `.deb` package
 
@@ -113,8 +113,8 @@ Built in a container of the Ubuntu release that the package is for, so that it l
 The packages go to `_build/deb/`. Install one with `apt`, so that you also get its dependencies:
 
 ```bash
-sudo apt-get remove --purge gittree
-sudo apt-get install ./_build/deb/gittree_*~ubuntu24.04.1_amd64.deb
+sudo apt-get remove --purge gitrl-f
+sudo apt-get install ./_build/deb/gitrl-f_*~ubuntu24.04.1_amd64.deb
 ```
 
 ### AppImage
@@ -123,27 +123,26 @@ sudo apt-get install ./_build/deb/gittree_*~ubuntu24.04.1_amd64.deb
 ./scripts/build-appimage.sh
 ```
 
-The AppImage goes to the top of the repository, as `gittree-<version>-x86_64.AppImage`.
+The AppImage goes to the top of the repository, as `gitrl-f-<version>-x86_64.AppImage`.
 
 ## How to run it
 
 In a repository:
 
 ```bash
-gittree                         # the ticks you chose last, or every ref
-gittree main origin/main        # only these two
-gittree 'feature/*'             # every ref whose name matches
-gittree -l -r                   # every local and every remote branch
-gittree -- src/parser.py        # only the commits that change this file,
+gitrlf                          # the ticks you chose last, or every ref
+gitrlf main origin/main         # only these two
+gitrlf 'feature/*'              # every ref whose name matches
+gitrlf -l -r                    # every local and every remote branch
+gitrlf -- src/parser.py         # only the commits that change this file,
                                 # followed through its renames
-gittree -S 'parse_args'         # only the commits that add or remove this text
-gittree -S 'parse_args' -- src/parser.py
+gitrlf -S 'parse_args'          # only the commits that add or remove this text
+gitrlf -S 'parse_args' -- src/parser.py
                                 # the same, in this file only
-gittree -G 'parse_[a-z]+'       # only the commits whose changed lines match
-git tree -l                     # the same program, as a git command
+gitrlf -G 'parse_[a-z]+'        # only the commits whose changed lines match
 ```
 
-Outside a repository, `gittree` opens a list of the repositories that you opened before. `gittree -h` prints every option, and `man gittree` gives the whole of it.
+Outside a repository, `gitrlf` opens a list of the repositories that you opened before. `gitrlf -h` prints every option, and `man gitrlf` gives the whole of it.
 
 | Key | What it does |
 |-----|--------------|

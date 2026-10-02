@@ -3,7 +3,7 @@
 set -eu
 
 root=$(dirname "$(dirname "$(dirname "$(readlink -f "$0")")")")
-appimage=${1:-$(ls "$root"/gittree-*-x86_64.AppImage 2>/dev/null | head -1)}
+appimage=${1:-$(ls "$root"/gitrl-f-*-x86_64.AppImage 2>/dev/null | head -1)}
 image=${2:-ubuntu:24.04}
 
 if [ ! -f "$appimage" ]; then
@@ -12,12 +12,12 @@ if [ ! -f "$appimage" ]; then
 fi
 
 appimage=$(readlink -f "$appimage")
-version=$(basename "$appimage" | sed -n 's/^gittree-\([0-9.]*\)-x86_64\.AppImage$/\1/p')
+version=$(basename "$appimage" | sed -n 's/^gitrl-f-\([0-9.]*\)-x86_64\.AppImage$/\1/p')
 
 echo "testing $(basename "$appimage") in $image"
 
-docker run --rm -e GITTREE_VERSION="$version" \
-	-v "$appimage:/tmp/gittree.AppImage:ro" "$image" sh -eu -c '
+docker run --rm -e GITRLF_VERSION="$version" \
+	-v "$appimage:/tmp/gitrlf.AppImage:ro" "$image" sh -eu -c '
 	export DEBIAN_FRONTEND=noninteractive
 	export APPIMAGE_EXTRACT_AND_RUN=1
 
@@ -26,7 +26,7 @@ docker run --rm -e GITTREE_VERSION="$version" \
 	apt-get install -y -qq libexpat1 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b libwayland-client0 libx11-6 libxcb1 >/dev/null
 
 	echo "--- the version ---"
-	test "$(/tmp/gittree.AppImage --version)" = "gittree $GITTREE_VERSION"
+	test "$(/tmp/gitrlf.AppImage --version)" = "gitrlf $GITRLF_VERSION"
 
 	repo=/tmp/fixture
 	git init -q "$repo"
@@ -39,13 +39,13 @@ docker run --rm -e GITTREE_VERSION="$version" \
 
 	echo "--- the window draws ---"
 	cd "$repo"
-	DISPLAY=:7 NO_AT_BRIDGE=1 /tmp/gittree.AppImage >/tmp/app.log 2>&1 &
+	DISPLAY=:7 NO_AT_BRIDGE=1 /tmp/gitrlf.AppImage >/tmp/app.log 2>&1 &
 	app=$!
 
 	tries=0
 	until DISPLAY=:7 xwininfo -root -tree 2>/dev/null | grep -q "\"fixture\""; do
 		if ! kill -0 "$app" 2>/dev/null; then
-			echo "gittree stopped before it drew a window:" >&2
+			echo "gitrlf stopped before it drew a window:" >&2
 			tail -20 /tmp/app.log >&2
 			exit 1
 		fi

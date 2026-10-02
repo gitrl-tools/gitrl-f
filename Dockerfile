@@ -3,7 +3,7 @@ FROM ubuntu:${UBUNTU} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY debian/control /tmp/gittree/debian/control
+COPY debian/control /tmp/gitrlf/debian/control
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         dpkg-dev \
         fakeroot \
         lintian \
-    && apt-get build-dep -y /tmp/gittree \
-    && rm -rf /var/lib/apt/lists/* /tmp/gittree
+    && apt-get build-dep -y /tmp/gitrlf \
+    && rm -rf /var/lib/apt/lists/* /tmp/gitrlf
 
 WORKDIR /src
 CMD ["/bin/bash"]

@@ -1,1 +1,1 @@
-i18n.gettext(gittree_gettext, preset: 'glib')
+i18n.gettext(gitrlf_gettext, preset: 'glib')

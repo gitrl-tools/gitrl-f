@@ -14,8 +14,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 mkdir -p "$tmp/completions"
-cp "$script" "$tmp/completions/gittree"
-ln -s gittree "$tmp/completions/git-tree"
+cp "$script" "$tmp/completions/gitrlf"
 export BASH_COMPLETION_USER_DIR=$tmp
 
 git init -q -b master "$tmp/origin"
@@ -84,29 +83,13 @@ origin/master
 topic
 v1"
 
-expect "gittree -" "$(cat "$tmp/options")"
-expect "gittree " "$refs"
-expect "gittree master -- n" "notes.txt"
-expect "gittree -S " ""
-expect "gittree --text " ""
-expect "gittree -G " ""
-expect "gittree --regex " ""
-expect "gittree -S foo " "$refs"
-expect "git-tree -" "$(cat "$tmp/options")"
-expect "git tree -" "$(cat "$tmp/options")"
-expect "git tree to" "topic"
-
-kept=$(
-	_own() { :; }
-	complete -F _own git-tree
-	_completion_loader gittree
-	complete -p git-tree
-)
-if [ "$kept" = "complete -F _own git-tree" ]; then
-	echo "PASS: a completion of git-tree already defined is kept"
-else
-	echo "FAIL: loading the completion replaced '$kept'" >&2
-	status=1
-fi
+expect "gitrlf -" "$(cat "$tmp/options")"
+expect "gitrlf " "$refs"
+expect "gitrlf master -- n" "notes.txt"
+expect "gitrlf -S " ""
+expect "gitrlf --text " ""
+expect "gitrlf -G " ""
+expect "gitrlf --regex " ""
+expect "gitrlf -S foo " "$refs"
 
 exit $status

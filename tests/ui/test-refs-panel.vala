@@ -1,21 +1,21 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private static void click_centre(Gtk.Widget widget)
@@ -34,11 +34,11 @@ private static Repo fixture() throws Error
 	return repo;
 }
 
-private static Gittree.RefsHeader header(Gittree.RefsList list, string key)
+private static Gitrlf.RefsHeader header(Gitrlf.RefsList list, string key)
 {
 	foreach (var child in list.get_children())
 	{
-		var candidate = child as Gittree.RefsHeader;
+		var candidate = child as Gitrlf.RefsHeader;
 
 		if (candidate != null && candidate.key == key)
 		{
@@ -49,7 +49,7 @@ private static Gittree.RefsHeader header(Gittree.RefsList list, string key)
 	error("no header %s", key);
 }
 
-private static int indent_of(Gittree.RefsList list, Gtk.Widget row)
+private static int indent_of(Gitrlf.RefsList list, Gtk.Widget row)
 {
 	var check = find_all(row, typeof(Gtk.CheckButton))[0];
 	int x;
@@ -66,7 +66,7 @@ private static string label_of(Gtk.Widget row, int index)
 	return ((Gtk.Label)labels[index]).get_text();
 }
 
-private static string layout(Gittree.RefsList list)
+private static string layout(Gitrlf.RefsList list)
 {
 	var parts = new string[0];
 
@@ -74,13 +74,13 @@ private static string layout(Gittree.RefsList list)
 	{
 		var shown = child.get_child_visible() ? "" : "(hidden)";
 
-		if (child is Gittree.RefsHeader)
+		if (child is Gitrlf.RefsHeader)
 		{
-			parts += "H:" + ((Gittree.RefsHeader)child).title + ":" + label_of(child, 1) + shown;
+			parts += "H:" + ((Gitrlf.RefsHeader)child).title + ":" + label_of(child, 1) + shown;
 		}
 		else
 		{
-			var row = (Gittree.RefsRow)child;
+			var row = (Gitrlf.RefsRow)child;
 			var note = label_of(row, 1);
 
 			parts += "R:" + label_of(row, 0) + (note != "" ? " " + note : "") + shown;
@@ -94,25 +94,25 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/refs-panel/all-ticks-every-ref-whatever-the-filter-shows", test_all_ticks_every_ref_whatever_the_filter_shows);
-	Test.add_func("/gittree/ui/refs-panel/detached-head-row", test_detached_head_row);
-	Test.add_func("/gittree/ui/refs-panel/each-level-is-indented-by-12-pixels", test_each_level_is_indented_by_12_pixels);
-	Test.add_func("/gittree/ui/refs-panel/filter-keeps-matching-refs-and-unfolds", test_filter_keeps_matching_refs_and_unfolds);
-	Test.add_func("/gittree/ui/refs-panel/filter-keeps-nested-groups-that-hold-a-match", test_filter_keeps_nested_groups_that_hold_a_match);
-	Test.add_func("/gittree/ui/refs-panel/folds-are-kept-across-a-reload", test_folds_are_kept_across_a_reload);
-	Test.add_func("/gittree/ui/refs-panel/group-checkbox-count-and-mixed-state", test_group_checkbox_count_and_mixed_state);
-	Test.add_func("/gittree/ui/refs-panel/group-checkbox-opens-when-it-ticks-and-folds-when-it-unticks", test_group_checkbox_opens_when_it_ticks_and_folds_when_it_unticks);
-	Test.add_func("/gittree/ui/refs-panel/group-name-click-folds-and-opens-it", test_group_name_click_folds_and_opens_it);
-	Test.add_func("/gittree/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
-	Test.add_func("/gittree/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
-	Test.add_func("/gittree/ui/refs-panel/nested-groups-in-every-list", test_nested_groups_in_every_list);
-	Test.add_func("/gittree/ui/refs-panel/none-unticks-every-ref", test_none_unticks_every_ref);
-	Test.add_func("/gittree/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
-	Test.add_func("/gittree/ui/refs-panel/right-click-on-a-ref-copies-its-name", test_right_click_on_a_ref_copies_its_name);
-	Test.add_func("/gittree/ui/refs-panel/rows-follow-the-graph-order", test_rows_follow_the_graph_order);
-	Test.add_func("/gittree/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
-	Test.add_func("/gittree/ui/refs-panel/subgroup-checkbox-ticks-everything-under-it", test_subgroup_checkbox_ticks_everything_under_it);
-	Test.add_func("/gittree/ui/refs-panel/subgroup-name-folds-everything-under-it", test_subgroup_name_folds_everything_under_it);
+	Test.add_func("/gitrlf/ui/refs-panel/all-ticks-every-ref-whatever-the-filter-shows", test_all_ticks_every_ref_whatever_the_filter_shows);
+	Test.add_func("/gitrlf/ui/refs-panel/detached-head-row", test_detached_head_row);
+	Test.add_func("/gitrlf/ui/refs-panel/each-level-is-indented-by-12-pixels", test_each_level_is_indented_by_12_pixels);
+	Test.add_func("/gitrlf/ui/refs-panel/filter-keeps-matching-refs-and-unfolds", test_filter_keeps_matching_refs_and_unfolds);
+	Test.add_func("/gitrlf/ui/refs-panel/filter-keeps-nested-groups-that-hold-a-match", test_filter_keeps_nested_groups_that_hold_a_match);
+	Test.add_func("/gitrlf/ui/refs-panel/folds-are-kept-across-a-reload", test_folds_are_kept_across_a_reload);
+	Test.add_func("/gitrlf/ui/refs-panel/group-checkbox-count-and-mixed-state", test_group_checkbox_count_and_mixed_state);
+	Test.add_func("/gitrlf/ui/refs-panel/group-checkbox-opens-when-it-ticks-and-folds-when-it-unticks", test_group_checkbox_opens_when_it_ticks_and_folds_when_it_unticks);
+	Test.add_func("/gitrlf/ui/refs-panel/group-name-click-folds-and-opens-it", test_group_name_click_folds_and_opens_it);
+	Test.add_func("/gitrlf/ui/refs-panel/group-name-folds-it", test_group_name_folds_it);
+	Test.add_func("/gitrlf/ui/refs-panel/groups-order-and-notes", test_groups_order_and_notes);
+	Test.add_func("/gitrlf/ui/refs-panel/nested-groups-in-every-list", test_nested_groups_in_every_list);
+	Test.add_func("/gitrlf/ui/refs-panel/none-unticks-every-ref", test_none_unticks_every_ref);
+	Test.add_func("/gitrlf/ui/refs-panel/ref-name-activates-the-ref", test_ref_name_activates_the_ref);
+	Test.add_func("/gitrlf/ui/refs-panel/right-click-on-a-ref-copies-its-name", test_right_click_on_a_ref_copies_its_name);
+	Test.add_func("/gitrlf/ui/refs-panel/rows-follow-the-graph-order", test_rows_follow_the_graph_order);
+	Test.add_func("/gitrlf/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
+	Test.add_func("/gitrlf/ui/refs-panel/subgroup-checkbox-ticks-everything-under-it", test_subgroup_checkbox_ticks_everything_under_it);
+	Test.add_func("/gitrlf/ui/refs-panel/subgroup-name-folds-everything-under-it", test_subgroup_name_folds_everything_under_it);
 	return Test.run();
 }
 
@@ -137,13 +137,13 @@ private static Repo nested_fixture() throws Error
 	return repo;
 }
 
-private static Gittree.RefsList panel(Repo repo, out Gee.List<Gittree.Ref> refs) throws Error
+private static Gitrlf.RefsList panel(Repo repo, out Gee.List<Gitrlf.Ref> refs) throws Error
 {
-	var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
-	var list = new Gittree.RefsList();
+	var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+	var list = new Gitrlf.RefsList();
 
-	refs = Gittree.Refs.read(repository);
-	list.set_refs(refs, Gittree.Ticks.resolve(null, refs), new Gittree.History(repository, refs, false));
+	refs = Gitrlf.Refs.read(repository);
+	list.set_refs(refs, Gitrlf.Ticks.resolve(null, refs), new Gitrlf.History(repository, refs, false));
 
 	var window = new Gtk.Window();
 	window.add(list);
@@ -178,7 +178,7 @@ private static void test_all_ticks_every_ref_whatever_the_filter_shows()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		list.filter_text = "fix";
@@ -201,7 +201,7 @@ private static void test_detached_head_row()
 		var repo = fixture();
 		repo.git({"checkout", "--quiet", "--detach", "master~1"});
 
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		assert_true(layout(list).has_prefix("H:Branches:4/4|R:HEAD detached|R:master|H:fix:1/1|R:stamp|"));
@@ -220,7 +220,7 @@ private static void test_each_level_is_indented_by_12_pixels()
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var start = indent_of(list, header(list, "section:local"));
 
@@ -246,7 +246,7 @@ private static void test_filter_keeps_matching_refs_and_unfolds()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		list.filter_text = "ORIGIN/m";
@@ -276,7 +276,7 @@ private static void test_filter_keeps_nested_groups_that_hold_a_match()
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		header(list, "local:b").expanded = false;
@@ -302,7 +302,7 @@ private static void test_folds_are_kept_across_a_reload()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		header(list, "section:local").expanded = false;
@@ -326,7 +326,7 @@ private static void test_group_checkbox_count_and_mixed_state()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var remotes = header(list, "section:remotes");
 		var check = (Gtk.CheckButton)find_all(remotes, typeof(Gtk.CheckButton))[0];
@@ -366,7 +366,7 @@ private static void test_group_checkbox_opens_when_it_ticks_and_folds_when_it_un
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var b = header(list, "local:b");
 		var tags = header(list, "section:tags");
@@ -431,7 +431,7 @@ private static void test_group_name_click_folds_and_opens_it()
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		settle(300);
@@ -463,7 +463,7 @@ private static void test_group_name_folds_it()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var branches = header(list, "section:local");
 
@@ -489,7 +489,7 @@ private static void test_groups_order_and_notes()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
@@ -511,7 +511,7 @@ private static void test_nested_groups_in_every_list()
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
@@ -538,7 +538,7 @@ private static void test_none_unticks_every_ref()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var changes = 0;
 
@@ -561,7 +561,7 @@ private static void test_ref_name_activates_the_ref()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		string? activated = null;
 
@@ -586,7 +586,7 @@ private static void test_right_click_on_a_ref_copies_its_name()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
 		var ticks = sorted(list.ticks);
@@ -646,7 +646,7 @@ private static void test_rows_follow_the_graph_order()
 		repo.commit("four");
 		repo.git({"update-ref", "refs/remotes/upstream/master", "HEAD"});
 
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
@@ -668,7 +668,7 @@ private static void test_rows_offer_no_only_link()
 	try
 	{
 		var repo = fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var target = row(list, "fix/stamp");
 
@@ -693,7 +693,7 @@ private static void test_subgroup_checkbox_ticks_everything_under_it()
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 		var branches = header(list, "section:local");
 		var b = header(list, "local:b");
@@ -736,7 +736,7 @@ private static void test_subgroup_name_folds_everything_under_it()
 	try
 	{
 		var repo = nested_fixture();
-		Gee.List<Gittree.Ref> refs;
+		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
 		list.row_activated(header(list, "local:b/c"));

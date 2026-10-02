@@ -4,11 +4,11 @@ set -eu
 
 here=$(dirname "$(readlink -f "$0")")
 root=$(dirname "$(dirname "$here")")
-binary=${GITTREE_BINARY:-$root/_build/src/gittree/gittree}
-out=${GITTREE_VISUAL_OUT:-$here/output}
+binary=${GITRLF_BINARY:-$root/_build/src/gitrlf/gitrlf}
+out=${GITRLF_VISUAL_OUT:-$here/output}
 home=$out/home
 fixture=$home/fixture
-reference=$here/reference/gittree-window.png
+reference=$here/reference/gitrlf-window.png
 
 GSETTINGS_SCHEMA_DIR=${GSETTINGS_SCHEMA_DIR:-$root/_build/data}
 export GSETTINGS_SCHEMA_DIR
@@ -64,7 +64,7 @@ capture() {
 	cp "$here/settings.ini" "$home/.config/gtk-3.0/settings.ini"
 	cp "$here/keyfile" "$home/.config/glib-2.0/settings/keyfile"
 	"$here/fixture.sh" "$fixture"
-	(cd "$fixture" && GITTREE_VISUAL_CLICK="$click" "$here/capture.sh" "$out/$name.png" "$home" "$@")
+	(cd "$fixture" && GITRLF_VISUAL_CLICK="$click" "$here/capture.sh" "$out/$name.png" "$home" "$@")
 	echo "  captured $name"
 }
 
@@ -93,57 +93,57 @@ click=
 capture gitg-1 gitg "$fixture"
 capture gitg-2 gitg "$fixture"
 click=$FIRST_ROW
-capture gittree-1 "$binary" -a
-capture gittree-2 "$binary" -a
+capture gitrlf-1 "$binary" -a
+capture gitrlf-2 "$binary" -a
 
-for name in gitg-1 gitg-2 gittree-1 gittree-2; do
+for name in gitg-1 gitg-2 gitrlf-1 gitrlf-2; do
 	crop "$name" "$LIST" list
 done
 
 echo "--- a capture against itself, taken twice ---"
 check "gitg list" "$out/gitg-1-list.png" "$out/gitg-2-list.png"
-check "gittree window" "$out/gittree-1.png" "$out/gittree-2.png"
+check "gitrlf window" "$out/gitrlf-1.png" "$out/gitrlf-2.png"
 
-echo "--- gittree against gitg ---"
-list=$("$here/compare.sh" "$out/gitg-1-list.png" "$out/gittree-1-list.png")
+echo "--- gitrlf against gitg ---"
+list=$("$here/compare.sh" "$out/gitg-1-list.png" "$out/gitrlf-1-list.png")
 echo "  list: $list differing pixels"
 
 if [ "$list" -ne 0 ]; then
 	failed=1
 	echo "--- what moved in the list ---"
 	python3 "$here/measure.py" "$out/gitg-1-list.png" --json >"$out/gitg.json"
-	python3 "$here/measure.py" "$out/gittree-1-list.png" --json >"$out/gittree.json"
-	python3 - "$out/gitg.json" "$out/gittree.json" <<'PY'
+	python3 "$here/measure.py" "$out/gitrlf-1-list.png" --json >"$out/gitrlf.json"
+	python3 - "$out/gitg.json" "$out/gitrlf.json" <<'PY'
 import json
 import sys
 
 gitg = json.load(open(sys.argv[1]))
-gittree = json.load(open(sys.argv[2]))
+gitrlf = json.load(open(sys.argv[2]))
 
 for key in sorted(gitg):
-    if key != "dots" and gitg[key] != gittree[key]:
-        print("  {}: gitg {}, gittree {}".format(key, gitg[key], gittree[key]))
+    if key != "dots" and gitg[key] != gitrlf[key]:
+        print("  {}: gitg {}, gitrlf {}".format(key, gitg[key], gitrlf[key]))
 
-for a, b in zip(gitg["dots"], gittree["dots"]):
+for a, b in zip(gitg["dots"], gitrlf["dots"]):
     if a != b:
-        print("  dot in row {}: gitg lane {} {}, gittree lane {} {}".format(a[0], a[1], a[2], b[1], b[2]))
+        print("  dot in row {}: gitg lane {} {}, gitrlf lane {} {}".format(a[0], a[1], a[2], b[1], b[2]))
 
-if len(gitg["dots"]) != len(gittree["dots"]):
-    print("  dots: gitg {}, gittree {}".format(len(gitg["dots"]), len(gittree["dots"])))
+if len(gitg["dots"]) != len(gitrlf["dots"]):
+    print("  dots: gitg {}, gitrlf {}".format(len(gitg["dots"]), len(gitrlf["dots"])))
 PY
 fi
 
-echo "--- gittree against its reference window ---"
+echo "--- gitrlf against its reference window ---"
 
-if [ "${GITTREE_VISUAL_UPDATE:-0}" = 1 ]; then
-	cp "$out/gittree-1.png" "$reference"
+if [ "${GITRLF_VISUAL_UPDATE:-0}" = 1 ]; then
+	cp "$out/gitrlf-1.png" "$reference"
 	echo "  wrote $reference"
 else
-	check "window" "$out/gittree-1.png" "$reference"
+	check "window" "$out/gitrlf-1.png" "$reference"
 fi
 
 echo "--- self check: the comparison must see a changed colour and a shift ---"
-"$here/selfcheck.sh" "$out/gittree-1-list.png" '#c4a000' "$out" || failed=1
+"$here/selfcheck.sh" "$out/gitrlf-1-list.png" '#c4a000' "$out" || failed=1
 
 if [ "$failed" -ne 0 ]; then
 	echo "visual parity FAILED; the captures are in $out"

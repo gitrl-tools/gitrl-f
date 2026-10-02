@@ -1,22 +1,22 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GittreeTest
+namespace GitrlfTest
 {
 
 private static Gtk.Widget? find(Gtk.Widget widget, Type type)
@@ -50,21 +50,21 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/ui/startup/gitg-style-reaches-a-window-started-in-a-repository", test_gitg_style_reaches_a_window_started_in_a_repository);
-	Test.add_func("/gittree/ui/startup/no-wd-opens-the-chooser-in-a-repository", test_no_wd_opens_the_chooser_in_a_repository);
-	Test.add_func("/gittree/ui/startup/ticks-are-kept-for-each-repository", test_ticks_are_kept_for_each_repository);
+	Test.add_func("/gitrlf/ui/startup/gitg-style-reaches-a-window-started-in-a-repository", test_gitg_style_reaches_a_window_started_in_a_repository);
+	Test.add_func("/gitrlf/ui/startup/no-wd-opens-the-chooser-in-a-repository", test_no_wd_opens_the_chooser_in_a_repository);
+	Test.add_func("/gitrlf/ui/startup/ticks-are-kept-for-each-repository", test_ticks_are_kept_for_each_repository);
 
 	return Test.run();
 }
 
 private static string started(File directory, string[] arguments, string[] ticks)
 {
-	var app = new Gittree.Application();
+	var app = new Gitrlf.Application();
 	var found = "";
 
 	app.window_added.connect((window) => {
 		Idle.add(() => {
-			var history = ((Gittree.Window)window).history;
+			var history = ((Gitrlf.Window)window).history;
 			var names = new Gee.ArrayList<string>();
 
 			names.add_all(history.ticks);
@@ -107,7 +107,7 @@ private static void test_gitg_style_reaches_a_window_started_in_a_repository()
 		error("fixture failed: %s", e.message);
 	}
 
-	var app = new Gittree.Application();
+	var app = new Gitrlf.Application();
 	var background = Gdk.RGBA();
 
 	app.window_added.connect((window) => {
@@ -129,7 +129,7 @@ private static void test_gitg_style_reaches_a_window_started_in_a_repository()
 
 	var directory = Environment.get_current_dir();
 	Environment.set_current_dir(repo.path.get_path());
-	app.run({"gittree"});
+	app.run({"gitrlf"});
 	Environment.set_current_dir(directory);
 
 	assert_cmpfloat(background.alpha, CompareOperator.EQ, 1.0);
@@ -151,12 +151,12 @@ private static void test_no_wd_opens_the_chooser_in_a_repository()
 		error("fixture failed: %s", e.message);
 	}
 
-	var app = new Gittree.Application();
+	var app = new Gitrlf.Application();
 	var chooser = false;
 
 	app.window_added.connect((window) => {
 		Idle.add(() => {
-			var dash = find(window, typeof(Gittree.DashView));
+			var dash = find(window, typeof(Gitrlf.DashView));
 
 			chooser = dash != null && dash.get_mapped();
 			window.close();
@@ -167,7 +167,7 @@ private static void test_no_wd_opens_the_chooser_in_a_repository()
 
 	var directory = Environment.get_current_dir();
 	Environment.set_current_dir(repo.path.get_path());
-	app.run({"gittree", "--no-wd"});
+	app.run({"gitrlf", "--no-wd"});
 	Environment.set_current_dir(directory);
 
 	assert_true(chooser);
@@ -200,7 +200,7 @@ private static void test_ticks_are_kept_for_each_repository()
 		error("fixture failed: %s", e.message);
 	}
 
-	assert_cmpstr(started(repo.path, {"gittree"}, {"refs/heads/feature/scan", "refs/heads/master", "refs/remotes/origin/master"}), CompareOperator.EQ, "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/origin/master,refs/tags/v1");
+	assert_cmpstr(started(repo.path, {"gitrlf"}, {"refs/heads/feature/scan", "refs/heads/master", "refs/remotes/origin/master"}), CompareOperator.EQ, "refs/heads/feature/scan,refs/heads/fix/stamp,refs/heads/master,refs/remotes/origin/master,refs/tags/v1");
 
 	try
 	{
@@ -215,9 +215,9 @@ private static void test_ticks_are_kept_for_each_repository()
 
 	var kept = "refs/heads/feature/scan,refs/heads/late,refs/heads/master,refs/remotes/origin/master";
 
-	assert_cmpstr(started(below, {"gittree"}, {}), CompareOperator.EQ, kept);
-	assert_cmpstr(started(below, {"gittree", "master"}, {"refs/heads/fix/stamp"}), CompareOperator.EQ, "refs/heads/master");
-	assert_cmpstr(started(repo.path, {"gittree"}, {}), CompareOperator.EQ, kept);
+	assert_cmpstr(started(below, {"gitrlf"}, {}), CompareOperator.EQ, kept);
+	assert_cmpstr(started(below, {"gitrlf", "master"}, {"refs/heads/fix/stamp"}), CompareOperator.EQ, "refs/heads/master");
+	assert_cmpstr(started(repo.path, {"gitrlf"}, {}), CompareOperator.EQ, kept);
 
 	repo.remove();
 }

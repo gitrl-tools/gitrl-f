@@ -6,7 +6,7 @@ The container is not the development environment. Development and daily use happ
 
 The container proves that `Build-Depends` is complete. The `Dockerfile` has two stages. The `build` stage installs the packaging tools and the build dependencies that `debian/control` declares, with `apt-get build-dep`, and nothing else. The packages are built in it, so the build fails when it needs software that `debian/control` does not name, even when that software is on the developer's machine. A Launchpad builder makes the same check.
 
-The `test` stage adds what the tests need and the build does not: Xvfb, xdotool, a real `man` in place of the minimal image's placeholder, and an icon theme. `Dockerfile.visual` adds gitg 44 and ImageMagick to it for the pixel suite, on Ubuntu 24.04 only, because it compares gittree with that gitg.
+The `test` stage adds what the tests need and the build does not: Xvfb, xdotool, a real `man` in place of the minimal image's placeholder, and an icon theme. `Dockerfile.visual` adds gitg 44 and ImageMagick to it for the pixel suite, on Ubuntu 24.04 only, because it compares gitrl-f with that gitg.
 
 ## How to use it
 
@@ -15,24 +15,24 @@ The `test` stage adds what the tests need and the build does not: Xvfb, xdotool,
 ./scripts/build-deb.sh 26.04
 ```
 
-Each builds the `build` stage for that release as `gittree-build:<release>`, and the `.deb` in it, into `_build/deb/`. A `.deb` links the libraries of the release it was built on, so each release needs its own image.
+Each builds the `build` stage for that release as `gitrlf-build:<release>`, and the `.deb` in it, into `_build/deb/`. A `.deb` links the libraries of the release it was built on, so each release needs its own image.
 
 To run every test suite in a container:
 
 ```bash
-docker build --build-arg UBUNTU=24.04 -t gittree-test:24.04 .
+docker build --build-arg UBUNTU=24.04 -t gitrlf-test:24.04 .
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src:ro" -w /src \
-    gittree-test:24.04 sh -c 'meson setup /tmp/b && ninja -C /tmp/b && meson test -C /tmp/b'
+    gitrlf-test:24.04 sh -c 'meson setup /tmp/b && ninja -C /tmp/b && meson test -C /tmp/b'
 ```
 
 To run the pixel suite:
 
 ```bash
-docker build -f Dockerfile.visual -t gittree-visual:24.04 .
+docker build -f Dockerfile.visual -t gitrlf-visual:24.04 .
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src:ro" -w /src \
-    gittree-visual:24.04 sh -c 'meson setup /tmp/b && ninja -C /tmp/b && \
-    GITTREE_BINARY=/tmp/b/src/gittree/gittree GSETTINGS_SCHEMA_DIR=/tmp/b/data \
-    GITTREE_VISUAL_OUT=/tmp/out sh tests/visual/test-parity.sh'
+    gitrlf-visual:24.04 sh -c 'meson setup /tmp/b && ninja -C /tmp/b && \
+    GITRLF_BINARY=/tmp/b/src/gitrlf/gitrlf GSETTINGS_SCHEMA_DIR=/tmp/b/data \
+    GITRLF_VISUAL_OUT=/tmp/out sh tests/visual/test-parity.sh'
 ```
 
 The source tarball holds only the files that git tracks, so a file must be committed or staged before a build takes it.

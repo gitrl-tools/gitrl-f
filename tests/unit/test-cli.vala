@@ -1,21 +1,21 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private const string[] PROTOTYPE_PARSES = {
@@ -218,7 +218,7 @@ private static string[] arguments_of(string row)
 	return joined.split(" ");
 }
 
-private static string flags_of(Gittree.CommandLine cli)
+private static string flags_of(Gitrlf.CommandLine cli)
 {
 	var flags = new string[0];
 
@@ -259,31 +259,31 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/cli/a-bad-regex-is-refused", test_a_bad_regex_is_refused);
-	Test.add_func("/gittree/cli/a-text-alone-ticks-every-ref", test_a_text_alone_ticks_every_ref);
-	Test.add_func("/gittree/cli/an-empty-regex-is-refused", test_an_empty_regex_is_refused);
-	Test.add_func("/gittree/cli/an-empty-text-is-refused", test_an_empty_text_is_refused);
-	Test.add_func("/gittree/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
-	Test.add_func("/gittree/cli/help-names-every-option", test_help_names_every_option);
-	Test.add_func("/gittree/cli/help-says-gittree-and-git-tree", test_help_says_gittree_and_git_tree);
-	Test.add_func("/gittree/cli/help-says-what-adds-or-removes-a-text", test_help_says_what_adds_or_removes_a_text);
-	Test.add_func("/gittree/cli/ignore-case-needs-a-text", test_ignore_case_needs_a_text);
-	Test.add_func("/gittree/cli/long-only-options-parse-as-argparse", test_long_only_options_parse_as_argparse);
-	Test.add_func("/gittree/cli/no-display-exits-with-one", test_no_display_exits_with_one);
-	Test.add_func("/gittree/cli/no-wd-refuses-refs-paths-texts-and-tick-options", test_no_wd_refuses_refs_paths_texts_and_tick_options);
-	Test.add_func("/gittree/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
-	Test.add_func("/gittree/cli/parses-as-the-prototype", test_parses_as_the_prototype);
-	Test.add_func("/gittree/cli/regex-parses-as-argparse", test_regex_parses_as_argparse);
-	Test.add_func("/gittree/cli/text-and-ignore-case-parse-as-argparse", test_text_and_ignore_case_parse_as_argparse);
-	Test.add_func("/gittree/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
-	Test.add_func("/gittree/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
+	Test.add_func("/gitrlf/cli/a-bad-regex-is-refused", test_a_bad_regex_is_refused);
+	Test.add_func("/gitrlf/cli/a-text-alone-ticks-every-ref", test_a_text_alone_ticks_every_ref);
+	Test.add_func("/gitrlf/cli/an-empty-regex-is-refused", test_an_empty_regex_is_refused);
+	Test.add_func("/gitrlf/cli/an-empty-text-is-refused", test_an_empty_text_is_refused);
+	Test.add_func("/gitrlf/cli/help-is-printed-anywhere", test_help_is_printed_anywhere);
+	Test.add_func("/gitrlf/cli/help-names-every-option", test_help_names_every_option);
+	Test.add_func("/gitrlf/cli/help-says-gitrlf-only", test_help_says_gitrlf_only);
+	Test.add_func("/gitrlf/cli/help-says-what-adds-or-removes-a-text", test_help_says_what_adds_or_removes_a_text);
+	Test.add_func("/gitrlf/cli/ignore-case-needs-a-text", test_ignore_case_needs_a_text);
+	Test.add_func("/gitrlf/cli/long-only-options-parse-as-argparse", test_long_only_options_parse_as_argparse);
+	Test.add_func("/gitrlf/cli/no-display-exits-with-one", test_no_display_exits_with_one);
+	Test.add_func("/gitrlf/cli/no-wd-refuses-refs-paths-texts-and-tick-options", test_no_wd_refuses_refs_paths_texts_and_tick_options);
+	Test.add_func("/gitrlf/cli/outside-a-repository-arguments-are-an-error", test_outside_a_repository_arguments_are_an_error);
+	Test.add_func("/gitrlf/cli/parses-as-the-prototype", test_parses_as_the_prototype);
+	Test.add_func("/gitrlf/cli/regex-parses-as-argparse", test_regex_parses_as_argparse);
+	Test.add_func("/gitrlf/cli/text-and-ignore-case-parse-as-argparse", test_text_and_ignore_case_parse_as_argparse);
+	Test.add_func("/gitrlf/cli/version-prints-the-name-and-the-version", test_version_prints_the_name_and_the_version);
+	Test.add_func("/gitrlf/cli/wrong-option-prints-usage-and-exits-with-two", test_wrong_option_prints_usage_and_exits_with_two);
 
 	return Test.run();
 }
 
 private static int run(string directory, string[] arguments, out string output, out string errors)
 {
-	string[] argv = { Environment.get_variable("GITTREE_BINARY") };
+	string[] argv = { Environment.get_variable("GITRLF_BINARY") };
 
 	foreach (var argument in arguments)
 	{
@@ -318,7 +318,7 @@ private static void test_a_bad_regex_is_refused()
 
 		assert_cmpint(run(repo.path.get_path(), { "-G", "(" }, out output, out errors), CompareOperator.EQ, 2);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -G/--regex: bad regex: Unmatched ( or \\(\n");
+		assert_cmpstr(errors, CompareOperator.EQ, Gitrlf.CommandLine.USAGE + "gitrlf: error: argument -G/--regex: bad regex: Unmatched ( or \\(\n");
 
 		repo.remove();
 	}
@@ -337,10 +337,10 @@ private static void test_a_text_alone_ticks_every_ref()
 		repo.branch("side");
 		repo.git({"tag", "v1"});
 
-		var repository = Gittree.Repository.open(Gittree.Application.discover_repository(repo.path));
-		var refs = Gittree.Refs.read(repository);
-		var all = Gittree.Ticks.resolve(new Gittree.CommandLine({ "-S", "foo" }), refs);
-		var local = Gittree.Ticks.resolve(new Gittree.CommandLine({ "-S", "foo", "-l" }), refs);
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var refs = Gitrlf.Refs.read(repository);
+		var all = Gitrlf.Ticks.resolve(new Gitrlf.CommandLine({ "-S", "foo" }), refs);
+		var local = Gitrlf.Ticks.resolve(new Gitrlf.CommandLine({ "-S", "foo", "-l" }), refs);
 
 		assert_cmpint(all.size, CompareOperator.EQ, refs.size);
 		assert_true(all.contains("refs/tags/v1"));
@@ -369,7 +369,7 @@ private static void test_an_empty_regex_is_refused()
 
 			assert_cmpint(run(repo.path.get_path(), arguments.split("\t"), out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -G/--regex: the regex is empty\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gitrlf.CommandLine.USAGE + "gitrlf: error: argument -G/--regex: the regex is empty\n");
 		}
 
 		repo.remove();
@@ -394,7 +394,7 @@ private static void test_an_empty_text_is_refused()
 
 			assert_cmpint(run(repo.path.get_path(), arguments.split("\t"), out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -S/--text: the text is empty\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gitrlf.CommandLine.USAGE + "gitrlf: error: argument -S/--text: the text is empty\n");
 		}
 
 		repo.remove();
@@ -410,7 +410,7 @@ private static void test_help_is_printed_anywhere()
 	try
 	{
 		var repo = Repo.create();
-		var outside = DirUtils.make_tmp("gittree-outside-XXXXXX");
+		var outside = DirUtils.make_tmp("gitrlf-outside-XXXXXX");
 
 		foreach (var directory in new string[] { repo.path.get_path(), outside })
 		{
@@ -420,7 +420,7 @@ private static void test_help_is_printed_anywhere()
 				string errors;
 
 				assert_cmpint(run(directory, { option }, out output, out errors), CompareOperator.EQ, 0);
-				assert_cmpstr(output, CompareOperator.EQ, Gittree.CommandLine.HELP);
+				assert_cmpstr(output, CompareOperator.EQ, Gitrlf.CommandLine.HELP);
 				assert_cmpstr(errors, CompareOperator.EQ, "");
 			}
 		}
@@ -447,28 +447,27 @@ private static void test_help_names_every_option()
 	}
 }
 
-private static void test_help_says_gittree_and_git_tree()
+private static void test_help_says_gitrlf_only()
 {
-	var lines = Gittree.CommandLine.HELP.split("\n");
+	var lines = Gitrlf.CommandLine.HELP.split("\n");
 
-	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gittree [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]");
-	assert_cmpstr(Gittree.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
-	assert_true("\ngit tree runs it too.\n" in Gittree.CommandLine.HELP);
-	assert_true("\nOptions add up: 'gittree -l origin/master' ticks every local\n" in Gittree.CommandLine.HELP);
-	assert_true("\n    --version       print the version and exit\n" in Gittree.CommandLine.HELP);
-	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gittree.CommandLine.HELP);
-	assert_false("git tree [" in Gittree.CommandLine.HELP);
-	assert_true("\n    -h, --help      print this help and exit\n" in Gittree.CommandLine.HELP);
-	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gittree.CommandLine.HELP);
-	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gittree.CommandLine.HELP);
-	assert_true("\n    Escape                      close a bar, the full diff or the details\n" in Gittree.CommandLine.HELP);
-	assert_true("\n                                while it is shut\n    Ctrl+Shift+F                open the search bar on Changed lines\n    Enter, Ctrl+G" in Gittree.CommandLine.HELP);
-	assert_true("\n    Ctrl+F                      open or close the diff's find bar while\n                                the pane is open, or the search bar\n                                while it is shut\n" in Gittree.CommandLine.HELP);
+	assert_cmpstr(lines[0], CompareOperator.EQ, "usage: gitrlf [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]");
+	assert_cmpstr(Gitrlf.CommandLine.USAGE, CompareOperator.EQ, lines[0] + "\n");
+	assert_false("git tree" in Gitrlf.CommandLine.HELP);
+	assert_true("\nOptions add up: 'gitrlf -l origin/master' ticks every local\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    --version       print the version and exit\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    -h, --help      print this help and exit\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    Escape                      close a bar, the full diff or the details\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n                                while it is shut\n    Ctrl+Shift+F                open the search bar on Changed lines\n    Enter, Ctrl+G" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    Ctrl+F                      open or close the diff's find bar while\n                                the pane is open, or the search bar\n                                while it is shut\n" in Gitrlf.CommandLine.HELP);
 }
 
 private static void test_help_says_what_adds_or_removes_a_text()
 {
-	var help = Gittree.CommandLine.HELP;
+	var help = Gitrlf.CommandLine.HELP;
 
 	assert_true("\n    -t, --tags      tick every tag\n    -S, --text <text>\n                    draw only the commits that add or remove <text>\n    -G, --regex <regex>\n                    draw only the commits whose added or removed\n                    lines match <regex>\n    -i, --ignore-case\n                    with -S or -G, ignore case\n    -h, --help" in help);
 	assert_true("\nSearch looks in the subject, the message, the author and the\nhash. Words narrow it: author:, message:, hash:, before: and\nafter:, as in author:\"Jane Doe\" after:2026-01.\n\nA commit adds or removes the text when the number of times it\nappears in a file the commit changes goes up or down, as in git\nlog -S. A merge never does.\n\nA regex is a POSIX extended regular expression, as in git log -G.\nOne file after -- is followed through its renames, as in git log\n--follow.\n" in help);
@@ -488,7 +487,7 @@ private static void test_ignore_case_needs_a_text()
 
 			assert_cmpint(run(repo.path.get_path(), { option }, out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: argument -i/--ignore-case: needs -S or -G\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gitrlf.CommandLine.USAGE + "gitrlf: error: argument -i/--ignore-case: needs -S or -G\n");
 		}
 
 		repo.remove();
@@ -512,7 +511,7 @@ private static void test_long_only_options_parse_as_argparse()
 
 	for (var i = 0; i < cases.length[0]; i++)
 	{
-		var cli = new Gittree.CommandLine({ cases[i, 0] });
+		var cli = new Gitrlf.CommandLine({ cases[i, 0] });
 		var flag = cli.version ? "version" : (cli.no_wd ? "no-wd" : "");
 
 		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, cases[i, 2]);
@@ -576,7 +575,7 @@ private static void test_no_wd_refuses_refs_paths_texts_and_tick_options()
 
 			assert_cmpint(run(repo.path.get_path(), arguments, out output, out errors), CompareOperator.EQ, 2);
 			assert_cmpstr(output, CompareOperator.EQ, "");
-			assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: --no-wd takes no ref, no path, no text, no regex and no tick option\n");
+			assert_cmpstr(errors, CompareOperator.EQ, Gitrlf.CommandLine.USAGE + "gitrlf: error: --no-wd takes no ref, no path, no text, no regex and no tick option\n");
 		}
 
 		foreach (var option in new string[] { "-h", "--version" })
@@ -603,7 +602,7 @@ private static void test_outside_a_repository_arguments_are_an_error()
 
 	try
 	{
-		outside = DirUtils.make_tmp("gittree-outside-XXXXXX");
+		outside = DirUtils.make_tmp("gitrlf-outside-XXXXXX");
 	}
 	catch (FileError e)
 	{
@@ -632,7 +631,7 @@ private static void test_outside_a_repository_arguments_are_an_error()
 
 		assert_cmpint(run(outside, arguments, out output, out errors), CompareOperator.EQ, 1);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, "gittree: not a git repository\n");
+		assert_cmpstr(errors, CompareOperator.EQ, "gitrlf: not a git repository\n");
 	}
 
 	DirUtils.remove(outside);
@@ -643,7 +642,7 @@ private static void test_parses_as_the_prototype()
 	foreach (var row in PROTOTYPE_PARSES)
 	{
 		var expected = row.split("|");
-		var cli = new Gittree.CommandLine(arguments_of(row));
+		var cli = new Gitrlf.CommandLine(arguments_of(row));
 
 		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, expected[4]);
 
@@ -671,7 +670,7 @@ private static void test_regex_parses_as_argparse()
 	{
 		var expected = row.split("|");
 		var arguments = expected[0] == "" ? new string[0] : expected[0].split("\t");
-		var cli = new Gittree.CommandLine(arguments);
+		var cli = new Gitrlf.CommandLine(arguments);
 
 		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, expected[7]);
 
@@ -695,7 +694,7 @@ private static void test_text_and_ignore_case_parse_as_argparse()
 	{
 		var expected = row.split("|");
 		var arguments = expected[0] == "" ? new string[0] : expected[0].split("\t");
-		var cli = new Gittree.CommandLine(arguments);
+		var cli = new Gitrlf.CommandLine(arguments);
 
 		assert_cmpstr(cli.error != null ? cli.error : "", CompareOperator.EQ, expected[6]);
 
@@ -718,7 +717,7 @@ private static void test_version_prints_the_name_and_the_version()
 	string errors;
 
 	assert_cmpint(run(Environment.get_current_dir(), { "--version" }, out output, out errors), CompareOperator.EQ, 0);
-	assert_cmpstr(output, CompareOperator.EQ, "gittree %s\n".printf(Gittree.Config.PACKAGE_VERSION));
+	assert_cmpstr(output, CompareOperator.EQ, "gitrlf %s\n".printf(Gitrlf.Config.PACKAGE_VERSION));
 	assert_cmpstr(errors, CompareOperator.EQ, "");
 }
 
@@ -734,7 +733,7 @@ private static void test_wrong_option_prints_usage_and_exits_with_two()
 
 		assert_cmpint(run(repo.path.get_path(), { "-x" }, out output, out errors), CompareOperator.EQ, 2);
 		assert_cmpstr(output, CompareOperator.EQ, "");
-		assert_cmpstr(errors, CompareOperator.EQ, Gittree.CommandLine.USAGE + "gittree: error: unrecognized arguments: -x\n");
+		assert_cmpstr(errors, CompareOperator.EQ, Gitrlf.CommandLine.USAGE + "gitrlf: error: unrecognized arguments: -x\n");
 
 		repo.remove();
 	}

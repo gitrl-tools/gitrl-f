@@ -1,45 +1,45 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace GittreeTest
+namespace GitrlfTest
 {
 
 public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/word-diff/added-word", test_an_added_word_marks_only_that_word);
-	Test.add_func("/gittree/word-diff/changed-word", test_a_changed_word_in_a_long_line);
-	Test.add_func("/gittree/word-diff/empty-line", test_an_empty_line_takes_no_marks);
-	Test.add_func("/gittree/word-diff/flat-form-agrees", test_the_flat_form_carries_the_same_offsets);
-	Test.add_func("/gittree/word-diff/flat-form-declines", test_the_flat_form_declines_where_refine_declines);
-	Test.add_func("/gittree/word-diff/identical-lines", test_an_identical_line_takes_no_marks);
-	Test.add_func("/gittree/word-diff/only-changed-words-are-marked", test_only_changed_words_are_marked);
-	Test.add_func("/gittree/word-diff/phrase-is-one-mark", test_a_mark_does_not_end_on_whitespace);
-	Test.add_func("/gittree/word-diff/punctuation", test_punctuation_is_its_own_word);
-	Test.add_func("/gittree/word-diff/unrelated-lines", test_two_unrelated_lines_take_no_marks);
-	Test.add_func("/gittree/word-diff/wide-characters", test_marks_land_on_the_right_bytes_past_a_wide_character);
+	Test.add_func("/gitrlf/word-diff/added-word", test_an_added_word_marks_only_that_word);
+	Test.add_func("/gitrlf/word-diff/changed-word", test_a_changed_word_in_a_long_line);
+	Test.add_func("/gitrlf/word-diff/empty-line", test_an_empty_line_takes_no_marks);
+	Test.add_func("/gitrlf/word-diff/flat-form-agrees", test_the_flat_form_carries_the_same_offsets);
+	Test.add_func("/gitrlf/word-diff/flat-form-declines", test_the_flat_form_declines_where_refine_declines);
+	Test.add_func("/gitrlf/word-diff/identical-lines", test_an_identical_line_takes_no_marks);
+	Test.add_func("/gitrlf/word-diff/only-changed-words-are-marked", test_only_changed_words_are_marked);
+	Test.add_func("/gitrlf/word-diff/phrase-is-one-mark", test_a_mark_does_not_end_on_whitespace);
+	Test.add_func("/gitrlf/word-diff/punctuation", test_punctuation_is_its_own_word);
+	Test.add_func("/gitrlf/word-diff/unrelated-lines", test_two_unrelated_lines_take_no_marks);
+	Test.add_func("/gitrlf/word-diff/wide-characters", test_marks_land_on_the_right_bytes_past_a_wide_character);
 
 	return Test.run();
 }
 
-private static string marked(string line, Gittree.WordSpan[] spans)
+private static string marked(string line, Gitrlf.WordSpan[] spans)
 {
 	var parts = new string[spans.length];
 
@@ -53,13 +53,13 @@ private static string marked(string line, Gittree.WordSpan[] spans)
 
 private static void test_a_changed_word_in_a_long_line()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
 	var old_line = "The quick brown fox jumps over the lazy dog";
 	var new_line = "The quick brown cat jumps over the lazy dog";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line,
 	                                   out old_spans, out new_spans));
 
 	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "fox");
@@ -68,13 +68,13 @@ private static void test_a_changed_word_in_a_long_line()
 
 private static void test_a_mark_does_not_end_on_whitespace()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
 	var old_line = "alpha beta gamma delta";
 	var new_line = "alpha one two gamma delta";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line,
 	                                   out old_spans, out new_spans));
 
 	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "one two");
@@ -83,13 +83,13 @@ private static void test_a_mark_does_not_end_on_whitespace()
 
 private static void test_an_added_word_marks_only_that_word()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
 	var old_line = "call(first, third)";
 	var new_line = "call(first, second, third)";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line,
 	                                   out old_spans, out new_spans));
 
 	assert_cmpint(old_spans.length, CompareOperator.EQ, 0);
@@ -98,31 +98,31 @@ private static void test_an_added_word_marks_only_that_word()
 
 private static void test_an_empty_line_takes_no_marks()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
-	assert_false(Gittree.WordDiff.refine("", "something",
+	assert_false(Gitrlf.WordDiff.refine("", "something",
 	                                    out old_spans, out new_spans));
 }
 
 private static void test_an_identical_line_takes_no_marks()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
-	assert_false(Gittree.WordDiff.refine("same line", "same line",
+	assert_false(Gitrlf.WordDiff.refine("same line", "same line",
 	                                    out old_spans, out new_spans));
 }
 
 private static void test_marks_land_on_the_right_bytes_past_a_wide_character()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
 	var old_line = "καλημέρα alpha beta";
 	var new_line = "καλημέρα alpha gamma";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line,
 	                                   out old_spans, out new_spans));
 
 	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "beta");
@@ -131,13 +131,13 @@ private static void test_marks_land_on_the_right_bytes_past_a_wide_character()
 
 private static void test_only_changed_words_are_marked()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
 	var old_line = "remap(\"scan\", \"scan_raw\")";
 	var new_line = "remap(\"scan\", \"raw_scan\")";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line, out old_spans, out new_spans));
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line, out old_spans, out new_spans));
 
 	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "scan_raw");
 	assert_cmpstr(marked(new_line, new_spans), CompareOperator.EQ, "raw_scan");
@@ -145,13 +145,13 @@ private static void test_only_changed_words_are_marked()
 
 private static void test_punctuation_is_its_own_word()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
 	var old_line = "value = compute(a, b);";
 	var new_line = "value = compute(a, c);";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line,
 	                                   out old_spans, out new_spans));
 
 	assert_cmpstr(marked(old_line, old_spans), CompareOperator.EQ, "b");
@@ -160,17 +160,17 @@ private static void test_punctuation_is_its_own_word()
 
 private static void test_the_flat_form_carries_the_same_offsets()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 	int[] old_flat;
 	int[] new_flat;
 
 	var old_line = "one two three four";
 	var new_line = "one six three four";
 
-	assert_true(Gittree.WordDiff.refine(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine(old_line, new_line,
 	                                   out old_spans, out new_spans));
-	assert_true(Gittree.WordDiff.refine_flat(old_line, new_line,
+	assert_true(Gitrlf.WordDiff.refine_flat(old_line, new_line,
 	                                        out old_flat, out new_flat));
 
 	assert_cmpint(old_flat.length, CompareOperator.EQ, old_spans.length * 2);
@@ -194,7 +194,7 @@ private static void test_the_flat_form_declines_where_refine_declines()
 	int[] old_flat;
 	int[] new_flat;
 
-	assert_false(Gittree.WordDiff.refine_flat("alpha beta gamma", "nothing alike here",
+	assert_false(Gitrlf.WordDiff.refine_flat("alpha beta gamma", "nothing alike here",
 	                                         out old_flat, out new_flat));
 
 	assert_cmpint(old_flat.length, CompareOperator.EQ, 0);
@@ -203,10 +203,10 @@ private static void test_the_flat_form_declines_where_refine_declines()
 
 private static void test_two_unrelated_lines_take_no_marks()
 {
-	Gittree.WordSpan[] old_spans;
-	Gittree.WordSpan[] new_spans;
+	Gitrlf.WordSpan[] old_spans;
+	Gitrlf.WordSpan[] new_spans;
 
-	assert_false(Gittree.WordDiff.refine("import os", "def main(argv):",
+	assert_false(Gitrlf.WordDiff.refine("import os", "def main(argv):",
 	                                    out old_spans, out new_spans));
 
 	assert_cmpint(old_spans.length, CompareOperator.EQ, 0);

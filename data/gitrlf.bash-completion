@@ -1,0 +1,40 @@
+# bash completion for gitrlf
+
+__gitrlf()
+{
+	local i
+
+	for ((i = 1; i < cword; i++)); do
+		if [[ ${words[i]} == -- ]]; then
+			_filedir
+			return
+		fi
+	done
+
+	case $prev in
+	-S | --text | -G | --regex)
+		return
+		;;
+	esac
+
+	if [[ $cur == -* ]]; then
+		COMPREPLY=($(compgen -W '-a --all -l --local -r --remotes -t --tags
+			-S --text -G --regex -i --ignore-case -h --help --version --no-wd
+			--' -- "$cur"))
+		return
+	fi
+
+	COMPREPLY=($(compgen -W "$(git for-each-ref \
+		--format='%(if)%(symref)%(then)%(else)%(refname:short)%(end)' \
+		refs/heads refs/remotes refs/tags 2>/dev/null)" -- "$cur"))
+}
+
+_gitrlf()
+{
+	local cur prev words cword
+	_init_completion || return
+
+	__gitrlf
+}
+
+complete -F _gitrlf gitrlf

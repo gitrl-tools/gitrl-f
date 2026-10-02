@@ -1,27 +1,27 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private class Opened : Object
 {
-	public Gittree.History history;
-	public Gee.List<Gittree.Ref> refs;
+	public Gitrlf.History history;
+	public Gee.List<Gitrlf.Ref> refs;
 	public Gitg.Repository repository;
 }
 
@@ -87,19 +87,19 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/history/commits-a-ticked-branch-shares-with-an-unticked-one-are-drawn", test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn);
-	Test.add_func("/gittree/history/count-is-rows-of-commits", test_count_is_rows_of_commits);
-	Test.add_func("/gittree/history/graph-lines-join-from-row-to-row", test_graph_lines_join_from_row_to_row);
-	Test.add_func("/gittree/history/lanes-are-gitgs", test_lanes_are_gitgs);
-	Test.add_func("/gittree/history/long-history-folds-a-lane", test_long_history_folds_a_lane);
-	Test.add_func("/gittree/history/mainline-is-gitgs", test_mainline_is_gitgs);
-	Test.add_func("/gittree/history/merge-sends-a-line-to-each-parent", test_merge_sends_a_line_to_each_parent);
-	Test.add_func("/gittree/history/only-commits-that-a-ticked-ref-reaches-are-drawn", test_only_commits_that_a_ticked_ref_reaches_are_drawn);
-	Test.add_func("/gittree/history/order-is-git-logs", test_order_is_git_logs);
-	Test.add_func("/gittree/history/refs-that-hold-a-commit-are-those-of-git", test_refs_that_hold_a_commit_are_those_of_git);
-	Test.add_func("/gittree/history/shallow-boundary-ends-the-history", test_shallow_boundary_ends_the_history);
-	Test.add_func("/gittree/history/ticking-does-not-read-the-repository-again", test_ticking_does_not_read_the_repository_again);
-	Test.add_func("/gittree/history/topological-order-keeps-children-above-parents", test_topological_order_keeps_children_above_parents);
+	Test.add_func("/gitrlf/history/commits-a-ticked-branch-shares-with-an-unticked-one-are-drawn", test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn);
+	Test.add_func("/gitrlf/history/count-is-rows-of-commits", test_count_is_rows_of_commits);
+	Test.add_func("/gitrlf/history/graph-lines-join-from-row-to-row", test_graph_lines_join_from_row_to_row);
+	Test.add_func("/gitrlf/history/lanes-are-gitgs", test_lanes_are_gitgs);
+	Test.add_func("/gitrlf/history/long-history-folds-a-lane", test_long_history_folds_a_lane);
+	Test.add_func("/gitrlf/history/mainline-is-gitgs", test_mainline_is_gitgs);
+	Test.add_func("/gitrlf/history/merge-sends-a-line-to-each-parent", test_merge_sends_a_line_to_each_parent);
+	Test.add_func("/gitrlf/history/only-commits-that-a-ticked-ref-reaches-are-drawn", test_only_commits_that_a_ticked_ref_reaches_are_drawn);
+	Test.add_func("/gitrlf/history/order-is-git-logs", test_order_is_git_logs);
+	Test.add_func("/gitrlf/history/refs-that-hold-a-commit-are-those-of-git", test_refs_that_hold_a_commit_are_those_of_git);
+	Test.add_func("/gitrlf/history/shallow-boundary-ends-the-history", test_shallow_boundary_ends_the_history);
+	Test.add_func("/gitrlf/history/ticking-does-not-read-the-repository-again", test_ticking_does_not_read_the_repository_again);
+	Test.add_func("/gitrlf/history/topological-order-keeps-children-above-parents", test_topological_order_keeps_children_above_parents);
 
 	return Test.run();
 }
@@ -108,9 +108,9 @@ private static Opened open(File path, bool topological = false) throws Error
 {
 	var opened = new Opened();
 
-	opened.repository = Gittree.Repository.open(Gittree.Application.discover_repository(path));
-	opened.refs = Gittree.Refs.read(opened.repository);
-	opened.history = new Gittree.History(opened.repository, opened.refs, topological);
+	opened.repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(path));
+	opened.refs = Gitrlf.Refs.read(opened.repository);
+	opened.history = new Gitrlf.History(opened.repository, opened.refs, topological);
 
 	return opened;
 }
@@ -232,7 +232,7 @@ private static void test_lanes_are_gitgs()
 		repo.checkout("feature/scan");
 
 		var opened = open(repo.path);
-		var mainline = Gittree.History.mainline(opened.repository, true);
+		var mainline = Gitrlf.History.mainline(opened.repository, true);
 
 		string[] ticks = {
 			"master,feature/scan,fix/stamp,origin/master,v1",
@@ -278,7 +278,7 @@ private static void test_long_history_folds_a_lane()
 
 		var opened = open(repo.path);
 		var chosen = tips(opened, {"master", "side"});
-		var mainline = Gittree.History.mainline(opened.repository, true);
+		var mainline = Gitrlf.History.mainline(opened.repository, true);
 		var rows = opened.history.tick(chosen, mainline);
 		var folded = false;
 
@@ -315,17 +315,17 @@ private static void test_mainline_is_gitgs()
 		var master = repo.git({"rev-parse", "master"}).strip();
 		var fix = repo.git({"rev-parse", "fix/stamp"}).strip();
 
-		assert_cmpstr(ids(Gittree.History.mainline(opened.repository, true)), CompareOperator.EQ, head);
-		assert_cmpstr(ids(Gittree.History.mainline(opened.repository, false)), CompareOperator.EQ, "");
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, head);
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, false)), CompareOperator.EQ, "");
 
 		repo.git({"config", "init.defaultBranch", "master"});
-		assert_cmpstr(ids(Gittree.History.mainline(opened.repository, true)), CompareOperator.EQ, master + "," + head);
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, master + "," + head);
 
 		repo.git({"config", "gitg.mainline", "refs/heads/fix/stamp,refs/heads/nope,refs/heads/master"});
-		assert_cmpstr(ids(Gittree.History.mainline(opened.repository, true)), CompareOperator.EQ, fix + "," + master + "," + head);
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, fix + "," + master + "," + head);
 
 		repo.checkout("master");
-		assert_cmpstr(ids(Gittree.History.mainline(opened.repository, true)), CompareOperator.EQ, fix + "," + master);
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, fix + "," + master);
 
 		repo.remove();
 	}
@@ -388,7 +388,7 @@ private static void test_only_commits_that_a_ticked_ref_reaches_are_drawn()
 		repo.branched();
 
 		var opened = open(repo.path);
-		var mainline = Gittree.History.mainline(opened.repository, true);
+		var mainline = Gitrlf.History.mainline(opened.repository, true);
 
 		assert_false("feature one" in subjects(opened.history.tick(tips(opened, {"master"}), mainline)));
 		assert_cmpstr(subjects(opened.history.tick(tips(opened, {"feature/scan"}), mainline)), CompareOperator.EQ,

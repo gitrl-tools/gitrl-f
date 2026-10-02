@@ -1,22 +1,22 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
  */
-namespace GittreeTest
+namespace GitrlfTest
 {
 
 private static string history(Repo repo) throws Error
@@ -36,10 +36,10 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gittree/smoke/fixture-builds-history", test_fixture_builds_history);
-	Test.add_func("/gittree/smoke/fixture-is-deterministic", test_fixture_is_deterministic);
-	Test.add_func("/gittree/smoke/home-is-not-the-users", test_home_is_not_the_users);
-	Test.add_func("/gittree/smoke/vendored-library-links", test_vendored_library_links);
+	Test.add_func("/gitrlf/smoke/fixture-builds-history", test_fixture_builds_history);
+	Test.add_func("/gitrlf/smoke/fixture-is-deterministic", test_fixture_is_deterministic);
+	Test.add_func("/gitrlf/smoke/home-is-not-the-users", test_home_is_not_the_users);
+	Test.add_func("/gitrlf/smoke/vendored-library-links", test_vendored_library_links);
 
 	return Test.run();
 }

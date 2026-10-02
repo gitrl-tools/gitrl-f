@@ -1,4 +1,4 @@
-FROM gittree-test:24.04
+FROM gitrlf-test:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 

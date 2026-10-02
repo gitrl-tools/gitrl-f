@@ -1,21 +1,21 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
- */namespace GittreeTest
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
+ */namespace GitrlfTest
 {
 
 private static void activate(string prefix)
@@ -31,13 +31,13 @@ private static void activate(string prefix)
 	settle(800);
 }
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -57,7 +57,7 @@ private static string differences(File a, File b) throws Error
 	return run({ "diff", "-r", "--no-dereference", a.get_path(), b.get_path() });
 }
 
-private static void every_row(Gittree.Window window)
+private static void every_row(Gitrlf.Window window)
 {
 	var rows = window.history.rows().length;
 
@@ -72,12 +72,12 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/session/a-session-changes-nothing", test_a_session_changes_nothing);
+	Test.add_func("/gitrlf/ui/session/a-session-changes-nothing", test_a_session_changes_nothing);
 
 	return Test.run();
 }
 
-private static void right_click_row(Gittree.Window window, int row)
+private static void right_click_row(Gitrlf.Window window, int row)
 {
 	var view = window.history.paned.commit_list_view;
 	Gdk.Rectangle cell;
@@ -90,7 +90,7 @@ private static void right_click_row(Gittree.Window window, int row)
 	settle(600);
 }
 
-private static void right_click_text(Gittree.Window window, string text)
+private static void right_click_text(Gitrlf.Window window, string text)
 {
 	foreach (var file in window.history.diff_view.get_files())
 	{
@@ -158,7 +158,7 @@ private static void settle(int milliseconds)
 
 private static void stage_four(File location, Repo repo)
 {
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 	var history = window.history;
 	var bar = history.search_field.get_parent();
 
@@ -281,8 +281,8 @@ private static void test_a_session_changes_nothing()
 		var copy = repo.path.get_parent().get_child(repo.path.get_basename() + "-copy");
 		run({ "cp", "-a", repo.path.get_path(), copy.get_path() });
 
-		var location = Gittree.Application.discover_repository(repo.path);
-		var window = new Gittree.Window(application());
+		var location = Gitrlf.Application.discover_repository(repo.path);
+		var window = new Gitrlf.Window(application());
 		window.set_default_size(1000, 800);
 		window.open_repository(location, null, {}, repo.path);
 		window.show();
@@ -305,7 +305,7 @@ private static void test_a_session_changes_nothing()
 		window.close();
 		settle(100);
 
-		var limited = new Gittree.Window(application());
+		var limited = new Gitrlf.Window(application());
 		limited.set_default_size(1000, 800);
 		limited.open_repository(location, null, {"fix"}, repo.path);
 		limited.show();
@@ -316,7 +316,7 @@ private static void test_a_session_changes_nothing()
 
 		foreach (var path in new string[] { "", "fix" })
 		{
-			var filtered = new Gittree.Window(application());
+			var filtered = new Gitrlf.Window(application());
 			filtered.set_default_size(1000, 800);
 			filtered.open_repository(location, null, path != "" ? new string[] { path } : new string[0], repo.path, "fix", false);
 			filtered.show();

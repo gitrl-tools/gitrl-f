@@ -1,32 +1,32 @@
 /*
- * This file is part of gittree
+ * This file is part of gitrl-f
  *
  * Copyright (C) 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
  *
- * gittree is free software: you can redistribute it and/or modify it under the
+ * gitrl-f is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 2 of the License, or (at your option) any later
  * version.
  *
- * gittree is distributed in the hope that it will be useful, but WITHOUT ANY
+ * gitrl-f is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along
- * with gittree. If not, see <http://www.gnu.org/licenses/>.
+ * with gitrl-f. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace GittreeTest
+namespace GitrlfTest
 {
 
-private static Gittree.Application application()
+private static Gitrlf.Application application()
 {
-	var app = GLib.Application.get_default() as Gittree.Application;
+	var app = GLib.Application.get_default() as Gitrlf.Application;
 
 	if (app == null)
 	{
-		app = new Gittree.Application();
+		app = new Gitrlf.Application();
 
 		try
 		{
@@ -41,7 +41,7 @@ private static Gittree.Application application()
 	return app;
 }
 
-private static string diff_paths(Gittree.Window window)
+private static string diff_paths(Gitrlf.Window window)
 {
 	var names = new string[0];
 	var diff = window.history.diff_view.diff;
@@ -80,33 +80,33 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
-	Test.add_func("/gittree/ui/renames/a-file-deleted-at-head-is-followed", test_a_file_deleted_at_head_is_followed);
-	Test.add_func("/gittree/ui/renames/a-folder-and-a-glob-are-not-followed", test_a_folder_and_a_glob_are_not_followed);
-	Test.add_func("/gittree/ui/renames/a-text-filter-works-on-a-followed-file", test_a_text_filter_works_on_a_followed_file);
-	Test.add_func("/gittree/ui/renames/a-typed-file-is-followed-too", test_a_typed_file_is_followed_too);
-	Test.add_func("/gittree/ui/renames/merges-are-not-shown-when-following", test_merges_are_not_shown_when_following);
-	Test.add_func("/gittree/ui/renames/one-file-is-followed-through-its-renames", test_one_file_is_followed_through_its_renames);
-	Test.add_func("/gittree/ui/renames/the-diff-shows-the-file-under-its-name-then", test_the_diff_shows_the_file_under_its_name_then);
+	Test.add_func("/gitrlf/ui/renames/a-file-deleted-at-head-is-followed", test_a_file_deleted_at_head_is_followed);
+	Test.add_func("/gitrlf/ui/renames/a-folder-and-a-glob-are-not-followed", test_a_folder_and_a_glob_are_not_followed);
+	Test.add_func("/gitrlf/ui/renames/a-text-filter-works-on-a-followed-file", test_a_text_filter_works_on_a_followed_file);
+	Test.add_func("/gitrlf/ui/renames/a-typed-file-is-followed-too", test_a_typed_file_is_followed_too);
+	Test.add_func("/gitrlf/ui/renames/merges-are-not-shown-when-following", test_merges_are_not_shown_when_following);
+	Test.add_func("/gitrlf/ui/renames/one-file-is-followed-through-its-renames", test_one_file_is_followed_through_its_renames);
+	Test.add_func("/gitrlf/ui/renames/the-diff-shows-the-file-under-its-name-then", test_the_diff_shows_the_file_under_its_name_then);
 
 	return Test.run();
 }
 
-private static Gittree.Window opened(Repo repo, string[] paths, string? text = null) throws Error
+private static Gitrlf.Window opened(Repo repo, string[] paths, string? text = null) throws Error
 {
 	var ticks = new Gee.HashSet<string>();
 	ticks.add("refs/heads/master");
 
-	var window = new Gittree.Window(application());
+	var window = new Gitrlf.Window(application());
 
 	window.set_default_size(1200, 800);
-	window.open_repository(Gittree.Application.discover_repository(repo.path), ticks, paths, repo.path, text, true);
+	window.open_repository(Gitrlf.Application.discover_repository(repo.path), ticks, paths, repo.path, text, true);
 	window.show();
 	settle(800);
 
 	return window;
 }
 
-private static void select_subject(Gittree.Window window, string subject)
+private static void select_subject(Gitrlf.Window window, string subject)
 {
 	var rows = window.history.rows();
 
@@ -134,7 +134,7 @@ private static void settle(int milliseconds)
 	}
 }
 
-private static string subjects(Gittree.Window window)
+private static string subjects(Gitrlf.Window window)
 {
 	var names = new string[0];
 
@@ -216,7 +216,7 @@ private static void test_a_typed_file_is_followed_too()
 
 		window.history.only_matches = true;
 		window.history.search_visible = true;
-		window.history.search_choice = Gittree.SearchChoice.FILES;
+		window.history.search_choice = Gitrlf.SearchChoice.FILES;
 		window.history.search_field.text = "new.c";
 		window.history.search_field.activate();
 		settle(800);
