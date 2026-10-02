@@ -212,7 +212,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/a-selection-in-the-diff-bar-is-kept-across-commits", test_a_selection_in_the_diff_bar_is_kept_across_commits);
 	Test.add_func("/gittree/ui/filter/a-tick-under-a-filter-asks-git-nothing", test_a_tick_under_a_filter_asks_git_nothing);
 	Test.add_func("/gittree/ui/filter/a-typed-path-draws-what-the-command-line-draws", test_a_typed_path_draws_what_the_command_line_draws);
-	Test.add_func("/gittree/ui/filter/closing-the-bar-keeps-the-filter", test_closing_the_bar_keeps_the_filter);
+	Test.add_func("/gittree/ui/filter/closing-the-bar-lifts-the-filter-and-keeps-the-text", test_closing_the_bar_lifts_the_filter_and_keeps_the_text);
 	Test.add_func("/gittree/ui/filter/closing-with-the-pane-is-not-a-close-by-the-user", test_closing_with_the_pane_is_not_a_close_by_the_user);
 	Test.add_func("/gittree/ui/filter/ctrl-shift-f-opens-the-bar-on-changed-lines", test_ctrl_shift_f_opens_the_bar_on_changed_lines);
 	Test.add_func("/gittree/ui/filter/ctrl-shift-f-takes-a-selection-and-applies-nothing", test_ctrl_shift_f_takes_a_selection_and_applies_nothing);
@@ -220,7 +220,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/filter/each-choice-keeps-its-own-text-and-switches", test_each_choice_keeps_its_own_text_and_switches);
 	Test.add_func("/gittree/ui/filter/enter-applies-changed-lines-and-typing-does-not", test_enter_applies_changed_lines_and_typing_does_not);
 	Test.add_func("/gittree/ui/filter/enter-on-an-empty-field-lifts-the-filter", test_enter_on_an_empty_field_lifts_the_filter);
-	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-never-lifts-the-filter", test_escape_closes_in_order_and_never_lifts_the_filter);
+	Test.add_func("/gittree/ui/filter/escape-closes-in-order-and-lifts-the-filter-with-the-bar", test_escape_closes_in_order_and_lifts_the_filter_with_the_bar);
 	Test.add_func("/gittree/ui/filter/escape-in-the-field-closes-from-the-bottom-up-and-keeps-the-focus", test_escape_in_the_field_closes_from_the_bottom_up_and_keeps_the_focus);
 	Test.add_func("/gittree/ui/filter/globs-and-quoted-paths-work-in-the-field", test_globs_and_quoted_paths_work_in_the_field);
 	Test.add_func("/gittree/ui/filter/no-ticked-ref-reaching-a-match-shows-a-notice", test_no_ticked_ref_reaching_a_match_shows_a_notice);
@@ -535,11 +535,9 @@ private static void test_a_launch_puts_its_text_and_case_in_changed_lines()
 
 		settle(800);
 
-		assert_false(window.history.search_visible);
+		assert_true(window.history.search_visible);
+		assert_true(window.history.search_choice == Gittree.SearchChoice.LINES);
 		assert_true(window.history.only_matches);
-
-		choose(window, Gittree.SearchChoice.LINES);
-
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
 		assert_false(check_labelled(list_bar(window), "Match case").active);
 
@@ -930,7 +928,7 @@ private static void test_a_typed_path_draws_what_the_command_line_draws()
 	}
 }
 
-private static void test_closing_the_bar_keeps_the_filter()
+private static void test_closing_the_bar_lifts_the_filter_and_keeps_the_text()
 {
 	try
 	{
@@ -944,11 +942,27 @@ private static void test_closing_the_bar_keeps_the_filter()
 		window.history.search_field.text = "needle";
 		window.history.search_field.activate();
 		settle(600);
-		window.history.search_visible = false;
-		settle(100);
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle");
+
+		window.history.search_visible = false;
+		settle(300);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+
+		window.history.search_visible = true;
+		settle(100);
+
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "needle");
+		assert_true(check_labelled(list_bar(window), "Match case").active);
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
+
+		window.history.search_field.activate();
+		settle(600);
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "c,a");
 
 		window.destroy();
 		repo.remove();
@@ -1267,7 +1281,7 @@ private static void test_enter_on_an_empty_field_lifts_the_filter()
 	}
 }
 
-private static void test_escape_closes_in_order_and_never_lifts_the_filter()
+private static void test_escape_closes_in_order_and_lifts_the_filter_with_the_bar()
 {
 	try
 	{
@@ -1297,9 +1311,10 @@ private static void test_escape_closes_in_order_and_never_lifts_the_filter()
 
 		assert_true(history.escape());
 		assert_false(history.search_visible);
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
 
 		assert_false(history.escape());
-		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle");
 
 		window.destroy();
 		repo.remove();
@@ -1345,7 +1360,7 @@ private static void test_escape_in_the_field_closes_from_the_bottom_up_and_keeps
 		settle(100);
 
 		assert_false(history.search_visible);
-		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "Only commits that add or remove needle");
+		assert_cmpstr(history.path_bar_text, CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();

@@ -104,9 +104,9 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/a-hash-on-an-unticked-ref-is-found", test_a_hash_on_an_unticked_ref_is_found);
 	Test.add_func("/gittree/ui/search/a-match-on-an-unticked-ref-is-offered", test_a_match_on_an_unticked_ref_is_offered);
 	Test.add_func("/gittree/ui/search/bar-opens-from-the-shortcut-and-the-toggle", test_bar_opens_from_the_shortcut_and_the_toggle);
-	Test.add_func("/gittree/ui/search/closing-the-bar-keeps-the-search-and-the-yellow-bar-says-it", test_closing_the_bar_keeps_the_search_and_the_yellow_bar_says_it);
+	Test.add_func("/gittree/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
 	Test.add_func("/gittree/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
-	Test.add_func("/gittree/ui/search/escape-closes-keeps-the-text-and-gives-the-focus-back", test_escape_closes_keeps_the_text_and_gives_the_focus_back);
+	Test.add_func("/gittree/ui/search/escape-lifts-the-search-keeps-the-text-and-gives-the-focus-back", test_escape_lifts_the_search_keeps_the_text_and_gives_the_focus_back);
 	Test.add_func("/gittree/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gittree/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gittree/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
@@ -118,7 +118,7 @@ public static int main(string[] args)
 	Test.add_func("/gittree/ui/search/switches-keep-their-state-when-the-bar-closes", test_switches_keep_their_state_when_the_bar_closes);
 	Test.add_func("/gittree/ui/search/switches-narrow-the-matches", test_switches_narrow_the_matches);
 	Test.add_func("/gittree/ui/search/switches-say-what-they-do", test_switches_say_what_they_do);
-	Test.add_func("/gittree/ui/search/the-close-button-closes-the-bar-and-keeps-the-search", test_the_close_button_closes_the_bar_and_keeps_the_search);
+	Test.add_func("/gittree/ui/search/the-close-button-closes-the-bar-and-lifts-the-search", test_the_close_button_closes_the_bar_and_lifts_the_search);
 	Test.add_func("/gittree/ui/search/the-field-sits-at-the-centre-of-the-bar", test_the_field_sits_at_the_centre_of_the_bar);
 	Test.add_func("/gittree/ui/search/tick-and-show-prefers-heads-branch-then-remotes-then-tags", test_tick_and_show_prefers_heads_branch_then_remotes_then_tags);
 	Test.add_func("/gittree/ui/search/tick-searches-again", test_tick_searches_again);
@@ -346,7 +346,7 @@ private static void test_bar_opens_from_the_shortcut_and_the_toggle()
 	}
 }
 
-private static void test_closing_the_bar_keeps_the_search_and_the_yellow_bar_says_it()
+private static void test_closing_the_bar_lifts_the_search_and_keeps_the_text()
 {
 	try
 	{
@@ -363,15 +363,21 @@ private static void test_closing_the_bar_keeps_the_search_and_the_yellow_bar_say
 		window.history.search_visible = false;
 		settle(200);
 
-		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Only commits that match parser in the message, author or hash");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 
 		window.history.search_visible = true;
 		settle(200);
 
 		assert_true(check_labelled(list_bar(window), "Display matches only").active);
+		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "parser");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "issue 42,prefix work,parser tidy,Parser fix");
+
+		window.history.search_field.activate();
+		settle(200);
+
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "parser tidy,Parser fix");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();
@@ -410,7 +416,7 @@ private static void test_display_matches_only_and_a_changed_lines_search_both_ho
 	}
 }
 
-private static void test_escape_closes_keeps_the_text_and_gives_the_focus_back()
+private static void test_escape_lifts_the_search_keeps_the_text_and_gives_the_focus_back()
 {
 	try
 	{
@@ -421,7 +427,7 @@ private static void test_escape_closes_keeps_the_text_and_gives_the_focus_back()
 
 		type_text(window, "fix");
 
-		var count = window.history.search_count;
+		assert_true(marked_pixels(window, 0) > 0);
 
 		window.history.search_field.grab_focus();
 		settle(50);
@@ -431,9 +437,9 @@ private static void test_escape_closes_keeps_the_text_and_gives_the_focus_back()
 
 		assert_false(window.history.search_visible);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "fix");
-		assert_cmpstr(window.history.search_count, CompareOperator.EQ, count);
-		assert_true(marked_pixels(window, 0) > 0);
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that match fix in the message, author or hash");
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 		assert_true(window.history.paned.commit_list_view.has_focus);
 
 		window.destroy();
@@ -678,6 +684,12 @@ private static void test_opening_again_selects_the_kept_text()
 		assert_true(window.history.search_field.get_selection_bounds(out start, out end));
 		assert_cmpint(start, CompareOperator.EQ, 0);
 		assert_cmpint(end, CompareOperator.EQ, 3);
+		assert_cmpstr(window.history.search_count, CompareOperator.EQ, "Enter to search");
+		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
+
+		window.history.search_field.activate();
+		settle(200);
+
 		assert_cmpstr(window.history.search_count, CompareOperator.EQ, count);
 		assert_cmpstr(count, CompareOperator.EQ, "3 matches");
 		assert_true(marked_pixels(window, 0) > 0);
@@ -814,7 +826,7 @@ private static void test_switches_say_what_they_do()
 	}
 }
 
-private static void test_the_close_button_closes_the_bar_and_keeps_the_search()
+private static void test_the_close_button_closes_the_bar_and_lifts_the_search()
 {
 	try
 	{
@@ -840,7 +852,8 @@ private static void test_the_close_button_closes_the_bar_and_keeps_the_search()
 
 		assert_false(window.history.search_visible);
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "parser");
-		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "Marked: commits that match parser in the message, author or hash");
+		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
+		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 
 		window.destroy();
 		repo.remove();

@@ -361,6 +361,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			else
 			{
 				d_paned.commit_list_view.grab_focus();
+				lift_searches();
 			}
 
 			show_path_bar();
@@ -927,6 +928,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (choice_problem() != null)
 		{
+			return;
+		}
+
+		if (d_choice == SearchChoice.MESSAGES)
+		{
+			find_matches();
 			return;
 		}
 
@@ -1588,9 +1595,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private void lift_all()
 	{
 		d_typed = { "", "", "" };
-		d_query = new SearchQuery("", false, false);
 		show_typed();
-		lift_filter();
+		lift_searches();
 	}
 
 	public void lift_filter()
@@ -1628,6 +1634,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		drop_lines();
 		show_path_bar();
 		show_ticks();
+	}
+
+	private void lift_searches()
+	{
+		if (d_query.is_empty && d_text == null && d_paths.length == 0 && d_search == null)
+		{
+			return;
+		}
+
+		d_query = new SearchQuery("", false, false);
+		lift_filter();
 	}
 
 	private void light_selection(bool lit)
@@ -1873,6 +1890,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (text != null || paths.length > 0)
 		{
 			show_only_matches();
+			choose(text != null ? SearchChoice.LINES : SearchChoice.FILES);
+			search_visible = true;
 		}
 
 		show_typed();
@@ -1940,7 +1959,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return !Filter.split(d_typed[SearchChoice.FILES], out paths) || string.joinv("\n", paths) != string.joinv("\n", applied);
 		}
 
-		return false;
+		return d_query.is_empty && d_typed[SearchChoice.MESSAGES].strip() != "";
 	}
 
 	private void queue_details()

@@ -93,8 +93,8 @@ A commit adds or removes the text when the number of times it appears in
 a file the commit changes goes up or down, as in
 .BR "git log \-S" .
 A merge never does. The graph joins across the commits that it leaves out.
-The search runs in the background, and Changed lines in the search bar
-changes the text later (see
+The search runs in the background. The window opens with the search bar
+on Changed lines, which shows the text and can change it later (see
 .BR SEARCH ).
 The bar ignores case unless its Match case switch is on.
 .TP
@@ -118,8 +118,8 @@ ignore case.
 Draw only the commits that change these files or folders. With one file,
 the history follows it through its earlier names, as
 .B git log \-\-follow
-does, and shows no merges. Files in the search bar changes them in the
-window. It splits paths at spaces, as the shell does, and takes globs such
+does, and shows no merges. The window opens with the paths in Files of the
+search bar, which can change them. It splits paths at spaces, as the shell does, and takes globs such
 as
 .BR '*.yaml' .
 The diff of a commit that matches shows only those files. A right click on
@@ -167,8 +167,11 @@ and
 keep the commits whose author date is before, or on or after, the start of
 a year, a month or a day, given as YYYY, YYYY\-MM or YYYY\-MM\-DD in local
 time. A value with spaces goes in double quotes. Every part must hold.
-The bar keeps every search when it closes, and the yellow bar above the
-list then says what is in force. Its close button lifts every search. When
+When the bar closes, every search in it is lifted. The bar keeps its texts
+and switches, so when it opens again its text is selected, and Enter
+searches again. While a search of the changed lines or the files applies,
+the yellow bar above the list says so. Its close button lifts every
+search and empties the fields. When
 no commit of the ticked refs matches a messages search, the bar counts the
 matches on the other refs, and Tick and show ticks a ref that holds the newest of them and
 selects it: the branch of HEAD, else the first local branch by name, then
@@ -234,8 +237,8 @@ the match before.
 .B Escape
 Close one thing, from the bottom of the window up: the find bar of the
 diff, then the full diff, then the details of the commit, then the search
-bar. A field that has the focus does not change this order. Escape never
-lifts a search.
+bar, which lifts every search in it. A field that has the focus does not
+change this order.
 .TP
 .B F5
 Read the repository again.
