@@ -22,7 +22,14 @@ namespace Gitrlf
 
 public class Search : Object
 {
-	private const string MARK = "<span background=\"#fce94f\" foreground=\"#1a1a1a\">%s</span>";
+	private const string BACKGROUND = "#fce94f";
+
+	private const string FOREGROUND = "#1a1a1a";
+
+	private const string MARK = "<span background=\"" + BACKGROUND
+	                          + "\" foreground=\"" + FOREGROUND + "\">%s</span>";
+
+	private const string TAG = "search-match";
 
 	public static string count_text(int[] matches, int selected, bool empty, string? problem)
 	{
@@ -72,40 +79,72 @@ public class Search : Object
 		return found;
 	}
 
+	public static void mark_buffer(Gtk.TextBuffer buffer, TextMatch[] matches)
+	{
+		var tag = buffer.tag_table.lookup(TAG);
+		Gtk.TextIter start;
+		Gtk.TextIter end;
+
+		if (tag == null)
+		{
+			tag = buffer.create_tag(TAG, "background", BACKGROUND,
+			                        "foreground", FOREGROUND);
+		}
+
+		buffer.get_bounds(out start, out end);
+		buffer.remove_tag(tag, start, end);
+
+		foreach (var span in spans(buffer.text, matches))
+		{
+			buffer.get_iter_at_offset(out start, span.start);
+			buffer.get_iter_at_offset(out end, span.start + span.length);
+			buffer.apply_tag(tag, start, end);
+		}
+	}
+
+	public static void mark_label(Gtk.Label label, TextMatch[] matches)
+	{
+		var text = label.get_text();
+		var attributes = new Pango.AttrList();
+		Pango.Color background = {};
+		Pango.Color foreground = {};
+
+		background.parse(BACKGROUND);
+		foreground.parse(FOREGROUND);
+
+		foreach (var span in spans(text, matches))
+		{
+			var back = Pango.attr_background_new(background.red,
+			                                     background.green,
+			                                     background.blue);
+			var fore = Pango.attr_foreground_new(foreground.red,
+			                                     foreground.green,
+			                                     foreground.blue);
+			var from = text.index_of_nth_char(span.start);
+			var to = text.index_of_nth_char(span.start + span.length);
+
+			back.start_index = fore.start_index = from;
+			back.end_index = fore.end_index = to;
+			attributes.insert((owned)back);
+			attributes.insert((owned)fore);
+		}
+
+		label.attributes = attributes;
+	}
+
 	public static string marked(string text, TextMatch[] matches)
 	{
 		var result = new StringBuilder();
-		var spans = new Gee.ArrayList<TextSpan?>();
 		var start = 0;
-		var reach = 0;
 
-		foreach (var match in matches)
+		foreach (var span in spans(text, matches))
 		{
-			foreach (var span in match.find(text))
-			{
-				spans.add(span);
-			}
-		}
-
-		spans.sort((a, b) => a.start - b.start);
-
-		foreach (var span in spans)
-		{
-			var first = int.max(span.start, reach);
-			var last = span.start + span.length;
-
-			if (last <= first)
-			{
-				continue;
-			}
-
-			var from = text.index_of_nth_char(first);
-			var to = text.index_of_nth_char(last);
+			var from = text.index_of_nth_char(span.start);
+			var to = text.index_of_nth_char(span.start + span.length);
 
 			result.append(Markup.escape_text(text.substring(start, from - start)));
 			result.append(MARK.printf(Markup.escape_text(text.substring(from, to - from))));
 			start = to;
-			reach = last;
 		}
 
 		result.append(Markup.escape_text(text.substring(start)));
@@ -123,6 +162,43 @@ public class Search : Object
 		                           commit.get_id().to_string());
 
 		return match.matches(haystack);
+	}
+
+	private static TextSpan[] spans(string text, TextMatch[] matches)
+	{
+		var found = new Gee.ArrayList<TextSpan?>();
+		var ret = new TextSpan[0];
+		var reach = 0;
+
+		foreach (var match in matches)
+		{
+			foreach (var span in match.find(text))
+			{
+				found.add(span);
+			}
+		}
+
+		found.sort((a, b) => a.start - b.start);
+
+		foreach (var span in found)
+		{
+			var first = int.max(span.start, reach);
+			var last = span.start + span.length;
+
+			if (last <= first)
+			{
+				continue;
+			}
+
+			ret += TextSpan() {
+				start = first,
+				length = last - first
+			};
+
+			reach = last;
+		}
+
+		return ret;
 	}
 
 	public static int step(int[] matches, int selected, int direction)

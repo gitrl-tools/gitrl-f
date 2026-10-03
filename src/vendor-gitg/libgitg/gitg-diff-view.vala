@@ -95,6 +95,16 @@ public class Gitg.DiffView : Gtk.Grid
 		get { return d_commit_details.parent_commit; }
 	}
 
+	public Gtk.TextView message_view
+	{
+		get { return d_text_view_message; }
+	}
+
+	public Gtk.Label subject_label
+	{
+		get { return d_commit_details.subject_label; }
+	}
+
 	public Commit? commit
 	{
 		get { return d_commit; }
@@ -111,6 +121,8 @@ public class Gitg.DiffView : Gtk.Grid
 	}
 
 	public signal void files_changed();
+
+	public signal void message_shown();
 
 	public virtual signal void options_changed()
 	{
@@ -622,6 +634,8 @@ public class Gitg.DiffView : Gtk.Grid
 			parse_smart_text(buffer);
 
 			d_text_view_message.visible = (message != "");
+
+			message_shown();
 		}
 		else
 		{

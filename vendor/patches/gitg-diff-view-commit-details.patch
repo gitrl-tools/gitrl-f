@@ -1,0 +1,14 @@
+--- a/libgitg/gitg-diff-view-commit-details.vala
++++ b/libgitg/gitg-diff-view-commit-details.vala
+@@ -133,6 +133,11 @@
+ 
+ 	public Gitg.Repository? repository {get; set; }
+ 
++	public Gtk.Label subject_label
++	{
++		get { return d_label_subject; }
++	}
++
+ 	private string d_datetime_format;
+ 
+ 	private string datetime_format

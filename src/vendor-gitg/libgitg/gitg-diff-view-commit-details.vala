@@ -133,6 +133,11 @@ class Gitg.DiffViewCommitDetails : Gtk.Grid
 
 	public Gitg.Repository? repository {get; set; }
 
+	public Gtk.Label subject_label
+	{
+		get { return d_label_subject; }
+	}
+
 	private string d_datetime_format;
 
 	private string datetime_format

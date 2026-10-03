@@ -497,6 +497,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_diff.files_changed.connect(offer_file_history);
 		d_diff.files_changed.connect(offer_line_history);
+		d_diff.message_shown.connect(mark_message);
 
 		d_find_bar = new DiffFindBar(d_diff);
 		d_find_bar.notify["search-mode-enabled"].connect(() => {
@@ -1720,6 +1721,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_beyond_button.visible = d_beyond.length > 0;
 		show_match_count();
 		d_paned.commit_list_view.queue_draw();
+		mark_message();
+	}
+
+	private void mark_message()
+	{
+		var marks = messages_apply() ? d_query.subject_marks()
+		                             : new TextMatch[0];
+
+		Search.mark_label(d_diff.subject_label, marks);
+		Search.mark_buffer(d_diff.message_view.buffer, marks);
 	}
 
 	private bool matches_row(Gitg.Commit commit)

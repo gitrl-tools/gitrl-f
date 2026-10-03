@@ -155,6 +155,8 @@ and
 keep the commits whose author date is before, or on or after, the start of
 a year, a month or a day, given as YYYY, YYYY\-MM or YYYY\-MM\-DD in local
 time. A value with spaces goes in double quotes. Every part must hold.
+In the pane below the list, the subject and the message of the commit mark
+in yellow the text that a Messages search matches there.
 When the bar closes, every search in it is lifted. The bar keeps its texts
 and switches, so when it opens again its text is selected, and Enter
 searches again. While a search of the changed lines or the files applies,

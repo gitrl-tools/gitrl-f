@@ -9,7 +9,7 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Thirteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Fourteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gitrl-f takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
@@ -17,6 +17,7 @@ gitrl-f takes these patches from gitrl-z, which vendors the same source. The dif
 - gitrl-f does not take gitrl-z's patch to `gitg-color.vala`, which adds `Color.from_index()`. Nothing in gitrl-f needs it.
 - The diff pane keeps gitg's Unif and Split switcher on each file, which gitrl-z hides.
 - The parts of four patches that give the find bar of the diff its view of the pane, and all of `gitg-diff-view-file-info.patch`, are gitrl-f's own. gitrl-z has no find in the diff.
+- The part of `gitg-diff-view.patch` that gives the commit message to the search of the list, and all of `gitg-diff-view-commit-details.patch`, are gitrl-f's own.
 - The patches add no comments to gitg's code. The reasons are here.
 
 ## gitg-repository.patch
@@ -184,7 +185,7 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Six changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gitrl-f can read the rows, gitrl-f can read the parent that the diff compares with, and the message wraps.
+Seven changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gitrl-f can read the rows, gitrl-f can read the parent that the diff compares with, the message wraps, and gitrl-f can mark the message.
 
 **1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
@@ -223,6 +224,20 @@ Six changes: the selection comes out, a text view is bound when its file makes i
 A text view that wraps finds its height before it knows its width. When the pane opened, the same message got 306 pixels for 177 pixels of text, and the rows of the files started below an empty space. The view now asks for its size again after each change of its width, and it gets 177 pixels (measured in the same test).
 
 **Cost.** A long line of a message shows on two or more lines. The lines that the author broke stay broken at the same places. Each change of the width of the pane asks for the size of the message one more time.
+
+**7. Gives the subject line and the body of the message, and a signal when they show.** `subject_label` gives the label of the subject line, from `gitg-diff-view-commit-details.patch`. `message_view` gives the text view of the body. `message_shown` is sent after each fill of the two: when a commit shows, and when the options of the diff or the parent of a merge change.
+
+**Why.** A search of the messages marks its matches in yellow in the list. gitrl-f also marks them in the subject line and the body of the commit that shows. The marks are Pango attributes on the label and a tag on the text of the body. Each fill of the body removes the tag, and each new commit replaces the subject, so the marks must come back after each fill. The `changed` signal of the text buffer does not tell each fill: a buffer with no text that gets no text again sends no `changed` (measured with GTK 3, 2026-10-03). Thus, after two commits with no body, the marks of the old subject would stay on the new one.
+
+**Cost.** Two properties that only read, and one signal for each fill.
+
+## gitg-diff-view-commit-details.patch
+
+Gives the label of the subject line, through the read-only property `subject_label`.
+
+**Why.** `gitg-diff-view.patch` gives this label to gitrl-f, which marks the matches of a search of the messages in it. The label is a private field of the template.
+
+**Cost.** None. The property only reads.
 
 ## gitg-lanes.patch
 

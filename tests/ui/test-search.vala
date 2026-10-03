@@ -96,6 +96,35 @@ private static Repo four_subjects() throws Error
 	return repo;
 }
 
+private static string label_marks(Gtk.Label label)
+{
+	var words = new string[0];
+	var text = label.get_text();
+
+	if (label.attributes == null)
+	{
+		return "";
+	}
+
+	var iter = label.attributes.get_iterator();
+
+	do
+	{
+		int start;
+		int end;
+
+		iter.range(out start, out end);
+
+		if (iter.get(Pango.AttrType.BACKGROUND) != null)
+		{
+			words += text.substring(start, int.min(end, text.length) - start);
+		}
+	}
+	while (iter.next());
+
+	return string.joinv("|", words);
+}
+
 public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
@@ -109,6 +138,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/search/closing-the-bar-lifts-the-search-and-keeps-the-text", test_closing_the_bar_lifts_the_search_and_keeps_the_text);
 	Test.add_func("/gitrlf/ui/search/display-matches-only-and-a-changed-lines-search-both-hold", test_display_matches_only_and_a_changed_lines_search_both_hold);
 	Test.add_func("/gitrlf/ui/search/escape-lifts-the-search-keeps-the-text-and-gives-the-focus-back", test_escape_lifts_the_search_keeps_the_text_and_gives_the_focus_back);
+	Test.add_func("/gitrlf/ui/search/marks-show-in-the-subject-and-body-of-the-pane", test_marks_show_in_the_subject_and_body_of_the_pane);
 	Test.add_func("/gitrlf/ui/search/marks-show-in-the-subject-hash-and-author-columns", test_marks_show_in_the_subject_hash_and_author_columns);
 	Test.add_func("/gitrlf/ui/search/next-and-previous-wrap-and-count", test_next_and_previous_wrap_and_count);
 	Test.add_func("/gitrlf/ui/search/no-match-turns-the-field-red", test_no_match_turns_the_field_red);
@@ -229,6 +259,34 @@ private static string subjects(Gitrlf.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static string text_marks(Gtk.TextBuffer buffer)
+{
+	var words = new string[0];
+	var tag = buffer.tag_table.lookup("search-match");
+	Gtk.TextIter iter;
+
+	if (tag == null)
+	{
+		return "";
+	}
+
+	buffer.get_start_iter(out iter);
+
+	do
+	{
+		if (iter.starts_tag(tag))
+		{
+			var end = iter;
+			end.forward_to_tag_toggle(tag);
+			words += iter.get_text(end);
+			iter = end;
+		}
+	}
+	while (iter.forward_to_tag_toggle(tag));
+
+	return string.joinv("|", words);
 }
 
 private static void test_a_bad_expression_turns_the_field_red()
@@ -543,6 +601,62 @@ private static void test_escape_lifts_the_search_keeps_the_text_and_gives_the_fo
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
 		assert_true(window.history.paned.commit_list_view.has_focus);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_marks_show_in_the_subject_and_body_of_the_pane()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("Fix the parser\n\nThe parser lost a fix.", "file", "one");
+		repo.commit("Tidy the lines\n\nA fix and one more fix.", "file", "two");
+
+		var window = opened(repo);
+		var subject = window.history.diff_view.subject_label;
+		var text = window.history.diff_view.message_view.buffer;
+		var list = window.history.paned.commit_list_view;
+
+		window.history.paned.details_visible = true;
+		settle(300);
+
+		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "");
+		assert_cmpstr(text_marks(text), CompareOperator.EQ, "");
+
+		search_for(window, "fix");
+
+		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "");
+		assert_cmpstr(text_marks(text), CompareOperator.EQ, "fix|fix");
+
+		list.get_selection().select_path(new Gtk.TreePath.from_indices(1));
+		settle(400);
+
+		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "Fix");
+		assert_cmpstr(text_marks(text), CompareOperator.EQ, "fix");
+
+		toggle_labelled(list_bar(window), "Match case").active = true;
+		window.history.search_field.activate();
+		settle(400);
+
+		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "");
+		assert_cmpstr(text_marks(text), CompareOperator.EQ, "fix");
+
+		search_for(window, "author:Tester parser");
+
+		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "parser");
+		assert_cmpstr(text_marks(text), CompareOperator.EQ, "parser");
+
+		search_for(window, "");
+
+		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "");
+		assert_cmpstr(text_marks(text), CompareOperator.EQ, "");
 
 		window.destroy();
 		repo.remove();
