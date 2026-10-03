@@ -37,6 +37,8 @@ public class SearchQuery : Object
 
 	public bool match_case { get; private set; }
 
+	public string plain { get; private set; }
+
 	public string? problem { get; private set; }
 
 	public bool regex { get; private set; }
@@ -118,6 +120,7 @@ public class SearchQuery : Object
 
 		var rest = start == 0 ? text : string.joinv(" ", Regex.split_simple("\\s+", plain.str.strip()));
 
+		this.plain = rest;
 		d_plain = new TextMatch(rest, match_case, regex);
 
 		if (d_plain.error != null && problem == null)

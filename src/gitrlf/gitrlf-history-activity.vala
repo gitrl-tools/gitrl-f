@@ -40,6 +40,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_files_regex;
 	private DiffFindBar d_find_bar;
 	private bool d_find_closed;
+	private SearchQuery? d_find_query;
 	private bool d_find_with_pane;
 	private History? d_full;
 	private SearchQuery d_query;
@@ -2971,6 +2972,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (text != null)
 		{
 			d_find_bar.take_selection(text, view, offset);
+			return;
+		}
+
+		if (d_paned.details_visible && !d_find_bar.search_mode_enabled
+		    && d_text == null && messages_apply() && d_find_query != d_query)
+		{
+			d_find_query = d_query;
+			d_find_bar.search_mode_enabled = true;
+			d_find_bar.fill(d_query.plain, d_query.match_case,
+			                d_query.regex);
+			d_find_bar.field.select_region(0, -1);
+			d_find_bar.step_to_first();
 			return;
 		}
 

@@ -67,7 +67,10 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
 	Test.add_func("/gitrlf/ui/diff-find/a-regex-narrows-the-marks", test_a_regex_narrows_the_marks);
 	Test.add_func("/gitrlf/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-copies-the-messages-search-with-match-case", test_ctrl_f_copies_the_messages_search_with_match_case);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-copies-the-messages-search-with-regex", test_ctrl_f_copies_the_messages_search_with_regex);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-keeps-a-word-typed-after-the-copy", test_ctrl_f_keeps_a_word_typed_after_the_copy);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-leaves-a-selection-over-two-lines", test_ctrl_f_leaves_a_selection_over_two_lines);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-takes-a-selection-on-one-line", test_ctrl_f_takes_a_selection_on_one_line);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-with-the-diff-filling-the-window", test_ctrl_f_with_the_diff_filling_the_window);
@@ -195,6 +198,14 @@ private static void search_for(Gitrlf.Window window, string text)
 	window.history.find_bar.search_mode_enabled = true;
 	window.history.find_bar.field.text = text;
 	window.history.find_bar.field.activate();
+	settle(400);
+}
+
+private static void search_messages(Gitrlf.Window window, string text)
+{
+	window.history.search_visible = true;
+	window.history.search_field.text = text;
+	window.history.search_field.activate();
 	settle(400);
 }
 
@@ -394,6 +405,66 @@ private static void test_a_switch_to_split_searches_again()
 	}
 }
 
+private static void test_ctrl_f_copies_the_messages_search_with_match_case()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+		int start;
+		int end;
+
+		toggle_labelled(list_bar(window), "Match case").active = true;
+		search_messages(window, "author:Tester Needle");
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_true(bar.search_mode_enabled);
+		assert_true(bar.field.has_focus);
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "Needle");
+		assert_true(bar.field.get_selection_bounds(out start, out end));
+		assert_cmpint(end - start, CompareOperator.EQ, "Needle".length);
+		assert_true(bar.match_case);
+		assert_false(bar.regex);
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 1");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_copies_the_messages_search_with_regex()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		toggle_labelled(list_bar(window), "Regex").active = true;
+		search_messages(window, "nee+dle");
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "nee+dle");
+		assert_false(bar.match_case);
+		assert_true(bar.regex);
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 2");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 {
 	try
@@ -421,6 +492,48 @@ private static void test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar()
 		assert_false(bar.search_mode_enabled);
 		assert_cmpstr(bar.field.text, CompareOperator.EQ, "needle");
 		assert_true(focus_in(window, window.history.diff_view));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_keeps_a_word_typed_after_the_copy()
+{
+	try
+	{
+		var repo = three_files();
+		var window = opened(repo, "change");
+		var bar = window.history.find_bar;
+
+		search_messages(window, "needle");
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "needle");
+
+		bar.field.text = "keep";
+		bar.field.activate();
+		settle(400);
+		window.activate_action("search", null);
+		settle(100);
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_true(bar.search_mode_enabled);
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "keep");
+
+		window.activate_action("search", null);
+		settle(100);
+		search_messages(window, "Needle in");
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "Needle in");
 
 		window.destroy();
 		repo.remove();
