@@ -49,6 +49,20 @@ private static Gitrlf.Application application()
 	return app;
 }
 
+private static Repo changes_repo() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("one", "notes");
+	repo.commit("two", "other");
+	FileUtils.set_contents(repo.path.get_child("notes").get_path(), "staged\n");
+	repo.git({"add", "notes"});
+	FileUtils.set_contents(repo.path.get_child("other").get_path(), "edited\n");
+	FileUtils.set_contents(repo.path.get_child("fresh").get_path(), "new\n");
+
+	return repo;
+}
+
 private static void commit_many(Repo repo, string subject, int count) throws Error
 {
 	for (var i = 0; i < count; i++)
@@ -148,11 +162,13 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gitrlf/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
+	Test.add_func("/gitrlf/ui/diff-pane/a-clean-tree-shows-no-changes", test_a_clean_tree_shows_no_changes);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-opens-in-the-diff-tool-of-git", test_a_file_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
 	Test.add_func("/gitrlf/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
+	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-shows-its-diff", test_a_row_of_the_changes_shows_its_diff);
 	Test.add_func("/gitrlf/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
 	Test.add_func("/gitrlf/ui/diff-pane/an-added-line-offers-no-commit-that-last-changed-it", test_an_added_line_offers_no_commit_that_last_changed_it);
 	Test.add_func("/gitrlf/ui/diff-pane/an-image-uses-gitgs-image-view", test_an_image_uses_gitgs_image_view);
@@ -180,7 +196,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
+	Test.add_func("/gitrlf/ui/diff-pane/the-shown-changes-follow-an-edit", test_the_shown_changes_follow_an_edit);
 	Test.add_func("/gitrlf/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
+	Test.add_func("/gitrlf/ui/diff-pane/uncommitted-changes-show-above-the-list", test_uncommitted_changes_show_above_the_list);
 	Test.add_func("/gitrlf/ui/diff-pane/word-mark-colours", test_word_mark_colours);
 	Test.add_func("/gitrlf/ui/diff-pane/word-marks-in-both-views", test_word_marks_in_both_views);
 	Test.add_func("/gitrlf/ui/diff-pane/word-marks-reach-across-a-no-newline-marker", test_word_marks_reach_across_a_no_newline_marker);
@@ -477,6 +495,24 @@ private static void test_a_bare_repository_offers_only_the_history_of_a_file()
 	}
 }
 
+private static void test_a_clean_tree_shows_no_changes()
+{
+	try
+	{
+		var repo = renamed_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		assert_false(window.history.paned.changes.visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_file_menu_shows_the_history_of_the_file()
 {
 	try
@@ -662,6 +698,43 @@ private static void test_a_removed_line_digs_from_the_parent()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "History of line 4 of f.c, from %s".printf(two));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_row_of_the_changes_shows_its_diff()
+{
+	try
+	{
+		var repo = changes_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		paned.details_visible = false;
+		settle(100);
+		paned.changes.select_row(paned.staged_row);
+		paned.staged_row.activate();
+		settle(400);
+
+		assert_true(paned.details_visible);
+		assert_null(window.history.selected);
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "notes");
+
+		paned.changes.select_row(paned.unstaged_row);
+		settle(400);
+
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "other,fresh");
+
+		select_subject(window, "one");
+
+		assert_null(paned.changes.get_selected_row());
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "notes");
 
 		window.destroy();
 		repo.remove();
@@ -1620,6 +1693,39 @@ private static void test_the_commit_that_last_changed_a_line_is_selected()
 	}
 }
 
+private static void test_the_shown_changes_follow_an_edit()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("one", "notes");
+		FileUtils.set_contents(repo.path.get_child("notes").get_path(), "edited\n");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		paned.changes.select_row(paned.unstaged_row);
+		paned.unstaged_row.activate();
+		settle(400);
+
+		assert_true("edited" in source_text(window));
+
+		FileUtils.set_contents(repo.path.get_child("notes").get_path(), "later\n");
+		settle(2600);
+
+		assert_true("later" in source_text(window));
+		assert_true(paned.changes.get_selected_row() == paned.unstaged_row);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ticking_nothing_clears_the_details()
 {
 	try
@@ -1635,6 +1741,30 @@ private static void test_ticking_nothing_clears_the_details()
 		settle(100);
 
 		assert_null(window.history.diff_view.commit);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_uncommitted_changes_show_above_the_list()
+{
+	try
+	{
+		var repo = changes_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		assert_true(paned.changes.visible);
+		assert_true(paned.staged_row.visible);
+		assert_cmpstr(paned.staged_count.label, CompareOperator.EQ, "1 file");
+		assert_true(paned.unstaged_row.visible);
+		assert_cmpstr(paned.unstaged_count.label, CompareOperator.EQ, "2 files");
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two");
 
 		window.destroy();
 		repo.remove();

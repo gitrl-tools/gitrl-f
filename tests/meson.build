@@ -21,6 +21,7 @@ test_env_base = {
 }
 
 unit_tests = [
+  'changes',
   'cli',
   'diff-find',
   'diff-tool',

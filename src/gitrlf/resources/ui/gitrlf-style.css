@@ -10,3 +10,7 @@ treeview.view.unlit:selected:not(.branch):not(.remote):not(.tag):not(.stash) {
 entry.error {
 	background-image: none;
 }
+
+list.changes {
+	border-bottom: 1px solid @borders;
+}

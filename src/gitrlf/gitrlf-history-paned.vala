@@ -32,6 +32,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Box d_box_sidebar;
 	[GtkChild]
+	private unowned Gtk.ListBox d_changes;
+	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_author;
 	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_date;
@@ -74,7 +76,15 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Stack d_stack_list;
 	[GtkChild]
+	private unowned Gtk.Label d_staged_count;
+	[GtkChild]
+	private unowned Gtk.ListBoxRow d_staged_row;
+	[GtkChild]
 	private unowned Gtk.Label d_summary;
+	[GtkChild]
+	private unowned Gtk.Label d_unstaged_count;
+	[GtkChild]
+	private unowned Gtk.ListBoxRow d_unstaged_row;
 
 	private int d_pressed;
 	private Settings d_state_settings;
@@ -87,6 +97,11 @@ public class HistoryPaned : Gtk.Box
 	public Gtk.Box box_details
 	{
 		get { return d_box_details; }
+	}
+
+	public Gtk.ListBox changes
+	{
+		get { return d_changes; }
 	}
 
 	public Gtk.TreeViewColumn column_author
@@ -259,9 +274,29 @@ public class HistoryPaned : Gtk.Box
 		get { return d_stack_list; }
 	}
 
+	public Gtk.Label staged_count
+	{
+		get { return d_staged_count; }
+	}
+
+	public Gtk.ListBoxRow staged_row
+	{
+		get { return d_staged_row; }
+	}
+
 	public Gtk.Label summary
 	{
 		get { return d_summary; }
+	}
+
+	public Gtk.Label unstaged_count
+	{
+		get { return d_unstaged_count; }
+	}
+
+	public Gtk.ListBoxRow unstaged_row
+	{
+		get { return d_unstaged_row; }
 	}
 
 	static construct

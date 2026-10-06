@@ -44,6 +44,7 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gitrlf/ui/follow/a-commit-under-a-filter-searches-again", test_a_commit_under_a_filter_searches_again);
+	Test.add_func("/gitrlf/ui/follow/an-edit-shows-in-the-changes-on-the-next-check", test_an_edit_shows_in_the_changes_on_the_next_check);
 	Test.add_func("/gitrlf/ui/follow/deleted-repository-shows-an-error-and-keeps-the-history", test_deleted_repository_shows_an_error_and_keeps_the_history);
 	Test.add_func("/gitrlf/ui/follow/f5-reloads-at-once", test_f5_reloads_at_once);
 	Test.add_func("/gitrlf/ui/follow/monitoring-off-stops-the-poll", test_monitoring_off_stops_the_poll);
@@ -127,6 +128,35 @@ private static void test_a_commit_under_a_filter_searches_again()
 		assert_cmpstr(window.history.rows()[0].get_subject(), CompareOperator.EQ, "four");
 
 		settings.reset("enable-monitoring");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_an_edit_shows_in_the_changes_on_the_next_check()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("one", "notes");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		assert_false(paned.changes.visible);
+
+		FileUtils.set_contents(repo.path.get_child("notes").get_path(), "edited\n");
+		settle(2600);
+
+		assert_true(paned.changes.visible);
+		assert_false(paned.staged_row.visible);
+		assert_cmpstr(paned.unstaged_count.label, CompareOperator.EQ, "1 file");
+
 		window.destroy();
 		repo.remove();
 	}

@@ -34,12 +34,16 @@ public class Poll : Object
 
 	public signal void changed();
 
+	public signal void ticked();
+
 	public void check()
 	{
 		if (repository == null)
 		{
 			return;
 		}
+
+		ticked();
 
 		var now = snapshot(repository);
 

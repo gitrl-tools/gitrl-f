@@ -86,12 +86,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.SearchBar d_search_bar;
 	private Gtk.SearchEntry d_search_entry;
 	private SearchSwitches d_search_switches;
+	private Ggit.Diff? d_staged;
+	private string? d_staged_key;
 	private Settings d_state;
 	private string? d_text;
 	private Gee.Set<string> d_ticks;
 	private string[] d_typed;
 	private Ggit.OId? d_unfold_commit;
 	private string? d_unfold_path;
+	private Ggit.Diff? d_unstaged;
+	private string? d_unstaged_key;
 	private string[] d_unticked;
 	private bool d_waiting;
 
@@ -555,10 +559,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			if (selected != null)
 			{
 				d_kept = null;
+				d_paned.changes.unselect_all();
 			}
 
 			queue_details();
 			show_match_count();
+		});
+		d_paned.changes.row_selected.connect((row) => {
+			if (row != null)
+			{
+				d_paned.commit_list_view.get_selection().unselect_all();
+			}
+
+			queue_details();
+		});
+		d_paned.changes.row_activated.connect(() => {
+			d_paned.details_visible = true;
 		});
 		d_paned.commit_list_view.size_allocate.connect_after((allocation) => {
 			if (d_hold >= 0)
@@ -1818,6 +1834,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				item.show();
 				menu.add(item);
 
+				if (d_diff.commit == null)
+				{
+					return;
+				}
+
 				var compare = new Gtk.MenuItem.with_label(
 					_("Compare in difftool"));
 
@@ -1972,6 +1993,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			search(true);
 		}
 
+		d_staged = null;
+		d_staged_key = null;
+		d_unstaged = null;
+		d_unstaged_key = null;
+		d_paned.changes.unselect_all();
+		show_changes();
+		read_changes();
 		show_path_bar();
 		show_ticks(true);
 	}
@@ -2062,6 +2090,44 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		clock.request_phase(Gdk.FrameClockPhase.AFTER_PAINT);
+	}
+
+	public void read_changes()
+	{
+		Ggit.Diff staged;
+		Ggit.Diff unstaged;
+		string staged_key;
+		string unstaged_key;
+
+		if (d_repository == null)
+		{
+			return;
+		}
+
+		try
+		{
+			var context = d_diff.options.n_context_lines;
+
+			staged = Changes.staged(d_repository, context);
+			unstaged = Changes.unstaged(d_repository, context);
+			staged_key = Changes.key(d_repository, staged);
+			unstaged_key = Changes.key(d_repository, unstaged);
+		}
+		catch (Error e)
+		{
+			return;
+		}
+
+		if (staged_key == d_staged_key && unstaged_key == d_unstaged_key)
+		{
+			return;
+		}
+
+		d_staged = staged;
+		d_staged_key = staged_key;
+		d_unstaged = unstaged;
+		d_unstaged_key = unstaged_key;
+		show_changes();
 	}
 
 	private History read_history(Gee.List<Ref> refs) throws Error
@@ -2191,6 +2257,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			return;
 		}
+
+		read_changes();
 
 		var previous = new Gee.HashSet<string>();
 
@@ -2458,6 +2526,31 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private void show_changes()
+	{
+		Gtk.ListBoxRow[] rows = { d_paned.staged_row, d_paned.unstaged_row };
+		Gtk.Label[] counts = { d_paned.staged_count, d_paned.unstaged_count };
+		Ggit.Diff?[] diffs = { d_staged, d_unstaged };
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			var files = diffs[i] != null ? (uint)diffs[i].get_num_deltas() : 0;
+
+			counts[i].label = ngettext("%u file", "%u files", files)
+				.printf(files);
+			rows[i].visible = files > 0;
+
+			if (!rows[i].visible && rows[i].is_selected())
+			{
+				d_paned.changes.unselect_row(rows[i]);
+			}
+		}
+
+		d_paned.changes.visible = d_paned.staged_row.visible
+		                          || d_paned.unstaged_row.visible;
+		queue_details();
+	}
+
 	private void show_choice()
 	{
 		string[] placeholders = { _("Search commit messages, authors and hashes"), _("Lines that commits added or removed"), _("Files or folders, split by spaces") };
@@ -2492,6 +2585,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_details()
 	{
+		var row = d_paned.changes.get_selected_row();
+
+		if (row != null)
+		{
+			var diff = row == d_paned.staged_row ? d_staged : d_unstaged;
+
+			if (d_paned.details_visible && d_diff.diff != diff)
+			{
+				d_diff.new_is_workdir = row == d_paned.unstaged_row;
+				d_diff.diff = diff;
+			}
+
+			return;
+		}
+
 		var commit = selected;
 
 		if (commit == null && d_kept != null)
@@ -2524,6 +2632,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		}
 
+		d_diff.new_is_workdir = false;
 		d_diff.commit = commit;
 		fill_find_bar(false);
 	}
@@ -2780,7 +2889,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_kept = path == null && d_narrowed != null ? kept : null;
 
-		if (d_model.size > 0 && d_kept == null)
+		if (d_model.size > 0 && d_kept == null
+		    && d_paned.changes.get_selected_row() == null)
 		{
 			d_paned.commit_list_view.get_selection().select_path(path != null ? path : new Gtk.TreePath.first());
 		}

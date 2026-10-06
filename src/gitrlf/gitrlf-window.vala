@@ -132,6 +132,9 @@ public class Window : Gtk.ApplicationWindow
 		d_poll.changed.connect(() => {
 			d_history.refresh();
 		});
+		d_poll.ticked.connect(() => {
+			d_history.read_changes();
+		});
 
 		d_interface_settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");
 		d_interface_settings.changed["enable-monitoring"].connect(() => {
