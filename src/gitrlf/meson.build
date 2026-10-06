@@ -9,6 +9,7 @@ gitrlf_lib_sources = files(
   'gitrlf-diff-find-bar.vala',
   'gitrlf-diff-find.vala',
   'gitrlf-diff-scroll-bar.vala',
+  'gitrlf-diff-tool.vala',
   'gitrlf-filter.vala',
   'gitrlf-history-activity.vala',
   'gitrlf-history-model.vala',

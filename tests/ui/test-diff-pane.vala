@@ -149,6 +149,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
+	Test.add_func("/gitrlf/ui/diff-pane/a-file-opens-in-the-diff-tool-of-git", test_a_file_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
 	Test.add_func("/gitrlf/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
@@ -458,7 +459,7 @@ private static void test_a_bare_repository_offers_only_the_history_of_a_file()
 		settle(400);
 		right_click_file(window, "new.c");
 
-		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Show history of this file");
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Show history of this file,Compare in difftool");
 
 		menu_item("Show history of this file").activate();
 		((Gtk.Menu)menu_item("Show history of this file").get_parent()).popdown();
@@ -491,7 +492,7 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		settle(400);
 		right_click_file(window, "new.c");
 
-		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file");
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file,Compare in difftool");
 
 		var item = menu_item("Show history of this file");
 
@@ -518,6 +519,47 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "");
 
 		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_file_opens_in_the_diff_tool_of_git()
+{
+	try
+	{
+		var repo = renamed_repo();
+		var record = File.new_for_path(repo.path.get_path() + ".record");
+
+		repo.git({"config", "diff.tool", "record"});
+		repo.git({"config", "difftool.record.cmd",
+		          "{ cat \"$LOCAL\"; echo --; cat \"$REMOTE\"; } > '"
+		          + record.get_path() + ".part' && mv '" + record.get_path()
+		          + ".part' '" + record.get_path() + "'"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		select_subject(window, "edit new");
+		settle(400);
+		right_click_file(window, "new.c");
+		activate_item("Compare in difftool");
+
+		for (var i = 0; i < 100 && !record.query_exists(); i++)
+		{
+			settle(100);
+		}
+
+		uint8[] contents;
+
+		record.load_contents(null, out contents, null);
+		assert_cmpstr((string)contents, CompareOperator.EQ,
+		              "l1\n--\nl1\nl2\n");
+
+		window.destroy();
+		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)

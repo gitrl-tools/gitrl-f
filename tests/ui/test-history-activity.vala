@@ -234,6 +234,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-first-tag", test_the_commit_menu_names_the_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-in-the-diff-tool-of-git", test_the_commit_menu_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
@@ -1865,6 +1866,54 @@ private static void test_the_commit_menu_names_the_merge_that_brought_it_in()
 
 		((Gtk.Menu)copy_item().get_parent()).popdown();
 		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_opens_in_the_diff_tool_of_git()
+{
+	try
+	{
+		var repo = Repo.create();
+		var record = File.new_for_path(repo.path.get_path() + ".record");
+
+		repo.commit("first", "a");
+		repo.commit("second", "a");
+		repo.git({"config", "diff.tool", "record"});
+		repo.git({"config", "difftool.record.cmd",
+		          "{ cd \"$LOCAL\" && find . -type f && cat a; echo --; "
+		          + "cd \"$REMOTE\" && find . -type f && cat a; } > '"
+		          + record.get_path() + ".part' && mv '" + record.get_path()
+		          + ".part' '" + record.get_path() + "'"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		right_click(window, row_of(window, "second"), 1, 10);
+		settle(500);
+
+		var item = menu_item("Compare commit in difftool");
+
+		assert_nonnull(item);
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+
+		for (var i = 0; i < 100 && !record.query_exists(); i++)
+		{
+			settle(100);
+		}
+
+		uint8[] contents;
+
+		record.load_contents(null, out contents, null);
+		assert_cmpstr((string)contents, CompareOperator.EQ,
+		              "./a\nfirst\n--\n./a\nfirst\nsecond\n");
+
+		window.destroy();
+		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)

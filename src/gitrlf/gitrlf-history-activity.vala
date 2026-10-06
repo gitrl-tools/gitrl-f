@@ -495,7 +495,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			fill_find_bar(false);
 		});
 
-		d_diff.files_changed.connect(offer_file_history);
+		d_diff.files_changed.connect(offer_file_items);
 		d_diff.files_changed.connect(offer_line_history);
 		d_diff.message_shown.connect(mark_message);
 
@@ -610,6 +610,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 
 		show_choice();
+	}
+
+	private void add_compare_item(Gitg.Commit commit)
+	{
+		var item = new Gtk.MenuItem.with_label(_("Compare commit in difftool"));
+
+		item.activate.connect(() => {
+			DiffTool.compare_commit.begin(d_repository, git_directory(),
+			                              commit);
+		});
+		item.show();
+		d_copy_menu.add(item);
 	}
 
 	private void add_first_tag_item(Ggit.OId commit)
@@ -1277,6 +1289,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		add_holders_item(commit.get_id());
 		add_first_tag_item(commit.get_id());
 		add_merge_item(commit.get_id());
+		d_copy_menu.add_separator();
+		add_compare_item(commit);
 
 		return true;
 	}
@@ -1779,7 +1793,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return "%s\n%d%d".printf(d_query.text, (int)d_query.match_case, (int)d_query.regex);
 	}
 
-	private void offer_file_history()
+	private void offer_file_items()
 	{
 		foreach (var file in d_diff.get_files())
 		{
@@ -1803,6 +1817,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				item.activate.connect(() => show_file_history(path));
 				item.show();
 				menu.add(item);
+
+				var compare = new Gtk.MenuItem.with_label(
+					_("Compare in difftool"));
+
+				compare.activate.connect(() => {
+					DiffTool.compare_file.begin(d_repository, git_directory(),
+					                            d_diff.parent_commit,
+					                            d_diff.commit, file.info.delta);
+				});
+				compare.show();
+				menu.add(compare);
 			});
 		}
 	}
