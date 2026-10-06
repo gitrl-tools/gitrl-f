@@ -1137,6 +1137,29 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return parts.length == 2 ? _("%s and %s").printf(parts[0], parts[1]) : parts[0];
 	}
 
+	private void compare_in_tool(Ggit.DiffDelta delta)
+	{
+		var commit = d_diff.commit;
+		var directory = git_directory();
+
+		if (commit != null)
+		{
+			DiffTool.compare_file.begin(d_repository, directory,
+			                            DiffTool.label(d_diff.parent_commit),
+			                            DiffTool.label(commit), delta, false);
+		}
+		else if (d_paned.changes.get_selected_row() == d_paned.staged_row)
+		{
+			DiffTool.compare_file.begin(d_repository, directory, "HEAD",
+			                            "staged", delta, false);
+		}
+		else
+		{
+			DiffTool.compare_file.begin(d_repository, directory, "staged",
+			                            "working-tree", delta, true);
+		}
+	}
+
 	private void date_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
 		var commit = d_model.commit_from_iter(iter);
@@ -1834,19 +1857,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				item.show();
 				menu.add(item);
 
-				if (d_diff.commit == null)
-				{
-					return;
-				}
-
 				var compare = new Gtk.MenuItem.with_label(
 					_("Compare in difftool"));
 
-				compare.activate.connect(() => {
-					DiffTool.compare_file.begin(d_repository, git_directory(),
-					                            d_diff.parent_commit,
-					                            d_diff.commit, file.info.delta);
-				});
+				compare.activate.connect(() => compare_in_tool(file.info.delta));
 				compare.show();
 				menu.add(compare);
 			});

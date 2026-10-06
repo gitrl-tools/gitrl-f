@@ -164,6 +164,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-clean-tree-shows-no-changes", test_a_clean_tree_shows_no_changes);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
+	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-changes-opens-in-the-diff-tool", test_a_file_of_the_changes_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-opens-in-the-diff-tool-of-git", test_a_file_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
@@ -555,6 +556,51 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		assert_cmpstr(window.history.search_field.text, CompareOperator.EQ, "");
 
 		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_file_of_the_changes_opens_in_the_diff_tool()
+{
+	try
+	{
+		var repo = Repo.create();
+		var record = File.new_for_path(repo.path.get_path() + ".record");
+
+		repo.commit("one", "notes");
+		FileUtils.set_contents(repo.path.get_child("notes").get_path(), "edited\n");
+		repo.git({"config", "diff.tool", "record"});
+		repo.git({"config", "difftool.record.cmd",
+		          "{ cat \"$LOCAL\"; echo --; cat \"$REMOTE\"; } > '"
+		          + record.get_path() + ".part' && mv '" + record.get_path()
+		          + ".part' '" + record.get_path() + "'"});
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		paned.changes.select_row(paned.unstaged_row);
+		paned.unstaged_row.activate();
+		settle(400);
+		right_click_file(window, "notes");
+		activate_item("Compare in difftool");
+
+		for (var i = 0; i < 100 && !record.query_exists(); i++)
+		{
+			settle(100);
+		}
+
+		uint8[] contents;
+
+		record.load_contents(null, out contents, null);
+		assert_cmpstr((string)contents, CompareOperator.EQ,
+		              "one\n--\nedited\n");
+
+		window.destroy();
+		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)

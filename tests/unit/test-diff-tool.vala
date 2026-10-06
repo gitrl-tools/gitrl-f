@@ -92,13 +92,13 @@ private static void compare_commit(Fixture fixture, Gitg.Commit commit)
 	loop.run();
 }
 
-private static void compare_file(Fixture fixture, Gitg.Commit commit)
+private static void compare_delta(Fixture fixture, Ggit.DiffDelta delta,
+                                  string before, string after, bool worktree)
 {
 	var loop = new MainLoop();
-	var delta = commit.get_diff(null, 0).get_delta(0);
 
 	Gitrlf.DiffTool.compare_file.begin(fixture.repository, fixture.repo.path,
-	                                    commit.get_parents()[0], commit, delta,
+	                                    before, after, delta, worktree,
 	                                    (obj, res) => {
 		try
 		{
@@ -112,6 +112,12 @@ private static void compare_file(Fixture fixture, Gitg.Commit commit)
 		loop.quit();
 	});
 	loop.run();
+}
+
+private static void compare_file(Fixture fixture, Gitg.Commit commit)
+{
+	compare_delta(fixture, commit.get_diff(null, 0).get_delta(0), "before",
+	              "after", false);
 }
 
 private static string lines(string[] record, int from, int to)
@@ -132,12 +138,30 @@ public static int main(string[] args)
 	Test.add_func(
 		"/gitrlf/diff-tool/a-first-commit-opens-beside-an-empty-folder",
 		test_a_first_commit_opens_beside_an_empty_folder);
+	Test.add_func(
+		"/gitrlf/diff-tool/a-new-file-in-the-tree-opens-beside-nothing",
+		test_a_new_file_in_the_tree_opens_beside_nothing);
+	Test.add_func("/gitrlf/diff-tool/a-staged-file-opens-against-head",
+	              test_a_staged_file_opens_against_head);
 	Test.add_func("/gitrlf/diff-tool/an-added-file-opens-beside-an-empty-file",
 	              test_an_added_file_opens_beside_an_empty_file);
+	Test.add_func("/gitrlf/diff-tool/an-unstaged-file-opens-as-a-locked-copy",
+	              test_an_unstaged_file_opens_as_a_locked_copy);
 	Test.add_func("/gitrlf/diff-tool/the-copies-go-when-the-tool-closes",
 	              test_the_copies_go_when_the_tool_closes);
 
 	return Test.run();
+}
+
+private static void stage_and_edit(Fixture fixture) throws Error
+{
+	var notes = fixture.repo.path.get_child("notes").get_path();
+
+	fixture.repo.commit("one", "notes");
+	FileUtils.set_contents(notes, "staged\n");
+	fixture.repo.git({"add", "notes"});
+	FileUtils.set_contents(notes, "later\n");
+	fixture.open();
 }
 
 private static void test_a_commit_opens_as_two_locked_folders()
@@ -229,6 +253,60 @@ private static void test_a_first_commit_opens_beside_an_empty_folder()
 	}
 }
 
+private static void test_a_new_file_in_the_tree_opens_beside_nothing()
+{
+	try
+	{
+		var fixture = new Fixture(FILE_RECORD);
+
+		fixture.repo.commit("one", "notes");
+		FileUtils.set_contents(fixture.repo.path.get_child("fresh").get_path(),
+		                       "new\n");
+		fixture.open();
+
+		var delta = Gitrlf.Changes.unstaged(fixture.repository, 3).get_delta(0);
+
+		compare_delta(fixture, delta, "staged", "working-tree", true);
+
+		assert_cmpstr(lines(fixture.read(), 0, 4), CompareOperator.EQ,
+		              "-r--r--r--\n"
+		              + "-r--r--r--\n"
+		              + "--\n"
+		              + "new");
+		fixture.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_staged_file_opens_against_head()
+{
+	try
+	{
+		var fixture = new Fixture(FILE_RECORD);
+
+		stage_and_edit(fixture);
+
+		var delta = Gitrlf.Changes.staged(fixture.repository, 3).get_delta(0);
+
+		compare_delta(fixture, delta, "HEAD", "staged", false);
+
+		assert_cmpstr(lines(fixture.read(), 0, 5), CompareOperator.EQ,
+		              "-r--r--r--\n"
+		              + "-r--r--r--\n"
+		              + "one\n"
+		              + "--\n"
+		              + "staged");
+		fixture.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_an_added_file_opens_beside_an_empty_file()
 {
 	try
@@ -247,6 +325,36 @@ private static void test_an_added_file_opens_beside_an_empty_file()
 		              + "-r--r--r--\n"
 		              + "--\n"
 		              + "two");
+		fixture.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_an_unstaged_file_opens_as_a_locked_copy()
+{
+	try
+	{
+		var fixture = new Fixture(FILE_RECORD);
+
+		stage_and_edit(fixture);
+
+		var delta = Gitrlf.Changes.unstaged(fixture.repository, 3).get_delta(0);
+
+		compare_delta(fixture, delta, "staged", "working-tree", true);
+
+		var info = fixture.repo.path.get_child("notes").query_info(
+			FileAttribute.ACCESS_CAN_WRITE, FileQueryInfoFlags.NONE);
+
+		assert_cmpstr(lines(fixture.read(), 0, 5), CompareOperator.EQ,
+		              "-r--r--r--\n"
+		              + "-r--r--r--\n"
+		              + "staged\n"
+		              + "--\n"
+		              + "later");
+		assert_true(info.get_attribute_boolean(FileAttribute.ACCESS_CAN_WRITE));
 		fixture.remove();
 	}
 	catch (Error e)

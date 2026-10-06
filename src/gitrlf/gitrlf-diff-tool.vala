@@ -24,14 +24,15 @@ public class DiffTool : Object
 {
 	private static async void compare(Gitg.Repository repository,
 	                                  File directory,
-	                                  Ggit.Commit? before,
-	                                  Ggit.Commit after,
+	                                  string before,
+	                                  string after,
 	                                  Ggit.DiffDelta[] deltas,
-	                                  bool folders) throws Error
+	                                  bool folders,
+	                                  bool worktree) throws Error
 	{
 		var top = File.new_for_path(DirUtils.make_tmp("gitrlf-XXXXXX"));
-		var left = top.get_child(before != null ? short_id(before) : "empty");
-		var right = top.get_child(short_id(after));
+		var left = top.get_child(before);
+		var right = top.get_child(after);
 		var local = left;
 		var remote = right;
 
@@ -40,8 +41,10 @@ public class DiffTool : Object
 
 		foreach (var delta in deltas)
 		{
-			local = save(repository, delta.get_old_file(), left, folders);
-			remote = save(repository, delta.get_new_file(), right, folders);
+			local = save(repository, delta.get_old_file(), left, folders,
+			             false);
+			remote = save(repository, delta.get_new_file(), right, folders,
+			              worktree);
 		}
 
 		seal(top);
@@ -73,17 +76,25 @@ public class DiffTool : Object
 			deltas += diff.get_delta(i);
 		}
 
-		yield compare(repository, directory, commit.get_parents()[0], commit,
-		              deltas, true);
+		yield compare(repository, directory, label(commit.get_parents()[0]),
+		              label(commit), deltas, true, false);
 	}
 
 	public static async void compare_file(Gitg.Repository repository,
 	                                      File directory,
-	                                      Ggit.Commit? before,
-	                                      Ggit.Commit after,
-	                                      Ggit.DiffDelta delta) throws Error
+	                                      string before,
+	                                      string after,
+	                                      Ggit.DiffDelta delta,
+	                                      bool worktree) throws Error
 	{
-		yield compare(repository, directory, before, after, { delta }, false);
+		yield compare(repository, directory, before, after, { delta }, false,
+		              worktree);
+	}
+
+	public static string label(Ggit.Commit? commit)
+	{
+		return commit != null ? commit.get_id().to_string().substring(0, 7)
+		                      : "empty";
 	}
 
 	private static void remove(File file) throws Error
@@ -108,31 +119,37 @@ public class DiffTool : Object
 	}
 
 	private static File save(Gitg.Repository repository, Ggit.DiffFile file,
-	                         File side, bool folders) throws Error
+	                         File side, bool folders,
+	                         bool worktree) throws Error
 	{
 		var target = side.get_child(file.get_path());
-		var oid = file.get_oid();
+		var source = worktree
+			? repository.get_workdir().get_child(file.get_path()) : null;
+		var gone = worktree ? !source.query_exists() : file.get_oid().is_zero();
 
-		if (oid.is_zero() && folders)
+		if (gone && folders)
 		{
 			return target;
 		}
 
 		DirUtils.create_with_parents(target.get_parent().get_path(), 0755);
 
-		if (oid.is_zero())
+		if (gone)
 		{
-			FileUtils.set_contents_full(target.get_path(), "", 0,
-			                            FileSetContentsFlags.NONE, 0444);
+			write(target, {});
+		}
+		else if (worktree)
+		{
+			uint8[] data;
+
+			FileUtils.get_data(source.get_path(), out data);
+			write(target, data);
 		}
 		else
 		{
-			var blob = repository.lookup<Ggit.Blob>(oid);
-			var data = blob.get_raw_content();
+			var blob = repository.lookup<Ggit.Blob>(file.get_oid());
 
-			FileUtils.set_contents_full(target.get_path(), (string)data,
-			                            data.length,
-			                            FileSetContentsFlags.NONE, 0444);
+			write(target, blob.get_raw_content());
 		}
 
 		return target;
@@ -156,9 +173,11 @@ public class DiffTool : Object
 		FileUtils.chmod(folder.get_path(), 0555);
 	}
 
-	private static string short_id(Ggit.Commit commit)
+	private static void write(File target, uint8[] data) throws Error
 	{
-		return commit.get_id().to_string().substring(0, 7);
+		FileUtils.set_contents_full(target.get_path(), (string)data,
+		                            data.length, FileSetContentsFlags.NONE,
+		                            0444);
 	}
 }
 
