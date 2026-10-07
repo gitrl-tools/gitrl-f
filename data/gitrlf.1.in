@@ -31,8 +31,8 @@ refs and the list. A click on the same commit, Enter or Escape hides them
 again. A double-click is two clicks: it shows them and hides them again. A
 click that opens a file, or a click on Expand all, fills the window with
 the diff. A click that closes a file does not change the window. When the
-commit changes only one file, Enter fills the window at once. Escape, the back arrow or the close button
-at the top right of the diff brings back the refs and the list.
+commit changes only one file, Enter fills the window at once. Escape or
+the back arrow brings back the refs and the list.
 .PP
 .B gitrlf
 is read only. It writes nothing to the repository: no ref is moved, no

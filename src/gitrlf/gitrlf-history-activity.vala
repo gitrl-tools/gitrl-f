@@ -472,20 +472,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_diff = new Gitg.DiffView();
 		d_diff.vexpand = true;
 
-		var close = new Gtk.Button.from_icon_name("window-close-symbolic", Gtk.IconSize.BUTTON);
-		close.tooltip_text = _("Show the refs and the list (Escape)");
-		close.halign = Gtk.Align.END;
-		close.valign = Gtk.Align.START;
-		close.margin = 12;
-		close.no_show_all = true;
-		close.clicked.connect(() => {
-			d_paned.details_only = false;
-		});
-
-		d_paned.notify["details-only"].connect(() => {
-			close.visible = d_paned.details_only;
-		});
-
 		d_paned.notify["details-visible"].connect(() => {
 			if (!d_paned.details_visible)
 			{
@@ -519,11 +505,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			});
 		}
 
-		var overlay = new Gtk.Overlay();
-		overlay.add(d_diff);
-		overlay.add_overlay(close);
-		overlay.show_all();
-		d_paned.box_details.add(overlay);
+		d_diff.show_all();
+		d_paned.box_details.add(d_diff);
 		d_paned.box_details.add(new DiffScrollBar(d_diff, d_find_bar));
 
 		d_file_press = new Gtk.GestureMultiPress(d_diff);

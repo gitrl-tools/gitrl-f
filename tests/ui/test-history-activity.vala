@@ -207,7 +207,6 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
 	Test.add_func("/gitrlf/ui/history-activity/click-shows-the-pane-and-on-its-row-hides-it", test_click_shows_the_pane_and_on_its_row_hides_it);
 	Test.add_func("/gitrlf/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
-	Test.add_func("/gitrlf/ui/history-activity/close-button-steps-back-from-the-full-diff", test_close_button_steps_back_from_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
 	Test.add_func("/gitrlf/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitrlf/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
@@ -219,6 +218,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
+	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitrlf/ui/history-activity/refs-filter-waits-for-enter", test_refs_filter_waits_for_enter);
 	Test.add_func("/gitrlf/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
@@ -949,53 +949,6 @@ private static void test_click_that_closes_a_file_keeps_the_refs_and_the_list()
 	}
 }
 
-private static void test_close_button_steps_back_from_the_full_diff()
-{
-	try
-	{
-		var repo = two_files();
-		var window = opened(repo, {"refs/heads/master"});
-		var paned = window.history.paned;
-		Gtk.Button? close = null;
-
-		foreach (var widget in find_all(paned.box_details, typeof(Gtk.Button)))
-		{
-			if (((Gtk.Button)widget).tooltip_text == "Show the refs and the list (Escape)")
-			{
-				close = (Gtk.Button)widget;
-			}
-		}
-
-		assert_nonnull(close);
-
-		click_row(window, 0);
-
-		assert_true(details_shown(window));
-		assert_false(close.get_mapped());
-
-		click_widget(label_with(window.history.diff_view, "b"));
-		settle(300);
-
-		assert_true(only_details_shown(window));
-		assert_true(close.get_mapped());
-
-		click_widget(close);
-		settle(100);
-
-		assert_true(details_shown(window));
-		assert_true(paned.commit_list_view.get_mapped());
-		assert_true(paned.refs_list.get_mapped());
-		assert_false(close.get_mapped());
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
 private static void test_columns_are_subject_hash_author_and_date()
 {
 	try
@@ -1328,6 +1281,48 @@ private static void test_left_pane_is_never_cut_off()
 		window.history.paned.filter.translate_coordinates(window, 0, 0, out x, out y);
 
 		assert_cmpint(x, CompareOperator.GE, 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_no_button_covers_the_full_diff()
+{
+	try
+	{
+		var repo = two_files();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.diff_view;
+
+		click_row(window, 0);
+		click_widget(label_with(view, "b"));
+		settle(300);
+
+		assert_true(only_details_shown(window));
+
+		foreach (var widget in find_all(window.history.paned.box_details,
+		                                typeof(Gtk.Button)))
+		{
+			int x;
+			int y;
+
+			if (!widget.get_mapped() || widget.is_ancestor(view))
+			{
+				continue;
+			}
+
+			widget.translate_coordinates(view, 0, 0, out x, out y);
+
+			assert_false(x < view.get_allocated_width()
+			             && y < view.get_allocated_height()
+			             && x + widget.get_allocated_width() > 0
+			             && y + widget.get_allocated_height() > 0);
+		}
 
 		window.destroy();
 		repo.remove();
