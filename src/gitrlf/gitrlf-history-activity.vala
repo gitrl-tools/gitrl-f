@@ -630,7 +630,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void add_compare_item(Gitg.Commit commit)
 	{
-		var item = new Gtk.MenuItem.with_label(_("Compare commit in difftool"));
+		var item = new Gtk.MenuItem.with_label(_("Open diff in difftool"));
 
 		item.activate.connect(() => {
 			DiffTool.compare_commit.begin(d_repository, git_directory(),

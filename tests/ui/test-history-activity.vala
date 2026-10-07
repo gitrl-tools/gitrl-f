@@ -1895,7 +1895,7 @@ private static void test_the_commit_menu_opens_in_the_diff_tool_of_git()
 		right_click(window, row_of(window, "second"), 1, 10);
 		settle(500);
 
-		var item = menu_item("Compare commit in difftool");
+		var item = menu_item("Open diff in difftool");
 
 		assert_nonnull(item);
 		item.activate();
