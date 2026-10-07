@@ -242,7 +242,7 @@
  		menu.attach_to_widget(d_expander, null);
  		menu.popup_at_pointer(event);
  	}
-@@ -307,11 +344,82 @@
+@@ -307,11 +344,72 @@
  
  	public void add_hunk(Ggit.DiffHunk hunk, Gee.ArrayList<Ggit.DiffLine> lines)
  	{
@@ -251,17 +251,7 @@
 +
 +		if (d_text)
 +		{
-+			foreach (var line in lines)
-+			{
-+				if (line.get_origin() == Ggit.DiffLineType.ADDITION)
-+				{
-+					d_diff_stat_file.added++;
-+				}
-+				else if (line.get_origin() == Ggit.DiffLineType.DELETION)
-+				{
-+					d_diff_stat_file.removed++;
-+				}
-+			}
++			d_diff_stat_file.add_lines(lines);
 +		}
 +
  		foreach (DiffViewFileRenderer renderer in renderer_list)

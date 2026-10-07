@@ -1,0 +1,41 @@
+--- a/libgitg/resources/ui/gitg-diff-view.ui
++++ b/libgitg/resources/ui/gitg-diff-view.ui
+@@ -64,6 +64,38 @@
+                           </object>
+                         </child>
+                         <child>
++                          <object class="GtkGrid" id="grid_total">
++                            <property name="visible">False</property>
++                            <property name="can_focus">False</property>
++                            <property name="margin_start">19</property>
++                            <property name="column_spacing">12</property>
++                            <child>
++                              <object class="GitgDiffStat" id="diff_stat_total">
++                                <property name="visible">True</property>
++                                <property name="can_focus">False</property>
++                                <property name="valign">baseline</property>
++                                <property name="margin_top">6</property>
++                                <property name="margin_bottom">6</property>
++                                <style>
++                                  <class name="no-frame"/>
++                                </style>
++                              </object>
++                            </child>
++                            <child>
++                              <object class="GtkLabel" id="label_total">
++                                <property name="visible">True</property>
++                                <property name="can_focus">False</property>
++                                <property name="halign">start</property>
++                                <property name="margin_top">6</property>
++                                <property name="margin_bottom">6</property>
++                                <style>
++                                  <class name="dim-label"/>
++                                </style>
++                              </object>
++                            </child>
++                          </object>
++                        </child>
++                        <child>
+                           <object class="GtkGrid" id="grid_files">
+                             <property name="visible">True</property>
+                             <property name="orientation">vertical</property>

@@ -349,17 +349,7 @@ public class Gitg.DiffViewFile : Gtk.Grid
 
 		if (d_text)
 		{
-			foreach (var line in lines)
-			{
-				if (line.get_origin() == Ggit.DiffLineType.ADDITION)
-				{
-					d_diff_stat_file.added++;
-				}
-				else if (line.get_origin() == Ggit.DiffLineType.DELETION)
-				{
-					d_diff_stat_file.removed++;
-				}
-			}
+			d_diff_stat_file.add_lines(lines);
 		}
 
 		foreach (DiffViewFileRenderer renderer in renderer_list)

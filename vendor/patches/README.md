@@ -9,7 +9,7 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Fourteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Sixteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gitrl-f takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
@@ -18,6 +18,7 @@ gitrl-f takes these patches from gitrl-z, which vendors the same source. The dif
 - The diff pane keeps gitg's Unif and Split switcher on each file, which gitrl-z hides.
 - The parts of four patches that give the find bar of the diff its view of the pane, and all of `gitg-diff-view-file-info.patch`, are gitrl-f's own. gitrl-z has no find in the diff.
 - The part of `gitg-diff-view.patch` that gives the commit message to the search of the list, and all of `gitg-diff-view-commit-details.patch`, are gitrl-f's own.
+- The part of `gitg-diff-view.patch` that shows the total of the lines, the call of `add_lines()` in `gitg-diff-view-file.patch`, and all of `gitg-diff-view.ui.patch` and `gitg-diff-stat.patch`, are gitrl-f's own.
 - The patches add no comments to gitg's code. The reasons are here.
 
 ## gitg-repository.patch
@@ -131,7 +132,7 @@ gitrl-z's patch to this file also hides the Unif and Split switcher of each file
 
 **2. Makes the text views of a file only when they show.** When a commit is selected, gitg makes three text views for each of its files. These are the unified view and the two halves of the split view. Each view loads the old file and the new file and colours them. A commit with more than one file starts with its files folded, so most of this work does not show.
 
-Now the file keeps its hunks. It makes the unified view when the file opens, and the split view when Split is chosen, and then gives the hunks to that view. The file makes its Unif and Split pages, and with them the buttons of the switcher, when it first opens. After that, the switcher is as gitg has it. The file counts the added and removed lines for its header from the hunks, because no view counts them before the file opens. For each view that it makes, the file sends `renderer_added`, and `gitg-diff-view.patch` binds the view there.
+Now the file keeps its hunks. It makes the unified view when the file opens, and the split view when Split is chosen, and then gives the hunks to that view. The file makes its Unif and Split pages, and with them the buttons of the switcher, when it first opens. After that, the switcher is as gitg has it. The file counts the added and removed lines for its header from the hunks, because no view counts them before the file opens. It gives the lines of each hunk to `add_lines()` of its badge, from `gitg-diff-stat.patch`. For each view that it makes, the file sends `renderer_added`, and `gitg-diff-view.patch` binds the view there.
 
 **Why.** Before this change, a click on a commit with more than one file made the diff in 75 to 254 ms. The highlighting then kept the pane busy for up to 1.3 s after the click. After this change, the diff took 16 to 57 ms, with no busy time after it. This was measured under Xvfb on a copy of this repository at 0.3.0, in runs of twelve clicks, on 2026-09-27. The pages cost time too. On a commit that adds 118 files, the diff showed after 627 to 704 ms when each file made its pages at once. It showed after 536 to 575 ms when the pages wait for the first open.
 
@@ -185,7 +186,7 @@ Removes the slide from the fold of each file. The revealer that holds the diff o
 
 ## gitg-diff-view.patch
 
-Seven changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gitrl-f can read the rows, gitrl-f can read the parent that the diff compares with, the message wraps, and gitrl-f can mark the message.
+Eight changes: the selection comes out, a text view is bound when its file makes it, the rows of the files are added in batches, gitrl-f can read the rows, gitrl-f can read the parent that the diff compares with, the message wraps, gitrl-f can mark the message, and the pane shows the total of the lines.
 
 **1. Removes the `has_selection` property**, `on_selection_changed()` and the two calls to it, `get_selection()` and `clear_selection()`.
 
@@ -231,6 +232,12 @@ A text view that wraps finds its height before it knows its width. When the pane
 
 **Cost.** Two properties that only read, and one signal for each fill.
 
+**8. Shows the total of the lines of the diff above the rows of the files.** When the diff has two files or more, a row above the first file shows a badge of the same kind as the badge of each file, and the number of files. The badge counts the added and removed lines of all the files, also of the files whose rows are not made yet. `update_total()` counts the lines from the plans of part 3, which hold all the files before the first batch.
+
+**Why.** The operator asked to see the total of the lines that a diff changes. The badge of each file gives only the lines of that file, so a commit that changes six files showed six numbers and no sum. The row is in the pane and not in the details of the commit, because the staged and the unstaged changes show the pane with no details. With one file, the total is the number on the badge of that file, so the row does not show.
+
+**Cost.** One more pass over the lines of each text file when the diff loads. A diff with two files or more is one row taller.
+
 ## gitg-diff-view-commit-details.patch
 
 Gives the label of the subject line, through the read-only property `subject_label`.
@@ -238,6 +245,22 @@ Gives the label of the subject line, through the read-only property `subject_lab
 **Why.** `gitg-diff-view.patch` gives this label to gitrl-f, which marks the matches of a search of the messages in it. The label is a private field of the template.
 
 **Cost.** None. The property only reads.
+
+## gitg-diff-view.ui.patch
+
+Adds the row of the total, `grid_total`, between the message and the rows of the files. The row holds a `GitgDiffStat` and a label for the number of files. It is hidden until `gitg-diff-view.patch` fills it.
+
+**Why.** Part 8 of `gitg-diff-view.patch` gives the cause. The badge has the same margins and the same class as the badge of a file in `ui/gitg-diff-view-file.ui`. The row starts 19 pixels from the left: the 3 pixels of the margin of the expander of a file and the 16 pixels of its arrow. Thus the badge of the total is in the same column as the badges of the files. Under Adwaita and under Yaru-MATE-light, the two badges took the columns 24 to 98 of the window (measured under Xvfb, 2026-10-07).
+
+**Cost.** A theme that gives the arrow of an expander a width other than 16 pixels moves the badges of the files, and not the badge of the total.
+
+## gitg-diff-stat.patch
+
+Adds `add_lines()`, which adds the added and removed lines of a list of diff lines to the badge.
+
+**Why.** Two badges count lines now: the badge of a file and the badge of the total. Before, `gitg-diff-view-file.patch` counted the lines in a loop of its own. One method keeps the two counts the same. It also makes the layout of the text once for each list, where the loop made it again for each line.
+
+**Cost.** None. The badges show the same numbers.
 
 ## gitg-lanes.patch
 

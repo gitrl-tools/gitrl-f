@@ -63,6 +63,23 @@ public class Gitg.DiffStat : Gtk.DrawingArea
 		make_layout();
 	}
 
+	public void add_lines(Gee.List<Ggit.DiffLine> lines)
+	{
+		foreach (var line in lines)
+		{
+			if (line.get_origin() == Ggit.DiffLineType.ADDITION)
+			{
+				d_added++;
+			}
+			else if (line.get_origin() == Ggit.DiffLineType.DELETION)
+			{
+				d_removed++;
+			}
+		}
+
+		make_layout();
+	}
+
 	private void make_layout()
 	{
 		var txt = @"$(added + removed)";

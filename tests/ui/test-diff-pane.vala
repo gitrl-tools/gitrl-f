@@ -199,6 +199,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
 	Test.add_func("/gitrlf/ui/diff-pane/the-shown-changes-follow-an-edit", test_the_shown_changes_follow_an_edit);
+	Test.add_func("/gitrlf/ui/diff-pane/the-total-of-lines-shows-above-the-files", test_the_total_of_lines_shows_above_the_files);
 	Test.add_func("/gitrlf/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
 	Test.add_func("/gitrlf/ui/diff-pane/uncommitted-changes-show-above-the-list", test_uncommitted_changes_show_above_the_list);
 	Test.add_func("/gitrlf/ui/diff-pane/word-mark-colours", test_word_mark_colours);
@@ -1823,6 +1824,70 @@ private static void test_the_shown_changes_follow_an_edit()
 	}
 }
 
+private static void test_the_total_of_lines_shows_above_the_files()
+{
+	try
+	{
+		var repo = seam_repo();
+
+		repo.commit("one file", "solo");
+		commit_many(repo, "many", 80);
+		FileUtils.set_contents(repo.path.get_child("a.txt").get_path(),
+		                       "keep\nnew two\nstay\n");
+		FileUtils.set_contents(repo.path.get_child("e.txt").get_path(), "new\n");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		select_subject(window, "change");
+
+		assert_cmpstr(total_row(window), CompareOperator.EQ, "+3 -2, 4 files");
+
+		var total = total_stat(window);
+		var first = window.history.diff_view.get_files()[0];
+		int total_y;
+		int first_y;
+
+		total.translate_coordinates(window, 0, 0, null, out total_y);
+		first.translate_coordinates(window, 0, 0, null, out first_y);
+
+		assert_cmpint(total_y, CompareOperator.LT, first_y);
+
+		select_subject(window, "one file");
+
+		assert_cmpstr(total_row(window), CompareOperator.EQ, "");
+
+		select_subject(window, "change");
+
+		var seen = "";
+		var handler = window.history.diff_view.files_changed.connect(() => {
+			if (seen == "")
+			{
+				seen = "%s, %d rows".printf(total_row(window),
+				                             window.history.diff_view.get_files().size);
+			}
+		});
+
+		select_subject(window, "many");
+		settle(1000);
+		window.history.diff_view.disconnect(handler);
+
+		assert_cmpstr(seen, CompareOperator.EQ, "+80 -0, 80 files, 20 rows");
+
+		paned.changes.select_row(paned.unstaged_row);
+		settle(400);
+
+		assert_cmpstr(total_row(window), CompareOperator.EQ, "+2 -1, 2 files");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ticking_nothing_clears_the_details()
 {
 	try
@@ -1980,6 +2045,43 @@ private static void test_word_marks_reach_across_a_no_newline_marker()
 	{
 		Test.fail_printf("%s", e.message);
 	}
+}
+
+
+private static string total_row(Gitrlf.Window window)
+{
+	var stat = total_stat(window);
+
+	if (stat == null)
+	{
+		return "";
+	}
+
+	foreach (var child in ((Gtk.Container)stat.get_parent()).get_children())
+	{
+		var label = child as Gtk.Label;
+
+		if (label != null)
+		{
+			return "+%u -%u, %s".printf(stat.added, stat.removed, label.label);
+		}
+	}
+
+	return "";
+}
+
+private static Gitg.DiffStat? total_stat(Gitrlf.Window window)
+{
+	foreach (var widget in find_all(window.history.diff_view, typeof(Gitg.DiffStat)))
+	{
+		if (widget.get_ancestor(typeof(Gitg.DiffViewFile)) == null
+		    && widget.is_drawable())
+		{
+			return (Gitg.DiffStat)widget;
+		}
+	}
+
+	return null;
 }
 
 }

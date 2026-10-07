@@ -29,6 +29,15 @@ public class Gitg.DiffView : Gtk.Grid
 	[GtkChild( name = "grid_files" )]
 	private unowned Gtk.Grid d_grid_files;
 
+	[GtkChild( name = "grid_total" )]
+	private unowned Gtk.Grid d_grid_total;
+
+	[GtkChild( name = "diff_stat_total" )]
+	private unowned DiffStat d_diff_stat_total;
+
+	[GtkChild( name = "label_total" )]
+	private unowned Gtk.Label d_label_total;
+
 	[GtkChild( name = "event_box" )]
 	private unowned Gtk.EventBox d_event_box;
 
@@ -1125,7 +1134,29 @@ public class Gitg.DiffView : Gtk.Grid
 		d_commit_details.expanded = (files.size <= 1 || !default_collapse_all);
 		d_commit_details.expander_visible = (files.size > 1);
 
+		update_total(files);
 		add_files(files, 0, was_expanded, cancellable);
+	}
+
+	private void update_total(Gee.List<DiffViewFilePlan> plans)
+	{
+		d_diff_stat_total.added = 0;
+		d_diff_stat_total.removed = 0;
+
+		foreach (var plan in plans)
+		{
+			if (plan.text)
+			{
+				foreach (var lines in plan.lines)
+				{
+					d_diff_stat_total.add_lines(lines);
+				}
+			}
+		}
+
+		d_label_total.label = ngettext("%d file", "%d files", plans.size)
+			.printf(plans.size);
+		d_grid_total.visible = (plans.size > 1);
 	}
 
 	private void auto_update_expanded()
