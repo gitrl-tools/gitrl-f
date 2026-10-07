@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The diamond and the branch mark are the Git logo by Jason Long, CC BY 3.0.
+  Adapted from the Git logo by Jason Long, CC BY 3.0. The diamond is kept,
+  and the branch mark is redrawn as a commit tree in the shape of an f.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
   <defs>
     <mask id="glyph">
       <rect width="16" height="16" fill="white"/>
-      <g stroke="black" stroke-width="1.2" stroke-linecap="round">
-        <path d="M8 4.9V11.2"/>
-        <path d="M8 5.4L10.6 8"/>
-        <circle cx="8" cy="4.9" r="1.1" fill="black" stroke="none"/>
-        <circle cx="8" cy="11.2" r="1.1" fill="black" stroke="none"/>
-        <circle cx="10.6" cy="8" r="1.1" fill="black" stroke="none"/>
+      <g stroke="black" stroke-width="1.1" stroke-linecap="round" fill="none">
+        <path d="M7.5 8H10.25"/>
+        <path d="M7.5 8H6M7.5 11V6.25A1.5 1.5 0 0 1 9 4.75"/>
+        <circle cx="10.25" cy="8" r="1" fill="black" stroke="none"/>
+        <circle cx="7.5" cy="11" r="1" fill="black" stroke="none"/>
+        <circle cx="7.5" cy="8" r="1" fill="black" stroke="none"/>
+        <circle cx="9" cy="4.75" r="1" fill="black" stroke="none"/>
       </g>
     </mask>
   </defs>

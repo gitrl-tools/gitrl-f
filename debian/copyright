@@ -35,9 +35,10 @@ Copyright: 2026 alexandros filotheou <alexandros.filotheou@gmail.com>
 License: CC-BY-3.0
 Comment:
  The icons are adaptations of the Git logo by Jason Long, which is licensed
- CC BY 3.0: in the application icon the side branch is recoloured, and the
- symbolic icon is the logo in one colour. The PNG files are rendered from the
- SVG by scripts/regen-icons.sh.
+ CC BY 3.0. In both icons the branch mark is redrawn as a commit tree in the
+ shape of the letter f. In the application icon the side branch is
+ recoloured, and the symbolic icon is in one colour. The PNG files are
+ rendered from the SVG by scripts/regen-icons.sh.
 
 License: GPL-2+
  This program is free software; you can redistribute it and/or modify it
