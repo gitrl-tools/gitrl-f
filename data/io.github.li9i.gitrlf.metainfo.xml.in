@@ -63,6 +63,43 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.7.0" date="2026-10-07">
+      <description>
+        <ul>
+          <li>
+            A strip above the list shows the staged and the unstaged changes,
+            each with its number of files. A click on a row shows its diff in
+            the pane.
+          </li>
+          <li>
+            A right click on a commit, or on the staged or unstaged row, gives
+            "Open diff in difftool". A right click on the header of a file
+            gives "Compare in difftool". The tool cannot write the files.
+          </li>
+          <li>
+            After a Messages search, the pane marks the matches in the subject
+            and the body of the commit.
+          </li>
+          <li>
+            After a Messages search, the first Ctrl+F in the pane puts the
+            text, Match case and Regex of the search in the find bar of the
+            diff.
+          </li>
+          <li>
+            When a repository opens, each group of refs that has no ticked ref
+            is folded.
+          </li>
+          <li>
+            A click on Match case, Regex or Display matches only keeps the
+            focus in the search field.
+          </li>
+          <li>
+            No close button floats over the diff when it fills the window.
+            Escape and the back arrow close it.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.0" date="2026-10-02">
       <description>
         <ul>

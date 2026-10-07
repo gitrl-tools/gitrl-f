@@ -1,3 +1,23 @@
+gitrl-f (0.7.0-1) noble; urgency=medium
+
+  * A strip above the list shows the staged and the unstaged changes, each
+    with its number of files. A click on a row shows its diff in the pane.
+  * A right click on a commit, or on the staged or unstaged row, gives "Open
+    diff in difftool". A right click on the header of a file gives "Compare
+    in difftool". The tool cannot write the files.
+  * After a Messages search, the pane marks the matches in the subject and
+    the body of the commit.
+  * After a Messages search, the first Ctrl+F in the pane puts the text,
+    Match case and Regex of the search in the find bar of the diff.
+  * When a repository opens, each group of refs that has no ticked ref is
+    folded.
+  * A click on Match case, Regex or Display matches only keeps the focus in
+    the search field.
+  * No close button floats over the diff when it fills the window. Escape
+    and the back arrow close it.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Wed, 07 Oct 2026 09:20:44 +0200
+
 gitrl-f (0.6.0-1) noble; urgency=medium
 
   * A search shows each matching row of the list in bold, not only its hash.
