@@ -337,7 +337,7 @@
  					}
  					return 0;
  				},
-@@ -1018,22 +1134,29 @@
+@@ -1018,22 +1134,30 @@
  		d_commit_details.expanded = (files.size <= 1 || !default_collapse_all);
  		d_commit_details.expander_visible = (files.size > 1);
  
@@ -372,13 +372,14 @@
 -			file.notify["expanded"].connect(auto_update_expanded);
  		}
 +
-+		d_label_total.label = ngettext("%d file", "%d files", plans.size)
++		d_label_total.label = ngettext("%d file in total", "%d files in total",
++		                               plans.size)
 +			.printf(plans.size);
 +		d_grid_total.visible = (plans.size > 1);
  	}
  
  	private void auto_update_expanded()
-@@ -1050,26 +1173,6 @@
+@@ -1050,26 +1174,6 @@
  		auto_change_expanded(true);
  	}
  
@@ -405,7 +406,7 @@
  	private void update_hide_show_options(Gdk.Window window, int ex, int ey)
  	{
  		void *data;
-@@ -1152,4 +1255,29 @@
+@@ -1152,4 +1256,29 @@
  	}
  }
  

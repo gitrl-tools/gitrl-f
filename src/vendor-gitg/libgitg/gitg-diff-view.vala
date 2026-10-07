@@ -1154,7 +1154,8 @@ public class Gitg.DiffView : Gtk.Grid
 			}
 		}
 
-		d_label_total.label = ngettext("%d file", "%d files", plans.size)
+		d_label_total.label = ngettext("%d file in total", "%d files in total",
+		                               plans.size)
 			.printf(plans.size);
 		d_grid_total.visible = (plans.size > 1);
 	}
