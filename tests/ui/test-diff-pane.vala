@@ -1814,10 +1814,23 @@ private static void test_the_changes_rows_show_dots_when_head_scrolls_away()
 		var x = lane_x(0);
 
 		assert_true(inked(lane, x, lane.get_allocated_height() - 2, GOLD));
-		assert_true(inked(gap, x, 5, GOLD));
-		assert_true(inked(gap, x, 9, GOLD));
+		assert_false(gap.visible);
 
 		var adjustment = paned.scrolled_window_commit_list.vadjustment;
+		var top = window_y(window, 0);
+		var pitch = row_y(window, 1) - row_y(window, 0);
+
+		adjustment.value = pitch;
+		settle(200);
+
+		assert_true(gap.visible);
+		assert_cmpint(window_y(window, 1), CompareOperator.EQ, top);
+
+		adjustment.value = 0;
+		settle(200);
+
+		assert_false(gap.visible);
+		assert_cmpint(window_y(window, 0), CompareOperator.EQ, top);
 
 		adjustment.value = adjustment.upper - adjustment.page_size;
 		settle(200);
@@ -1863,8 +1876,17 @@ private static void test_the_changes_rows_sit_on_the_lane_of_head()
 		assert_false(inked(unstaged, x, 1, GOLD));
 		assert_true(inked(unstaged, x, unstaged.get_allocated_height() - 2, GOLD));
 		assert_true(inked(staged, x, 1, GOLD));
-		assert_true(inked(paned.changes_gap, x, 5, GOLD));
+		assert_false(paned.changes_gap.visible);
+		assert_cmpint(staged_y + staged.get_allocated_height(),
+		              CompareOperator.EQ, window_y(window, 0));
 		assert_true(inked(view, x, row_y(window, 0) + 2, GOLD));
+
+		var label = label_with(paned.unstaged_row, "Unstaged changes");
+		var label_x = label.get_allocated_width() / 2;
+		var label_bottom = label.get_allocated_height() - 2;
+
+		assert_true(inked(label, label_x, 1, GREY));
+		assert_true(inked(label, label_x, label_bottom, GREY));
 
 		repo.git({"stash", "--quiet", "--include-untracked"});
 		settle(2600);
@@ -1899,8 +1921,7 @@ private static void test_the_changes_rows_stand_alone_when_head_is_not_shown()
 		assert_true(inked(unstaged, x, middle - 4, GREY));
 		assert_false(inked(unstaged, x, middle, GREY));
 		assert_false(inked(unstaged, x, unstaged.get_allocated_height() - 2, GREY));
-		assert_false(inked(paned.changes_gap, x, 3, GREY));
-		assert_false(inked(paned.changes_gap, x, 5, GREY));
+		assert_false(paned.changes_gap.visible);
 
 		window.destroy();
 		repo.remove();
@@ -2274,6 +2295,17 @@ private static Gitg.DiffStat? total_stat(Gitrlf.Window window)
 	}
 
 	return null;
+}
+
+private static int window_y(Gitrlf.Window window, int row)
+{
+	int y;
+
+	var view = window.history.paned.commit_list_view;
+
+	view.translate_coordinates(window, 0, row_y(window, row), null, out y);
+
+	return y;
 }
 
 }

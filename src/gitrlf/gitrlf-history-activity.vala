@@ -43,6 +43,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_find_closed;
 	private SearchQuery? d_find_query;
 	private bool d_find_with_pane;
+	private int d_gap_shift;
 	private History? d_full;
 	private SearchQuery d_query;
 	private Gtk.Label d_match_count;
@@ -277,8 +278,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
 		d_paned.scrolled_window_commit_list.vadjustment.value_changed
-			.connect(show_changes_lane);
+			.connect(() => show_changes_lane(true));
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);
+		d_paned.commit_list_view.size_allocate.connect_after(shift_for_gap);
 
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.width_chars = 20;
@@ -2622,6 +2624,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private void shift_for_gap()
+	{
+		if (d_gap_shift != 0)
+		{
+			var adjustment = d_paned.scrolled_window_commit_list.vadjustment;
+			var shift = d_gap_shift;
+
+			d_gap_shift = 0;
+			adjustment.value += shift;
+		}
+	}
+
 	private void show_base()
 	{
 		if (scans())
@@ -2659,12 +2673,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.changes.visible = d_paned.staged_row.visible
 		                          || d_paned.unstaged_row.visible;
-		d_paned.changes_gap.visible = d_paned.changes.visible;
 		join_head();
 		queue_details();
 	}
 
-	private void show_changes_lane()
+	private void show_changes_lane(bool keep = false)
 	{
 		var color = Gdk.RGBA();
 		var index = 0;
@@ -2699,9 +2712,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.unstaged_lane.line_below = head;
 		d_paned.staged_lane.line_above = head && d_paned.unstaged_row.visible;
 		d_paned.staged_lane.line_below = head;
-		d_paned.changes_gap.line_above = joined;
-		d_paned.changes_gap.line_below = joined;
 		d_paned.changes_gap.dots = head && !joined;
+
+		var gap = d_paned.changes.visible && head && !joined;
+		var height = d_paned.changes_gap.height_request;
+
+		if (gap != d_paned.changes_gap.visible)
+		{
+			d_gap_shift += keep ? (gap ? height : -height) : 0;
+			d_paned.changes_gap.visible = gap;
+		}
 	}
 
 	private void show_choice()
