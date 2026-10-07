@@ -241,6 +241,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitrlf/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-first-tag", test_the_commit_menu_names_the_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
@@ -1744,6 +1745,48 @@ private static void test_summary_counts_rows_of_commits()
 
 		assert_cmpstr(window.history.summary_text, CompareOperator.EQ, "Showing 3 of 8 commits");
 
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_fits_the_merge_item()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+		repo.git({"checkout", "--quiet", "-b",
+		          "feature/reflector-localization-mash", "master"});
+
+		var window = opened(repo, {"refs/heads/feature/reflector-localization-mash",
+		                           "refs/heads/feature/scan"});
+
+		right_click(window, row_of(window, "fix one"), 0, 10);
+		settle(500);
+
+		var item = menu_item_starting("Merged into");
+
+		assert_fits_its_menu(item);
+
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+		right_click(window, row_of(window, "feature one"), 0, 10);
+		settle(500);
+
+		var menu = copy_item().get_parent().get_toplevel();
+		int minimum;
+		int natural;
+
+		menu.get_preferred_height(out minimum, out natural);
+
+		assert_cmpint(menu.get_allocated_height(), CompareOperator.EQ, natural);
+
+		((Gtk.Menu)copy_item().get_parent()).popdown();
 		window.destroy();
 		repo.remove();
 	}

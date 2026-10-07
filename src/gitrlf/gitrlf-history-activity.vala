@@ -893,6 +893,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 					select(id);
 				});
 			}
+
+			d_copy_menu.fit();
 		});
 	}
 
