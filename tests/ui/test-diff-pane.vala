@@ -18,6 +18,7 @@
  */namespace GitrlfTest
 {
 
+private const uint32 BLUE = 0x204a87;
 private const uint32 GOLD = 0xc4a000;
 private const uint32 GREEN = 0x4e9a06;
 private const uint32 GREY = 0x888a85;
@@ -152,6 +153,19 @@ private static bool inked(Gtk.Widget widget, int x, int y, uint32 rgb)
 	}
 
 	return true;
+}
+
+private static string inked_rows(Gtk.Widget widget, int x, int top,
+                                  int height, uint32 rgb)
+{
+	var rows = new StringBuilder();
+
+	for (var y = top; y < top + height; y++)
+	{
+		rows.append_c(inked(widget, x, y, rgb) ? '#' : '.');
+	}
+
+	return rows.str;
 }
 
 private static int lane_x(int lane)
@@ -1882,11 +1896,17 @@ private static void test_the_changes_rows_sit_on_the_lane_of_head()
 		assert_true(inked(view, x, row_y(window, 0) + 2, GOLD));
 
 		var label = label_with(paned.unstaged_row, "Unstaged changes");
-		var label_x = label.get_allocated_width() / 2;
-		var label_bottom = label.get_allocated_height() - 2;
+		var height = unstaged.get_allocated_height();
+		var grey = inked_rows(label, label.get_allocated_width() / 2, 0,
+		                      height, GREY);
+		var blue = inked_rows(view, lane_x(1) + 4, row_y(window, 0), height,
+		                      BLUE);
 
-		assert_true(inked(label, label_x, 1, GREY));
-		assert_true(inked(label, label_x, label_bottom, GREY));
+		assert_true(blue.contains("#"));
+		assert_cmpint(grey.index_of_char('#'), CompareOperator.EQ,
+		              blue.index_of_char('#'));
+		assert_cmpint(grey.last_index_of_char('#'), CompareOperator.EQ,
+		              blue.last_index_of_char('#'));
 
 		repo.git({"stash", "--quiet", "--include-untracked"});
 		settle(2600);
