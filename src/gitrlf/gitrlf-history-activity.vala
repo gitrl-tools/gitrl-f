@@ -28,6 +28,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Cancellable? d_blame;
 	private Gtk.Box d_box;
 	private bool[] d_cases;
+	private CopyMenu d_changes_menu;
 	private SearchChoice d_choice;
 	private Gtk.CheckButton[] d_choice_boxes;
 	private Gtk.RadioButton[] d_choice_buttons;
@@ -447,6 +448,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				d_menu_search = null;
 			}
 		});
+
+		d_changes_menu = new CopyMenu(d_paned.changes);
+		d_changes_menu.find.connect(fill_changes_menu);
 
 		d_paned.commit_list_view.move_cursor.connect(() => {
 			light_selection(true);
@@ -1259,6 +1263,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return ret;
+	}
+
+	private bool fill_changes_menu(double x, double y)
+	{
+		var row = d_paned.changes.get_row_at_y((int)y);
+		var staged = row == d_paned.staged_row;
+		var item = new Gtk.MenuItem.with_label(_("Open diff in difftool"));
+
+		item.activate.connect(() => {
+			DiffTool.compare_diff.begin(d_repository, git_directory(),
+			                            staged ? "HEAD" : "staged",
+			                            staged ? "staged" : "working-tree",
+			                            staged ? d_staged : d_unstaged,
+			                            !staged);
+		});
+		item.show();
+		d_changes_menu.add(item);
+
+		return true;
 	}
 
 	private bool fill_commit_menu(double x, double y)

@@ -169,6 +169,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
 	Test.add_func("/gitrlf/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
+	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-opens-in-the-diff-tool", test_a_row_of_the_changes_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-shows-its-diff", test_a_row_of_the_changes_shows_its_diff);
 	Test.add_func("/gitrlf/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
 	Test.add_func("/gitrlf/ui/diff-pane/an-added-line-offers-no-commit-that-last-changed-it", test_an_added_line_offers_no_commit_that_last_changed_it);
@@ -744,6 +745,56 @@ private static void test_a_removed_line_digs_from_the_parent()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "History of line 4 of f.c, from %s".printf(two));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_row_of_the_changes_opens_in_the_diff_tool()
+{
+	try
+	{
+		var repo = changes_repo();
+		var record = File.new_for_path(repo.path.get_path() + ".record");
+
+		repo.git({"config", "diff.tool", "record"});
+		repo.git({"config", "difftool.record.cmd",
+		          "{ basename \"$LOCAL\"; cd \"$LOCAL\" && grep -r . | "
+		          + "LC_ALL=C sort; echo --; basename \"$REMOTE\"; "
+		          + "cd \"$REMOTE\" && grep -r . | LC_ALL=C sort; } > '"
+		          + record.get_path() + ".part' && mv '" + record.get_path()
+		          + ".part' '" + record.get_path() + "'"});
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		Gtk.ListBoxRow[] rows = { paned.staged_row, paned.unstaged_row };
+		string[] records = {
+			"HEAD\nnotes:one\n--\nstaged\nnotes:staged\n",
+			"staged\nother:two\n--\nworking-tree\nfresh:new\nother:edited\n"
+		};
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			click_widget(rows[i], 3);
+			settle(300);
+			activate_item("Open diff in difftool");
+
+			for (var j = 0; j < 100 && !record.query_exists(); j++)
+			{
+				settle(100);
+			}
+
+			uint8[] contents;
+
+			record.load_contents(null, out contents, null);
+			assert_cmpstr((string)contents, CompareOperator.EQ, records[i]);
+			FileUtils.unlink(record.get_path());
+		}
 
 		window.destroy();
 		repo.remove();

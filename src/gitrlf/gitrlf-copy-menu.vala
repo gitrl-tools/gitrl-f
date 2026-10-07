@@ -29,6 +29,9 @@ public class CopyMenu : Gtk.Menu
 	public CopyMenu(Gtk.Widget widget)
 	{
 		attach_to_widget(widget, null);
+		widget.destroy.connect(() => {
+			destroy();
+		});
 
 		d_press = new Gtk.GestureMultiPress(widget);
 		d_press.button = Gdk.BUTTON_SECONDARY;

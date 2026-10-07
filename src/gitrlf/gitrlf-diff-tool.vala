@@ -68,7 +68,18 @@ public class DiffTool : Object
 	                                        File directory,
 	                                        Gitg.Commit commit) throws Error
 	{
-		var diff = commit.get_diff(null, 0);
+		yield compare_diff(repository, directory,
+		                   label(commit.get_parents()[0]), label(commit),
+		                   commit.get_diff(null, 0), false);
+	}
+
+	public static async void compare_diff(Gitg.Repository repository,
+	                                      File directory,
+	                                      string before,
+	                                      string after,
+	                                      Ggit.Diff diff,
+	                                      bool worktree) throws Error
+	{
 		var deltas = new Ggit.DiffDelta[0];
 
 		for (size_t i = 0; i < diff.get_num_deltas(); i++)
@@ -76,8 +87,8 @@ public class DiffTool : Object
 			deltas += diff.get_delta(i);
 		}
 
-		yield compare(repository, directory, label(commit.get_parents()[0]),
-		              label(commit), deltas, true, false);
+		yield compare(repository, directory, before, after, deltas, true,
+		              worktree);
 	}
 
 	public static async void compare_file(Gitg.Repository repository,
