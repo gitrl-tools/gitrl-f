@@ -39,6 +39,16 @@ private static Gitrlf.Application application()
 	return app;
 }
 
+private static void assert_fits_its_menu(Gtk.MenuItem item)
+{
+	int minimum;
+	int natural;
+
+	item.get_preferred_width(out minimum, out natural);
+
+	assert_cmpint(item.get_allocated_width(), CompareOperator.GE, natural);
+}
+
 private static Gtk.CheckButton check_of(Gitrlf.Window window, string short_name)
 {
 	return (Gtk.CheckButton)find_all(row(window.history.paned.refs_list, short_name), typeof(Gtk.CheckButton))[0];
@@ -236,6 +246,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-in-the-diff-tool-of-git", test_the_commit_menu_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
 	Test.add_func("/gitrlf/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
@@ -1952,6 +1963,33 @@ private static void test_the_commit_menu_opens_on_every_column()
 
 		window.resize(width, height);
 		settle(300);
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_widens_for_a_long_first_tag()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+		repo.git({"tag", "backup/reflector-localization-mash", "master~4"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		right_click(window, row_of(window, "base one"), 1, 10);
+		settle(500);
+
+		var item = menu_item_starting("First tag with this commit:");
+
+		assert_fits_its_menu(item);
+
+		((Gtk.Menu)item.get_parent()).popdown();
 		window.destroy();
 		repo.remove();
 	}

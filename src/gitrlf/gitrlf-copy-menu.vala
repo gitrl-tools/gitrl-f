@@ -68,6 +68,14 @@ public class CopyMenu : Gtk.Menu
 		separator.show();
 		add(separator);
 	}
+
+	public void fit()
+	{
+		Gtk.Requisition natural;
+
+		get_toplevel().get_preferred_size(null, out natural);
+		get_toplevel().get_window().resize(natural.width, natural.height);
+	}
 }
 
 }

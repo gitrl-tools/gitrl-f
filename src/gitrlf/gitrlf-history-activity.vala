@@ -673,6 +673,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			item.label = _("First tag with this commit: %s").printf(tag);
 			item.sensitive = true;
 			item.activate.connect(() => jump("refs/tags/" + tag));
+			d_copy_menu.fit();
 		});
 	}
 
