@@ -1864,7 +1864,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				menu.add(item);
 
 				var compare = new Gtk.MenuItem.with_label(
-					_("Compare in difftool"));
+					_("Open diff in difftool"));
 
 				compare.activate.connect(() => compare_in_tool(file.info.delta));
 				compare.show();

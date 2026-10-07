@@ -479,7 +479,7 @@ private static void test_a_bare_repository_offers_only_the_history_of_a_file()
 		settle(400);
 		right_click_file(window, "new.c");
 
-		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Show history of this file,Compare in difftool");
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Show history of this file,Open diff in difftool");
 
 		menu_item("Show history of this file").activate();
 		((Gtk.Menu)menu_item("Show history of this file").get_parent()).popdown();
@@ -530,7 +530,7 @@ private static void test_a_file_menu_shows_the_history_of_the_file()
 		settle(400);
 		right_click_file(window, "new.c");
 
-		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file,Compare in difftool");
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file,Open diff in difftool");
 
 		var item = menu_item("Show history of this file");
 
@@ -587,7 +587,7 @@ private static void test_a_file_of_the_changes_opens_in_the_diff_tool()
 		paned.unstaged_row.activate();
 		settle(400);
 		right_click_file(window, "notes");
-		activate_item("Compare in difftool");
+		activate_item("Open diff in difftool");
 
 		for (var i = 0; i < 100 && !record.query_exists(); i++)
 		{
@@ -628,7 +628,7 @@ private static void test_a_file_opens_in_the_diff_tool_of_git()
 		select_subject(window, "edit new");
 		settle(400);
 		right_click_file(window, "new.c");
-		activate_item("Compare in difftool");
+		activate_item("Open diff in difftool");
 
 		for (var i = 0; i < 100 && !record.query_exists(); i++)
 		{
