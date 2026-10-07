@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="data/icons/io.github.li9i.gitrlf.svg" alt="gitrl-f logo" width="128">
+</p>
+
 # `gitrl-f`
 
 > The git history only of the refs that you want to see
