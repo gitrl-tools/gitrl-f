@@ -4,6 +4,7 @@ gitrlf_lib_sources = files(
   'gitrlf-bar-row.vala',
   'gitrlf-bar-spacer.vala',
   'gitrlf-changes.vala',
+  'gitrlf-changes-lane.vala',
   'gitrlf-command-line.vala',
   'gitrlf-copy-menu.vala',
   'gitrlf-dash-view.vala',

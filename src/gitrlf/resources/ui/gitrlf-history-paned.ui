@@ -164,27 +164,33 @@
                       <class name="changes"/>
                     </style>
                     <child>
-                      <object class="GtkListBoxRow" id="d_staged_row">
+                      <object class="GtkListBoxRow" id="d_unstaged_row">
                         <property name="visible">True</property>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="spacing">12</property>
-                            <property name="margin_start">6</property>
                             <property name="margin_end">6</property>
-                            <property name="margin_top">3</property>
-                            <property name="margin_bottom">3</property>
+                            <child>
+                              <object class="GitrlfChangesLane" id="d_unstaged_lane">
+                                <property name="visible">True</property>
+                                <property name="ring">True</property>
+                              </object>
+                            </child>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Staged changes</property>
+                                <property name="label" translatable="yes">Unstaged changes</property>
+                                <style>
+                                  <class name="changes-label"/>
+                                </style>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="d_staged_count">
+                              <object class="GtkLabel" id="d_unstaged_count">
                                 <property name="visible">True</property>
                                 <property name="xalign">0</property>
+                                <property name="margin_start">4</property>
                                 <style>
                                   <class name="dim-label"/>
                                 </style>
@@ -195,27 +201,33 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkListBoxRow" id="d_unstaged_row">
+                      <object class="GtkListBoxRow" id="d_staged_row">
                         <property name="visible">True</property>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="spacing">12</property>
-                            <property name="margin_start">6</property>
                             <property name="margin_end">6</property>
-                            <property name="margin_top">3</property>
-                            <property name="margin_bottom">3</property>
+                            <child>
+                              <object class="GitrlfChangesLane" id="d_staged_lane">
+                                <property name="visible">True</property>
+                                <property name="ring">True</property>
+                              </object>
+                            </child>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Unstaged changes</property>
+                                <property name="label" translatable="yes">Staged changes</property>
+                                <style>
+                                  <class name="changes-label"/>
+                                </style>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="d_unstaged_count">
+                              <object class="GtkLabel" id="d_staged_count">
                                 <property name="visible">True</property>
                                 <property name="xalign">0</property>
+                                <property name="margin_start">4</property>
                                 <style>
                                   <class name="dim-label"/>
                                 </style>
@@ -225,6 +237,16 @@
                         </child>
                       </object>
                     </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GitrlfChangesLane" id="d_changes_gap">
+                    <property name="visible">False</property>
+                    <property name="no_show_all">True</property>
+                    <property name="height_request">14</property>
+                    <style>
+                      <class name="view"/>
+                    </style>
                   </object>
                 </child>
                 <child>

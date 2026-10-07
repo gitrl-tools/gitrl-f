@@ -18,6 +18,10 @@
  */namespace GitrlfTest
 {
 
+private const uint32 GOLD = 0xc4a000;
+private const uint32 GREEN = 0x4e9a06;
+private const uint32 GREY = 0x888a85;
+
 private static void activate_item(string label)
 {
 	var item = menu_item(label);
@@ -133,6 +137,28 @@ private static string lines_of(Gitg.DiffViewFile file)
 	return string.joinv("|", lines);
 }
 
+private static bool inked(Gtk.Widget widget, int x, int y, uint32 rgb)
+{
+	var surface = drawn(widget);
+	var pixel = (uint8*)surface.get_data() + y * surface.get_stride() + x * 4;
+	int[] want = { (int)(rgb & 0xff), (int)((rgb >> 8) & 0xff), (int)(rgb >> 16) };
+
+	for (var i = 0; i < 3; i++)
+	{
+		if (((int)pixel[i] - want[i]).abs() > 48)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+private static int lane_x(int lane)
+{
+	return lane * 16 + 8;
+}
+
 private static Repo lines_repo() throws Error
 {
 	var repo = Repo.create();
@@ -196,6 +222,10 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/selected-lines-show-their-history", test_selected_lines_show_their_history);
 	Test.add_func("/gitrlf/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
 	Test.add_func("/gitrlf/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-line-runs-past-newer-commits-to-head", test_the_changes_line_runs_past_newer_commits_to_head);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-show-dots-when-head-scrolls-away", test_the_changes_rows_show_dots_when_head_scrolls_away);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-sit-on-the-lane-of-head", test_the_changes_rows_sit_on_the_lane_of_head);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-stand-alone-when-head-is-not-shown", test_the_changes_rows_stand_alone_when_head_is_not_shown);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
 	Test.add_func("/gitrlf/ui/diff-pane/the-shown-changes-follow-an-edit", test_the_shown_changes_follow_an_edit);
@@ -311,6 +341,19 @@ private static Repo renamed_repo() throws Error
 	repo.commit("unrelated", "other.txt", "x");
 
 	return repo;
+}
+
+private static int row_y(Gitrlf.Window window, int row)
+{
+	var view = window.history.paned.commit_list_view;
+	Gdk.Rectangle area;
+	int x;
+	int y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(row), null, out area);
+	view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
+
+	return y;
 }
 
 private static void right_click_file(Gitrlf.Window window, string name)
@@ -1709,6 +1752,155 @@ private static void test_split_view_is_built_only_when_chosen()
 		assert_cmpint(find_all(split[0], typeof(Gtk.SourceView)).length, CompareOperator.EQ, 2);
 		assert_cmpstr(marked_words(window, "word-added"), CompareOperator.EQ, "gamma|gamma");
 		assert_cmpstr(marked_words(window, "word-removed"), CompareOperator.EQ, "beta|beta");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_changes_line_runs_past_newer_commits_to_head()
+{
+	try
+	{
+		var repo = changes_repo();
+
+		repo.git({"stash", "--quiet", "--include-untracked"});
+		repo.git({"checkout", "--quiet", "-b", "dev"});
+		repo.commit("newer on dev", "dev");
+		repo.checkout("master");
+		repo.git({"stash", "pop", "--quiet", "--index"});
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/dev"});
+		var view = window.history.paned.commit_list_view;
+		var rows = window.history.rows();
+		var middle = (row_y(window, 0) + row_y(window, 1)) / 2;
+
+		assert_cmpstr(rows[0].get_subject(), CompareOperator.EQ, "newer on dev");
+		assert_cmpstr(rows[1].get_subject(), CompareOperator.EQ, "two");
+		assert_cmpint((int)rows[1].mylane, CompareOperator.EQ, 0);
+		assert_true(inked(view, lane_x(0), middle, GOLD));
+		assert_true(inked(view, lane_x(1), middle, GREEN));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_changes_rows_show_dots_when_head_scrolls_away()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		for (var i = 0; i < 80; i++)
+		{
+			repo.commit("step %d".printf(i), "log");
+		}
+
+		FileUtils.set_contents(repo.path.get_child("log").get_path(), "edited\n");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		var gap = paned.changes_gap;
+		var lane = paned.unstaged_lane;
+		var x = lane_x(0);
+
+		assert_true(inked(lane, x, lane.get_allocated_height() - 2, GOLD));
+		assert_true(inked(gap, x, 5, GOLD));
+		assert_true(inked(gap, x, 9, GOLD));
+
+		var adjustment = paned.scrolled_window_commit_list.vadjustment;
+
+		adjustment.value = adjustment.upper - adjustment.page_size;
+		settle(200);
+
+		assert_true(inked(lane, x, lane.get_allocated_height() - 2, GOLD));
+		assert_true(inked(gap, x, 3, GOLD));
+		assert_false(inked(gap, x, 5, GOLD));
+		assert_true(inked(gap, x, 7, GOLD));
+		assert_false(inked(gap, x, 9, GOLD));
+		assert_true(inked(gap, x, 11, GOLD));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_changes_rows_sit_on_the_lane_of_head()
+{
+	try
+	{
+		var repo = changes_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		var view = paned.commit_list_view;
+		var unstaged = paned.unstaged_lane;
+		var staged = paned.staged_lane;
+		var x = lane_x(0);
+		var middle = unstaged.get_allocated_height() / 2;
+		int unstaged_y;
+		int staged_y;
+
+		unstaged.translate_coordinates(window, 0, 0, null, out unstaged_y);
+		staged.translate_coordinates(window, 0, 0, null, out staged_y);
+
+		assert_cmpint(unstaged_y, CompareOperator.LT, staged_y);
+		assert_cmpint(unstaged.get_allocated_height(), CompareOperator.EQ, row_y(window, 1) - row_y(window, 0));
+		assert_true(inked(unstaged, x, middle - 4, GOLD));
+		assert_false(inked(unstaged, x, middle, GOLD));
+		assert_false(inked(unstaged, x, 1, GOLD));
+		assert_true(inked(unstaged, x, unstaged.get_allocated_height() - 2, GOLD));
+		assert_true(inked(staged, x, 1, GOLD));
+		assert_true(inked(paned.changes_gap, x, 5, GOLD));
+		assert_true(inked(view, x, row_y(window, 0) + 2, GOLD));
+
+		repo.git({"stash", "--quiet", "--include-untracked"});
+		settle(2600);
+
+		assert_false(paned.changes.visible);
+		assert_false(paned.changes_gap.visible);
+		assert_false(inked(view, x, row_y(window, 0) + 2, GOLD));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_changes_rows_stand_alone_when_head_is_not_shown()
+{
+	try
+	{
+		var repo = changes_repo();
+
+		repo.git({"branch", "dev", "master~1"});
+
+		var window = opened(repo, {"refs/heads/dev"});
+		var paned = window.history.paned;
+		var unstaged = paned.unstaged_lane;
+		var x = lane_x(0);
+		var middle = unstaged.get_allocated_height() / 2;
+
+		assert_true(inked(unstaged, x, middle - 4, GREY));
+		assert_false(inked(unstaged, x, middle, GREY));
+		assert_false(inked(unstaged, x, unstaged.get_allocated_height() - 2, GREY));
+		assert_false(inked(paned.changes_gap, x, 3, GREY));
+		assert_false(inked(paned.changes_gap, x, 5, GREY));
 
 		window.destroy();
 		repo.remove();

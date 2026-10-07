@@ -113,7 +113,7 @@ public static Gtk.MenuItem? copy_item()
 	return null;
 }
 
-private static Cairo.ImageSurface drawn(Gtk.Widget widget)
+public static Cairo.ImageSurface drawn(Gtk.Widget widget)
 {
 	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, widget.get_allocated_width(), widget.get_allocated_height());
 

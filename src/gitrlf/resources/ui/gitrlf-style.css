@@ -11,6 +11,17 @@ entry.error {
 	background-image: none;
 }
 
-list.changes {
-	border-bottom: 1px solid @borders;
+list.changes row {
+	padding: 0;
+	min-height: 0;
+}
+
+.changes-label {
+	border-radius: 6px;
+	border: 1px solid @theme_bg_color;
+	background-color: #888a85;
+	color: #eeeeec;
+	font-size: smaller;
+	padding: 0 6px;
+	margin: 2px;
 }
