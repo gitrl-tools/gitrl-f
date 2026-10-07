@@ -24,9 +24,9 @@ private const string FILE_RECORD = "{ stat -c %A \"$LOCAL\" \"$REMOTE\"; "
 	+ "cat \"$LOCAL\"; echo --; cat \"$REMOTE\"; }";
 
 private const string FOLDER_RECORD = "{ basename \"$LOCAL\"; "
-	+ "cd \"$LOCAL\" && find . -printf '%M %p\\n' | sort; echo --; "
-	+ "basename \"$REMOTE\"; "
-	+ "cd \"$REMOTE\" && find . -printf '%M %p\\n' | sort; }";
+	+ "cd \"$LOCAL\" && find . -printf '%M %p\\n' | LC_ALL=C sort -k2; "
+	+ "echo --; basename \"$REMOTE\"; "
+	+ "cd \"$REMOTE\" && find . -printf '%M %p\\n' | LC_ALL=C sort -k2; }";
 
 private class Fixture : Object
 {
