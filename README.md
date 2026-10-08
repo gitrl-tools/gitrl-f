@@ -17,9 +17,9 @@
 
 - **A checkbox for each ref.** The panel on the left lists each branch, remote branch and tag, grouped by the slashes in their names.
 - **Your ticks come back.** With no ref and no tick option on the command line, gitrl-f ticks the refs that you last chose in that repository.
-- **The details on a click.** A click on a commit shows gitg's details and diff of that commit below the history. Escape hides them.
+- **The details on a double-click.** A double-click on a commit shows gitg's details and diff of that commit below the history, and Escape hides them. A single click only selects the commit.
 
-![A click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
+![A double-click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
 
 - **One search bar.** The search button at the top opens one bar above the list. Three buttons on its left pick what it searches: **Messages** (messages, authors and hashes), **Changed lines**, as `git log -S` and `git log -G` do, or **Files**. The matches are in bold, and **Display matches only** hides the other commits. When only unticked refs hold a match, **Tick and show** ticks one of those refs and selects the match.
 
@@ -139,7 +139,7 @@ Outside a repository, `gitrlf` opens a list of the repositories that you opened 
 
 | Key | What it does |
 |-----|--------------|
-| Click, `Enter` in the list | Shows or hides the details and the diff of a commit |
+| Double-click, `Enter` in the list | Shows or hides the details and the diff of a commit |
 | `Escape` | Closes one thing, from the bottom of the window up |
 | `Ctrl+F` | Opens the find bar of the diff, or the search bar when the pane is shut |
 | `Ctrl+Shift+F` | Opens the search bar on **Changed lines** |

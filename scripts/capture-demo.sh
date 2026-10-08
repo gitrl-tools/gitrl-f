@@ -117,7 +117,7 @@ record() {
 			;;
 		pane)
 			glide 700 700 700 113
-			xdotool click 1
+			xdotool click --repeat 2 --delay 80 1
 			sleep 3.0
 
 			glide 700 113 700 213

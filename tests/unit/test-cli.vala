@@ -458,7 +458,7 @@ private static void test_help_says_gitrlf_only()
 	assert_true("\n    --version       print the version and exit\n" in Gitrlf.CommandLine.HELP);
 	assert_true("\n    --no-wd         open the chooser, not the repository of this\n                    folder\n" in Gitrlf.CommandLine.HELP);
 	assert_true("\n    -h, --help      print this help and exit\n" in Gitrlf.CommandLine.HELP);
-	assert_true("\n    Click, Enter                show or hide the details of a commit\n" in Gitrlf.CommandLine.HELP);
+	assert_true("\n    Double-click, Enter         show or hide the details of a commit\n" in Gitrlf.CommandLine.HELP);
 	assert_true("\n    Open a file, Expand all     fill the window with the diff\n" in Gitrlf.CommandLine.HELP);
 	assert_true("\n    Escape                      close a bar, the full diff or the details\n" in Gitrlf.CommandLine.HELP);
 	assert_true("\n                                while it is shut\n    Ctrl+Shift+F                open the search bar on Changed lines\n    Enter, Ctrl+G" in Gitrlf.CommandLine.HELP);

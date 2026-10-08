@@ -16,7 +16,7 @@
     </p>
     <p>
       Names with slashes fold into groups, and the box of a group ticks all
-      of it. A click on a commit shows its details and its diff. A
+      of it. A double-click on a commit shows its details and its diff. A
       path keeps only the commits that change a file or a folder.
     </p>
     <p>

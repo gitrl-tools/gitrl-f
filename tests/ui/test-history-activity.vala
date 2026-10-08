@@ -213,13 +213,13 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
-	Test.add_func("/gitrlf/ui/history-activity/click-on-a-one-file-commit-shows-the-pane-and-enter-fills-the-window", test_click_on_a_one_file_commit_shows_the_pane_and_enter_fills_the_window);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
-	Test.add_func("/gitrlf/ui/history-activity/click-shows-the-pane-and-on-its-row-hides-it", test_click_shows_the_pane_and_on_its_row_hides_it);
+	Test.add_func("/gitrlf/ui/history-activity/click-selects-and-keeps-the-pane-as-it-is", test_click_selects_and_keeps_the_pane_as_it_is);
 	Test.add_func("/gitrlf/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
 	Test.add_func("/gitrlf/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitrlf/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
+	Test.add_func("/gitrlf/ui/history-activity/double-click-on-a-one-file-commit-fills-the-window", test_double_click_on_a_one_file_commit_fills_the_window);
 	Test.add_func("/gitrlf/ui/history-activity/double-click-shows-and-hides-the-pane", test_double_click_shows_and_hides_the_pane);
 	Test.add_func("/gitrlf/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-then-the-search-bar", test_escape_closes_the_pane_then_the_search_bar);
@@ -503,10 +503,15 @@ private static void test_a_row_is_lit_only_once_the_user_picks_it()
 
 		click_row(window, 1);
 
+		assert_false(details_shown(window));
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "second");
+
+		click_row(window, 1, 2);
+
 		assert_true(details_shown(window));
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "second");
 
-		click_row(window, 1);
+		click_row(window, 1, 2);
 
 		assert_false(details_shown(window));
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
@@ -561,15 +566,16 @@ private static void test_a_row_is_plain_again_under_a_theme_that_paints_the_sele
 
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
 
-		click_row(window, 1);
+		click_row(window, 1, 2);
+		click_row(window, 1, 2);
 
 		assert_false(details_shown(window));
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
 
 		var middle = label_x(window, 0, "master");
 
-		click_row(window, 0);
-		click_row(window, 0);
+		click_row(window, 0, 2);
+		click_row(window, 0, 2);
 
 		var unlit = row_strip(window, 0, middle - 8, middle + 8);
 
@@ -605,7 +611,7 @@ private static void test_back_arrow_steps_back_from_the_full_diff()
 
 		var tooltip = back.tooltip_text;
 
-		click_row(window, 0);
+		click_row(window, 0, 2);
 		click_widget(label_with(window.history.diff_view, "b"));
 		settle(300);
 
@@ -750,7 +756,7 @@ private static void test_click_on_a_file_fills_the_window_and_escape_steps_back(
 			var window = opened(repo, {"refs/heads/master"});
 			var paned = window.history.paned;
 
-			click_row(window, 0);
+			click_row(window, 0, 2);
 			click_widget(label_with(window.history.diff_view, "two files"));
 			settle(300);
 
@@ -791,54 +797,6 @@ private static void test_click_on_a_file_fills_the_window_and_escape_steps_back(
 	}
 }
 
-private static void test_click_on_a_one_file_commit_shows_the_pane_and_enter_fills_the_window()
-{
-	try
-	{
-		var repo = two_files();
-		repo.commit("one file", "b", "more");
-
-		var window = opened(repo, {"refs/heads/master"});
-		var view = window.history.paned.commit_list_view;
-
-		click_row(window, 0);
-
-		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one file");
-		assert_true(details_shown(window));
-		assert_false(only_details_shown(window));
-
-		click_row(window, 1);
-
-		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two files");
-		assert_true(details_shown(window));
-		assert_false(only_details_shown(window));
-
-		view.grab_focus();
-		Gtk.test_widget_send_key(view, Gdk.Key.Up, 0);
-		settle(300);
-
-		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one file");
-		assert_false(only_details_shown(window));
-
-		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
-		settle(100);
-
-		assert_false(details_shown(window));
-
-		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
-		settle(300);
-
-		assert_true(only_details_shown(window));
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
 private static void test_click_on_expand_all_fills_the_window()
 {
 	try
@@ -846,7 +804,7 @@ private static void test_click_on_expand_all_fills_the_window()
 		var repo = two_files();
 		var window = opened(repo, {"refs/heads/master"});
 
-		click_row(window, 0);
+		click_row(window, 0, 2);
 		click_widget(label_with(window.history.diff_view, "Expand all"));
 		settle(300);
 
@@ -862,7 +820,7 @@ private static void test_click_on_expand_all_fills_the_window()
 	}
 }
 
-private static void test_click_shows_the_pane_and_on_its_row_hides_it()
+private static void test_click_selects_and_keeps_the_pane_as_it_is()
 {
 	try
 	{
@@ -874,21 +832,23 @@ private static void test_click_shows_the_pane_and_on_its_row_hides_it()
 		var window = opened(repo, {"refs/heads/master"});
 
 		click_row(window, 0);
-		assert_true(details_shown(window));
-
-		click_row(window, 0);
 		assert_false(details_shown(window));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "third");
 
 		click_row(window, 1);
-		assert_true(details_shown(window));
+		assert_false(details_shown(window));
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "second");
+
+		click_row(window, 1, 2);
+		assert_true(details_shown(window));
 
 		click_row(window, 2);
 		assert_true(details_shown(window));
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "first");
 
 		click_row(window, 2);
-		assert_false(details_shown(window));
+		assert_true(details_shown(window));
 
 		window.destroy();
 		repo.remove();
@@ -909,7 +869,7 @@ private static void test_click_that_closes_a_file_keeps_the_refs_and_the_list()
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
 
-		click_row(window, 1);
+		click_row(window, 1, 2);
 		view.grab_focus();
 		Gtk.test_widget_send_key(view, Gdk.Key.Up, 0);
 		settle(300);
@@ -1041,6 +1001,48 @@ private static void test_detached_head_label_comes_first()
 	}
 }
 
+private static void test_double_click_on_a_one_file_commit_fills_the_window()
+{
+	try
+	{
+		var repo = two_files();
+		repo.commit("one file", "b", "more");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		click_row(window, 1, 2);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "two files");
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
+
+		click_row(window, 0);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one file");
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
+
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(100);
+
+		assert_false(details_shown(window));
+
+		click_row(window, 0, 2);
+		settle(300);
+
+		assert_true(only_details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_double_click_shows_and_hides_the_pane()
 {
 	try
@@ -1051,15 +1053,19 @@ private static void test_double_click_shows_and_hides_the_pane()
 
 		var window = opened(repo, {"refs/heads/master"});
 
-		click_row(window, 0);
-		assert_true(details_shown(window));
-
 		click_row(window, 1, 2);
-		assert_false(details_shown(window));
+		assert_true(details_shown(window));
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
 
 		click_row(window, 1, 2);
 		assert_false(details_shown(window));
+
+		click_row(window, 0, 2);
+		assert_true(details_shown(window));
+
+		click_row(window, 1, 2);
+		assert_true(details_shown(window));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
 
 		window.destroy();
 		repo.remove();
@@ -1153,7 +1159,7 @@ private static void test_escape_closes_the_pane_when_nothing_has_the_focus()
 
 		var window = opened(repo, {"refs/heads/master"});
 
-		click_row(window, 0);
+		click_row(window, 0, 2);
 		window.history.paned.paned_panels.position = 0;
 		settle(100);
 
@@ -1311,7 +1317,7 @@ private static void test_no_button_covers_the_full_diff()
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.diff_view;
 
-		click_row(window, 0);
+		click_row(window, 0, 2);
 		click_widget(label_with(view, "b"));
 		settle(300);
 

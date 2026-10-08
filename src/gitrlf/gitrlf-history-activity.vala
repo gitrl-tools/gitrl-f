@@ -431,12 +431,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_paned.commit_list_view.get_path_at_pos(bin_x, bin_y, out path, null, null, null);
 
 			d_press_on_row = path != null;
-			d_press_on_shown = d_paned.details_visible && path != null && d_paned.commit_list_view.get_selection().path_is_selected(path);
-		});
-		d_press.released.connect(() => {
-			if (d_press_on_row)
+
+			if (presses == 1)
 			{
-				d_paned.details_visible = !d_press_on_shown;
+				d_press_on_shown = d_paned.details_visible && path != null && d_paned.commit_list_view.get_selection().path_is_selected(path);
+			}
+		});
+		d_press.released.connect((presses) => {
+			if (!d_press_on_row)
+			{
+				return;
+			}
+
+			if (presses == 1)
+			{
+				light_selection(true);
+			}
+			else if (presses == 2)
+			{
+				set_details(!d_press_on_shown);
 			}
 		});
 
@@ -466,12 +479,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				return;
 			}
 
-			d_paned.details_visible = !d_paned.details_visible;
-
-			if (d_paned.details_visible && d_diff.diff != null && d_diff.diff.get_num_deltas() == 1)
-			{
-				d_paned.details_only = true;
-			}
+			set_details(!d_paned.details_visible);
 		});
 
 		d_diff = new Gitg.DiffView();
@@ -2538,6 +2546,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var path = d_model.path_from_commit(commit.get_id());
 
 		return path != null ? path.get_indices()[0] : -1;
+	}
+
+	private void set_details(bool visible)
+	{
+		d_paned.details_visible = visible;
+
+		if (visible && d_diff.diff != null && d_diff.diff.get_num_deltas() == 1)
+		{
+			d_paned.details_only = true;
+		}
 	}
 
 	public void set_ticks(Gee.Set<string> ticks)

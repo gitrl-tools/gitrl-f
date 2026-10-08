@@ -26,12 +26,13 @@ The refs are on the left, in three groups: branches, remote branches and
 tags. A name with slashes is divided into groups at each slash. The box of
 a group ticks or unticks every ref in it, and also opens or folds the group.
 .PP
-A click on a commit, or Enter, shows its details and its diff below the
-refs and the list. A click on the same commit, Enter or Escape hides them
-again. A double-click is two clicks: it shows them and hides them again. A
-click that opens a file, or a click on Expand all, fills the window with
-the diff. A click that closes a file does not change the window. When the
-commit changes only one file, Enter fills the window at once. Escape or
+A click on a commit selects it. A double-click on a commit, or Enter,
+shows its details and its diff below the refs and the list. While they
+show, a click on another commit shows that commit instead. A double-click
+on the same commit, Enter or Escape hides them again. A click that opens a
+file, or a click on Expand all, fills the window with the diff. A click
+that closes a file does not change the window. When the commit changes
+only one file, a double-click or Enter fills the window at once. Escape or
 the back arrow brings back the refs and the list.
 .PP
 .B gitrlf
@@ -208,9 +209,9 @@ finds it. When Display matches only hides that commit, a bar says so and
 offers Show every commit.
 .SH KEYS
 .TP
-.BR Click ", " Enter
+.BR Double-click ", " Enter
 Show or hide the details and the diff of a commit. When the commit changes
-only one file, Enter fills the window with the diff.
+only one file, the diff fills the window.
 .TP
 .BR "Open a file" ", " "Expand all"
 Fill the window with the diff. A click that closes a file does not.
