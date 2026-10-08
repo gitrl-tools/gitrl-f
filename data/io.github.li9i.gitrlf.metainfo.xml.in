@@ -30,12 +30,12 @@
   <screenshots>
     <screenshot type="default">
       <caption>Only the ticked branches are drawn, with the details of a commit below</caption>
-      <image>https://raw.githubusercontent.com/li9i/gitrl-f/master/docs/screenshots/gitrlf.png</image>
+      <image>https://raw.githubusercontent.com/gitrl-tools/gitrl-f/master/docs/screenshots/gitrlf.png</image>
     </screenshot>
   </screenshots>
 
-  <url type="homepage">https://github.com/li9i/gitrl-f</url>
-  <url type="bugtracker">https://github.com/li9i/gitrl-f/issues</url>
+  <url type="homepage">https://github.com/gitrl-tools/gitrl-f</url>
+  <url type="bugtracker">https://github.com/gitrl-tools/gitrl-f/issues</url>
 
   <developer id="io.github.li9i">
     <name>alexandros filotheou</name>

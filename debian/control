@@ -17,7 +17,7 @@ Build-Depends: debhelper-compat (= 13),
                pkgconf,
                valac
 Standards-Version: 4.6.2
-Homepage: https://github.com/li9i/gitrl-f
+Homepage: https://github.com/gitrl-tools/gitrl-f
 Rules-Requires-Root: no
 
 Package: gitrl-f

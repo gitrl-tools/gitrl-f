@@ -47,7 +47,7 @@ The package is `gitrl-f`. The command is `gitrlf`. In bash, TAB completes its op
 
 ### `.deb` package
 
-Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/li9i/gitrl-f/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
+Packages for Ubuntu 24.04 and 26.04 are on the [releases page](https://github.com/gitrl-tools/gitrl-f/releases). Download the one for your release, then install it with `apt`, so that you also get its dependencies:
 
 ```bash
 sudo apt-get install ./gitrl-f_*_amd64.deb
@@ -55,7 +55,7 @@ sudo apt-get install ./gitrl-f_*_amd64.deb
 
 ### AppImage
 
-Download the AppImage from the [releases page](https://github.com/li9i/gitrl-f/releases). It is one file, and it is not necessary to install it. Make it executable, then run it from a repository:
+Download the AppImage from the [releases page](https://github.com/gitrl-tools/gitrl-f/releases). It is one file, and it is not necessary to install it. Make it executable, then run it from a repository:
 
 ```bash
 chmod +x gitrl-f-*-x86_64.AppImage
@@ -79,7 +79,7 @@ The AppImage has no TAB completion. The package and a build from source have it.
 ## Build from source
 
 ```bash
-git clone https://github.com/li9i/gitrl-f.git
+git clone https://github.com/gitrl-tools/gitrl-f.git
 cd gitrl-f
 ```
 

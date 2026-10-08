@@ -123,7 +123,7 @@ private static void test_about_credits_the_logo_and_links_the_site()
 
 	assert_nonnull(about);
 	assert_cmpstr(about.logo_icon_name, CompareOperator.EQ, Gitrlf.Config.APPLICATION_ID);
-	assert_cmpstr(about.website, CompareOperator.EQ, "https://github.com/li9i/gitrl-f");
+	assert_cmpstr(about.website, CompareOperator.EQ, "https://github.com/gitrl-tools/gitrl-f");
 	assert_true("Git logo by Jason Long, CC BY 3.0" in string.joinv("|", about.artists));
 	assert_cmpstr(Gtk.Window.get_default_icon_name(), CompareOperator.EQ, Gitrlf.Config.APPLICATION_ID);
 
