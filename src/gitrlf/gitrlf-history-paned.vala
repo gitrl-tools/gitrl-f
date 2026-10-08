@@ -34,8 +34,6 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.ListBox d_changes;
 	[GtkChild]
-	private unowned ChangesLane d_changes_gap;
-	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_author;
 	[GtkChild]
 	private unowned Gtk.TreeViewColumn d_column_date;
@@ -80,15 +78,11 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Label d_staged_count;
 	[GtkChild]
-	private unowned ChangesLane d_staged_lane;
-	[GtkChild]
 	private unowned Gtk.ListBoxRow d_staged_row;
 	[GtkChild]
 	private unowned Gtk.Label d_summary;
 	[GtkChild]
 	private unowned Gtk.Label d_unstaged_count;
-	[GtkChild]
-	private unowned ChangesLane d_unstaged_lane;
 	[GtkChild]
 	private unowned Gtk.ListBoxRow d_unstaged_row;
 
@@ -108,11 +102,6 @@ public class HistoryPaned : Gtk.Box
 	public Gtk.ListBox changes
 	{
 		get { return d_changes; }
-	}
-
-	public ChangesLane changes_gap
-	{
-		get { return d_changes_gap; }
 	}
 
 	public Gtk.TreeViewColumn column_author
@@ -290,11 +279,6 @@ public class HistoryPaned : Gtk.Box
 		get { return d_staged_count; }
 	}
 
-	public ChangesLane staged_lane
-	{
-		get { return d_staged_lane; }
-	}
-
 	public Gtk.ListBoxRow staged_row
 	{
 		get { return d_staged_row; }
@@ -310,11 +294,6 @@ public class HistoryPaned : Gtk.Box
 		get { return d_unstaged_count; }
 	}
 
-	public ChangesLane unstaged_lane
-	{
-		get { return d_unstaged_lane; }
-	}
-
 	public Gtk.ListBoxRow unstaged_row
 	{
 		get { return d_unstaged_row; }
@@ -324,7 +303,7 @@ public class HistoryPaned : Gtk.Box
 	{
 		typeof(Gitg.CommitListView).ensure();
 		typeof(Gitg.CellRendererLanes).ensure();
-		typeof(ChangesLane).ensure();
+		typeof(HeadedList).ensure();
 		typeof(RefsList).ensure();
 	}
 

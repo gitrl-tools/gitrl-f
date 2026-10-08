@@ -20,7 +20,6 @@
 
 private const uint32 BLUE = 0x204a87;
 private const uint32 GOLD = 0xc4a000;
-private const uint32 GREEN = 0x4e9a06;
 private const uint32 GREY = 0x888a85;
 
 private static void activate_item(string label)
@@ -236,10 +235,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/selected-lines-show-their-history", test_selected_lines_show_their_history);
 	Test.add_func("/gitrlf/ui/diff-pane/split-sides-scroll-together", test_split_sides_scroll_together);
 	Test.add_func("/gitrlf/ui/diff-pane/split-view-is-built-only-when-chosen", test_split_view_is_built_only_when_chosen);
-	Test.add_func("/gitrlf/ui/diff-pane/the-changes-line-runs-past-newer-commits-to-head", test_the_changes_line_runs_past_newer_commits_to_head);
-	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-show-dots-when-head-scrolls-away", test_the_changes_rows_show_dots_when_head_scrolls_away);
-	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-sit-on-the-lane-of-head", test_the_changes_rows_sit_on_the_lane_of_head);
-	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-stand-alone-when-head-is-not-shown", test_the_changes_rows_stand_alone_when_head_is_not_shown);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-draw-no-line-to-head", test_the_changes_rows_draw_no_line_to_head);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-scroll-away-with-the-list", test_the_changes_rows_scroll_away_with_the_list);
+	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-sit-at-the-top-of-the-list", test_the_changes_rows_sit_at_the_top_of_the_list);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
 	Test.add_func("/gitrlf/ui/diff-pane/the-shown-changes-follow-an-edit", test_the_shown_changes_follow_an_edit);
@@ -1776,7 +1774,7 @@ private static void test_split_view_is_built_only_when_chosen()
 	}
 }
 
-private static void test_the_changes_line_runs_past_newer_commits_to_head()
+private static void test_the_changes_rows_draw_no_line_to_head()
 {
 	try
 	{
@@ -1793,11 +1791,10 @@ private static void test_the_changes_line_runs_past_newer_commits_to_head()
 		var rows = window.history.rows();
 		var middle = (row_y(window, 0) + row_y(window, 1)) / 2;
 
-		assert_cmpstr(rows[0].get_subject(), CompareOperator.EQ, "newer on dev");
+		assert_true(window.history.paned.changes.visible);
 		assert_cmpstr(rows[1].get_subject(), CompareOperator.EQ, "two");
 		assert_cmpint((int)rows[1].mylane, CompareOperator.EQ, 0);
-		assert_true(inked(view, lane_x(0), middle, GOLD));
-		assert_true(inked(view, lane_x(1), middle, GREEN));
+		assert_false(inked(view, lane_x(0), middle, GOLD));
 
 		window.destroy();
 		repo.remove();
@@ -1808,53 +1805,61 @@ private static void test_the_changes_line_runs_past_newer_commits_to_head()
 	}
 }
 
-private static void test_the_changes_rows_show_dots_when_head_scrolls_away()
+private static void test_the_changes_rows_scroll_away_with_the_list()
 {
 	try
 	{
 		var repo = Repo.create();
+		var log = repo.path.get_child("log").get_path();
 
 		for (var i = 0; i < 80; i++)
 		{
 			repo.commit("step %d".printf(i), "log");
 		}
 
-		FileUtils.set_contents(repo.path.get_child("log").get_path(), "edited\n");
+		FileUtils.set_contents(log, "staged\n");
+		repo.git({"add", "log"});
+		FileUtils.set_contents(log, "edited\n");
 
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
-		var gap = paned.changes_gap;
-		var lane = paned.unstaged_lane;
-		var x = lane_x(0);
-
-		assert_true(inked(lane, x, lane.get_allocated_height() - 2, GOLD));
-		assert_false(gap.visible);
-
-		var adjustment = paned.scrolled_window_commit_list.vadjustment;
-		var top = window_y(window, 0);
+		var list = paned.scrolled_window_commit_list;
+		var adjustment = list.vadjustment;
 		var pitch = row_y(window, 1) - row_y(window, 0);
+		int list_y;
+		int staged_y;
+
+		list.translate_coordinates(window, 0, 0, null, out list_y);
+
+		assert_cmpint(window_y(window, 0), CompareOperator.EQ,
+		              list_y + 2 * pitch);
 
 		adjustment.value = pitch;
 		settle(200);
+		paned.staged_row.translate_coordinates(window, 0, 0, null,
+		                                       out staged_y);
 
-		assert_true(gap.visible);
-		assert_cmpint(window_y(window, 1), CompareOperator.EQ, top);
+		assert_cmpint(staged_y, CompareOperator.EQ, list_y);
+		assert_cmpint(window_y(window, 0), CompareOperator.EQ,
+		              list_y + pitch);
+
+		adjustment.value = 5 * pitch;
+		settle(200);
+
+		assert_false(paned.changes.get_mapped());
+		assert_cmpint(window_y(window, 3), CompareOperator.EQ, list_y);
+
+		window.activate_action("reload", null);
+		settle(300);
+
+		assert_cmpint(window_y(window, 3), CompareOperator.EQ, list_y);
 
 		adjustment.value = 0;
 		settle(200);
 
-		assert_false(gap.visible);
-		assert_cmpint(window_y(window, 0), CompareOperator.EQ, top);
-
-		adjustment.value = adjustment.upper - adjustment.page_size;
-		settle(200);
-
-		assert_true(inked(lane, x, lane.get_allocated_height() - 2, GOLD));
-		assert_true(inked(gap, x, 3, GOLD));
-		assert_false(inked(gap, x, 5, GOLD));
-		assert_true(inked(gap, x, 7, GOLD));
-		assert_false(inked(gap, x, 9, GOLD));
-		assert_true(inked(gap, x, 11, GOLD));
+		assert_true(paned.changes.get_mapped());
+		assert_cmpint(window_y(window, 0), CompareOperator.EQ,
+		              list_y + 2 * pitch);
 
 		window.destroy();
 		repo.remove();
@@ -1865,7 +1870,7 @@ private static void test_the_changes_rows_show_dots_when_head_scrolls_away()
 	}
 }
 
-private static void test_the_changes_rows_sit_on_the_lane_of_head()
+private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 {
 	try
 	{
@@ -1873,34 +1878,32 @@ private static void test_the_changes_rows_sit_on_the_lane_of_head()
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
 		var view = paned.commit_list_view;
-		var unstaged = paned.unstaged_lane;
-		var staged = paned.staged_lane;
-		var x = lane_x(0);
-		var middle = unstaged.get_allocated_height() / 2;
+		var unstaged = paned.unstaged_row;
+		var pitch = row_y(window, 1) - row_y(window, 0);
+		int list_y;
 		int unstaged_y;
 		int staged_y;
 
+		var list = paned.scrolled_window_commit_list;
+
+		list.translate_coordinates(window, 0, 0, null, out list_y);
 		unstaged.translate_coordinates(window, 0, 0, null, out unstaged_y);
-		staged.translate_coordinates(window, 0, 0, null, out staged_y);
+		paned.staged_row.translate_coordinates(window, 0, 0, null,
+		                                       out staged_y);
 
-		assert_cmpint(unstaged_y, CompareOperator.LT, staged_y);
-		assert_cmpint(unstaged.get_allocated_height(), CompareOperator.EQ, row_y(window, 1) - row_y(window, 0));
-		assert_true(inked(unstaged, x, middle - 4, GOLD));
-		assert_false(inked(unstaged, x, middle, GOLD));
-		assert_false(inked(unstaged, x, 1, GOLD));
-		assert_true(inked(unstaged, x, unstaged.get_allocated_height() - 2, GOLD));
-		assert_true(inked(staged, x, 1, GOLD));
-		assert_false(paned.changes_gap.visible);
-		assert_cmpint(staged_y + staged.get_allocated_height(),
-		              CompareOperator.EQ, window_y(window, 0));
-		assert_true(inked(view, x, row_y(window, 0) + 2, GOLD));
+		assert_cmpint(unstaged_y, CompareOperator.EQ, list_y);
+		assert_cmpint(staged_y, CompareOperator.EQ, unstaged_y + pitch);
+		assert_cmpint(unstaged.get_allocated_height(),
+		              CompareOperator.EQ, pitch);
+		assert_cmpint(window_y(window, 0), CompareOperator.EQ,
+		              staged_y + pitch);
+		assert_true(inked(unstaged, lane_x(0) + 2, pitch / 2, GREY));
 
-		var label = label_with(paned.unstaged_row, "Unstaged changes");
-		var height = unstaged.get_allocated_height();
+		var label = label_with(unstaged, "Unstaged changes");
 		var grey = inked_rows(label, label.get_allocated_width() / 2, 0,
-		                      height, GREY);
-		var blue = inked_rows(view, lane_x(1) + 4, row_y(window, 0), height,
-		                      BLUE);
+		                      pitch, GREY);
+		var blue = inked_rows(view, lane_x(1) + 4, row_y(window, 0),
+		                      pitch, BLUE);
 
 		assert_true(blue.contains("#"));
 		assert_cmpint(grey.index_of_char('#'), CompareOperator.EQ,
@@ -1912,36 +1915,7 @@ private static void test_the_changes_rows_sit_on_the_lane_of_head()
 		settle(2600);
 
 		assert_false(paned.changes.visible);
-		assert_false(paned.changes_gap.visible);
-		assert_false(inked(view, x, row_y(window, 0) + 2, GOLD));
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_the_changes_rows_stand_alone_when_head_is_not_shown()
-{
-	try
-	{
-		var repo = changes_repo();
-
-		repo.git({"branch", "dev", "master~1"});
-
-		var window = opened(repo, {"refs/heads/dev"});
-		var paned = window.history.paned;
-		var unstaged = paned.unstaged_lane;
-		var x = lane_x(0);
-		var middle = unstaged.get_allocated_height() / 2;
-
-		assert_true(inked(unstaged, x, middle - 4, GREY));
-		assert_false(inked(unstaged, x, middle, GREY));
-		assert_false(inked(unstaged, x, unstaged.get_allocated_height() - 2, GREY));
-		assert_false(paned.changes_gap.visible);
+		assert_cmpint(window_y(window, 0), CompareOperator.EQ, list_y);
 
 		window.destroy();
 		repo.remove();

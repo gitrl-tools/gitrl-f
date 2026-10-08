@@ -43,19 +43,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_find_closed;
 	private SearchQuery? d_find_query;
 	private bool d_find_with_pane;
-	private int d_gap_shift;
 	private History? d_full;
 	private SearchQuery d_query;
 	private Gtk.Label d_match_count;
 	private int[] d_matches;
 	private HistoryPaned d_paned;
-	private int d_head_row;
 	private History? d_history;
 	private double d_hold;
 	private int d_hold_height;
 	private bool d_ignore_case;
-	private Gitg.Lane? d_join_head;
-	private Gitg.Lane[] d_join_lanes;
 	private Ggit.OId? d_kept;
 	private History? d_line_history;
 	private string? d_line_label;
@@ -268,8 +264,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_query = new SearchQuery("", false, false);
 		d_matches = new int[0];
 		d_narrow_key = "";
-		d_head_row = -1;
-		d_join_lanes = new Gitg.Lane[0];
 
 		d_paned = new HistoryPaned();
 		d_paned.commit_list_view.model = d_model;
@@ -277,10 +271,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
-		d_paned.scrolled_window_commit_list.vadjustment.value_changed
-			.connect(() => show_changes_lane(true));
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);
-		d_paned.commit_list_view.size_allocate.connect_after(shift_for_gap);
 
 		d_search_entry = new Gtk.SearchEntry();
 		d_search_entry.width_chars = 20;
@@ -576,7 +567,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.size_allocate.connect_after((allocation) => {
 			if (d_hold >= 0)
 			{
-				d_paned.scrolled_window_commit_list.vadjustment.value = d_hold;
+				d_paned.commit_list_view.vadjustment.value = d_hold;
 				d_hold = -1;
 			}
 		});
@@ -1447,8 +1438,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (area.height > 0)
 		{
-			d_paned.unstaged_lane.height_request = area.height;
-			d_paned.staged_lane.height_request = area.height;
+			d_paned.unstaged_row.height_request = area.height;
+			d_paned.staged_row.height_request = area.height;
 		}
 	}
 
@@ -1601,75 +1592,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_id().to_string().substring(0, 7), d_query.hash_marks());
 			embolden(cell, commit);
 		}
-	}
-
-	private int head_row()
-	{
-		foreach (var reference in d_refs)
-		{
-			if (reference.head)
-			{
-				var path = d_model.path_from_commit(reference.target);
-
-				return path != null ? path.get_indices()[0] : -1;
-			}
-		}
-
-		return -1;
-	}
-
-	private void join_head()
-	{
-		foreach (var lane in d_join_lanes)
-		{
-			lane.tag |= Gitg.LaneTag.HIDDEN;
-			lane.from = new SList<int>();
-		}
-
-		if (d_join_head != null)
-		{
-			d_join_head.from = new SList<int>();
-		}
-
-		d_join_lanes = new Gitg.Lane[0];
-		d_join_head = null;
-		d_head_row = d_refs != null ? head_row() : -1;
-
-		if (d_head_row >= 0 && d_paned.changes.visible)
-		{
-			var index = (int)d_model.get_row(d_head_row).mylane;
-			var lanes = new Gitg.Lane[0];
-
-			for (var i = 0; i < d_head_row; i++)
-			{
-				var lane = d_model.get_row(i).get_lanes().nth_data(index);
-
-				if (lane == null || (lane.tag & Gitg.LaneTag.HIDDEN) == 0)
-				{
-					lanes = null;
-					break;
-				}
-
-				lanes += lane;
-			}
-
-			if (lanes != null)
-			{
-				foreach (var lane in lanes)
-				{
-					lane.tag &= ~Gitg.LaneTag.HIDDEN;
-					lane.from.append(index);
-				}
-
-				d_join_lanes = lanes;
-				d_join_head = d_model.get_row(d_head_row).lane;
-				d_join_head.from.append(index);
-			}
-		}
-
-		fit_changes_rows();
-		d_paned.commit_list_view.queue_draw();
-		show_changes_lane();
 	}
 
 	public void jump(string name)
@@ -2627,18 +2549,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
-	private void shift_for_gap()
-	{
-		if (d_gap_shift != 0)
-		{
-			var adjustment = d_paned.scrolled_window_commit_list.vadjustment;
-			var shift = d_gap_shift;
-
-			d_gap_shift = 0;
-			adjustment.value += shift;
-		}
-	}
-
 	private void show_base()
 	{
 		if (scans())
@@ -2676,55 +2586,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.changes.visible = d_paned.staged_row.visible
 		                          || d_paned.unstaged_row.visible;
-		join_head();
 		queue_details();
-	}
-
-	private void show_changes_lane(bool keep = false)
-	{
-		var color = Gdk.RGBA();
-		var index = 0;
-		var head = d_head_row >= 0;
-		var joined = false;
-		var view = d_paned.commit_list_view;
-		ChangesLane[] lanes = {
-			d_paned.unstaged_lane, d_paned.staged_lane, d_paned.changes_gap
-		};
-
-		color.parse("#888a85");
-
-		if (head)
-		{
-			var commit = d_model.get_row(d_head_row);
-			var shade = commit.lane.color;
-			var path = new Gtk.TreePath.from_indices(d_head_row);
-			Gdk.Rectangle area;
-
-			color = { shade.r, shade.g, shade.b, 1 };
-			index = (int)commit.mylane;
-			view.get_background_area(path, null, out area);
-			joined = d_join_head != null && area.y + area.height / 2 >= 0;
-		}
-
-		foreach (var lane in lanes)
-		{
-			lane.color = color;
-			lane.lane = index;
-		}
-
-		d_paned.unstaged_lane.line_below = head;
-		d_paned.staged_lane.line_above = head && d_paned.unstaged_row.visible;
-		d_paned.staged_lane.line_below = head;
-		d_paned.changes_gap.dots = head && !joined;
-
-		var gap = d_paned.changes.visible && head && !joined;
-		var height = d_paned.changes_gap.height_request;
-
-		if (gap != d_paned.changes_gap.visible)
-		{
-			d_gap_shift += keep ? (gap ? height : -height) : 0;
-			d_paned.changes_gap.visible = gap;
-		}
 	}
 
 	private void show_choice()
@@ -2996,7 +2858,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.get_background_area(new Gtk.TreePath.first(), null, out area);
 
 		var height = pending ? d_hold_height : area.height;
-		var scroll = from_top ? 0 : (pending ? d_hold : d_paned.scrolled_window_commit_list.vadjustment.value);
+		var scroll = from_top ? 0 : (pending ? d_hold : d_paned.commit_list_view.vadjustment.value);
 
 		d_hold = -1;
 
@@ -3020,7 +2882,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.commit_list_view.model = null;
 		d_model.set_rows(rows);
 		d_paned.commit_list_view.model = d_model;
-		join_head();
 		mark_matches();
 
 		var counted = changes_apply() && !d_only_matches.active ? unlimited_history() : d_history;

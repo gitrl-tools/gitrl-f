@@ -16,6 +16,11 @@ list.changes row {
 	min-height: 0;
 }
 
+viewport.changes {
+	padding: 0;
+	border: none;
+}
+
 .changes-label {
 	border-radius: 6px;
 	border: 1px solid @theme_bg_color;

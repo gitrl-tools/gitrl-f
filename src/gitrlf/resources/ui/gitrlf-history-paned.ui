@@ -156,100 +156,6 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkListBox" id="d_changes">
-                    <property name="visible">False</property>
-                    <property name="no_show_all">True</property>
-                    <property name="selection_mode">single</property>
-                    <style>
-                      <class name="changes"/>
-                    </style>
-                    <child>
-                      <object class="GtkListBoxRow" id="d_unstaged_row">
-                        <property name="visible">True</property>
-                        <child>
-                          <object class="GtkBox">
-                            <property name="visible">True</property>
-                            <property name="margin_end">6</property>
-                            <child>
-                              <object class="GitrlfChangesLane" id="d_unstaged_lane">
-                                <property name="visible">True</property>
-                                <property name="ring">True</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Unstaged changes</property>
-                                <style>
-                                  <class name="changes-label"/>
-                                </style>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="d_unstaged_count">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="margin_start">4</property>
-                                <style>
-                                  <class name="dim-label"/>
-                                </style>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkListBoxRow" id="d_staged_row">
-                        <property name="visible">True</property>
-                        <child>
-                          <object class="GtkBox">
-                            <property name="visible">True</property>
-                            <property name="margin_end">6</property>
-                            <child>
-                              <object class="GitrlfChangesLane" id="d_staged_lane">
-                                <property name="visible">True</property>
-                                <property name="ring">True</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Staged changes</property>
-                                <style>
-                                  <class name="changes-label"/>
-                                </style>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="d_staged_count">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="margin_start">4</property>
-                                <style>
-                                  <class name="dim-label"/>
-                                </style>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="GitrlfChangesLane" id="d_changes_gap">
-                    <property name="visible">False</property>
-                    <property name="no_show_all">True</property>
-                    <property name="height_request">14</property>
-                    <style>
-                      <class name="view"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
                   <object class="GtkStack" id="d_stack_list">
                     <property name="visible">True</property>
                     <child>
@@ -260,72 +166,160 @@
                         <property name="can_focus">True</property>
                         <property name="shadow-type">none</property>
                         <child>
-                          <object class="GitgCommitListView" id="d_commit_list_view">
+                          <object class="GitrlfHeadedList">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="has_focus">True</property>
-                            <property name="fixed-height-mode">True</property>
-                            <property name="headers-visible">False</property>
-                            <property name="enable-search">False</property>
                             <child>
-                              <object class="GtkTreeViewColumn" id="d_column_subject">
-                                <property name="title" translatable="yes">Subject</property>
-                                <property name="sizing">fixed</property>
-                                <property name="resizable">True</property>
-                                <property name="expand">True</property>
-                                <property name="fixed-width">400</property>
+                              <object class="GtkViewport">
+                                <property name="visible">True</property>
+                                <property name="shadow_type">none</property>
+                                <style>
+                                  <class name="changes"/>
+                                </style>
                                 <child>
-                                  <object class="GitgCellRendererLanes" id="d_renderer_subject">
-                                    <property name="ellipsize">end</property>
+                                  <object class="GtkListBox" id="d_changes">
+                                    <property name="visible">False</property>
+                                    <property name="no_show_all">True</property>
+                                    <property name="selection_mode">single</property>
+                                    <style>
+                                      <class name="changes"/>
+                                    </style>
+                                    <child>
+                                      <object class="GtkListBoxRow" id="d_unstaged_row">
+                                        <property name="visible">True</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="visible">True</property>
+                                            <property name="margin_start">6</property>
+                                            <property name="margin_end">6</property>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="label" translatable="yes">Unstaged changes</property>
+                                                <style>
+                                                  <class name="changes-label"/>
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel" id="d_unstaged_count">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="margin_start">4</property>
+                                                <style>
+                                                  <class name="dim-label"/>
+                                                </style>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkListBoxRow" id="d_staged_row">
+                                        <property name="visible">True</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="visible">True</property>
+                                            <property name="margin_start">6</property>
+                                            <property name="margin_end">6</property>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="label" translatable="yes">Staged changes</property>
+                                                <style>
+                                                  <class name="changes-label"/>
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel" id="d_staged_count">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="margin_start">4</property>
+                                                <style>
+                                                  <class name="dim-label"/>
+                                                </style>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
                                   </object>
-                                  <attributes>
-                                    <attribute name="text">1</attribute>
-                                  </attributes>
                                 </child>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkTreeViewColumn" id="d_column_hash">
-                                <property name="title" translatable="yes">Hash</property>
-                                <property name="sizing">fixed</property>
-                                <property name="resizable">True</property>
-                                <property name="fixed-width">80</property>
+                              <object class="GitgCommitListView" id="d_commit_list_view">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="has_focus">True</property>
+                                <property name="fixed-height-mode">True</property>
+                                <property name="headers-visible">False</property>
+                                <property name="enable-search">False</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="d_renderer_hash">
-                                    <property name="family">monospace</property>
+                                  <object class="GtkTreeViewColumn" id="d_column_subject">
+                                    <property name="title" translatable="yes">Subject</property>
+                                    <property name="sizing">fixed</property>
+                                    <property name="resizable">True</property>
+                                    <property name="expand">True</property>
+                                    <property name="fixed-width">400</property>
+                                    <child>
+                                      <object class="GitgCellRendererLanes" id="d_renderer_subject">
+                                        <property name="ellipsize">end</property>
+                                      </object>
+                                      <attributes>
+                                        <attribute name="text">1</attribute>
+                                      </attributes>
+                                    </child>
                                   </object>
                                 </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="d_column_author">
-                                <property name="title" translatable="yes">Author</property>
-                                <property name="sizing">fixed</property>
-                                <property name="resizable">True</property>
-                                <property name="fixed-width">180</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="d_renderer_author">
-                                    <property name="ellipsize">end</property>
+                                  <object class="GtkTreeViewColumn" id="d_column_hash">
+                                    <property name="title" translatable="yes">Hash</property>
+                                    <property name="sizing">fixed</property>
+                                    <property name="resizable">True</property>
+                                    <property name="fixed-width">80</property>
+                                    <child>
+                                      <object class="GtkCellRendererText" id="d_renderer_hash">
+                                        <property name="family">monospace</property>
+                                      </object>
+                                    </child>
                                   </object>
-                                  <attributes>
-                                    <attribute name="text">4</attribute>
-                                  </attributes>
                                 </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="d_column_date">
-                                <property name="title" translatable="yes">Date</property>
-                                <property name="sizing">fixed</property>
-                                <property name="resizable">True</property>
-                                <property name="fixed-width">150</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="d_renderer_date">
-                                    <property name="ellipsize">end</property>
+                                  <object class="GtkTreeViewColumn" id="d_column_author">
+                                    <property name="title" translatable="yes">Author</property>
+                                    <property name="sizing">fixed</property>
+                                    <property name="resizable">True</property>
+                                    <property name="fixed-width">180</property>
+                                    <child>
+                                      <object class="GtkCellRendererText" id="d_renderer_author">
+                                        <property name="ellipsize">end</property>
+                                      </object>
+                                      <attributes>
+                                        <attribute name="text">4</attribute>
+                                      </attributes>
+                                    </child>
                                   </object>
-                                  <attributes>
-                                    <attribute name="text">6</attribute>
-                                  </attributes>
+                                </child>
+                                <child>
+                                  <object class="GtkTreeViewColumn" id="d_column_date">
+                                    <property name="title" translatable="yes">Date</property>
+                                    <property name="sizing">fixed</property>
+                                    <property name="resizable">True</property>
+                                    <property name="fixed-width">150</property>
+                                    <child>
+                                      <object class="GtkCellRendererText" id="d_renderer_date">
+                                        <property name="ellipsize">end</property>
+                                      </object>
+                                      <attributes>
+                                        <attribute name="text">6</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
                                 </child>
                               </object>
                             </child>
