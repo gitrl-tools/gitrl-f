@@ -17,7 +17,7 @@
 
 - **A checkbox for each ref.** The panel on the left lists each branch, remote branch and tag, grouped by the slashes in their names.
 - **Your ticks come back.** With no ref and no tick option on the command line, gitrl-f ticks the refs that you last chose in that repository.
-- **The details on a double-click.** A double-click on a commit shows gitg's details and diff of that commit below the history, and Escape hides them. A single click only selects the commit.
+- **The details on a double-click.** A double-click on a commit shows gitg's details and diff of that commit below the history. A click on that commit, or Escape, hides them. A click on another commit only selects it.
 
 ![A double-click on a commit shows its details and its diff, and Escape hides them](docs/screenshots/demo-pane.gif)
 

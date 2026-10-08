@@ -214,6 +214,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
+	Test.add_func("/gitrlf/ui/history-activity/click-on-the-shown-commit-hides-the-pane", test_click_on_the_shown_commit_hides_the_pane);
 	Test.add_func("/gitrlf/ui/history-activity/click-selects-and-keeps-the-pane-as-it-is", test_click_selects_and_keeps_the_pane_as_it_is);
 	Test.add_func("/gitrlf/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
@@ -820,6 +821,43 @@ private static void test_click_on_expand_all_fills_the_window()
 	}
 }
 
+private static void test_click_on_the_shown_commit_hides_the_pane()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var pause = Gtk.Settings.get_default().gtk_double_click_time;
+
+		click_row(window, 1, 2);
+		assert_true(details_shown(window));
+
+		settle(pause);
+		click_row(window, 1);
+		assert_false(details_shown(window));
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
+
+		click_row(window, 0, 2);
+		click_row(window, 1);
+		assert_true(details_shown(window));
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "first");
+
+		settle(pause);
+		click_row(window, 1);
+		assert_false(details_shown(window));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_click_selects_and_keeps_the_pane_as_it_is()
 {
 	try
@@ -846,9 +884,6 @@ private static void test_click_selects_and_keeps_the_pane_as_it_is()
 		assert_true(details_shown(window));
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
 		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "first");
-
-		click_row(window, 2);
-		assert_true(details_shown(window));
 
 		window.destroy();
 		repo.remove();

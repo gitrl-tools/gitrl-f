@@ -443,7 +443,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				return;
 			}
 
-			if (presses == 1)
+			if (presses == 1 && d_press_on_shown)
+			{
+				set_details(false);
+			}
+			else if (presses == 1)
 			{
 				light_selection(true);
 			}
