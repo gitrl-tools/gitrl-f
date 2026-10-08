@@ -189,7 +189,7 @@
                                         <child>
                                           <object class="GtkBox">
                                             <property name="visible">True</property>
-                                            <property name="margin_start">6</property>
+                                            <property name="margin_start">16</property>
                                             <property name="margin_end">6</property>
                                             <child>
                                               <object class="GtkLabel">
@@ -221,7 +221,7 @@
                                         <child>
                                           <object class="GtkBox">
                                             <property name="visible">True</property>
-                                            <property name="margin_start">6</property>
+                                            <property name="margin_start">16</property>
                                             <property name="margin_end">6</property>
                                             <child>
                                               <object class="GtkLabel">

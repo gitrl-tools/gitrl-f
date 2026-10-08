@@ -93,6 +93,18 @@ private static Gtk.Widget[] find_named(Gtk.Widget widget, string type_name)
 	return found;
 }
 
+private static int first_inked(Gtk.Widget widget, int y, uint32 rgb)
+{
+	var x = 0;
+
+	while (x < widget.get_allocated_width() && !inked(widget, x, y, rgb))
+	{
+		x++;
+	}
+
+	return x;
+}
+
 private static string? header_of(Gtk.Widget file)
 {
 	foreach (var widget in find_all(file, typeof(Gtk.Label)))
@@ -1883,6 +1895,8 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 		int list_y;
 		int unstaged_y;
 		int staged_y;
+		int grey_x;
+		int blue_x;
 
 		var list = paned.scrolled_window_commit_list;
 
@@ -1897,7 +1911,14 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 		              CompareOperator.EQ, pitch);
 		assert_cmpint(window_y(window, 0), CompareOperator.EQ,
 		              staged_y + pitch);
-		assert_true(inked(unstaged, lane_x(0) + 2, pitch / 2, GREY));
+		unstaged.translate_coordinates(
+			window, first_inked(unstaged, pitch / 2, GREY), 0,
+			out grey_x, null);
+		view.translate_coordinates(
+			window, first_inked(view, row_y(window, 0) + pitch / 2, BLUE),
+			0, out blue_x, null);
+
+		assert_cmpint(grey_x, CompareOperator.EQ, blue_x);
 
 		var label = label_with(unstaged, "Unstaged changes");
 		var grey = inked_rows(label, label.get_allocated_width() / 2, 0,
