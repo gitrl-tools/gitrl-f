@@ -169,10 +169,13 @@ selects it: the branch of HEAD, else the first local branch by name, then
 remote branch, then tag.
 .PP
 The find bar of the diff has Match case and Regex too. Enter searches and
-goes to the first match, and the bar keeps its text when it closes. When no
+goes to the first match in an unfolded file at or below the top of the
+pane. When there is no such match, it goes to the first match. The bar
+keeps its text when it closes. When no
 search of the changed lines applies, the first Ctrl+F after a Messages
 search puts the text of that search in the find bar. The find bar also gets
-the Match case and Regex of that search, and goes to the first match. The
+the Match case and Regex of that search, and goes to a match by the same
+rule. The
 words author:, message:, hash:, before: and after: and their values stay
 out. A later Ctrl+F keeps the text of the find bar. One scroll bar at the bottom
 of the pane moves the long

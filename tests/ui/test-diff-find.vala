@@ -65,8 +65,12 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/ui/diff-find/a-bad-expression-turns-the-field-red", test_a_bad_expression_turns_the_field_red);
 	Test.add_func("/gitrlf/ui/diff-find/a-match-in-a-folded-file-unfolds-it-and-shows", test_a_match_in_a_folded_file_unfolds_it_and_shows);
+	Test.add_func("/gitrlf/ui/diff-find/a-new-search-starts-at-the-first-match-on-screen", test_a_new_search_starts_at_the_first_match_on_screen);
+	Test.add_func("/gitrlf/ui/diff-find/a-new-search-starts-in-the-open-file", test_a_new_search_starts_in_the_open_file);
+	Test.add_func("/gitrlf/ui/diff-find/a-new-search-with-no-match-on-screen-starts-at-the-first", test_a_new_search_with_no_match_on_screen_starts_at_the_first);
 	Test.add_func("/gitrlf/ui/diff-find/a-regex-narrows-the-marks", test_a_regex_narrows_the_marks);
 	Test.add_func("/gitrlf/ui/diff-find/a-switch-to-split-searches-again", test_a_switch_to_split_searches_again);
+	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-copies-the-messages-search-into-the-open-file", test_ctrl_f_copies_the_messages_search_into_the_open_file);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-copies-the-messages-search-with-match-case", test_ctrl_f_copies_the_messages_search_with_match_case);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-copies-the-messages-search-with-regex", test_ctrl_f_copies_the_messages_search_with_regex);
 	Test.add_func("/gitrlf/ui/diff-find/ctrl-f-in-the-pane-opens-and-closes-the-diff-bar", test_ctrl_f_in_the_pane_opens_and_closes_the_diff_bar);
@@ -335,6 +339,94 @@ private static void test_a_match_in_a_folded_file_unfolds_it_and_shows()
 	}
 }
 
+private static void test_a_new_search_starts_at_the_first_match_on_screen()
+{
+	try
+	{
+		var repo = many_files();
+		var window = opened(repo, "many");
+		var bar = window.history.find_bar;
+		var files = window.history.diff_view.get_files();
+		var vertical = pane_of(window).vadjustment;
+
+		for (var i = 3; i < files.size; i++)
+		{
+			files[i].expanded = true;
+		}
+
+		settle(300);
+		vertical.value = top_of(window, files[6]);
+		settle(200);
+
+		assert_cmpfloat(vertical.value, CompareOperator.GT, 0);
+
+		search_for(window, "line 5");
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "7 of 12");
+		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "6:line 5");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_new_search_starts_in_the_open_file()
+{
+	try
+	{
+		var repo = many_files();
+		var window = opened(repo, "many");
+		var bar = window.history.find_bar;
+
+		window.history.diff_view.get_files()[6].expanded = true;
+		settle(300);
+		search_for(window, "line 5");
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "7 of 12");
+		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "6:line 5");
+
+		bar.field.activate();
+		settle(100);
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "8 of 12");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_new_search_with_no_match_on_screen_starts_at_the_first()
+{
+	try
+	{
+		var repo = many_files();
+		var window = opened(repo, "many");
+		var bar = window.history.find_bar;
+
+		window.history.diff_view.get_files()[6].expanded = true;
+		settle(300);
+		search_for(window, "needle");
+
+		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 1");
+		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "11:needle");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_regex_narrows_the_marks()
 {
 	try
@@ -395,6 +487,33 @@ private static void test_a_switch_to_split_searches_again()
 		assert_true(window.history.diff_view.get_files()[0].split);
 		assert_cmpstr(bar.count, CompareOperator.EQ, "1 of 4");
 		assert_cmpstr(marks(window, "diff-find-match"), CompareOperator.EQ, "0:keep|1:keep|2:keep");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_f_copies_the_messages_search_into_the_open_file()
+{
+	try
+	{
+		var repo = many_files();
+		var window = opened(repo, "many");
+		var bar = window.history.find_bar;
+
+		search_messages(window, "line 5");
+		window.history.diff_view.get_files()[6].expanded = true;
+		settle(300);
+		window.activate_action("search", null);
+		settle(400);
+
+		assert_cmpstr(bar.field.text, CompareOperator.EQ, "line 5");
+		assert_cmpstr(bar.count, CompareOperator.EQ, "7 of 12");
+		assert_cmpstr(marks(window, "diff-find-current"), CompareOperator.EQ, "6:line 5");
 
 		window.destroy();
 		repo.remove();

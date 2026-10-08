@@ -194,7 +194,7 @@ public class DiffFindBar : Gtk.SearchBar
 
 				if (d_find.current < 0)
 				{
-					step(1);
+					step_to(starting_match());
 				}
 			}
 
@@ -202,6 +202,45 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 
 		step(direction);
+	}
+
+	private static Gtk.Adjustment? locate(Gtk.TextView view,
+	                                      Gtk.TextIter iter,
+	                                      out Gdk.Rectangle area)
+	{
+		Gtk.ScrolledWindow? outer = null;
+		int x;
+		int y;
+
+		for (var widget = view.get_parent(); widget != null; widget = widget.get_parent())
+		{
+			var scrolled = widget as Gtk.ScrolledWindow;
+
+			if (scrolled != null && scrolled.vscrollbar_policy != Gtk.PolicyType.NEVER)
+			{
+				outer = scrolled;
+				break;
+			}
+		}
+
+		view.get_iter_location(iter, out area);
+		view.buffer_to_window_coords(Gtk.TextWindowType.WIDGET,
+		                             area.x, area.y, out x, out y);
+
+		if (outer == null)
+		{
+			return null;
+		}
+
+		var content = ((Gtk.Bin)outer.get_child()).get_child();
+
+		if (!view.translate_coordinates(content, x, y,
+		                                out area.x, out area.y))
+		{
+			return null;
+		}
+
+		return outer.vadjustment;
 	}
 
 	private void mark_file(int index, Gitg.DiffViewFile file)
@@ -298,62 +337,23 @@ public class DiffFindBar : Gtk.SearchBar
 			return;
 		}
 
-		var match = d_find.get_match(d_find.current);
-		var files = d_diff.get_files();
-
-		if (match.file >= files.size)
-		{
-			return;
-		}
-
-		var file = files[match.file];
-		var views = file.get_text_views();
-
-		if (match.side >= views.length)
-		{
-			return;
-		}
-
-		var view = views[match.side];
-		var offset = file.get_line_offset(view, match.line);
-		Gtk.ScrolledWindow? outer = null;
-
-		for (var widget = view.get_parent(); widget != null; widget = widget.get_parent())
-		{
-			var scrolled = widget as Gtk.ScrolledWindow;
-
-			if (scrolled != null && scrolled.vscrollbar_policy != Gtk.PolicyType.NEVER)
-			{
-				outer = scrolled;
-				break;
-			}
-		}
-
-		if (offset < 0 || outer == null)
-		{
-			return;
-		}
-
 		Gtk.TextIter iter;
-		Gdk.Rectangle location;
-		int x;
-		int y;
-		int content_x;
-		int content_y;
+		var view = view_at(d_find.get_match(d_find.current), out iter);
 
-		view.buffer.get_iter_at_offset(out iter, offset + match.start);
-		view.scroll_to_iter(iter, 0, false, 0, 0);
-		view.get_iter_location(iter, out location);
-		view.buffer_to_window_coords(Gtk.TextWindowType.WIDGET, location.x, location.y, out x, out y);
-
-		var content = ((Gtk.Bin)outer.get_child()).get_child();
-
-		if (!view.translate_coordinates(content, x, y, out content_x, out content_y))
+		if (view == null)
 		{
 			return;
 		}
 
-		var adjustment = outer.vadjustment;
+		view.scroll_to_iter(iter, 0, false, 0, 0);
+
+		Gdk.Rectangle area;
+		var adjustment = locate(view, iter, out area);
+
+		if (adjustment == null)
+		{
+			return;
+		}
 
 		if (d_adjustment != adjustment)
 		{
@@ -362,9 +362,9 @@ public class DiffFindBar : Gtk.SearchBar
 			adjustment.value_changed.connect(adjustment_moved);
 		}
 
-		if (content_y < adjustment.value || content_y + location.height > adjustment.value + adjustment.page_size)
+		if (area.y < adjustment.value || area.y + area.height > adjustment.value + adjustment.page_size)
 		{
-			var top = content_y - adjustment.page_size / 3;
+			var top = area.y - adjustment.page_size / 3;
 
 			d_scrolling = true;
 			adjustment.value = top.clamp(adjustment.lower, adjustment.upper - adjustment.page_size);
@@ -538,6 +538,37 @@ public class DiffFindBar : Gtk.SearchBar
 		moved();
 	}
 
+	private int starting_match()
+	{
+		var files = d_diff.get_files();
+		var first = 0;
+		var top = int.MAX;
+
+		for (var i = 0; i < d_find.length; i++)
+		{
+			var match = d_find.get_match(i);
+			Gtk.TextIter iter;
+			var view = view_at(match, out iter);
+
+			if (view == null || !files[match.file].expanded)
+			{
+				continue;
+			}
+
+			Gdk.Rectangle area;
+			var adjustment = locate(view, iter, out area);
+
+			if (adjustment != null && area.y < top
+			    && area.y + area.height > adjustment.value)
+			{
+				first = i;
+				top = area.y;
+			}
+		}
+
+		return first;
+	}
+
 	public void step(int direction)
 	{
 		var before = d_find.current;
@@ -573,27 +604,34 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 
 		var before = d_find.current;
+		var first = starting_match();
 
 		d_step_pending = false;
 
-		if (before == 0)
+		if (before == first)
 		{
 			return;
 		}
 
 		d_find.current = -1;
 
-		if (before > 0)
+		if (before >= 0)
 		{
 			var match = d_find.get_match(before);
 
 			mark_file(match.file, d_diff.get_files()[match.file]);
 		}
 
+		step_to(first);
+	}
+
+	private void step_to(int index)
+	{
+		d_find.current = index - 1;
 		step(1);
 	}
 
-	public void step_to_first()
+	public void step_to_start()
 	{
 		d_step_pending = true;
 		step_if_pending();
@@ -637,6 +675,38 @@ public class DiffFindBar : Gtk.SearchBar
 	private string? typed_error()
 	{
 		return new TextMatch(d_field.text, d_switches.match_case, d_switches.regex).error;
+	}
+
+	private Gtk.TextView? view_at(DiffMatch match, out Gtk.TextIter iter)
+	{
+		var files = d_diff.get_files();
+
+		iter = {};
+
+		if (match.file >= files.size)
+		{
+			return null;
+		}
+
+		var file = files[match.file];
+		var views = file.get_text_views();
+
+		if (match.side >= views.length)
+		{
+			return null;
+		}
+
+		var view = views[match.side];
+		var offset = file.get_line_offset(view, match.line);
+
+		if (offset < 0)
+		{
+			return null;
+		}
+
+		view.buffer.get_iter_at_offset(out iter, offset + match.start);
+
+		return view;
 	}
 
 	private void watch(Gitg.DiffViewFile file)

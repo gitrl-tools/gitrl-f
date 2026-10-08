@@ -1369,7 +1369,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_find_bar.fill(d_text, !d_ignore_case, d_regex);
 		}
 
-		d_find_bar.step_to_first();
+		d_find_bar.step_to_start();
 	}
 
 	private Ggit.OId[] find_beyond()
@@ -3185,7 +3185,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_find_bar.fill(d_query.plain, d_query.match_case,
 			                d_query.regex);
 			d_find_bar.field.select_region(0, -1);
-			d_find_bar.step_to_first();
+			d_find_bar.step_to_start();
 			return;
 		}
 
