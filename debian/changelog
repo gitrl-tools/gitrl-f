@@ -1,3 +1,18 @@
+gitrl-f (0.8.0-1) noble; urgency=medium
+
+  * The staged and unstaged changes show as grey labels at the top of the
+    list, with the height of a commit row. They scroll out of view with the
+    commits.
+  * A row above the files of a diff shows the total of the changed lines and
+    the number of files, when the diff has two files or more.
+  * The item "Compare in difftool" of the file menu is "Open diff in
+    difftool", as in the commit menu.
+  * The icon is a commit tree in the shape of the letter f.
+  * The commit menu shows long tag and branch names in full, and has no empty
+    strip at the bottom.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Thu, 08 Oct 2026 09:39:54 +0200
+
 gitrl-f (0.7.0-1) noble; urgency=medium
 
   * A strip above the list shows the staged and the unstaged changes, each

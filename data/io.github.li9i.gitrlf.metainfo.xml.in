@@ -63,6 +63,32 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.8.0" date="2026-10-08">
+      <description>
+        <ul>
+          <li>
+            The staged and unstaged changes show as grey labels at the top of
+            the list, with the height of a commit row. They scroll out of view
+            with the commits.
+          </li>
+          <li>
+            A row above the files of a diff shows the total of the changed
+            lines and the number of files, when the diff has two files or more.
+          </li>
+          <li>
+            The item "Compare in difftool" of the file menu is "Open diff in
+            difftool", as in the commit menu.
+          </li>
+          <li>
+            The icon is a commit tree in the shape of the letter f.
+          </li>
+          <li>
+            The commit menu shows long tag and branch names in full, and has no
+            empty strip at the bottom.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.0" date="2026-10-07">
       <description>
         <ul>
