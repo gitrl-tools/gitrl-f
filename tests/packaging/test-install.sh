@@ -20,7 +20,7 @@ echo "testing $(basename "$deb") in $image"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-old=https://github.com/li9i/gitrl-f/releases/download/v0.4.0
+old=https://github.com/gitrl-tools/gitrl-f/releases/download/v0.4.0
 curl -fsSL -o "$tmp/gittree.deb" \
 	"$old/gittree_0.4.0-1.ubuntu${series:-24.04}.1_amd64.deb"
 
