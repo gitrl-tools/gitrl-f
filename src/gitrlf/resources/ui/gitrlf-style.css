@@ -7,6 +7,10 @@ treeview.view.unlit:selected:not(.branch):not(.remote):not(.tag):not(.stash) {
 	color: @theme_text_color;
 }
 
+treeview.view.unlit:selected:hover:not(.branch):not(.remote):not(.tag):not(.stash) {
+	background-color: mix(@theme_base_color, @theme_selected_bg_color, 0.3);
+}
+
 entry.error {
 	background-image: none;
 }

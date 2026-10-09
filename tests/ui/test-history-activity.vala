@@ -77,15 +77,11 @@ private static void choose_split(Gitrlf.Window window, string from, string other
 
 private static void click_row(Gitrlf.Window window, int row, int count = 1)
 {
-	var view = window.history.paned.commit_list_view;
-	Gdk.Rectangle cell;
 	int x;
 	int y;
 
-	view.get_cell_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out cell);
-	view.get_bin_window().get_origin(out x, out y);
-
-	click_at(x + cell.x + cell.width / 2, y + cell.y + cell.height / 2, count);
+	row_centre(window, row, out x, out y);
+	click_at(x, y, count);
 	settle(300);
 }
 
@@ -207,7 +203,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
-	Test.add_func("/gitrlf/ui/history-activity/a-row-is-plain-again-under-a-theme-that-paints-the-selection", test_a_row_is_plain_again_under_a_theme_that_paints_the_selection);
+	Test.add_func("/gitrlf/ui/history-activity/a-row-is-plain-until-picked-under-a-theme-that-paints-the-selection", test_a_row_is_plain_until_picked_under_a_theme_that_paints_the_selection);
 	Test.add_func("/gitrlf/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
 	Test.add_func("/gitrlf/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
@@ -250,6 +246,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
+	Test.add_func("/gitrlf/ui/history-activity/the-row-under-the-pointer-is-tinted-before-it-is-picked", test_the_row_under_the_pointer_is_tinted_before_it_is_picked);
 	Test.add_func("/gitrlf/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
 	Test.add_func("/gitrlf/ui/history-activity/tick-at-the-very-top-stays-at-the-top", test_tick_at_the_very_top_stays_at_the_top);
 	Test.add_func("/gitrlf/ui/history-activity/tick-keeps-the-top-row-in-place", test_tick_keeps_the_top_row_in_place);
@@ -306,6 +303,16 @@ private static Gee.List<string> painted(Gitrlf.Window window, out ulong handler)
 	return tops;
 }
 
+private static void point_at_row(Gitrlf.Window window, int row)
+{
+	int x;
+	int y;
+
+	row_centre(window, row, out x, out y);
+	point_at(x, y);
+	settle(300);
+}
+
 private static void right_click(Gitrlf.Window window, int row, int column, int x)
 {
 	var view = window.history.paned.commit_list_view;
@@ -318,6 +325,18 @@ private static void right_click(Gitrlf.Window window, int row, int column, int x
 
 	click_at(origin_x + cell.x + x, origin_y + cell.y + cell.height / 2, 1, 3);
 	settle(300);
+}
+
+private static void row_centre(Gitrlf.Window window, int row, out int x, out int y)
+{
+	var view = window.history.paned.commit_list_view;
+	Gdk.Rectangle cell;
+
+	view.get_cell_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out cell);
+	view.get_bin_window().get_origin(out x, out y);
+
+	x += cell.x + cell.width / 2;
+	y += cell.y + cell.height / 2;
 }
 
 private static int row_of(Gitrlf.Window window, string subject)
@@ -498,6 +517,7 @@ private static void test_a_row_is_lit_only_once_the_user_picks_it()
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
 
+		point_at(0, 0);
 		settle(300);
 
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
@@ -515,7 +535,7 @@ private static void test_a_row_is_lit_only_once_the_user_picks_it()
 		click_row(window, 1, 2);
 
 		assert_false(details_shown(window));
-		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "second");
 
 		view.grab_focus();
 		Gtk.test_widget_send_key(view, Gdk.Key.Down, 0);
@@ -529,7 +549,7 @@ private static void test_a_row_is_lit_only_once_the_user_picks_it()
 		window.history.escape();
 		settle(100);
 
-		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
 
 		window.history.jump("refs/heads/master");
 		settle(100);
@@ -546,7 +566,7 @@ private static void test_a_row_is_lit_only_once_the_user_picks_it()
 	}
 }
 
-private static void test_a_row_is_plain_again_under_a_theme_that_paints_the_selection()
+private static void test_a_row_is_plain_until_picked_under_a_theme_that_paints_the_selection()
 {
 	try
 	{
@@ -562,26 +582,17 @@ private static void test_a_row_is_plain_again_under_a_theme_that_paints_the_sele
 
 		var window = opened(repo, {"refs/heads/master"});
 
+		point_at(0, 0);
 		settle(300);
-		click_row(window, 1);
 
-		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
-
-		click_row(window, 1, 2);
-		click_row(window, 1, 2);
-
-		assert_false(details_shown(window));
 		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
 
 		var middle = label_x(window, 0, "master");
-
-		click_row(window, 0, 2);
-		click_row(window, 0, 2);
-
 		var unlit = row_strip(window, 0, middle - 8, middle + 8);
 
 		click_row(window, 1);
 
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
 		assert_cmpstr(row_strip(window, 0, middle - 8, middle + 8), CompareOperator.EQ, unlit);
 
 		window.destroy();
@@ -839,6 +850,7 @@ private static void test_click_on_the_shown_commit_hides_the_pane()
 		click_row(window, 1);
 		assert_false(details_shown(window));
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "first");
 
 		click_row(window, 0, 2);
 		click_row(window, 1);
@@ -2118,6 +2130,37 @@ private static void test_the_ref_menu_goes_to_where_two_refs_split()
 		choose_split(window, "feature/scan", "master");
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "base two");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_row_under_the_pointer_is_tinted_before_it_is_picked()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		point_at(0, 0);
+		settle(300);
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "");
+
+		point_at_row(window, 0);
+		assert_cmpstr(lit_rows(window), CompareOperator.EQ, "second");
+
+		var tinted = row_strip(window, 0, 0, 40);
+
+		click_row(window, 0);
+		assert_cmpstr(row_strip(window, 0, 0, 40), CompareOperator.NE, tinted);
 
 		window.destroy();
 		repo.remove();

@@ -497,7 +497,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				d_find_with_pane = false;
 			}
 
-			light_selection(d_paned.details_visible);
+			if (d_paned.details_visible)
+			{
+				light_selection(true);
+			}
+
 			show_details();
 			fill_find_bar(false);
 		});

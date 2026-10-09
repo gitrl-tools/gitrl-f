@@ -59,6 +59,11 @@ public static void hold_widget(Gtk.Widget widget)
 	xdotool({"mousemove", x.to_string(), y.to_string(), "mousedown", "1"});
 }
 
+public static void point_at(int x, int y)
+{
+	xdotool({"mousemove", x.to_string(), y.to_string()});
+}
+
 public static void press_key(string name)
 {
 	xdotool({"key", name});
