@@ -216,8 +216,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
 	Test.add_func("/gitrlf/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitrlf/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
-	Test.add_func("/gitrlf/ui/history-activity/double-click-on-a-one-file-commit-fills-the-window", test_double_click_on_a_one_file_commit_fills_the_window);
+	Test.add_func("/gitrlf/ui/history-activity/double-click-on-a-one-file-commit-keeps-the-refs-and-the-list", test_double_click_on_a_one_file_commit_keeps_the_refs_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/double-click-shows-and-hides-the-pane", test_double_click_shows_and_hides_the_pane);
+	Test.add_func("/gitrlf/ui/history-activity/enter-on-a-one-file-commit-fills-the-window", test_enter_on_a_one_file_commit_fills_the_window);
 	Test.add_func("/gitrlf/ui/history-activity/enter-shows-the-pane-at-the-middle-and-hides-it", test_enter_shows_the_pane_at_the_middle_and_hides_it);
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-then-the-search-bar", test_escape_closes_the_pane_then_the_search_bar);
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
@@ -1048,7 +1049,7 @@ private static void test_detached_head_label_comes_first()
 	}
 }
 
-private static void test_double_click_on_a_one_file_commit_fills_the_window()
+private static void test_double_click_on_a_one_file_commit_keeps_the_refs_and_the_list()
 {
 	try
 	{
@@ -1079,7 +1080,8 @@ private static void test_double_click_on_a_one_file_commit_fills_the_window()
 		click_row(window, 0, 2);
 		settle(300);
 
-		assert_true(only_details_shown(window));
+		assert_true(details_shown(window));
+		assert_false(only_details_shown(window));
 
 		window.destroy();
 		repo.remove();
@@ -1113,6 +1115,33 @@ private static void test_double_click_shows_and_hides_the_pane()
 		click_row(window, 1, 2);
 		assert_true(details_shown(window));
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "first");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_enter_on_a_one_file_commit_fills_the_window()
+{
+	try
+	{
+		var repo = two_files();
+		repo.commit("one file", "b", "more");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+
+		click_row(window, 0);
+		view.grab_focus();
+		Gtk.test_widget_send_key(view, Gdk.Key.Return, 0);
+		settle(300);
+
+		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one file");
+		assert_true(only_details_shown(window));
 
 		window.destroy();
 		repo.remove();

@@ -453,7 +453,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 			else if (presses == 2)
 			{
-				set_details(!d_press_on_shown);
+				d_paned.details_visible = !d_press_on_shown;
 			}
 		});
 
