@@ -63,6 +63,33 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.8.2" date="2026-10-09">
+      <description>
+        <ul>
+          <li>
+            A click on the commit that the details show hides the details. A
+            click on a different commit selects it, and the details follow it.
+          </li>
+          <li>
+            On a commit that changes one file, a double-click shows the diff
+            below the refs and the list, as on other commits. Enter continues
+            to fill the window with the diff.
+          </li>
+          <li>
+            When the details close, the selected row stays lit.
+          </li>
+          <li>
+            A new search in the find bar of the diff starts at the top of the
+            pane. It goes to the first match at or below that point, in an
+            open file. Before, it went to the first match of the commit.
+          </li>
+          <li>
+            The labels of the staged and unstaged changes start at the same
+            position as the branch labels.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.1" date="2026-10-08">
       <description>
         <ul>

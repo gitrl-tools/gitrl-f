@@ -1,12 +1,16 @@
-gitrl-f (0.8.1-1) noble; urgency=medium
+gitrl-f (0.8.2-1) noble; urgency=medium
 
-  * A double-click on a commit shows or hides its details and its diff, as
-    Enter does. A single click only selects the commit. While the details
-    show, they follow the selected commit.
-  * On a commit that changes one file, a double-click fills the window with
-    the diff, as Enter does.
-  * The project moved to the gitrl-tools organisation on GitHub. The About
-    window, the package and the AppStream data link to the new address.
+  * A click on the commit that the details show hides the details. A click
+    on a different commit selects it, and the details follow it.
+  * On a commit that changes one file, a double-click shows the diff below
+    the refs and the list, as on other commits. Enter continues to fill the
+    window with the diff.
+  * When the details close, the selected row stays lit.
+  * A new search in the find bar of the diff starts at the top of the pane.
+    It goes to the first match at or below that point, in an open file.
+    Before, it went to the first match of the commit.
+  * The labels of the staged and unstaged changes start at the same
+    position as the branch labels.
 
- -- alexandros filotheou <alexandros.filotheou@gmail.com>  Thu, 08 Oct 2026 11:40:53 +0200
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 09 Oct 2026 09:31:41 +0200
 
