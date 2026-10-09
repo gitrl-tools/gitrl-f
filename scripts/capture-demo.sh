@@ -175,7 +175,7 @@ encode() {
 			filled=0
 		fi
 
-		convert "$frame" -fill "#3a8f94" -draw "rectangle 0,776 $filled,780" \
+		convert "$frame" -fill "#5a82b3" -draw "rectangle 0,776 $filled,780" \
 		        "$work/marked/$(basename "$frame")"
 
 		index=$((index + 1))
