@@ -36,6 +36,11 @@ public static void click_at(int x, int y, int count, int button = 1)
 	xdotool({"mousemove", x.to_string(), y.to_string(), "click", "--repeat", count.to_string(), "--delay", "80", button.to_string()});
 }
 
+public static void click_holding(int x, int y, string key)
+{
+	xdotool({"keydown", key, "mousemove", x.to_string(), y.to_string(), "click", "1", "keyup", key});
+}
+
 public static void click_widget(Gtk.Widget widget, int button = 1)
 {
 	int x;

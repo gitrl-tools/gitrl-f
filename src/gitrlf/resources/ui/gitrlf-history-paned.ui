@@ -259,6 +259,11 @@
                                 <property name="fixed-height-mode">True</property>
                                 <property name="headers-visible">False</property>
                                 <property name="enable-search">False</property>
+                                <child internal-child="selection">
+                                  <object class="GtkTreeSelection">
+                                    <property name="mode">multiple</property>
+                                  </object>
+                                </child>
                                 <child>
                                   <object class="GtkTreeViewColumn" id="d_column_subject">
                                     <property name="title" translatable="yes">Subject</property>

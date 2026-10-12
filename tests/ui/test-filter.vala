@@ -329,7 +329,7 @@ private static void select_subject(Gitrlf.Window window, string subject)
 	{
 		if (rows[i].get_subject() == subject)
 		{
-			window.history.paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.from_indices(i));
+			select_row(window, i);
 		}
 	}
 

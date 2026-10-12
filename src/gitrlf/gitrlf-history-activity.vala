@@ -33,6 +33,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.CheckButton[] d_choice_boxes;
 	private Gtk.RadioButton[] d_choice_buttons;
 	private bool d_choosing;
+	private Ggit.Diff? d_combined;
+	private string? d_combined_key;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
@@ -169,15 +171,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		owned get
 		{
-			Gtk.TreeModel model;
-			Gtk.TreeIter iter;
+			var picked = picks();
 
-			if (!d_paned.commit_list_view.get_selection().get_selected(out model, out iter))
-			{
-				return null;
-			}
-
-			return d_model.commit_from_iter(iter);
+			return picked.length == 1 ? picked[0] : null;
 		}
 	}
 
@@ -434,7 +430,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			if (presses == 1)
 			{
-				d_press_on_shown = d_paned.details_visible && path != null && d_paned.commit_list_view.get_selection().path_is_selected(path);
+				var selection = d_paned.commit_list_view.get_selection();
+
+				d_press_on_shown = d_paned.details_visible && path != null
+				                   && selection.count_selected_rows() == 1
+				                   && selection.path_is_selected(path)
+				                   && !picking();
 			}
 		});
 		d_press.released.connect((presses) => {
@@ -559,8 +560,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		interface_settings.bind("use-gravatar", d_diff, "use-gravatar", SettingsBindFlags.GET | SettingsBindFlags.SET);
 		interface_settings.bind("enable-diff-highlighting", d_diff, "highlight", SettingsBindFlags.GET | SettingsBindFlags.SET);
 
+		d_diff.options_changed.connect(() => {
+			d_combined_key = null;
+
+			if (d_diff.diff == d_combined && d_diff.get_mapped())
+			{
+				show_details();
+			}
+		});
+
 		d_paned.commit_list_view.get_selection().changed.connect(() => {
-			if (selected != null)
+			if (picks().length > 0)
 			{
 				d_kept = null;
 				d_paned.changes.unselect_all();
@@ -1142,6 +1152,25 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return parts.length == 2 ? _("%s and %s").printf(parts[0], parts[1]) : parts[0];
+	}
+
+	private string[]? combined_paths(Gitg.Commit[] picked)
+	{
+		var paths = new Gee.TreeSet<string>();
+
+		foreach (var pick in picked)
+		{
+			var shown = shown_paths(pick.get_id());
+
+			if (shown == null)
+			{
+				return null;
+			}
+
+			paths.add_all_array(shown);
+		}
+
+		return paths.to_array();
 	}
 
 	private void compare_in_tool(Ggit.DiffDelta delta)
@@ -1897,6 +1926,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				item.show();
 				menu.add(item);
 
+				if (d_diff.diff == d_combined)
+				{
+					return;
+				}
+
 				var compare = new Gtk.MenuItem.with_label(
 					_("Open diff in difftool"));
 
@@ -2115,6 +2149,32 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var typed = d_typed[SearchChoice.MESSAGES].strip();
 
 		return typed != d_query.text || (typed != "" && (d_cases[SearchChoice.MESSAGES] != d_query.match_case || d_regexes[SearchChoice.MESSAGES] != d_query.regex));
+	}
+
+	private bool picking()
+	{
+		var view = d_paned.commit_list_view;
+		var masks = view.get_modifier_mask(Gdk.ModifierIntent.MODIFY_SELECTION);
+		Gdk.ModifierType state;
+
+		masks |= view.get_modifier_mask(Gdk.ModifierIntent.EXTEND_SELECTION);
+
+		Gtk.get_current_event_state(out state);
+
+		return (state & masks) != 0;
+	}
+
+	public Gitg.Commit[] picks()
+	{
+		var commits = new Gitg.Commit[0];
+		var selection = d_paned.commit_list_view.get_selection();
+
+		foreach (var path in selection.get_selected_rows(null))
+		{
+			commits += d_model.get_row(path.get_indices()[0]);
+		}
+
+		return commits;
 	}
 
 	private void queue_details()
@@ -2537,6 +2597,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_hold = -1;
+		d_paned.commit_list_view.get_selection().unselect_all();
 		d_paned.commit_list_view.get_selection().select_path(path);
 		d_paned.commit_list_view.scroll_to_cell(path, null, false, 0, 0);
 		light_selection(true);
@@ -2647,6 +2708,47 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_search_entry.tooltip_text = tooltips[d_choice];
 	}
 
+	private void show_combined(Gitg.Commit[] picked)
+	{
+		if (!d_paned.details_visible)
+		{
+			return;
+		}
+
+		var parents = picked[picked.length - 1].get_parents();
+		var before = parents.size > 0 ? parents.get(0) : null;
+		var old_tree = before != null ? before.get_tree() : null;
+		var newest = picked[0];
+		var key = (before != null ? before.get_id().to_string() : "")
+		          + newest.get_id().to_string();
+
+		if (d_diff.diff != d_combined || key != d_combined_key)
+		{
+			if (d_paths.length > 0)
+			{
+				d_diff.options.pathspec = combined_paths(picked);
+			}
+
+			try
+			{
+				d_combined = new Ggit.Diff.tree_to_tree(d_repository, old_tree,
+				                                        newest.get_tree(),
+				                                        d_diff.options);
+				d_combined.find_similar(null);
+			}
+			catch (Error e)
+			{
+				return;
+			}
+
+			d_combined_key = key;
+			d_diff.new_is_workdir = false;
+			d_diff.diff = d_combined;
+		}
+
+		show_picks(picked);
+	}
+
 	private void show_details()
 	{
 		var row = d_paned.changes.get_selected_row();
@@ -2664,6 +2766,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
+		var picked = picks();
+
+		if (picked.length > 1)
+		{
+			show_combined(picked);
+			return;
+		}
+
 		var commit = selected;
 
 		if (commit == null && d_kept != null)
@@ -2674,6 +2784,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit == null || d_history == null)
 		{
 			d_diff.commit = null;
+
+			if (d_diff.diff == d_combined)
+			{
+				d_diff.diff = null;
+			}
+
 			return;
 		}
 
@@ -2684,16 +2800,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_paths.length > 0)
 		{
-			var id = commit.get_id();
-
-			if (d_history.index_of(id) < 0)
-			{
-				d_diff.options.pathspec = null;
-			}
-			else
-			{
-				d_diff.options.pathspec = d_names != null && d_names.has_key(id) ? d_names[id].to_array() : pathspec();
-			}
+			d_diff.options.pathspec = shown_paths(commit.get_id());
 		}
 
 		d_diff.new_is_workdir = false;
@@ -2857,6 +2964,23 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.path_bar.show();
 	}
 
+	private void show_picks(Gitg.Commit[] picked)
+	{
+		var lines = new string[] {
+			ngettext("%d commit", "%d commits", picked.length)
+				.printf(picked.length)
+		};
+
+		foreach (var pick in picked)
+		{
+			lines += "  %s  %s".printf(pick.get_id().to_string().substring(0, 7),
+			                           pick.get_subject());
+		}
+
+		d_diff.message_view.buffer.text = string.joinv("\n", lines);
+		d_diff.message_view.show();
+	}
+
 	private void show_query(SearchQuery query)
 	{
 		d_query = query;
@@ -2875,7 +2999,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_ticks(bool from_top = false)
 	{
-		var kept = selected != null ? selected.get_id() : d_kept;
+		var picked = picks();
+		var kept = picked.length > 0 ? picked[0].get_id() : d_kept;
 		var before = this.rows();
 		var history = shown_history();
 		var pending = d_hold >= 0;
@@ -2956,7 +3081,19 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (d_model.size > 0 && d_kept == null
 		    && d_paned.changes.get_selected_row() == null)
 		{
-			d_paned.commit_list_view.get_selection().select_path(path != null ? path : new Gtk.TreePath.first());
+			var selection = d_paned.commit_list_view.get_selection();
+
+			selection.select_path(path ?? new Gtk.TreePath.first());
+
+			foreach (var pick in picked)
+			{
+				var also = d_model.path_from_commit(pick.get_id());
+
+				if (also != null)
+				{
+					selection.select_path(also);
+				}
+			}
 		}
 
 		keep_top(before, scroll, height);
@@ -3005,6 +3142,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return d_narrowed;
+	}
+
+	private string[]? shown_paths(Ggit.OId id)
+	{
+		if (d_history.index_of(id) < 0)
+		{
+			return null;
+		}
+
+		return d_names != null && d_names.has_key(id) ? d_names[id].to_array()
+		                                              : pathspec();
 	}
 
 	public void step(int direction)

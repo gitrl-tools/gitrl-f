@@ -315,10 +315,9 @@ private static void test_selection_and_scroll_are_kept()
 		}
 
 		var window = opened(repo, {"refs/heads/master"});
-		var view = window.history.paned.commit_list_view;
 		var adjustment = window.history.paned.scrolled_window_commit_list.vadjustment;
 
-		view.get_selection().select_path(new Gtk.TreePath.from_indices(40));
+		select_row(window, 40);
 		adjustment.value = adjustment.upper / 2;
 		settle(50);
 

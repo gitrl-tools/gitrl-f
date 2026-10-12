@@ -383,6 +383,14 @@ public static void scroll_to_row(Gitrlf.Window window, string subject, int hidde
 	error("no row %s", subject);
 }
 
+public static void select_row(Gitrlf.Window window, int row)
+{
+	var selection = window.history.paned.commit_list_view.get_selection();
+
+	selection.unselect_all();
+	selection.select_path(new Gtk.TreePath.from_indices(row));
+}
+
 public static string selected_label_text(Gtk.Widget root)
 {
 	foreach (var widget in find_all(root, typeof(Gtk.Label)))

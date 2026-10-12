@@ -85,6 +85,16 @@ private static void click_row(Gitrlf.Window window, int row, int count = 1)
 	settle(300);
 }
 
+private static void click_row_holding(Gitrlf.Window window, int row, string key)
+{
+	int x;
+	int y;
+
+	row_centre(window, row, out x, out y);
+	click_holding(x, y, key);
+	settle(300);
+}
+
 private static Gtk.Widget close_button(Gtk.SearchBar bar, Gtk.Widget field)
 {
 	var row = field.get_ancestor(typeof(Gtk.ScrolledWindow));
@@ -210,10 +220,12 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
+	Test.add_func("/gitrlf/ui/history-activity/click-on-one-of-several-picks-shows-it-alone", test_click_on_one_of_several_picks_shows_it_alone);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-the-shown-commit-hides-the-pane", test_click_on_the_shown_commit_hides_the_pane);
 	Test.add_func("/gitrlf/ui/history-activity/click-selects-and-keeps-the-pane-as-it-is", test_click_selects_and_keeps_the_pane_as_it_is);
 	Test.add_func("/gitrlf/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
+	Test.add_func("/gitrlf/ui/history-activity/ctrl-and-shift-pick-several-rows", test_ctrl_and_shift_pick_several_rows);
 	Test.add_func("/gitrlf/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitrlf/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
 	Test.add_func("/gitrlf/ui/history-activity/double-click-on-a-one-file-commit-keeps-the-refs-and-the-list", test_double_click_on_a_one_file_commit_keeps_the_refs_and_the_list);
@@ -228,6 +240,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
+	Test.add_func("/gitrlf/ui/history-activity/picks-are-kept-across-a-tick", test_picks_are_kept_across_a_tick);
 	Test.add_func("/gitrlf/ui/history-activity/refs-filter-waits-for-enter", test_refs_filter_waits_for_enter);
 	Test.add_func("/gitrlf/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
 	Test.add_func("/gitrlf/ui/history-activity/right-click-on-a-label-copies-its-name", test_right_click_on_a_label_copies_its_name);
@@ -302,6 +315,18 @@ private static Gee.List<string> painted(Gitrlf.Window window, out ulong handler)
 	});
 
 	return tops;
+}
+
+private static string picked(Gitrlf.Window window)
+{
+	var names = new string[0];
+
+	foreach (var commit in window.history.picks())
+	{
+		names += commit.get_subject();
+	}
+
+	return string.joinv(",", names);
 }
 
 private static void point_at_row(Gitrlf.Window window, int row)
@@ -833,6 +858,38 @@ private static void test_click_on_expand_all_fills_the_window()
 	}
 }
 
+private static void test_click_on_one_of_several_picks_shows_it_alone()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+		commit_two_files(repo, "third");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var pause = Gtk.Settings.get_default().gtk_double_click_time;
+
+		click_row(window, 0, 2);
+		click_row_holding(window, 1, "shift");
+		assert_cmpstr(picked(window), CompareOperator.EQ, "third,second");
+
+		settle(pause);
+		click_row(window, 1);
+
+		assert_true(details_shown(window));
+		assert_cmpstr(picked(window), CompareOperator.EQ, "second");
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "second");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_click_on_the_shown_commit_hides_the_pane()
 {
 	try
@@ -986,6 +1043,45 @@ private static void test_columns_are_subject_hash_author_and_date()
 
 		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Hash,Author,Date");
 		assert_false(window.history.paned.commit_list_view.headers_visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_ctrl_and_shift_pick_several_rows()
+{
+	try
+	{
+		var repo = Repo.create();
+		commit_two_files(repo, "first");
+		commit_two_files(repo, "second");
+		commit_two_files(repo, "third");
+		commit_two_files(repo, "fourth");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, 0, 2);
+		click_row_holding(window, 2, "shift");
+
+		assert_true(details_shown(window));
+		assert_cmpstr(picked(window), CompareOperator.EQ, "fourth,third,second");
+		assert_null(window.history.diff_view.commit);
+
+		click_row_holding(window, 1, "ctrl");
+
+		assert_true(details_shown(window));
+		assert_cmpstr(picked(window), CompareOperator.EQ, "fourth,second");
+
+		click_row_holding(window, 2, "ctrl");
+
+		assert_true(details_shown(window));
+		assert_cmpstr(picked(window), CompareOperator.EQ, "fourth");
+		assert_cmpstr(window.history.diff_view.commit.get_subject(), CompareOperator.EQ, "fourth");
 
 		window.destroy();
 		repo.remove();
@@ -1454,6 +1550,38 @@ private static void test_path_bar_and_path_notice()
 
 		assert_cmpstr(window.history.list_page, CompareOperator.EQ, "notice");
 		assert_cmpstr(window.history.notice_text, CompareOperator.EQ, "No ticked ref reaches a commit that changes a.");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_picks_are_kept_across_a_tick()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.branched();
+
+		var window = opened(repo, {"refs/heads/master"});
+		var activity = window.history;
+		var selection = activity.paned.commit_list_view.get_selection();
+
+		selection.unselect_all();
+		selection.select_path(new Gtk.TreePath.from_indices(row_of(window, "master four")));
+		selection.select_path(new Gtk.TreePath.from_indices(row_of(window, "fix one")));
+		settle(300);
+
+		var ticks = activity.ticks;
+		ticks.add("refs/heads/feature/scan");
+		activity.set_ticks(ticks);
+		settle(300);
+
+		assert_cmpstr(picked(window), CompareOperator.EQ, "master four,fix one");
 
 		window.destroy();
 		repo.remove();

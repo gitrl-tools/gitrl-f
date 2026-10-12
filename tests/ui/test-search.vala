@@ -622,7 +622,6 @@ private static void test_marks_show_in_the_subject_and_body_of_the_pane()
 		var window = opened(repo);
 		var subject = window.history.diff_view.subject_label;
 		var text = window.history.diff_view.message_view.buffer;
-		var list = window.history.paned.commit_list_view;
 
 		window.history.paned.details_visible = true;
 		settle(300);
@@ -635,7 +634,7 @@ private static void test_marks_show_in_the_subject_and_body_of_the_pane()
 		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "");
 		assert_cmpstr(text_marks(text), CompareOperator.EQ, "fix|fix");
 
-		list.get_selection().select_path(new Gtk.TreePath.from_indices(1));
+		select_row(window, 1);
 		settle(400);
 
 		assert_cmpstr(label_marks(subject), CompareOperator.EQ, "Fix");

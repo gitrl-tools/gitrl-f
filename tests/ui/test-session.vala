@@ -63,7 +63,7 @@ private static void every_row(Gitrlf.Window window)
 
 	for (var i = 0; i < rows; i++)
 	{
-		window.history.paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.from_indices(i));
+		select_row(window, i);
 		settle(120);
 	}
 }
@@ -212,7 +212,7 @@ private static void stage_four(File location, Repo repo)
 	{
 		if (rows[i].get_subject() == "fix two")
 		{
-			history.paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.from_indices(i));
+			select_row(window, i);
 			right_click_row(window, i);
 			activate("Merged into");
 			right_click_row(window, i);
@@ -226,7 +226,7 @@ private static void stage_four(File location, Repo repo)
 	{
 		if (rows[i].get_subject() == "fix two")
 		{
-			history.paned.commit_list_view.get_selection().select_path(new Gtk.TreePath.from_indices(i));
+			select_row(window, i);
 		}
 	}
 
