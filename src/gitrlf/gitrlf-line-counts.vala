@@ -76,7 +76,7 @@ public class LineCounts : Object
 				removed += int.parse(fields[1]);
 			}
 
-			counts[id] = "+%d/-%d".printf(added, removed);
+			counts[id] = text_of(added, removed);
 		}
 
 		return counts;
@@ -123,6 +123,11 @@ public class LineCounts : Object
 		}
 
 		return d_counts[id];
+	}
+
+	public static string text_of(int added, int removed)
+	{
+		return "+%d/-%d".printf(added, removed);
 	}
 }
 

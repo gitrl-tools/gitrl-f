@@ -24,6 +24,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 {
 	private delegate void Finish() throws Error;
 
+	private const int LINE_WIDEST = 9999;
+
 	private History? d_all;
 	private Ggit.OId[] d_beyond;
 	private Gtk.Button d_beyond_button;
@@ -292,6 +294,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			d_paned.column_lines.set_cell_data_func(cell, lines_data_func);
 		}
+
+		fit_lines_column();
+
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);
 
@@ -1555,6 +1560,37 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_paned.unstaged_row.height_request = area.height;
 			d_paned.staged_row.height_request = area.height;
 		}
+	}
+
+	private void fit_lines_column()
+	{
+		var column = d_paned.column_lines;
+		var view = d_paned.commit_list_view;
+		var widest = LineCounts.text_of(LINE_WIDEST, LINE_WIDEST).split("/");
+		var index = 0;
+		int separator;
+		int focus;
+		int digit;
+
+		view.style_get("horizontal-separator", out separator,
+		               "focus-line-width", out focus);
+		view.create_pango_layout("0").get_pixel_size(out digit, null);
+
+		var total = separator + 2 * digit;
+
+		foreach (var renderer in column.get_cells())
+		{
+			var cell = (Gtk.CellRendererText)renderer;
+			int least;
+			int width;
+
+			cell.text = widest[index++];
+			cell.get_preferred_width(view, out least, out width);
+			cell.width = width;
+			total += width + 2 * focus;
+		}
+
+		column.fixed_width = total;
 	}
 
 	private bool follows()

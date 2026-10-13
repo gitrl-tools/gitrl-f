@@ -125,6 +125,21 @@ private static void commit_two_files(Repo repo, string subject) throws Error
 	repo.commit_bytes(subject, "b", (subject + "\n").data);
 }
 
+private static void count_rows(Gtk.TreeView view)
+{
+	Gtk.TreeIter iter;
+
+	assert_true(view.model.get_iter_first(out iter));
+
+	do
+	{
+		lines_text(view, iter);
+	}
+	while (view.model.iter_next(ref iter));
+
+	settle(300);
+}
+
 private static Repo counts_repo() throws Error
 {
 	var repo = Repo.create();
@@ -136,7 +151,7 @@ private static Repo counts_repo() throws Error
 		twelve.append("%d\n".printf(i));
 	}
 
-	for (var i = 0; i < 12345; i++)
+	for (var i = 0; i < 9999; i++)
 	{
 		big.append("line\n");
 	}
@@ -289,6 +304,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-holds-four-digits-a-side", test_lines_column_holds_four_digits_a_side);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-coloured-on-the-row-selected-at-the-start", test_lines_column_is_coloured_on_the_row_selected_at_the_start);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-plain-on-a-picked-row", test_lines_column_is_plain_on_a_picked_row);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-leaves-a-zero-blank", test_lines_column_leaves_a_zero_blank);
@@ -1578,6 +1594,64 @@ private static void test_left_pane_is_never_cut_off()
 	}
 }
 
+private static void test_lines_column_holds_four_digits_a_side()
+{
+	try
+	{
+		var repo = Repo.create();
+		var before = new StringBuilder();
+		var after = new StringBuilder();
+
+		for (var i = 0; i < 9999; i++)
+		{
+			before.append("a %d\n".printf(i));
+			after.append("b %d\n".printf(i));
+		}
+
+		repo.commit_bytes("before", "file", before.str.data);
+		repo.commit_bytes("after", "file", after.str.data);
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var column = view.get_column(2);
+		var cells = column.get_cells();
+		var width = column.get_width();
+		Gdk.Rectangle row;
+		Gtk.TreeIter iter;
+		int left;
+		int right;
+		int start;
+		int end;
+		int digit;
+
+		assert_true(view.model.get_iter_first(out iter));
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ,
+		              "+9999,-9999");
+
+		settle(300);
+		view.get_cell_area(view.model.get_path(iter), column, out row);
+		lines_text(view, iter);
+		text_span(view, iter, (Gtk.CellRendererText)cells.first().data,
+		          out left, out right);
+		text_span(view, iter, (Gtk.CellRendererText)cells.last().data,
+		          out start, out end);
+		view.create_pango_layout("0").get_pixel_size(out digit, null);
+
+		assert_cmpint(column.get_width(), CompareOperator.EQ, width);
+		assert_cmpint(left - row.x, CompareOperator.GE, digit);
+		assert_cmpint(left - row.x, CompareOperator.LE, digit + 6);
+		assert_cmpint(row.x + row.width - end, CompareOperator.GE, digit);
+		assert_cmpint(row.x + row.width - end, CompareOperator.LE, digit + 6);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_lines_column_is_coloured_on_the_row_selected_at_the_start()
 {
 	try
@@ -1645,7 +1719,7 @@ private static void test_lines_column_leaves_a_zero_blank()
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
-		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+12345,");
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+9999,");
 
 		window.destroy();
 		repo.remove();
@@ -1670,6 +1744,7 @@ private static void test_lines_column_sets_the_two_numbers_either_side_of_one_li
 		var starts = new Gee.HashSet<int>();
 		Gtk.TreeIter iter;
 
+		count_rows(view);
 		assert_true(view.model.get_iter_first(out iter));
 
 		do
@@ -3150,6 +3225,7 @@ private static string tint(Gtk.TreeView view, Gtk.TreeIter iter,
 
 	style.lookup_color("chameleon3", out green_tint);
 	style.lookup_color("scarletred3", out red_tint);
+	settle(100);
 	view.scroll_to_cell(view.model.get_path(iter), column, false, 0, 0);
 	settle(100);
 	view.draw(new Cairo.Context(surface));
