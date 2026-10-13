@@ -34,6 +34,7 @@ unit_tests = [
   'search-words',
   'settings',
   'smoke',
+  'squash',
   'text-match',
   'ticks',
   'word-diff',

@@ -22,12 +22,38 @@ namespace Gitrlf
 
 public class Squash : Object
 {
+	public const string PREFIX = "gitrlf-store-";
+
 	private Gitg.Repository d_repository;
 	private Gitg.Repository? d_store;
 
 	public Squash(Gitg.Repository repository)
 	{
 		d_repository = repository;
+	}
+
+	private static bool alive(int pid)
+	{
+		return Posix.kill(pid, 0) == 0 || Posix.errno == Posix.EPERM;
+	}
+
+	private static void clear() throws Error
+	{
+		var top = File.new_for_path(Environment.get_tmp_dir());
+		var children = top.enumerate_children(
+			"standard::name", FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
+		FileInfo? info;
+
+		while ((info = children.next_file()) != null)
+		{
+			var name = info.get_name();
+
+			if (name.has_prefix(PREFIX)
+			    && !alive(int.parse(name.substring(PREFIX.length))))
+			{
+				discard(top.get_child(name));
+			}
+		}
 	}
 
 	public Ggit.Diff diff(Gitg.Commit[] picked,
@@ -64,11 +90,25 @@ public class Squash : Object
 		return diff;
 	}
 
+	private static void discard(File location)
+	{
+		try
+		{
+			DiffTool.remove(location);
+		}
+		catch (Error e)
+		{
+		}
+	}
+
 	public Gitg.Repository open() throws Error
 	{
 		if (d_store == null)
 		{
-			var location = File.new_for_path(DirUtils.make_tmp("gitrlf-XXXXXX"));
+			clear();
+
+			var location = File.new_for_path(DirUtils.make_tmp(
+				"%s%d-XXXXXX".printf(PREFIX, Posix.getpid())));
 			var objects = History.git(d_repository.get_location(), {
 				"rev-parse", "--path-format=absolute", "--git-path", "objects"
 			}, null)[0];
@@ -95,14 +135,7 @@ public class Squash : Object
 			return;
 		}
 
-		try
-		{
-			DiffTool.remove(d_store.get_location());
-		}
-		catch (Error e)
-		{
-		}
-
+		discard(d_store.get_location());
 		d_store = null;
 	}
 
