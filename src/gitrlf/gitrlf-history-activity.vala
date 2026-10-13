@@ -271,8 +271,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
-		d_paned.column_lines.set_cell_data_func(d_paned.renderer_lines,
-		                                        lines_data_func);
+		foreach (var cell in d_paned.column_lines.get_cells())
+		{
+			d_paned.column_lines.set_cell_data_func(cell, lines_data_func);
+		}
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);
 
@@ -1872,8 +1874,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit != null)
 		{
 			var text = d_line_counts.text(commit.get_id());
+			string? piece = null;
 
-			((Gtk.CellRendererText)cell).text = text;
+			if (text != null)
+			{
+				var pieces = Regex.split_simple("(/)", text);
+
+				piece = pieces[layout.get_cells().index(cell)];
+			}
+
+			((Gtk.CellRendererText)cell).text = piece;
 			embolden(cell, commit);
 		}
 	}

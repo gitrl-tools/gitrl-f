@@ -256,7 +256,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
-	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-centred", test_lines_column_is_centred);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-puts-every-slash-at-the-centre", test_lines_column_puts_every_slash_at_the_centre);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
@@ -309,19 +309,27 @@ private static Gtk.Border line(Gtk.Widget close)
 	return box.get_style_context().get_border(box.get_state_flags());
 }
 
-private static Gtk.CellRendererText lines_cell(Gtk.TreeView view,
-                                               Gtk.TreeIter iter)
+private static string lines_text(Gtk.TreeView view, Gtk.TreeIter iter)
 {
 	var column = view.get_column(2);
-	var cell = (Gtk.CellRendererText)column.get_cells().data;
+	var cells = column.get_cells();
+	var first = (Gtk.CellRendererText)cells.data;
+	var text = "";
 
-	for (var i = 0; i < 300 && cell.text == null; i++)
+	column.cell_set_cell_data(view.model, iter, false, false);
+
+	for (var i = 0; i < 300 && first.text == null; i++)
 	{
 		settle(10);
 		column.cell_set_cell_data(view.model, iter, false, false);
 	}
 
-	return cell;
+	foreach (var cell in cells)
+	{
+		text += ((Gtk.CellRendererText)cell).text;
+	}
+
+	return text;
 }
 
 private static bool only_details_shown(Gitrlf.Window window)
@@ -501,6 +509,48 @@ private static Repo side_branch() throws Error
 	repo.checkout("master");
 
 	return repo;
+}
+
+private static int slash_offset(Gtk.TreeView view, Gtk.TreeIter iter,
+                                out int cut)
+{
+	var column = view.get_column(2);
+	var area = column.get_area();
+	var context = area.create_context();
+	var offset = int.MAX;
+	Gdk.Rectangle row;
+
+	cut = 0;
+	view.get_cell_area(view.model.get_path(iter), column, out row);
+	lines_text(view, iter);
+
+	foreach (var renderer in column.get_cells())
+	{
+		var cell = (Gtk.CellRendererText)renderer;
+		var layout = view.create_pango_layout(cell.text);
+		var index = cell.text.index_of("/");
+		var room = area.get_cell_allocation(context, view, cell, row);
+		int width;
+
+		layout.get_pixel_size(out width, null);
+
+		if (width + 2 * (int)cell.xpad > room.width)
+		{
+			cut++;
+		}
+
+		if (index >= 0)
+		{
+			var text = cell.get_aligned_area(view, 0, room);
+			var slash = layout.index_to_pos(index);
+
+			offset = text.x + (int)cell.xpad
+			         + (slash.x + slash.width / 2) / Pango.SCALE
+			         - (row.x + row.width / 2);
+		}
+	}
+
+	return offset;
 }
 
 private static string subjects_of(Gitrlf.Window window)
@@ -1533,33 +1583,39 @@ private static void test_left_pane_is_never_cut_off()
 	}
 }
 
-private static void test_lines_column_is_centred()
+private static void test_lines_column_puts_every_slash_at_the_centre()
 {
 	try
 	{
 		var repo = Repo.create();
+		var big = new StringBuilder();
+
+		for (var i = 0; i < 12345; i++)
+		{
+			big.append("line\n");
+		}
 
 		repo.commit("first");
 		repo.commit_bytes("second", "file", "a\nb\n".data);
+		repo.commit_bytes("big", "big", big.str.data);
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ,
+		              "+12345/-0");
 
-		var cell = lines_cell(view, iter);
-		Gdk.Rectangle area;
+		do
+		{
+			int cut;
 
-		view.get_cell_area(view.model.get_path(iter), view.get_column(2),
-		                   out area);
-
-		var text = cell.get_aligned_area(view, 0, area);
-
-		var left = text.x - area.x;
-		var right = area.x + area.width - text.x - text.width;
-
-		assert_cmpint((left - right).abs(), CompareOperator.LE, 1);
+			assert_cmpint(slash_offset(view, iter, out cut).abs(),
+			              CompareOperator.LE, 1);
+			assert_cmpint(cut, CompareOperator.EQ, 0);
+		}
+		while (view.model.iter_next(ref iter));
 
 		window.destroy();
 		repo.remove();
@@ -1585,9 +1641,7 @@ private static void test_lines_column_shows_the_added_and_removed_lines()
 
 		assert_true(view.model.get_iter_first(out iter));
 
-		var cell = lines_cell(view, iter);
-
-		assert_cmpstr(cell.text, CompareOperator.EQ, "+2/-1");
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+2/-1");
 
 		window.destroy();
 		repo.remove();
