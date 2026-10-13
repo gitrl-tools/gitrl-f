@@ -303,7 +303,6 @@
                                     <child>
                                       <object class="GtkCellRendererText">
                                         <property name="xalign">1</property>
-                                        <property name="xpad">0</property>
                                         <property name="width">0</property>
                                       </object>
                                       <cell-packing>
@@ -312,13 +311,7 @@
                                     </child>
                                     <child>
                                       <object class="GtkCellRendererText">
-                                        <property name="xpad">0</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkCellRendererText">
                                         <property name="xalign">0</property>
-                                        <property name="xpad">0</property>
                                         <property name="width">0</property>
                                       </object>
                                       <cell-packing>

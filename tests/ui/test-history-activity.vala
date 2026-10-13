@@ -110,10 +110,43 @@ private static Gtk.Widget close_button(Gtk.SearchBar bar, Gtk.Widget field)
 	error("no close button");
 }
 
+private static bool close_to(uint8* pixel, Gdk.RGBA colour)
+{
+	var red = pixel[2] - colour.red * 255;
+	var green = pixel[1] - colour.green * 255;
+	var blue = pixel[0] - colour.blue * 255;
+
+	return red * red + green * green + blue * blue < 48 * 48;
+}
+
 private static void commit_two_files(Repo repo, string subject) throws Error
 {
 	FileUtils.set_contents(repo.path.get_child("c").get_path(), subject + "\n");
 	repo.commit_bytes(subject, "b", (subject + "\n").data);
+}
+
+private static Repo counts_repo() throws Error
+{
+	var repo = Repo.create();
+	var twelve = new StringBuilder();
+	var big = new StringBuilder();
+
+	for (var i = 0; i < 12; i++)
+	{
+		twelve.append("%d\n".printf(i));
+	}
+
+	for (var i = 0; i < 12345; i++)
+	{
+		big.append("line\n");
+	}
+
+	repo.commit_bytes("first", "file", twelve.str.data);
+	repo.commit_bytes("second", "file", "x\ny\n".data);
+	repo.commit_bytes("third", "file", "z\n".data);
+	repo.commit_bytes("big", "big", big.str.data);
+
+	return repo;
 }
 
 private static bool details_shown(Gitrlf.Window window)
@@ -256,7 +289,11 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
-	Test.add_func("/gitrlf/ui/history-activity/lines-column-puts-every-slash-at-the-centre", test_lines_column_puts_every_slash_at_the_centre);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-coloured-on-the-row-selected-at-the-start", test_lines_column_is_coloured_on_the_row_selected_at_the_start);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-plain-on-a-picked-row", test_lines_column_is_plain_on_a_picked_row);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-leaves-a-zero-blank", test_lines_column_leaves_a_zero_blank);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-sets-the-two-numbers-either-side-of-one-line", test_lines_column_sets_the_two_numbers_either_side_of_one_line);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-added-in-green-and-removed-in-red", test_lines_column_shows_added_in_green_and_removed_in_red);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
@@ -312,21 +349,21 @@ private static Gtk.Border line(Gtk.Widget close)
 private static string lines_text(Gtk.TreeView view, Gtk.TreeIter iter)
 {
 	var column = view.get_column(2);
-	var cells = column.get_cells();
-	var first = (Gtk.CellRendererText)cells.data;
 	var text = "";
 
-	column.cell_set_cell_data(view.model, iter, false, false);
-
-	for (var i = 0; i < 300 && first.text == null; i++)
+	for (var i = 0; i < 300 && text.replace(",", "") == ""; i++)
 	{
+		string[] pieces = {};
+
 		settle(10);
 		column.cell_set_cell_data(view.model, iter, false, false);
-	}
 
-	foreach (var cell in cells)
-	{
-		text += ((Gtk.CellRendererText)cell).text;
+		foreach (var cell in column.get_cells())
+		{
+			pieces += ((Gtk.CellRendererText)cell).text ?? "";
+		}
+
+		text = string.joinv(",", pieces);
 	}
 
 	return text;
@@ -509,48 +546,6 @@ private static Repo side_branch() throws Error
 	repo.checkout("master");
 
 	return repo;
-}
-
-private static int slash_offset(Gtk.TreeView view, Gtk.TreeIter iter,
-                                out int cut)
-{
-	var column = view.get_column(2);
-	var area = column.get_area();
-	var context = area.create_context();
-	var offset = int.MAX;
-	Gdk.Rectangle row;
-
-	cut = 0;
-	view.get_cell_area(view.model.get_path(iter), column, out row);
-	lines_text(view, iter);
-
-	foreach (var renderer in column.get_cells())
-	{
-		var cell = (Gtk.CellRendererText)renderer;
-		var layout = view.create_pango_layout(cell.text);
-		var index = cell.text.index_of("/");
-		var room = area.get_cell_allocation(context, view, cell, row);
-		int width;
-
-		layout.get_pixel_size(out width, null);
-
-		if (width + 2 * (int)cell.xpad > room.width)
-		{
-			cut++;
-		}
-
-		if (index >= 0)
-		{
-			var text = cell.get_aligned_area(view, 0, room);
-			var slash = layout.index_to_pos(index);
-
-			offset = text.x + (int)cell.xpad
-			         + (slash.x + slash.width / 2) / Pango.SCALE
-			         - (row.x + row.width / 2);
-		}
-	}
-
-	return offset;
 }
 
 private static string subjects_of(Gitrlf.Window window)
@@ -1583,39 +1578,151 @@ private static void test_left_pane_is_never_cut_off()
 	}
 }
 
-private static void test_lines_column_puts_every_slash_at_the_centre()
+private static void test_lines_column_is_coloured_on_the_row_selected_at_the_start()
 {
 	try
 	{
-		var repo = Repo.create();
-		var big = new StringBuilder();
+		var repo = counts_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var cells = view.get_column(2).get_cells();
+		Gtk.TreeIter iter;
 
-		for (var i = 0; i < 12345; i++)
-		{
-			big.append("line\n");
-		}
+		assert_true(view.model.get_iter_first(out iter));
+		assert_true(view.get_selection().iter_is_selected(iter));
 
-		repo.commit("first");
-		repo.commit_bytes("second", "file", "a\nb\n".data);
-		repo.commit_bytes("big", "big", big.str.data);
+		lines_text(view, iter);
 
+		assert_cmpstr(tint(view, iter, cells.first().data),
+		              CompareOperator.EQ, "green");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_is_plain_on_a_picked_row()
+{
+	try
+	{
+		var repo = counts_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var cells = view.get_column(2).get_cells();
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+		assert_true(view.model.iter_next(ref iter));
+
+		lines_text(view, iter);
+		click_row(window, 1);
+
+		assert_cmpstr(tint(view, iter, cells.first().data),
+		              CompareOperator.EQ, "green 0, red 0");
+		assert_cmpstr(tint(view, iter, cells.last().data),
+		              CompareOperator.EQ, "green 0, red 0");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_leaves_a_zero_blank()
+{
+	try
+	{
+		var repo = counts_repo();
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
-		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ,
-		              "+12345/-0");
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+12345,");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_sets_the_two_numbers_either_side_of_one_line()
+{
+	try
+	{
+		var repo = counts_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var cells = view.get_column(2).get_cells();
+		var added = (Gtk.CellRendererText)cells.first().data;
+		var removed = (Gtk.CellRendererText)cells.last().data;
+		var ends = new Gee.HashSet<int>();
+		var starts = new Gee.HashSet<int>();
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
 
 		do
 		{
-			int cut;
+			int left;
+			int right;
+			int start;
+			int end;
 
-			assert_cmpint(slash_offset(view, iter, out cut).abs(),
-			              CompareOperator.LE, 1);
-			assert_cmpint(cut, CompareOperator.EQ, 0);
+			lines_text(view, iter);
+			text_span(view, iter, added, out left, out right);
+			ends.add(right);
+
+			if (removed.text != null)
+			{
+				text_span(view, iter, removed, out start, out end);
+				starts.add(start);
+				assert_cmpint(start - right, CompareOperator.LE, 8);
+			}
 		}
 		while (view.model.iter_next(ref iter));
+
+		assert_cmpint(ends.size, CompareOperator.EQ, 1);
+		assert_cmpint(starts.size, CompareOperator.EQ, 1);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_shows_added_in_green_and_removed_in_red()
+{
+	try
+	{
+		var repo = counts_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var cells = view.get_column(2).get_cells();
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+		assert_true(view.model.iter_next(ref iter));
+
+		lines_text(view, iter);
+
+		assert_cmpstr(tint(view, iter, cells.first().data),
+		              CompareOperator.EQ, "green");
+		assert_cmpstr(tint(view, iter, cells.last().data),
+		              CompareOperator.EQ, "red");
 
 		window.destroy();
 		repo.remove();
@@ -1641,7 +1748,7 @@ private static void test_lines_column_shows_the_added_and_removed_lines()
 
 		assert_true(view.model.get_iter_first(out iter));
 
-		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+2/-1");
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+2,-1");
 
 		window.destroy();
 		repo.remove();
@@ -2994,9 +3101,94 @@ private static void test_window_with_nothing_ticked_shows_the_empty_notice()
 	}
 }
 
+private static void text_span(Gtk.TreeView view, Gtk.TreeIter iter,
+                               Gtk.CellRendererText cell, out int left,
+                               out int right)
+{
+	var column = view.get_column(2);
+	Gdk.Rectangle row;
+	int start;
+	int width;
+
+	view.get_cell_area(view.model.get_path(iter), column, out row);
+	column.cell_get_position(cell, out start, out width);
+
+	var room = Gdk.Rectangle() {
+		x = row.x + start,
+		y = row.y,
+		width = width,
+		height = row.height
+	};
+	var text = cell.get_aligned_area(view, 0, room);
+
+	left = text.x + (int)cell.xpad;
+	right = text.x + text.width - (int)cell.xpad;
+}
+
 private static File ticks_file(Repo repo)
 {
 	return repo.path.get_child(".git").get_child("git-tree-ticks");
+}
+
+private static string tint(Gtk.TreeView view, Gtk.TreeIter iter,
+                           Gtk.CellRenderer cell)
+{
+	var column = view.get_column(2);
+	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24,
+	                                     view.get_allocated_width(),
+	                                     view.get_allocated_height());
+	var style = view.get_style_context();
+	var green = 0;
+	var red = 0;
+	Gdk.RGBA green_tint;
+	Gdk.RGBA red_tint;
+	Gdk.Rectangle row;
+	int start;
+	int width;
+	int x;
+	int y;
+
+	style.lookup_color("chameleon3", out green_tint);
+	style.lookup_color("scarletred3", out red_tint);
+	view.scroll_to_cell(view.model.get_path(iter), column, false, 0, 0);
+	settle(100);
+	view.draw(new Cairo.Context(surface));
+	surface.flush();
+	view.get_cell_area(view.model.get_path(iter), column, out row);
+	column.cell_get_position(cell, out start, out width);
+	view.convert_bin_window_to_widget_coords(row.x + start, row.y, out x,
+	                                         out y);
+
+	var data = (uint8*)surface.get_data();
+
+	for (var j = y; j < y + row.height; j++)
+	{
+		for (var i = x; i < x + width; i++)
+		{
+			var pixel = data + j * surface.get_stride() + i * 4;
+
+			if (close_to(pixel, green_tint))
+			{
+				green++;
+			}
+			else if (close_to(pixel, red_tint))
+			{
+				red++;
+			}
+		}
+	}
+
+	if (green > 0 && red == 0)
+	{
+		return "green";
+	}
+
+	if (red > 0 && green == 0)
+	{
+		return "red";
+	}
+
+	return "green %d, red %d".printf(green, red);
 }
 
 private static Repo two_files() throws Error

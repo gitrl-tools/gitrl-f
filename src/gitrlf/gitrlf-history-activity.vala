@@ -62,6 +62,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private History? d_line_history;
 	private string? d_line_label;
 	private Cancellable? d_line_search;
+	private string[] d_line_tints;
 	private LineHistory? d_lines;
 	private Ggit.OId? d_lines_commit;
 	private string? d_lines_path;
@@ -271,6 +272,22 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
+
+		var style = d_paned.commit_list_view.get_style_context();
+
+		foreach (var name in new string[] { "chameleon3", "scarletred3" })
+		{
+			Gdk.RGBA tint;
+
+			style.lookup_color(name, out tint);
+
+			var red = (uint)Math.round(tint.red * 255);
+			var green = (uint)Math.round(tint.green * 255);
+			var blue = (uint)Math.round(tint.blue * 255);
+
+			d_line_tints += "#%02x%02x%02x".printf(red, green, blue);
+		}
+
 		foreach (var cell in d_paned.column_lines.get_cells())
 		{
 			d_paned.column_lines.set_cell_data_func(cell, lines_data_func);
@@ -1874,16 +1891,33 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (commit != null)
 		{
 			var text = d_line_counts.text(commit.get_id());
+			var index = layout.get_cells().index(cell);
+			var label = (Gtk.CellRendererText)cell;
+			var view = d_paned.commit_list_view;
+			var lit = view.get_selection().iter_is_selected(iter)
+			          && !view.get_style_context().has_class("unlit");
 			string? piece = null;
 
 			if (text != null)
 			{
-				var pieces = Regex.split_simple("(/)", text);
+				var count = text.split("/")[index];
 
-				piece = pieces[layout.get_cells().index(cell)];
+				if (int.parse(count) != 0)
+				{
+					piece = count;
+				}
 			}
 
-			((Gtk.CellRendererText)cell).text = piece;
+			if (piece == null || lit)
+			{
+				label.text = piece;
+			}
+			else
+			{
+				label.markup = "<span foreground=\"%s\">%s</span>"
+					.printf(d_line_tints[index], piece);
+			}
+
 			embolden(cell, commit);
 		}
 	}
