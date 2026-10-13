@@ -246,6 +246,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-combined-diff-offers-no-tools-of-one-commit", test_a_combined_diff_offers_no_tools_of_one_commit);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-changes-opens-in-the-diff-tool", test_a_file_of_the_changes_opens_in_the_diff_tool);
+	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-picks-opens-in-the-diff-tool", test_a_file_of_the_picks_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-opens-in-the-diff-tool-of-git", test_a_file_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
@@ -702,7 +703,7 @@ private static void test_a_combined_diff_offers_no_tools_of_one_commit()
 		pick_rows(window, {0, 1});
 		right_click_file(window, "a.txt");
 
-		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file");
+		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file,Open diff in difftool");
 
 		press_key("Escape");
 		window.history.diff_view.get_files()[0].expanded = true;
@@ -807,6 +808,51 @@ private static void test_a_file_of_the_changes_opens_in_the_diff_tool()
 		record.load_contents(null, out contents, null);
 		assert_cmpstr((string)contents, CompareOperator.EQ,
 		              "one\n--\nedited\n");
+
+		window.destroy();
+		FileUtils.unlink(record.get_path());
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_file_of_the_picks_opens_in_the_diff_tool()
+{
+	try
+	{
+		var repo = clash_repo();
+		var record = File.new_for_path(repo.path.get_path() + ".record");
+		var one = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
+		var middle = "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n";
+
+		repo.git({"config", "diff.tool", "record"});
+		repo.git({"config", "difftool.record.cmd",
+		          "{ basename \"$(dirname \"$LOCAL\")\"; cat \"$LOCAL\"; "
+		          + "echo --; basename \"$(dirname \"$REMOTE\")\"; "
+		          + "cat \"$REMOTE\"; } > '" + record.get_path()
+		          + ".part' && mv '" + record.get_path() + ".part' '"
+		          + record.get_path() + "'"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		pick_rows(window, {0, 2});
+		right_click_file(window, "f.c");
+		activate_item("Open diff in difftool");
+
+		for (var i = 0; i < 100 && !record.query_exists(); i++)
+		{
+			settle(100);
+		}
+
+		uint8[] contents;
+
+		record.load_contents(null, out contents, null);
+		assert_cmpstr((string)contents, CompareOperator.EQ,
+		              "%s\nint x = 1;\n%sy = 1\n--\npicks\nint x = 3;\n%sy = 1\n"
+		              .printf(one, middle, middle));
 
 		window.destroy();
 		FileUtils.unlink(record.get_path());

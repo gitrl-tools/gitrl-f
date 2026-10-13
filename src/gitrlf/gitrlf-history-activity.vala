@@ -1179,7 +1179,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var commit = d_diff.commit;
 		var directory = git_directory();
 
-		if (commit != null)
+		if (d_diff.diff == d_combined)
+		{
+			DiffTool.compare_picks_file.begin(d_squash, directory, picks(),
+			                                  delta);
+		}
+		else if (commit != null)
 		{
 			DiffTool.compare_file.begin(d_repository, directory,
 			                            DiffTool.label(d_diff.parent_commit),
@@ -1935,11 +1940,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				item.activate.connect(() => show_file_history(path));
 				item.show();
 				menu.add(item);
-
-				if (d_diff.diff == d_combined)
-				{
-					return;
-				}
 
 				var compare = new Gtk.MenuItem.with_label(
 					_("Open diff in difftool"));
