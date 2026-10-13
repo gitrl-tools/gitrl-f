@@ -72,7 +72,7 @@ endforeach
 test(
   'read-only',
   find_program('unit/test-read-only.sh'),
-  args: [gitrlf_exe],
+  args: [gitrlf_exe, libgitrlf],
   suite: 'unit',
 )
 

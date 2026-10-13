@@ -3,6 +3,8 @@
 set -eu
 
 binary=$1
+code=$2
+replay=gitrlf-squash.c.o
 library=$(pkg-config --variable=libdir libgit2-glib-1.0)/libgit2-glib-1.0.so.0
 
 command -v nm >/dev/null || { echo "FAIL: nm is not installed" >&2; exit 1; }
@@ -108,10 +110,17 @@ nm -D --defined-only "$library" | awk '{ print $NF }' | sort -u > "$tmp/exported
 nm -D --undefined-only "$binary" | awk '{ print $NF }' | sort -u > "$tmp/imported"
 echo "$writers" | sed '/^$/d' | sort -u > "$tmp/writers"
 echo "$scratch" | sed '/^$/d' | sort -u > "$tmp/scratch"
+nm -A -u "$code" \
+	| awk -v replay="$replay" '{ print (index($1, replay) ? "replay" : "other"), $NF }' \
+	> "$tmp/members"
+awk '$1 == "replay" { print $2 }' "$tmp/members" | sort -u > "$tmp/replay"
+awk '$1 == "other" { print $2 }' "$tmp/members" | sort -u > "$tmp/other"
+comm -12 "$tmp/scratch" "$tmp/replay" > "$tmp/kept"
 
 unknown=$(comm -23 "$tmp/writers" "$tmp/exported")
-found=$(comm -12 "$tmp/writers" "$tmp/imported" | comm -23 - "$tmp/scratch")
-unused=$(comm -23 "$tmp/scratch" "$tmp/imported")
+found=$(comm -12 "$tmp/writers" "$tmp/imported" | comm -23 - "$tmp/kept")
+elsewhere=$(comm -12 "$tmp/writers" "$tmp/other")
+unused=$(comm -23 "$tmp/scratch" "$tmp/replay")
 status=0
 
 if [ -n "$unknown" ]; then
@@ -120,8 +129,14 @@ if [ -n "$unknown" ]; then
 	status=1
 fi
 
+if [ -n "$elsewhere" ]; then
+	echo "FAIL: code outside $replay uses functions that write to a repository:" >&2
+	echo "$elsewhere" | sed 's/^/  /' >&2
+	status=1
+fi
+
 if [ -n "$unused" ]; then
-	echo "FAIL: kept for the scratch store but not imported by $binary:" >&2
+	echo "FAIL: kept for the scratch store but not used by $replay:" >&2
 	echo "$unused" | sed 's/^/  /' >&2
 	status=1
 fi
@@ -132,5 +147,5 @@ if [ -n "$found" ]; then
 	status=1
 fi
 
-[ $status -eq 0 ] && echo "no writing function imported: $(wc -l < "$tmp/writers") checked, $(wc -l < "$tmp/scratch") kept for the scratch store, $(grep -c '^ggit_' "$tmp/imported") ggit functions imported"
+[ $status -eq 0 ] && echo "no writing function imported: $(wc -l < "$tmp/writers") checked, $(wc -l < "$tmp/kept") kept for the scratch store in $replay, $(grep -c '^ggit_' "$tmp/imported") ggit functions imported"
 exit $status
