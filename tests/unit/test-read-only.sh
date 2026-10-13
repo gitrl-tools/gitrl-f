@@ -95,7 +95,6 @@ ggit_tree_builder_write
 "
 
 scratch="
-ggit_index_write_tree_to
 ggit_repository_init_repository
 ggit_repository_merge_trees
 ggit_repository_set_workdir
