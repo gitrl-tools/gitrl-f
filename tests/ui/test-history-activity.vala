@@ -294,6 +294,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-one-commit-when-no-store-can-be-made", test_the_commit_menu_opens_one_commit_when_no_store_can_be_made);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-several-picks-as-one-diff", test_the_commit_menu_opens_several_picks_as_one_diff);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-outside-the-picks-opens-its-commit", test_the_commit_menu_outside_the_picks_opens_its_commit);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-reports-a-difftool-that-fails", test_the_commit_menu_reports_a_difftool_that_fails);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-row-under-the-pointer-is-tinted-before-it-is-picked", test_the_row_under_the_pointer_is_tinted_before_it_is_picked);
@@ -2374,6 +2375,42 @@ private static void test_the_commit_menu_outside_the_picks_opens_its_commit()
 		              "%s\na:first\na:second\n--\n%s\n"
 		              .printf(third, fourth)
 		              + "a:first\na:fourth\na:second\n");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_reports_a_difftool_that_fails()
+{
+	try
+	{
+		var repo = picks_repo();
+		var folder = Gitrlf.Squash.folder().get_path();
+		var window = opened(repo, {"refs/heads/master"});
+		string? error = null;
+
+		window.history.show_error.connect((primary, secondary) => {
+			error = primary;
+		});
+		click_row(window, row_of(window, "third"));
+		click_row_holding(window, row_of(window, "second"), "shift");
+		DirUtils.create_with_parents(folder, 0700);
+		FileUtils.chmod(folder, 0500);
+		right_click(window, row_of(window, "second"), 1, 10);
+
+		var item = menu_item("Open diff in difftool");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(500);
+		FileUtils.chmod(folder, 0700);
+
+		assert_cmpstr(error, CompareOperator.EQ, "Could not open the difftool");
 
 		window.destroy();
 		repo.remove();

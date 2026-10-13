@@ -22,6 +22,8 @@ namespace Gitrlf
 
 public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, GitgExt.Searchable
 {
+	private delegate void Finish() throws Error;
+
 	private History? d_all;
 	private Ggit.OId[] d_beyond;
 	private Gtk.Button d_beyond_button;
@@ -652,12 +654,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		item.activate.connect(() => {
 			if (picked.length == 1)
 			{
-				DiffTool.compare_commit.begin(d_repository, git_directory(),
-				                              picked[0]);
+				DiffTool.compare_commit.begin(
+					d_repository, git_directory(), picked[0], (obj, res) =>
+					finish_tool(() => DiffTool.compare_commit.end(res)));
 			}
 			else
 			{
-				DiffTool.compare_picks.begin(d_squash, git_directory(), picked);
+				DiffTool.compare_picks.begin(
+					d_squash, git_directory(), picked, (obj, res) =>
+					finish_tool(() => DiffTool.compare_picks.end(res)));
 			}
 		});
 		item.show();
@@ -1190,24 +1195,28 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_diff.diff == d_combined)
 		{
-			DiffTool.compare_picks_file.begin(d_squash, directory,
-			                                  d_combined_picks, delta);
+			DiffTool.compare_picks_file.begin(
+				d_squash, directory, d_combined_picks, delta, (obj, res) =>
+				finish_tool(() => DiffTool.compare_picks_file.end(res)));
 		}
 		else if (commit != null)
 		{
-			DiffTool.compare_file.begin(d_repository, directory,
-			                            DiffTool.label(d_diff.parent_commit),
-			                            DiffTool.label(commit), delta, false);
+			DiffTool.compare_file.begin(
+				d_repository, directory, DiffTool.label(d_diff.parent_commit),
+				DiffTool.label(commit), delta, false, (obj, res) =>
+				finish_tool(() => DiffTool.compare_file.end(res)));
 		}
 		else if (d_paned.changes.get_selected_row() == d_paned.staged_row)
 		{
-			DiffTool.compare_file.begin(d_repository, directory, "HEAD",
-			                            "staged", delta, false);
+			DiffTool.compare_file.begin(
+				d_repository, directory, "HEAD", "staged", delta, false,
+				(obj, res) => finish_tool(() => DiffTool.compare_file.end(res)));
 		}
 		else
 		{
-			DiffTool.compare_file.begin(d_repository, directory, "staged",
-			                            "working-tree", delta, true);
+			DiffTool.compare_file.begin(
+				d_repository, directory, "staged", "working-tree", delta, true,
+				(obj, res) => finish_tool(() => DiffTool.compare_file.end(res)));
 		}
 	}
 
@@ -1348,7 +1357,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			                            staged ? "HEAD" : "staged",
 			                            staged ? "staged" : "working-tree",
 			                            staged ? d_staged : d_unstaged,
-			                            !staged);
+			                            !staged, (obj, res) =>
+				finish_tool(() => DiffTool.compare_diff.end(res)));
 		});
 		item.show();
 		d_changes_menu.add(item);
@@ -1461,6 +1471,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return found;
+	}
+
+	private void finish_tool(Finish finish)
+	{
+		try
+		{
+			finish();
+		}
+		catch (Error e)
+		{
+			show_error(_("Could not open the difftool"), e.message);
+		}
 	}
 
 	private void find_matches()
