@@ -2980,18 +2980,24 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private void show_picks(Gitg.Commit[] picked)
 	{
-		var lines = new string[] {
-			ngettext("%d commit", "%d commits", picked.length)
-				.printf(picked.length)
-		};
+		var buffer = d_diff.message_view.buffer;
+		var hash = buffer.tag_table.lookup("gitrlf-hash")
+		           ?? buffer.create_tag("gitrlf-hash", "family", "monospace");
+		Gtk.TextIter end;
+
+		buffer.text = ngettext("%d commit", "%d commits", picked.length)
+			.printf(picked.length);
+		buffer.get_end_iter(out end);
 
 		foreach (var pick in picked)
 		{
-			lines += "  %s  %s".printf(pick.get_id().to_string().substring(0, 7),
-			                           pick.get_subject());
+			buffer.insert(ref end, "\n  ", -1);
+			buffer.insert_with_tags(ref end,
+			                        pick.get_id().to_string().substring(0, 7),
+			                        -1, hash);
+			buffer.insert(ref end, "  " + pick.get_subject(), -1);
 		}
 
-		d_diff.message_view.buffer.text = string.joinv("\n", lines);
 		d_diff.message_view.show();
 	}
 

@@ -275,6 +275,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/line-offsets-point-at-the-text-of-each-line", test_line_offsets_point_at_the_text_of_each_line);
 	Test.add_func("/gitrlf/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
 	Test.add_func("/gitrlf/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
+	Test.add_func("/gitrlf/ui/diff-pane/picks-line-up-their-subjects", test_picks_line_up_their_subjects);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-show-one-diff-of-only-the-picked-commits", test_picks_show_one_diff_of_only_the_picked_commits);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-that-reach-the-first-commit-diff-from-nothing", test_picks_that_reach_the_first_commit_diff_from_nothing);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-write-nothing-to-the-repository", test_picks_write_nothing_to_the_repository);
@@ -1800,6 +1801,41 @@ private static void test_orientation_follows_the_layout_setting()
 		assert_cmpint((panels.position - panels.get_allocated_width() / 2).abs(), CompareOperator.LE, 4);
 
 		settings.reset("orientation");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_picks_line_up_their_subjects()
+{
+	try
+	{
+		var repo = combined_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.diff_view.message_view;
+		var starts = new string[0];
+
+		pick_rows(window, {0, 1, 2, 3});
+
+		for (var line = 1; line < view.buffer.get_line_count(); line++)
+		{
+			Gtk.TextIter iter;
+			Gdk.Rectangle location;
+
+			view.buffer.get_iter_at_line_offset(out iter, line, 11);
+			view.get_iter_location(iter, out location);
+			starts += location.x.to_string();
+		}
+
+		assert_cmpint(starts.length, CompareOperator.EQ, 4);
+		assert_cmpstr(string.joinv(",", starts), CompareOperator.EQ,
+		              string.joinv(",", {starts[0], starts[0], starts[0],
+		                                 starts[0]}));
+
 		window.destroy();
 		repo.remove();
 	}
