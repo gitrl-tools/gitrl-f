@@ -3062,9 +3062,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		foreach (var pick in picked)
 		{
 			buffer.insert(ref end, "\n  ", -1);
-			buffer.insert_with_tags(ref end,
-			                        pick.get_id().to_string().substring(0, 7),
-			                        -1, hash);
+			buffer.insert_with_tags(ref end, DiffTool.label(pick), -1, hash);
 			buffer.insert(ref end, "  " + pick.get_subject(), -1);
 		}
 
