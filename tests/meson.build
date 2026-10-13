@@ -146,7 +146,8 @@ foreach name : ui_tests
     },
     depends: [gschemas_compiled],
     # ui-filter run alone: 106.5 s with 43 tests, 122.1 s with 48 tests.
-    timeout: name == 'filter' ? 240 : 120,
+    # ui-diff-pane run alone: 109.1 s with 56 tests, 115.3 s with 59 tests.
+    timeout: name in ['filter', 'diff-pane'] ? 240 : 120,
   )
 endforeach
 
