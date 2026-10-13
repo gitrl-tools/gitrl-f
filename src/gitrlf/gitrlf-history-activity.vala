@@ -2791,6 +2791,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_diff.diff != d_combined || key != d_combined_key)
 		{
+			Gitg.Repository store;
+
 			if (d_paths.length > 0)
 			{
 				d_diff.options.pathspec = combined_paths(picked);
@@ -2799,7 +2801,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			try
 			{
 				d_combined = d_squash.diff(picked, d_diff.options);
-				d_diff.repository = d_squash.open();
+				store = d_squash.open();
 			}
 			catch (Error e)
 			{
@@ -2812,11 +2814,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			d_combined_key = key;
 			d_combined_picks = picked;
-			d_diff.new_is_workdir = false;
-			d_diff.diff = d_combined;
+			show_diff(d_combined, store, false);
 		}
 
 		show_picks(picked);
+	}
+
+	private void show_commit(Gitg.Commit commit)
+	{
+		d_diff.new_is_workdir = false;
+		d_diff.repository = d_repository;
+		d_diff.commit = commit;
 	}
 
 	private void show_details()
@@ -2829,9 +2837,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			if (d_paned.details_visible && d_diff.diff != diff)
 			{
-				d_diff.new_is_workdir = row == d_paned.unstaged_row;
-				d_diff.repository = d_repository;
-				d_diff.diff = diff;
+				show_diff(diff, d_repository, row == d_paned.unstaged_row);
 			}
 
 			return;
@@ -2874,10 +2880,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			d_diff.options.pathspec = shown_paths(commit.get_id());
 		}
 
-		d_diff.new_is_workdir = false;
-		d_diff.repository = d_repository;
-		d_diff.commit = commit;
+		show_commit(commit);
 		fill_find_bar(false);
+	}
+
+	private void show_diff(Ggit.Diff? diff, Gitg.Repository source,
+	                       bool workdir)
+	{
+		d_diff.new_is_workdir = workdir;
+		d_diff.repository = source;
+		d_diff.diff = diff;
 	}
 
 	private void show_file_history(string path)
