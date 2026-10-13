@@ -2059,7 +2059,6 @@ private static void test_the_commit_menu_leaves_out_the_rows_between_picks()
 	{
 		var repo = picks_repo();
 		var first = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
-		var fourth = repo.git({"rev-parse", "HEAD"}).substring(0, 7);
 		var window = opened(repo, {"refs/heads/master"});
 
 		click_row(window, row_of(window, "fourth"));
@@ -2069,8 +2068,8 @@ private static void test_the_commit_menu_leaves_out_the_rows_between_picks()
 		assert_cmpstr(diff_tool_record(repo, window,
 		                               row_of(window, "second")),
 		              CompareOperator.EQ,
-		              "%s\na:first\n--\n%s\na:first\na:fourth\na:second\n"
-		              .printf(first, fourth));
+		              "%s\na:first\n--\npicks\na:first\na:fourth\na:second\n"
+		              .printf(first));
 
 		window.destroy();
 		repo.remove();
@@ -2306,7 +2305,6 @@ private static void test_the_commit_menu_opens_several_picks_as_one_diff()
 	{
 		var repo = picks_repo();
 		var first = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
-		var third = repo.git({"rev-parse", "HEAD~1"}).substring(0, 7);
 		var window = opened(repo, {"refs/heads/master"});
 
 		click_row(window, row_of(window, "third"));
@@ -2316,8 +2314,8 @@ private static void test_the_commit_menu_opens_several_picks_as_one_diff()
 		assert_cmpstr(diff_tool_record(repo, window,
 		                               row_of(window, "second")),
 		              CompareOperator.EQ,
-		              "%s\na:first\n--\n%s\na:first\na:second\nb:third\n"
-		              .printf(first, third));
+		              "%s\na:first\n--\npicks\na:first\na:second\nb:third\n"
+		              .printf(first));
 
 		window.destroy();
 		repo.remove();

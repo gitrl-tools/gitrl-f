@@ -22,6 +22,8 @@ namespace Gitrlf
 
 public class DiffTool : Object
 {
+	private const string PICKS = "picks";
+
 	private static async void compare(Gitg.Repository repository,
 	                                  File directory,
 	                                  string before,
@@ -98,7 +100,8 @@ public class DiffTool : Object
 	{
 		yield compare_diff(squash.open(), directory,
 		                   label(picked[picked.length - 1].get_parents()[0]),
-		                   label(picked[0]), squash.diff(picked, null), false);
+		                   picked.length > 1 ? PICKS : label(picked[0]),
+		                   squash.diff(picked, null), false);
 	}
 
 	public static string label(Ggit.Commit? commit)
