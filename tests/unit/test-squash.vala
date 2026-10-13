@@ -27,6 +27,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/squash/a-pick-that-deletes-a-file-a-skipped-commit-changed-deletes-it", test_a_pick_that_deletes_a_file_a_skipped_commit_changed_deletes_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-added-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_added_adds_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-renamed-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_it);
+	Test.add_func("/gitrlf/squash/a-store-of-a-gone-repository-leaves-no-folder", test_a_store_of_a_gone_repository_leaves_no_folder);
 	Test.add_func("/gitrlf/squash/a-store-reads-the-settings-of-the-repository", test_a_store_reads_the_settings_of_the_repository);
 	Test.add_func("/gitrlf/squash/a-store-that-failed-lets-the-next-one-open", test_a_store_that_failed_lets_the_next_one_open);
 	Test.add_func("/gitrlf/squash/a-store-that-no-window-holds-is-cleared", test_a_store_that_no_window_holds_is_cleared);
@@ -146,6 +147,45 @@ private static void test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_
 		              "ADDED a.txt a,ADDED g two");
 
 		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_store_of_a_gone_repository_leaves_no_folder()
+{
+	try
+	{
+		var repo = Repo.create();
+		var squash = new Gitrlf.Squash(Gitrlf.Repository.open(
+			Gitrlf.Application.discover_repository(repo.path)));
+		var folder = Gitrlf.Squash.folder();
+		var stores = 0;
+
+		repo.remove();
+
+		try
+		{
+			squash.open();
+		}
+		catch (Error e)
+		{
+		}
+
+		DirUtils.create_with_parents(folder.get_path(), 0700);
+
+		var children = folder.enumerate_children(
+			"standard::name", FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
+		FileInfo? info;
+
+		while ((info = children.next_file()) != null)
+		{
+			stores += info.get_name().has_prefix("store-") ? 1 : 0;
+		}
+
+		assert_cmpint(stores, CompareOperator.EQ, 0);
 	}
 	catch (Error e)
 	{
