@@ -350,6 +350,38 @@ public static string menu_labels()
 	return string.joinv(",", labels);
 }
 
+public static string read_record(File record) throws Error
+{
+	uint8[] contents;
+
+	for (var i = 0; i < 1000 && !record.query_exists(); i++)
+	{
+		while (Gtk.events_pending())
+		{
+			Gtk.main_iteration();
+		}
+
+		Thread.usleep(10000);
+	}
+
+	record.load_contents(null, out contents, null);
+	FileUtils.unlink(record.get_path());
+
+	return (string)contents;
+}
+
+public static File record_diff_tool(Repo repo, string command) throws Error
+{
+	var record = File.new_for_path(repo.path.get_path() + ".record");
+
+	repo.git({"config", "diff.tool", "record"});
+	repo.git({"config", "difftool.record.cmd",
+	          "{ " + command + "; } > '" + record.get_path() + ".part' && mv '"
+	          + record.get_path() + ".part' '" + record.get_path() + "'"});
+
+	return record;
+}
+
 public static Gitrlf.RefsRow row(Gitrlf.RefsList list, string short_name)
 {
 	foreach (var child in list.get_children())

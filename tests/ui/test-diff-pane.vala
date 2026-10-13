@@ -19,8 +19,12 @@
 {
 
 private const uint32 BLUE = 0x204a87;
+private const string FILE_RECORD = "cat \"$LOCAL\"; echo --; cat \"$REMOTE\"";
 private const uint32 GOLD = 0xc4a000;
 private const uint32 GREY = 0x888a85;
+private const string NAMED_FILE_RECORD = "basename \"$(dirname \"$LOCAL\")\"; "
+	+ "cat \"$LOCAL\"; echo --; basename \"$(dirname \"$REMOTE\")\"; "
+	+ "cat \"$REMOTE\"";
 
 private static void activate_item(string label)
 {
@@ -243,7 +247,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-bare-repository-offers-only-the-history-of-a-file", test_a_bare_repository_offers_only_the_history_of_a_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-clean-tree-shows-no-changes", test_a_clean_tree_shows_no_changes);
 	Test.add_func("/gitrlf/ui/diff-pane/a-combined-diff-follows-the-diff-options", test_a_combined_diff_follows_the_diff_options);
-	Test.add_func("/gitrlf/ui/diff-pane/a-combined-diff-offers-no-tools-of-one-commit", test_a_combined_diff_offers_no_tools_of_one_commit);
+	Test.add_func("/gitrlf/ui/diff-pane/a-combined-diff-offers-no-line-history", test_a_combined_diff_offers_no_line_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-changes-opens-in-the-diff-tool", test_a_file_of_the_changes_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-picks-opens-after-the-filter-hides-them", test_a_file_of_the_picks_opens_after_the_filter_hides_them);
@@ -696,7 +700,7 @@ private static void test_a_combined_diff_follows_the_diff_options()
 	}
 }
 
-private static void test_a_combined_diff_offers_no_tools_of_one_commit()
+private static void test_a_combined_diff_offers_no_line_history()
 {
 	try
 	{
@@ -782,15 +786,10 @@ private static void test_a_file_of_the_changes_opens_in_the_diff_tool()
 	try
 	{
 		var repo = Repo.create();
-		var record = File.new_for_path(repo.path.get_path() + ".record");
+		var record = record_diff_tool(repo, FILE_RECORD);
 
 		repo.commit("one", "notes");
 		FileUtils.set_contents(repo.path.get_child("notes").get_path(), "edited\n");
-		repo.git({"config", "diff.tool", "record"});
-		repo.git({"config", "difftool.record.cmd",
-		          "{ cat \"$LOCAL\"; echo --; cat \"$REMOTE\"; } > '"
-		          + record.get_path() + ".part' && mv '" + record.get_path()
-		          + ".part' '" + record.get_path() + "'"});
 
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
@@ -801,19 +800,10 @@ private static void test_a_file_of_the_changes_opens_in_the_diff_tool()
 		right_click_file(window, "notes");
 		activate_item("Open diff in difftool");
 
-		for (var i = 0; i < 100 && !record.query_exists(); i++)
-		{
-			settle(100);
-		}
-
-		uint8[] contents;
-
-		record.load_contents(null, out contents, null);
-		assert_cmpstr((string)contents, CompareOperator.EQ,
+		assert_cmpstr(read_record(record), CompareOperator.EQ,
 		              "one\n--\nedited\n");
 
 		window.destroy();
-		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)
@@ -827,16 +817,8 @@ private static void test_a_file_of_the_picks_opens_after_the_filter_hides_them()
 	try
 	{
 		var repo = combined_repo();
-		var record = File.new_for_path(repo.path.get_path() + ".record");
+		var record = record_diff_tool(repo, NAMED_FILE_RECORD);
 		var one = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
-
-		repo.git({"config", "diff.tool", "record"});
-		repo.git({"config", "difftool.record.cmd",
-		          "{ basename \"$(dirname \"$LOCAL\")\"; cat \"$LOCAL\"; "
-		          + "echo --; basename \"$(dirname \"$REMOTE\")\"; "
-		          + "cat \"$REMOTE\"; } > '" + record.get_path()
-		          + ".part' && mv '" + record.get_path() + ".part' '"
-		          + record.get_path() + "'"});
 
 		var window = opened(repo, {"refs/heads/master"});
 
@@ -854,19 +836,10 @@ private static void test_a_file_of_the_picks_opens_after_the_filter_hides_them()
 		right_click_file(window, "c.txt");
 		activate_item("Open diff in difftool");
 
-		for (var i = 0; i < 100 && !record.query_exists(); i++)
-		{
-			settle(100);
-		}
-
-		uint8[] contents;
-
-		record.load_contents(null, out contents, null);
-		assert_cmpstr((string)contents, CompareOperator.EQ,
+		assert_cmpstr(read_record(record), CompareOperator.EQ,
 		              "%s\n--\npicks\nc4\n".printf(one));
 
 		window.destroy();
-		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)
@@ -880,17 +853,9 @@ private static void test_a_file_of_the_picks_opens_in_the_diff_tool()
 	try
 	{
 		var repo = clash_repo();
-		var record = File.new_for_path(repo.path.get_path() + ".record");
+		var record = record_diff_tool(repo, NAMED_FILE_RECORD);
 		var one = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
 		var middle = "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n";
-
-		repo.git({"config", "diff.tool", "record"});
-		repo.git({"config", "difftool.record.cmd",
-		          "{ basename \"$(dirname \"$LOCAL\")\"; cat \"$LOCAL\"; "
-		          + "echo --; basename \"$(dirname \"$REMOTE\")\"; "
-		          + "cat \"$REMOTE\"; } > '" + record.get_path()
-		          + ".part' && mv '" + record.get_path() + ".part' '"
-		          + record.get_path() + "'"});
 
 		var window = opened(repo, {"refs/heads/master"});
 
@@ -898,20 +863,11 @@ private static void test_a_file_of_the_picks_opens_in_the_diff_tool()
 		right_click_file(window, "f.c");
 		activate_item("Open diff in difftool");
 
-		for (var i = 0; i < 100 && !record.query_exists(); i++)
-		{
-			settle(100);
-		}
-
-		uint8[] contents;
-
-		record.load_contents(null, out contents, null);
-		assert_cmpstr((string)contents, CompareOperator.EQ,
+		assert_cmpstr(read_record(record), CompareOperator.EQ,
 		              "%s\nint x = 1;\n%sy = 1\n--\npicks\nint x = 3;\n%sy = 1\n"
 		              .printf(one, middle, middle));
 
 		window.destroy();
-		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)
@@ -925,13 +881,7 @@ private static void test_a_file_opens_in_the_diff_tool_of_git()
 	try
 	{
 		var repo = renamed_repo();
-		var record = File.new_for_path(repo.path.get_path() + ".record");
-
-		repo.git({"config", "diff.tool", "record"});
-		repo.git({"config", "difftool.record.cmd",
-		          "{ cat \"$LOCAL\"; echo --; cat \"$REMOTE\"; } > '"
-		          + record.get_path() + ".part' && mv '" + record.get_path()
-		          + ".part' '" + record.get_path() + "'"});
+		var record = record_diff_tool(repo, FILE_RECORD);
 
 		var window = opened(repo, {"refs/heads/master"});
 
@@ -940,19 +890,10 @@ private static void test_a_file_opens_in_the_diff_tool_of_git()
 		right_click_file(window, "new.c");
 		activate_item("Open diff in difftool");
 
-		for (var i = 0; i < 100 && !record.query_exists(); i++)
-		{
-			settle(100);
-		}
-
-		uint8[] contents;
-
-		record.load_contents(null, out contents, null);
-		assert_cmpstr((string)contents, CompareOperator.EQ,
+		assert_cmpstr(read_record(record), CompareOperator.EQ,
 		              "l1\n--\nl1\nl2\n");
 
 		window.destroy();
-		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)
@@ -1042,29 +983,6 @@ private static void test_a_long_line_of_the_message_wraps()
 	}
 }
 
-private static void test_a_picked_commit_wins_where_a_skipped_one_wrote()
-{
-	try
-	{
-		var repo = clash_repo();
-		var window = opened(repo, {"refs/heads/master"});
-
-		pick_rows(window, {0, 2});
-
-		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
-		              "h.c,f.c");
-		assert_cmpstr(lines_of(window.history.diff_view.get_files()[0]),
-		              CompareOperator.EQ, "-int x = 1;|+int x = 3;| a| b| c");
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
 private static void test_a_picked_commit_that_merges_keeps_its_colours()
 {
 	try
@@ -1092,6 +1010,29 @@ private static void test_a_picked_commit_that_merges_keeps_its_colours()
 		}
 
 		assert_true(coloured);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_picked_commit_wins_where_a_skipped_one_wrote()
+{
+	try
+	{
+		var repo = clash_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		pick_rows(window, {0, 2});
+
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
+		              "h.c,f.c");
+		assert_cmpstr(lines_of(window.history.diff_view.get_files()[0]),
+		              CompareOperator.EQ, "-int x = 1;|+int x = 3;| a| b| c");
 
 		window.destroy();
 		repo.remove();
@@ -1165,15 +1106,11 @@ private static void test_a_row_of_the_changes_opens_in_the_diff_tool()
 	try
 	{
 		var repo = changes_repo();
-		var record = File.new_for_path(repo.path.get_path() + ".record");
-
-		repo.git({"config", "diff.tool", "record"});
-		repo.git({"config", "difftool.record.cmd",
-		          "{ basename \"$LOCAL\"; cd \"$LOCAL\" && grep -r . | "
-		          + "LC_ALL=C sort; echo --; basename \"$REMOTE\"; "
-		          + "cd \"$REMOTE\" && grep -r . | LC_ALL=C sort; } > '"
-		          + record.get_path() + ".part' && mv '" + record.get_path()
-		          + ".part' '" + record.get_path() + "'"});
+		var record = record_diff_tool(
+			repo, "basename \"$LOCAL\"; "
+			+ "cd \"$LOCAL\" && grep -r . | LC_ALL=C sort; "
+			+ "echo --; basename \"$REMOTE\"; "
+			+ "cd \"$REMOTE\" && grep -r . | LC_ALL=C sort");
 
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
@@ -1189,16 +1126,8 @@ private static void test_a_row_of_the_changes_opens_in_the_diff_tool()
 			settle(300);
 			activate_item("Open diff in difftool");
 
-			for (var j = 0; j < 100 && !record.query_exists(); j++)
-			{
-				settle(100);
-			}
-
-			uint8[] contents;
-
-			record.load_contents(null, out contents, null);
-			assert_cmpstr((string)contents, CompareOperator.EQ, records[i]);
-			FileUtils.unlink(record.get_path());
+			assert_cmpstr(read_record(record), CompareOperator.EQ,
+			              records[i]);
 		}
 
 		window.destroy();

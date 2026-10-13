@@ -124,15 +124,11 @@ private static bool details_shown(Gitrlf.Window window)
 private static string diff_tool_record(Repo repo, Gitrlf.Window window,
                                        int row) throws Error
 {
-	var record = File.new_for_path(repo.path.get_path() + ".record");
+	var record = record_diff_tool(
+		repo, "basename \"$LOCAL\"; cd \"$LOCAL\" && grep -r . | "
+		+ "LC_ALL=C sort; echo --; basename \"$REMOTE\"; "
+		+ "cd \"$REMOTE\" && grep -r . | LC_ALL=C sort");
 
-	repo.git({"config", "diff.tool", "record"});
-	repo.git({"config", "difftool.record.cmd",
-	          "{ basename \"$LOCAL\"; cd \"$LOCAL\" && grep -r . | "
-	          + "LC_ALL=C sort; echo --; basename \"$REMOTE\"; "
-	          + "cd \"$REMOTE\" && grep -r . | LC_ALL=C sort; } > '"
-	          + record.get_path() + ".part' && mv '" + record.get_path()
-	          + ".part' '" + record.get_path() + "'"});
 	right_click(window, row, 1, 10);
 
 	var item = menu_item("Open diff in difftool");
@@ -140,17 +136,7 @@ private static string diff_tool_record(Repo repo, Gitrlf.Window window,
 	item.activate();
 	((Gtk.Menu)item.get_parent()).popdown();
 
-	for (var i = 0; i < 100 && !record.query_exists(); i++)
-	{
-		settle(100);
-	}
-
-	uint8[] contents;
-
-	record.load_contents(null, out contents, null);
-	FileUtils.unlink(record.get_path());
-
-	return (string)contents;
+	return read_record(record);
 }
 
 private static void drain()
@@ -2214,16 +2200,12 @@ private static void test_the_commit_menu_opens_in_the_diff_tool_of_git()
 	try
 	{
 		var repo = Repo.create();
-		var record = File.new_for_path(repo.path.get_path() + ".record");
+		var record = record_diff_tool(
+			repo, "cd \"$LOCAL\" && find . -type f && cat a; echo --; "
+			+ "cd \"$REMOTE\" && find . -type f && cat a");
 
 		repo.commit("first", "a");
 		repo.commit("second", "a");
-		repo.git({"config", "diff.tool", "record"});
-		repo.git({"config", "difftool.record.cmd",
-		          "{ cd \"$LOCAL\" && find . -type f && cat a; echo --; "
-		          + "cd \"$REMOTE\" && find . -type f && cat a; } > '"
-		          + record.get_path() + ".part' && mv '" + record.get_path()
-		          + ".part' '" + record.get_path() + "'"});
 
 		var window = opened(repo, {"refs/heads/master"});
 
@@ -2236,19 +2218,10 @@ private static void test_the_commit_menu_opens_in_the_diff_tool_of_git()
 		item.activate();
 		((Gtk.Menu)item.get_parent()).popdown();
 
-		for (var i = 0; i < 100 && !record.query_exists(); i++)
-		{
-			settle(100);
-		}
-
-		uint8[] contents;
-
-		record.load_contents(null, out contents, null);
-		assert_cmpstr((string)contents, CompareOperator.EQ,
+		assert_cmpstr(read_record(record), CompareOperator.EQ,
 		              "./a\nfirst\n--\n./a\nfirst\nsecond\n");
 
 		window.destroy();
-		FileUtils.unlink(record.get_path());
 		repo.remove();
 	}
 	catch (Error e)
