@@ -67,6 +67,22 @@ private static Repo changes_repo() throws Error
 	return repo;
 }
 
+private static Repo clash_repo() throws Error
+{
+	var repo = Repo.create();
+	var middle = "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n";
+
+	repo.commit_bytes("one", "f.c",
+	                  ("int x = 1;\n" + middle + "y = 1\n").data);
+	repo.commit("two", "h.c");
+	repo.commit_bytes("three", "f.c",
+	                  ("int x = 2;\n" + middle + "y = 2\n").data);
+	repo.commit_bytes("four", "f.c",
+	                  ("int x = 3;\n" + middle + "y = 2\n").data);
+
+	return repo;
+}
+
 private static Repo combined_repo() throws Error
 {
 	var repo = Repo.create();
@@ -233,6 +249,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-opens-in-the-diff-tool-of-git", test_a_file_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
 	Test.add_func("/gitrlf/ui/diff-pane/a-long-line-of-the-message-wraps", test_a_long_line_of_the_message_wraps);
+	Test.add_func("/gitrlf/ui/diff-pane/a-picked-commit-that-merges-keeps-its-colours", test_a_picked_commit_that_merges_keeps_its_colours);
+	Test.add_func("/gitrlf/ui/diff-pane/a-picked-commit-wins-where-a-skipped-one-wrote", test_a_picked_commit_wins_where_a_skipped_one_wrote);
 	Test.add_func("/gitrlf/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
 	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-opens-in-the-diff-tool", test_a_row_of_the_changes_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-shows-its-diff", test_a_row_of_the_changes_shows_its_diff);
@@ -257,8 +275,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/line-offsets-point-at-the-text-of-each-line", test_line_offsets_point_at_the_text_of_each_line);
 	Test.add_func("/gitrlf/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
 	Test.add_func("/gitrlf/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
-	Test.add_func("/gitrlf/ui/diff-pane/picks-show-one-diff-from-before-the-oldest-to-the-newest", test_picks_show_one_diff_from_before_the_oldest_to_the_newest);
+	Test.add_func("/gitrlf/ui/diff-pane/picks-show-one-diff-of-only-the-picked-commits", test_picks_show_one_diff_of_only_the_picked_commits);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-that-reach-the-first-commit-diff-from-nothing", test_picks_that_reach_the_first_commit_diff_from_nothing);
+	Test.add_func("/gitrlf/ui/diff-pane/picks-write-nothing-to-the-repository", test_picks_write_nothing_to_the_repository);
 	Test.add_func("/gitrlf/ui/diff-pane/sections-list-the-files-in-order-with-their-lines", test_sections_list_the_files_in_order_with_their_lines);
 	Test.add_func("/gitrlf/ui/diff-pane/sections-start-folded-when-there-are-several", test_sections_start_folded_when_there_are_several);
 	Test.add_func("/gitrlf/ui/diff-pane/selected-lines-show-their-history", test_selected_lines_show_their_history);
@@ -653,7 +672,7 @@ private static void test_a_combined_diff_follows_the_diff_options()
 		var window = opened(repo, {"refs/heads/master"});
 		var diff = window.history.diff_view;
 
-		pick_rows(window, {0, 2});
+		pick_rows(window, {0, 1});
 
 		assert_cmpstr(lines_of(diff.get_files()[0]), CompareOperator.EQ, " a1|+a3");
 
@@ -679,7 +698,7 @@ private static void test_a_combined_diff_offers_no_tools_of_one_commit()
 		var repo = combined_repo();
 		var window = opened(repo, {"refs/heads/master"});
 
-		pick_rows(window, {0, 2});
+		pick_rows(window, {0, 1});
 		right_click_file(window, "a.txt");
 
 		assert_cmpstr(menu_labels(), CompareOperator.EQ, "Open file,Open containing folder,Copy file path,Show history of this file");
@@ -910,6 +929,66 @@ private static void test_a_long_line_of_the_message_wraps()
 
 		assert_cmpfloat(pane.hadjustment.upper, CompareOperator.LE, pane.hadjustment.page_size);
 		assert_cmpint(message.get_allocated_height(), CompareOperator.LE, top + height);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_picked_commit_wins_where_a_skipped_one_wrote()
+{
+	try
+	{
+		var repo = clash_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		pick_rows(window, {0, 2});
+
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
+		              "h.c,f.c");
+		assert_cmpstr(lines_of(window.history.diff_view.get_files()[0]),
+		              CompareOperator.EQ, "-int x = 1;|+int x = 3;| a| b| c");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_picked_commit_that_merges_keeps_its_colours()
+{
+	try
+	{
+		var repo = clash_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		pick_rows(window, {0, 2});
+		window.history.diff_view.get_files()[0].expanded = true;
+		settle(600);
+
+		var view = window.history.diff_view.get_files()[0].get_text_views()[0];
+		Gtk.TextIter start;
+		Gtk.TextIter found;
+		Gtk.TextIter end;
+		var coloured = false;
+
+		view.buffer.get_start_iter(out start);
+		assert_true(start.forward_search("int x = 3", 0, out found, out end,
+		                                 null));
+
+		foreach (var tag in found.get_tags())
+		{
+			coloured = coloured || tag.foreground_set;
+		}
+
+		assert_true(coloured);
 
 		window.destroy();
 		repo.remove();
@@ -1151,7 +1230,7 @@ private static void test_clearing_the_picks_clears_the_combined_diff()
 
 		pick_rows(window, {0, 2});
 
-		assert_cmpint(shown_files(window), CompareOperator.EQ, 3);
+		assert_cmpint(shown_files(window), CompareOperator.EQ, 2);
 
 		pick_rows(window, {});
 
@@ -1730,7 +1809,7 @@ private static void test_orientation_follows_the_layout_setting()
 	}
 }
 
-private static void test_picks_show_one_diff_from_before_the_oldest_to_the_newest()
+private static void test_picks_show_one_diff_of_only_the_picked_commits()
 {
 	try
 	{
@@ -1741,7 +1820,7 @@ private static void test_picks_show_one_diff_from_before_the_oldest_to_the_newes
 		pick_rows(window, {0, 2});
 
 		assert_null(window.history.diff_view.commit);
-		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "c.txt,b.txt,a.txt");
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "c.txt,b.txt");
 		assert_cmpstr(message_of(window), CompareOperator.EQ, "2 commits\n  %s  four\n  %s  two".printf(rows[0].get_id().to_string().substring(0, 7), rows[2].get_id().to_string().substring(0, 7)));
 
 		pick_rows(window, {1});
@@ -1768,8 +1847,32 @@ private static void test_picks_that_reach_the_first_commit_diff_from_nothing()
 
 		pick_rows(window, {1, 3});
 
-		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "b.txt,a.txt");
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ, "a.txt");
 		assert_cmpstr(lines_of(window.history.diff_view.get_files()[0]), CompareOperator.EQ, "+a1|+a3");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_picks_write_nothing_to_the_repository()
+{
+	try
+	{
+		var repo = clash_repo();
+		var objects = repo.git({"count-objects"});
+		var window = opened(repo, {"refs/heads/master"});
+
+		pick_rows(window, {0, 2});
+
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
+		              "h.c,f.c");
+		assert_cmpstr(repo.git({"count-objects"}), CompareOperator.EQ,
+		              objects);
 
 		window.destroy();
 		repo.remove();

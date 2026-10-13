@@ -64,15 +64,6 @@ public class DiffTool : Object
 		remove(top);
 	}
 
-	public static async void compare_commit(Gitg.Repository repository,
-	                                        File directory,
-	                                        Gitg.Commit commit) throws Error
-	{
-		yield compare_diff(repository, directory,
-		                   label(commit.get_parents()[0]), label(commit),
-		                   commit.get_diff(null, 0), false);
-	}
-
 	public static async void compare_diff(Gitg.Repository repository,
 	                                      File directory,
 	                                      string before,
@@ -102,13 +93,21 @@ public class DiffTool : Object
 		              worktree);
 	}
 
+	public static async void compare_picks(Squash squash, File directory,
+	                                       Gitg.Commit[] picked) throws Error
+	{
+		yield compare_diff(squash.open(), directory,
+		                   label(picked[picked.length - 1].get_parents()[0]),
+		                   label(picked[0]), squash.diff(picked, null), false);
+	}
+
 	public static string label(Ggit.Commit? commit)
 	{
 		return commit != null ? commit.get_id().to_string().substring(0, 7)
 		                      : "empty";
 	}
 
-	private static void remove(File file) throws Error
+	internal static void remove(File file) throws Error
 	{
 		var type = file.query_file_type(FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
 

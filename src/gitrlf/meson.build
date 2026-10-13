@@ -32,6 +32,7 @@ gitrlf_lib_sources = files(
   'gitrlf-search-query.vala',
   'gitrlf-search-switches.vala',
   'gitrlf-search.vala',
+  'gitrlf-squash.vala',
   'gitrlf-text-match.vala',
   'gitrlf-text-search.vala',
   'gitrlf-ticks.vala',

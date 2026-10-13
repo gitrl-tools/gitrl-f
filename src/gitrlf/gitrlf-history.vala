@@ -231,7 +231,7 @@ public class History : Object
 		return new IOError.FAILED("%s", message != "" ? message : _("git failed"));
 	}
 
-	private static string[] git(File directory, string[] arguments, string? input) throws Error
+	public static string[] git(File directory, string[] arguments, string? input) throws Error
 	{
 		var process = spawn_git(directory, arguments, input != null);
 

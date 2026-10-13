@@ -121,6 +121,38 @@ private static bool details_shown(Gitrlf.Window window)
 	return window.history.paned.box_details.get_mapped();
 }
 
+private static string diff_tool_record(Repo repo, Gitrlf.Window window,
+                                       int row) throws Error
+{
+	var record = File.new_for_path(repo.path.get_path() + ".record");
+
+	repo.git({"config", "diff.tool", "record"});
+	repo.git({"config", "difftool.record.cmd",
+	          "{ basename \"$LOCAL\"; cd \"$LOCAL\" && grep -r . | "
+	          + "LC_ALL=C sort; echo --; basename \"$REMOTE\"; "
+	          + "cd \"$REMOTE\" && grep -r . | LC_ALL=C sort; } > '"
+	          + record.get_path() + ".part' && mv '" + record.get_path()
+	          + ".part' '" + record.get_path() + "'"});
+	right_click(window, row, 1, 10);
+
+	var item = menu_item("Open diff in difftool");
+
+	item.activate();
+	((Gtk.Menu)item.get_parent()).popdown();
+
+	for (var i = 0; i < 100 && !record.query_exists(); i++)
+	{
+		settle(100);
+	}
+
+	uint8[] contents;
+
+	record.load_contents(null, out contents, null);
+	FileUtils.unlink(record.get_path());
+
+	return (string)contents;
+}
+
 private static void drain()
 {
 	while (Gtk.events_pending())
@@ -253,11 +285,14 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitrlf/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-leaves-out-the-rows-between-picks", test_the_commit_menu_leaves_out_the_rows_between_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-first-tag", test_the_commit_menu_names_the_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-in-the-diff-tool-of-git", test_the_commit_menu_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-several-picks-as-one-diff", test_the_commit_menu_opens_several_picks_as_one_diff);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-outside-the-picks-opens-its-commit", test_the_commit_menu_outside_the_picks_opens_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-row-under-the-pointer-is-tinted-before-it-is-picked", test_the_row_under_the_pointer_is_tinted_before_it_is_picked);
@@ -327,6 +362,18 @@ private static string picked(Gitrlf.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static Repo picks_repo() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit("first", "a");
+	repo.commit("second", "a");
+	repo.commit("third", "b");
+	repo.commit("fourth", "a");
+
+	return repo;
 }
 
 private static void point_at_row(Gitrlf.Window window, int row)
@@ -2006,6 +2053,34 @@ private static void test_the_commit_menu_fits_the_merge_item()
 	}
 }
 
+private static void test_the_commit_menu_leaves_out_the_rows_between_picks()
+{
+	try
+	{
+		var repo = picks_repo();
+		var first = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
+		var fourth = repo.git({"rev-parse", "HEAD"}).substring(0, 7);
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, row_of(window, "fourth"));
+		click_row_holding(window, row_of(window, "second"), "ctrl");
+
+		assert_cmpstr(picked(window), CompareOperator.EQ, "fourth,second");
+		assert_cmpstr(diff_tool_record(repo, window,
+		                               row_of(window, "second")),
+		              CompareOperator.EQ,
+		              "%s\na:first\n--\n%s\na:first\na:fourth\na:second\n"
+		              .printf(first, fourth));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_the_commit_menu_lists_the_branches_and_tags_with_it()
 {
 	try
@@ -2216,6 +2291,62 @@ private static void test_the_commit_menu_opens_on_every_column()
 
 		window.resize(width, height);
 		settle(300);
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_opens_several_picks_as_one_diff()
+{
+	try
+	{
+		var repo = picks_repo();
+		var first = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
+		var third = repo.git({"rev-parse", "HEAD~1"}).substring(0, 7);
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, row_of(window, "third"));
+		click_row_holding(window, row_of(window, "second"), "shift");
+
+		assert_cmpstr(picked(window), CompareOperator.EQ, "third,second");
+		assert_cmpstr(diff_tool_record(repo, window,
+		                               row_of(window, "second")),
+		              CompareOperator.EQ,
+		              "%s\na:first\n--\n%s\na:first\na:second\nb:third\n"
+		              .printf(first, third));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_outside_the_picks_opens_its_commit()
+{
+	try
+	{
+		var repo = picks_repo();
+		var third = repo.git({"rev-parse", "HEAD~1"}).substring(0, 7);
+		var fourth = repo.git({"rev-parse", "HEAD"}).substring(0, 7);
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, row_of(window, "third"));
+		click_row_holding(window, row_of(window, "second"), "shift");
+
+		assert_cmpstr(diff_tool_record(repo, window,
+		                               row_of(window, "fourth")),
+		              CompareOperator.EQ,
+		              "%s\na:first\na:second\n--\n%s\n"
+		              .printf(third, fourth)
+		              + "a:first\na:fourth\na:second\n");
+
 		window.destroy();
 		repo.remove();
 	}

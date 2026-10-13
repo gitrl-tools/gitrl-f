@@ -70,6 +70,8 @@ ggit_repository_delete_tag
 ggit_repository_drop_stash
 ggit_repository_init_repository
 ggit_repository_merge
+ggit_repository_merge_commits
+ggit_repository_merge_trees
 ggit_repository_rebase_init
 ggit_repository_remove_note
 ggit_repository_remove_remote
@@ -92,15 +94,24 @@ ggit_submodule_update
 ggit_tree_builder_write
 "
 
+scratch="
+ggit_index_write_tree_to
+ggit_repository_init_repository
+ggit_repository_merge_trees
+ggit_repository_set_workdir
+ggit_tree_builder_write
+"
+
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 nm -D --defined-only "$library" | awk '{ print $NF }' | sort -u > "$tmp/exported"
 nm -D --undefined-only "$binary" | awk '{ print $NF }' | sort -u > "$tmp/imported"
 echo "$writers" | sed '/^$/d' | sort -u > "$tmp/writers"
+echo "$scratch" | sed '/^$/d' | sort -u > "$tmp/scratch"
 
 unknown=$(comm -23 "$tmp/writers" "$tmp/exported")
-found=$(comm -12 "$tmp/writers" "$tmp/imported")
+found=$(comm -12 "$tmp/writers" "$tmp/imported" | comm -23 - "$tmp/scratch")
 status=0
 
 if [ -n "$unknown" ]; then
@@ -115,5 +126,5 @@ if [ -n "$found" ]; then
 	status=1
 fi
 
-[ $status -eq 0 ] && echo "no writing function imported: $(wc -l < "$tmp/writers") checked, $(grep -c '^ggit_' "$tmp/imported") ggit functions imported"
+[ $status -eq 0 ] && echo "no writing function imported: $(wc -l < "$tmp/writers") checked, $(wc -l < "$tmp/scratch") kept for the scratch store, $(grep -c '^ggit_' "$tmp/imported") ggit functions imported"
 exit $status

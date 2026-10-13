@@ -89,6 +89,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.SearchBar d_search_bar;
 	private Gtk.SearchEntry d_search_entry;
 	private SearchSwitches d_search_switches;
+	private Squash? d_squash;
 	private Ggit.Diff? d_staged;
 	private string? d_staged_key;
 	private Settings d_state;
@@ -414,6 +415,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_box.add(d_paned);
 		d_box.show_all();
 		d_box.destroy.connect(stop_search);
+		d_box.destroy.connect(drop_squash);
 
 		d_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
 		d_press.button = Gdk.BUTTON_PRIMARY;
@@ -642,13 +644,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_choice();
 	}
 
-	private void add_compare_item(Gitg.Commit commit)
+	private void add_compare_item(owned Gitg.Commit[] picked)
 	{
 		var item = new Gtk.MenuItem.with_label(_("Open diff in difftool"));
 
 		item.activate.connect(() => {
-			DiffTool.compare_commit.begin(d_repository, git_directory(),
-			                              commit);
+			DiffTool.compare_picks.begin(d_squash, git_directory(), picked);
 		});
 		item.show();
 		d_copy_menu.add(item);
@@ -1258,6 +1259,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_line_label = null;
 	}
 
+	private void drop_squash()
+	{
+		if (d_squash != null)
+		{
+			d_squash.remove();
+		}
+	}
+
 	private void embolden(Gtk.CellRenderer cell, Gitg.Commit commit)
 	{
 		var bold = (changes_apply() || messages_apply()) && !d_only_matches.active && matches_row(commit);
@@ -1384,7 +1393,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		add_first_tag_item(commit.get_id());
 		add_merge_item(commit.get_id());
 		d_copy_menu.add_separator();
-		add_compare_item(commit);
+		add_compare_item(view.get_selection().path_is_selected(path)
+		                 ? picks() : new Gitg.Commit[] { commit });
 
 		return true;
 	}
@@ -2036,6 +2046,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_typed[SearchChoice.FILES] = Filter.joined(paths);
 		d_cases[SearchChoice.FILES] = d_cases[SearchChoice.FILES] || paths.length > 0;
 		this.directory = directory;
+		drop_squash();
+		d_squash = new Squash(repository);
 		d_diff.repository = repository;
 		limit_diff();
 		Languages.warm(repository);
@@ -2715,12 +2727,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		var parents = picked[picked.length - 1].get_parents();
-		var before = parents.size > 0 ? parents.get(0) : null;
-		var old_tree = before != null ? before.get_tree() : null;
-		var newest = picked[0];
-		var key = (before != null ? before.get_id().to_string() : "")
-		          + newest.get_id().to_string();
+		var ids = new string[0];
+
+		foreach (var pick in picked)
+		{
+			ids += pick.get_id().to_string();
+		}
+
+		var key = string.joinv(",", ids);
 
 		if (d_diff.diff != d_combined || key != d_combined_key)
 		{
@@ -2731,10 +2745,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			try
 			{
-				d_combined = new Ggit.Diff.tree_to_tree(d_repository, old_tree,
-				                                        newest.get_tree(),
-				                                        d_diff.options);
-				d_combined.find_similar(null);
+				d_combined = d_squash.diff(picked, d_diff.options);
+				d_diff.repository = d_squash.open();
 			}
 			catch (Error e)
 			{
@@ -2760,6 +2772,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			if (d_paned.details_visible && d_diff.diff != diff)
 			{
 				d_diff.new_is_workdir = row == d_paned.unstaged_row;
+				d_diff.repository = d_repository;
 				d_diff.diff = diff;
 			}
 
@@ -2804,6 +2817,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_diff.new_is_workdir = false;
+		d_diff.repository = d_repository;
 		d_diff.commit = commit;
 		fill_find_bar(false);
 	}
