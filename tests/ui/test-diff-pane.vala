@@ -2499,7 +2499,7 @@ private static void test_the_total_of_lines_shows_above_the_files()
 
 		select_subject(window, "change");
 
-		assert_cmpstr(total_row(window), CompareOperator.EQ, "+3 -2, 4 files in total");
+		assert_cmpstr(total_row(window), CompareOperator.EQ, "+3 -2, 4 files in total (+3/-2)");
 
 		var total = total_stat(window);
 		var first = window.history.diff_view.get_files()[0];
@@ -2530,12 +2530,12 @@ private static void test_the_total_of_lines_shows_above_the_files()
 		settle(1000);
 		window.history.diff_view.disconnect(handler);
 
-		assert_cmpstr(seen, CompareOperator.EQ, "+80 -0, 80 files in total, 20 rows");
+		assert_cmpstr(seen, CompareOperator.EQ, "+80 -0, 80 files in total (+80/-0), 20 rows");
 
 		paned.changes.select_row(paned.unstaged_row);
 		settle(400);
 
-		assert_cmpstr(total_row(window), CompareOperator.EQ, "+2 -1, 2 files in total");
+		assert_cmpstr(total_row(window), CompareOperator.EQ, "+2 -1, 2 files in total (+2/-1)");
 
 		window.destroy();
 		repo.remove();

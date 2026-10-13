@@ -232,9 +232,9 @@ A text view that wraps finds its height before it knows its width. When the pane
 
 **Cost.** Two properties that only read, and one signal for each fill.
 
-**8. Shows the total of the lines of the diff above the rows of the files.** When the diff has two files or more, a row above the first file shows a badge of the same kind as the badge of each file, and the number of files. The badge counts the added and removed lines of all the files, also of the files whose rows are not made yet. `update_total()` counts the lines from the plans of part 3, which hold all the files before the first batch.
+**8. Shows the total of the lines of the diff above the rows of the files.** When the diff has two files or more, a row above the first file shows a badge of the same kind as the badge of each file, the number of files, and the added and removed lines apart, for example `2 files in total (+72/-13)`. The badge counts the added and removed lines of all the files, also of the files whose rows are not made yet. `update_total()` counts the lines from the plans of part 3, which hold all the files before the first batch.
 
-**Why.** The operator asked to see the total of the lines that a diff changes. The badge of each file gives only the lines of that file, so a commit that changes six files showed six numbers and no sum. The row is in the pane and not in the details of the commit, because the staged and the unstaged changes show the pane with no details. With one file, the total is the number on the badge of that file, so the row does not show.
+**Why.** The operator asked to see the total of the lines that a diff changes. The badge of each file gives only the lines of that file, so a commit that changes six files showed six numbers and no sum. The row is in the pane and not in the details of the commit, because the staged and the unstaged changes show the pane with no details. With one file, the total is the number on the badge of that file, so the row does not show. The badge shows only the sum, so the text gives the two counts apart. The form is that of the line counts column of the commit list. A commit that adds 476 lines and a commit that removes 476 lines have the same badge.
 
 **Cost.** One more pass over the lines of each text file when the diff loads. A diff with two files or more is one row taller.
 
