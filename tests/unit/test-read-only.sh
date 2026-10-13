@@ -112,11 +112,18 @@ echo "$scratch" | sed '/^$/d' | sort -u > "$tmp/scratch"
 
 unknown=$(comm -23 "$tmp/writers" "$tmp/exported")
 found=$(comm -12 "$tmp/writers" "$tmp/imported" | comm -23 - "$tmp/scratch")
+unused=$(comm -23 "$tmp/scratch" "$tmp/imported")
 status=0
 
 if [ -n "$unknown" ]; then
 	echo "FAIL: not exported by $library:" >&2
 	echo "$unknown" | sed 's/^/  /' >&2
+	status=1
+fi
+
+if [ -n "$unused" ]; then
+	echo "FAIL: kept for the scratch store but not imported by $binary:" >&2
+	echo "$unused" | sed 's/^/  /' >&2
 	status=1
 fi
 
