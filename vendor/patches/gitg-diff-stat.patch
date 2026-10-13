@@ -1,6 +1,18 @@
 --- a/libgitg/gitg-diff-stat.vala
 +++ b/libgitg/gitg-diff-stat.vala
-@@ -63,6 +63,23 @@
+@@ -44,6 +44,11 @@
+ 		}
+ 	}
+ 
++	public string text
++	{
++		owned get { return @"+$added/-$removed"; }
++	}
++
+ 	static construct
+ 	{
+ 		install_style_property(new ParamSpecInt("bar-height",
+@@ -63,9 +68,26 @@
  		make_layout();
  	}
  
@@ -23,4 +35,8 @@
 +
  	private void make_layout()
  	{
- 		var txt = @"$(added + removed)";
+-		var txt = @"$(added + removed)";
++		var txt = text;
+ 
+ 		if (d_layout == null)
+ 		{

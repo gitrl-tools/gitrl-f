@@ -44,6 +44,11 @@ public class Gitg.DiffStat : Gtk.DrawingArea
 		}
 	}
 
+	public string text
+	{
+		owned get { return @"+$added/-$removed"; }
+	}
+
 	static construct
 	{
 		install_style_property(new ParamSpecInt("bar-height",
@@ -82,7 +87,7 @@ public class Gitg.DiffStat : Gtk.DrawingArea
 
 	private void make_layout()
 	{
-		var txt = @"$(added + removed)";
+		var txt = text;
 
 		if (d_layout == null)
 		{
