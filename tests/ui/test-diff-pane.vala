@@ -297,7 +297,6 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/the-changes-rows-sit-at-the-top-of-the-list", test_the_changes_rows_sit_at_the_top_of_the_list);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-can-be-hidden-by-the-filter", test_the_commit_that_last_changed_a_line_can_be_hidden_by_the_filter);
 	Test.add_func("/gitrlf/ui/diff-pane/the-commit-that-last-changed-a-line-is-selected", test_the_commit_that_last_changed_a_line_is_selected);
-	Test.add_func("/gitrlf/ui/diff-pane/the-counters-show-added-and-removed-lines-apart", test_the_counters_show_added_and_removed_lines_apart);
 	Test.add_func("/gitrlf/ui/diff-pane/the-shown-changes-follow-an-edit", test_the_shown_changes_follow_an_edit);
 	Test.add_func("/gitrlf/ui/diff-pane/the-total-of-lines-shows-above-the-files", test_the_total_of_lines_shows_above_the_files);
 	Test.add_func("/gitrlf/ui/diff-pane/ticking-nothing-clears-the-details", test_ticking_nothing_clears_the_details);
@@ -2440,44 +2439,6 @@ private static void test_the_commit_that_last_changed_a_line_is_selected()
 		activate_item("Go to the commit that last changed this line");
 
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "one");
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
-private static void test_the_counters_show_added_and_removed_lines_apart()
-{
-	try
-	{
-		var repo = Repo.create();
-
-		repo.commit("first");
-		FileUtils.set_contents(repo.path.get_child("other").get_path(), "x\ny\n");
-		repo.commit_bytes("second", "file", "a\nb\n".data);
-
-		var window = opened(repo, {"refs/heads/master"});
-
-		select_subject(window, "second");
-
-		var files = new Gee.ArrayList<string>();
-
-		foreach (var widget in find_all(window.history.diff_view, typeof(Gitg.DiffStat)))
-		{
-			if (widget.get_ancestor(typeof(Gitg.DiffViewFile)) != null)
-			{
-				files.add(((Gitg.DiffStat)widget).text);
-			}
-		}
-
-		files.sort();
-
-		assert_cmpstr(total_stat(window).text, CompareOperator.EQ, "+4/-1");
-		assert_cmpstr(string.joinv(",", files.to_array()), CompareOperator.EQ, "+2/-0,+2/-1");
 
 		window.destroy();
 		repo.remove();

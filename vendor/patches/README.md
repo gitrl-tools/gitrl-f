@@ -234,7 +234,7 @@ A text view that wraps finds its height before it knows its width. When the pane
 
 **8. Shows the total of the lines of the diff above the rows of the files.** When the diff has two files or more, a row above the first file shows a badge of the same kind as the badge of each file, and the number of files. The badge counts the added and removed lines of all the files, also of the files whose rows are not made yet. `update_total()` counts the lines from the plans of part 3, which hold all the files before the first batch.
 
-**Why.** The operator asked to see the total of the lines that a diff changes. The badge of each file gives only the lines of that file, so a commit that changes six files showed six numbers and no sum. The row is in the pane and not in the details of the commit, because the staged and the unstaged changes show the pane with no details. With one file, the total is the same as the badge of that file, so the row does not show.
+**Why.** The operator asked to see the total of the lines that a diff changes. The badge of each file gives only the lines of that file, so a commit that changes six files showed six numbers and no sum. The row is in the pane and not in the details of the commit, because the staged and the unstaged changes show the pane with no details. With one file, the total is the number on the badge of that file, so the row does not show.
 
 **Cost.** One more pass over the lines of each text file when the diff loads. A diff with two files or more is one row taller.
 
@@ -256,19 +256,11 @@ Adds the row of the total, `grid_total`, between the message and the rows of the
 
 ## gitg-diff-stat.patch
 
-Two changes.
-
-**1. Adds `add_lines()`, which adds the added and removed lines of a list of diff lines to the badge.**
+Adds `add_lines()`, which adds the added and removed lines of a list of diff lines to the badge.
 
 **Why.** Two badges count lines now: the badge of a file and the badge of the total. Before, `gitg-diff-view-file.patch` counted the lines in a loop of its own. One method keeps the two counts the same. It also makes the layout of the text once for each list, where the loop made it again for each line.
 
-**Cost.** None. The method counts the same lines as the loop did.
-
-**2. Shows the added and the removed lines apart, as `+3/-2`, where gitg shows their sum.** The new `text` property gives the text that the badge shows.
-
-**Why.** The operator asked for the form of the line counts column of the commit list. A sum hides the direction of a change: a commit that adds 476 lines and a commit that removes 476 lines showed the same badge.
-
-**Cost.** The text is longer, and the badge keeps the natural width of gitg, 75 pixels. The bar fills the space that the text leaves, so it is shorter. At `+86/-152` the bar does not show. The operator chose to keep the width. The tests read the text through `text`, because they cannot read the layout.
+**Cost.** None. The badges show the same numbers.
 
 ## gitg-lanes.patch
 
