@@ -24,6 +24,11 @@ public class DiffTool : Object
 {
 	private const string PICKS = "picks";
 
+	private static string before_picks(Gitg.Commit[] picked)
+	{
+		return label(picked[picked.length - 1].get_parents()[0]);
+	}
+
 	private static async void compare(Gitg.Repository repository,
 	                                  File directory,
 	                                  string before,
@@ -66,6 +71,15 @@ public class DiffTool : Object
 		remove(top);
 	}
 
+	public static async void compare_commit(Gitg.Repository repository,
+	                                        File directory,
+	                                        Gitg.Commit commit) throws Error
+	{
+		yield compare_diff(repository, directory,
+		                   label(commit.get_parents()[0]), label(commit),
+		                   commit.get_diff(null, 0), false);
+	}
+
 	public static async void compare_diff(Gitg.Repository repository,
 	                                      File directory,
 	                                      string before,
@@ -98,12 +112,8 @@ public class DiffTool : Object
 	public static async void compare_picks(Squash squash, File directory,
 	                                       Gitg.Commit[] picked) throws Error
 	{
-		string before;
-		string after;
-
-		name_picks(picked, out before, out after);
-		yield compare_diff(squash.open(), directory, before, after,
-		                   squash.diff(picked, null), false);
+		yield compare_diff(squash.open(), directory, before_picks(picked),
+		                   PICKS, squash.diff(picked, null), false);
 	}
 
 	public static async void compare_picks_file(Squash squash,
@@ -112,25 +122,14 @@ public class DiffTool : Object
 	                                            Ggit.DiffDelta delta)
 	                                            throws Error
 	{
-		string before;
-		string after;
-
-		name_picks(picked, out before, out after);
-		yield compare_file(squash.open(), directory, before, after, delta,
-		                   false);
+		yield compare_file(squash.open(), directory, before_picks(picked),
+		                   PICKS, delta, false);
 	}
 
 	public static string label(Ggit.Commit? commit)
 	{
 		return commit != null ? commit.get_id().to_string().substring(0, 7)
 		                      : "empty";
-	}
-
-	private static void name_picks(Gitg.Commit[] picked, out string before,
-	                               out string after)
-	{
-		before = label(picked[picked.length - 1].get_parents()[0]);
-		after = picked.length > 1 ? PICKS : label(picked[0]);
 	}
 
 	internal static void remove(File file) throws Error

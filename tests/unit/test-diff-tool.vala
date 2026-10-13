@@ -75,13 +75,12 @@ private class Fixture : Object
 private static void compare_commit(Fixture fixture, Gitg.Commit commit)
 {
 	var loop = new MainLoop();
-	var squash = new Gitrlf.Squash(fixture.repository);
 
-	Gitrlf.DiffTool.compare_picks.begin(squash, fixture.repo.path,
-	                                    { commit }, (obj, res) => {
+	Gitrlf.DiffTool.compare_commit.begin(fixture.repository, fixture.repo.path,
+	                                      commit, (obj, res) => {
 		try
 		{
-			Gitrlf.DiffTool.compare_picks.end(res);
+			Gitrlf.DiffTool.compare_commit.end(res);
 		}
 		catch (Error e)
 		{
@@ -91,7 +90,6 @@ private static void compare_commit(Fixture fixture, Gitg.Commit commit)
 		loop.quit();
 	});
 	loop.run();
-	squash.remove();
 }
 
 private static void compare_delta(Fixture fixture, Ggit.DiffDelta delta,

@@ -291,6 +291,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-in-the-diff-tool-of-git", test_the_commit_menu_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-one-commit-when-no-store-can-be-made", test_the_commit_menu_opens_one_commit_when_no_store_can_be_made);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-several-picks-as-one-diff", test_the_commit_menu_opens_several_picks_as_one_diff);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-outside-the-picks-opens-its-commit", test_the_commit_menu_outside_the_picks_opens_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
@@ -2290,6 +2291,35 @@ private static void test_the_commit_menu_opens_on_every_column()
 
 		window.resize(width, height);
 		settle(300);
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_opens_one_commit_when_no_store_can_be_made()
+{
+	try
+	{
+		var repo = picks_repo();
+		var first = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
+		var second = repo.git({"rev-parse", "HEAD~2"}).substring(0, 7);
+		var folder = Gitrlf.Squash.folder().get_path();
+		var window = opened(repo, {"refs/heads/master"});
+
+		DirUtils.create_with_parents(folder, 0700);
+		FileUtils.chmod(folder, 0500);
+
+		var record = diff_tool_record(repo, window, row_of(window, "second"));
+
+		FileUtils.chmod(folder, 0700);
+		assert_cmpstr(record, CompareOperator.EQ,
+		              "%s\na:first\n--\n%s\na:first\na:second\n"
+		              .printf(first, second));
+
 		window.destroy();
 		repo.remove();
 	}

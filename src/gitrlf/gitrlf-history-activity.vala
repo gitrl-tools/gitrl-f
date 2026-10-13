@@ -650,7 +650,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var item = new Gtk.MenuItem.with_label(_("Open diff in difftool"));
 
 		item.activate.connect(() => {
-			DiffTool.compare_picks.begin(d_squash, git_directory(), picked);
+			if (picked.length == 1)
+			{
+				DiffTool.compare_commit.begin(d_repository, git_directory(),
+				                              picked[0]);
+			}
+			else
+			{
+				DiffTool.compare_picks.begin(d_squash, git_directory(), picked);
+			}
 		});
 		item.show();
 		d_copy_menu.add(item);
