@@ -120,6 +120,11 @@ Open the list of repositories, not the repository of the current folder.
 The desktop entry uses it. It takes no ref, no path, no text, no regex and
 no tick option.
 .TP
+.B \-\-foreground
+Keep the terminal until the window closes. Without it, a start from a
+terminal gives the prompt back at once, and the window stays open when the
+terminal closes. An error in the options still shows in the terminal.
+.TP
 .B \-\-version
 Print the version and exit.
 .TP

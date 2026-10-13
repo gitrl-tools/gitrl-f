@@ -19,7 +19,7 @@ __gitrlf()
 
 	if [[ $cur == -* ]]; then
 		COMPREPLY=($(compgen -W '-a --all -l --local -r --remotes -t --tags
-			-S --text -G --regex -i --ignore-case -h --help --version --no-wd
+			-S --text -G --regex -i --ignore-case -h --help --version --no-wd --foreground
 			--' -- "$cur"))
 		return
 	fi

@@ -152,6 +152,17 @@ foreach name : ui_tests
   )
 endforeach
 
+test(
+  'ui-detach',
+  xvfb_wrapper,
+  args: [files('ui/test-detach.sh'), gitrlf_exe],
+  suite: 'ui',
+  env: test_env_base + {
+    'HOME': join_paths(meson.current_build_dir(), 'home', 'ui-detach'),
+  },
+  depends: [gitrlf_exe, gschemas_compiled],
+)
+
 gitrlf_bench = executable(
   'gitrlf-bench',
   files('perf/bench.vala') + gitrlf_all_resources,

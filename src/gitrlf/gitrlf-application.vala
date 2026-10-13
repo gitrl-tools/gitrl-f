@@ -61,6 +61,23 @@ public class Application : Gtk.Application
 		window.present();
 	}
 
+	private static void detach(string[] arguments) throws Error
+	{
+		string[] argv = { FileUtils.read_link("/proc/self/exe"),
+		                  "--foreground" };
+
+		foreach (var argument in arguments)
+		{
+			argv += argument;
+		}
+
+		Process.spawn_async(null, argv, null,
+		                    SpawnFlags.LEAVE_DESCRIPTORS_OPEN
+		                    | SpawnFlags.STDOUT_TO_DEV_NULL
+		                    | SpawnFlags.STDERR_TO_DEV_NULL,
+		                    () => { Posix.setsid(); }, null);
+	}
+
 	public static File? discover_repository(File location)
 	{
 		Ggit.init();
@@ -176,6 +193,23 @@ public class Application : Gtk.Application
 		}
 
 		d_location = location;
+
+		if (!command_line.foreground && Posix.isatty(Posix.STDOUT_FILENO))
+		{
+			try
+			{
+				detach(arguments[1:arguments.length]);
+			}
+			catch (Error e)
+			{
+				stderr.printf("gitrlf: %s\n", e.message);
+				exit_status = 1;
+				return true;
+			}
+
+			exit_status = 0;
+			return true;
+		}
 
 		try
 		{

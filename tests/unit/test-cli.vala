@@ -74,7 +74,7 @@ private const string[] PROTOTYPE_PARSES = {
 	"--foo -- p||||unrecognized arguments: --foo|",
 	"-lx -y||||unrecognized arguments: -x -y|",
 	"-=x||||unrecognized arguments: -=x|",
-	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd|",
+	"--=||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground|",
 	"-l-||||argument -l/--local: ignored explicit argument '-'|",
 	"-la=x||||argument -a/--all: ignored explicit argument 'x'|",
 	"-l origin/master|local|origin/master|||",
@@ -128,8 +128,8 @@ private const string[] REGEX_PARSES = {
 	"-S\ta\t-Gb|||||||argument -G/--regex: not allowed with argument -S/--text",
 	"--text=a\t--regex=b|||||||argument -G/--regex: not allowed with argument -S/--text",
 	"-G\tx\t--t|||||||ambiguous option: --t could match --tags, --text",
-	"--=|||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
-	"-G\t--=|||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"--=|||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground",
+	"-G\t--=|||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground",
 	"-G\t--r|||||||ambiguous option: --r could match --remotes, --regex",
 	"-x\t-G\ta|||||||unrecognized arguments: -x",
 };
@@ -176,7 +176,7 @@ private const string[] TEXT_PARSES = {
 	"-S\tfoo\t-x||||||unrecognized arguments: -x",
 	"-ia|all|||None|i|",
 	"-ai|all|||None|i|",
-	"--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground",
 	"--ta|tags|||None||",
 	"--tex\tfoo||||foo||",
 	"-lS=foo|local|||foo||",
@@ -184,7 +184,7 @@ private const string[] TEXT_PARSES = {
 	"-S\t--zzz||||||argument -S/--text: expected one argument",
 	"-S\t-a b||||||argument -S/--text: expected one argument",
 	"-S\t-x y||||-x y||",
-	"-S\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"-S\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground",
 	"-S\t-||||-||",
 	"-S\t--no||||||argument -S/--text: expected one argument",
 	"-S\t--text=x||||||argument -S/--text: expected one argument",
@@ -192,7 +192,7 @@ private const string[] TEXT_PARSES = {
 	"-x\t-S\tfoo||||||unrecognized arguments: -x",
 	"-S\tfoo\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-S\t-x\t--t||||||ambiguous option: --t could match --tags, --text",
-	"-S\t-x\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"-S\t-x\t--=||||||ambiguous option: --= could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground",
 	"-S\t--zzz\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-S\t-x\t--\t--t||||||argument -S/--text: expected one argument",
 	"--t\t-S||||||ambiguous option: --t could match --tags, --text",
@@ -200,7 +200,7 @@ private const string[] TEXT_PARSES = {
 	"-S\t-x\t--t\t-a||||||ambiguous option: --t could match --tags, --text",
 	"-x\t-S\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-a=1\t--t||||||ambiguous option: --t could match --tags, --text",
-	"-i=x\t--=x||||||ambiguous option: --=x could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd",
+	"-i=x\t--=x||||||ambiguous option: --=x could match --all, --local, --remotes, --tags, --text, --regex, --ignore-case, --help, --version, --no-wd, --foreground",
 	"-x\t--t||||||ambiguous option: --t could match --tags, --text",
 	"-h\t--t||||||ambiguous option: --t could match --tags, --text",
 };
@@ -441,7 +441,7 @@ private static void test_help_names_every_option()
 
 	run(Environment.get_current_dir(), { "-h" }, out output, out errors);
 
-	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--text <text>", "--regex <regex>", "--ignore-case", "--version", "--no-wd", "-- <path>..." })
+	foreach (var option in new string[] { "--all", "--local", "--remotes", "--tags", "--text <text>", "--regex <regex>", "--ignore-case", "--version", "--no-wd", "--foreground", "-- <path>..." })
 	{
 		assert_true(option in output);
 	}

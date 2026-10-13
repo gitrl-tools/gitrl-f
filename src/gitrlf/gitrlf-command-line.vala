@@ -51,6 +51,8 @@ repository, it opens a list of the repositories you opened last.
     --version       print the version and exit
     --no-wd         open the chooser, not the repository of this
                     folder
+    --foreground    keep the terminal until the window closes, where
+                    by default the prompt comes back at once
     -- <path>...    draw only the commits that change these files
                     or folders
 
@@ -90,9 +92,9 @@ One file after -- is followed through its renames, as in git log
 
 	public const string USAGE = "usage: gitrlf [<options>] [<ref>...] [-S <text> | -G <regex>] [-i] [-- <path>...]\n";
 
-	private const string LONG_KEYS = "alrtSGihVW";
+	private const string LONG_KEYS = "alrtSGihVWF";
 
-	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "text", "regex", "ignore-case", "help", "version", "no-wd" };
+	private const string[] LONG_NAMES = { "all", "local", "remotes", "tags", "text", "regex", "ignore-case", "help", "version", "no-wd", "foreground" };
 
 	private const string SHORT_NAMES = "alrtSGih";
 
@@ -101,6 +103,7 @@ One file after -- is followed through its renames, as in git log
 
 	public bool all { get; private set; }
 	public string? error { get; private set; }
+	public bool foreground { get; private set; }
 	public bool help { get; private set; }
 	public bool ignore_case { get; private set; }
 	public bool local { get; private set; }
@@ -499,6 +502,9 @@ One file after -- is followed through its renames, as in git log
 				break;
 			case 'W':
 				no_wd = true;
+				break;
+			case 'F':
+				foreground = true;
 				break;
 		}
 	}
