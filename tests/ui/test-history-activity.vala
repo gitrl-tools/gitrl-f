@@ -256,6 +256,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-centred", test_lines_column_is_centred);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
@@ -306,6 +307,21 @@ private static Gtk.Border line(Gtk.Widget close)
 	var box = ((Gtk.Bin)close.get_ancestor(typeof(Gtk.Revealer))).get_child();
 
 	return box.get_style_context().get_border(box.get_state_flags());
+}
+
+private static Gtk.CellRendererText lines_cell(Gtk.TreeView view,
+                                               Gtk.TreeIter iter)
+{
+	var column = view.get_column(2);
+	var cell = (Gtk.CellRendererText)column.get_cells().data;
+
+	for (var i = 0; i < 300 && cell.text == null; i++)
+	{
+		settle(10);
+		column.cell_set_cell_data(view.model, iter, false, false);
+	}
+
+	return cell;
 }
 
 private static bool only_details_shown(Gitrlf.Window window)
@@ -1517,6 +1533,43 @@ private static void test_left_pane_is_never_cut_off()
 	}
 }
 
+private static void test_lines_column_is_centred()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("first");
+		repo.commit_bytes("second", "file", "a\nb\n".data);
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+
+		var cell = lines_cell(view, iter);
+		Gdk.Rectangle area;
+
+		view.get_cell_area(view.model.get_path(iter), view.get_column(2),
+		                   out area);
+
+		var text = cell.get_aligned_area(view, 0, area);
+
+		var left = text.x - area.x;
+		var right = area.x + area.width - text.x - text.width;
+
+		assert_cmpint((left - right).abs(), CompareOperator.LE, 1);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_lines_column_shows_the_added_and_removed_lines()
 {
 	try
@@ -1528,17 +1581,11 @@ private static void test_lines_column_shows_the_added_and_removed_lines()
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var column = view.get_column(2);
-		var cell = (Gtk.CellRendererText)column.get_cells().data;
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
 
-		for (var i = 0; i < 300 && cell.text == null; i++)
-		{
-			settle(10);
-			column.cell_set_cell_data(view.model, iter, false, false);
-		}
+		var cell = lines_cell(view, iter);
 
 		assert_cmpstr(cell.text, CompareOperator.EQ, "+2/-1");
 

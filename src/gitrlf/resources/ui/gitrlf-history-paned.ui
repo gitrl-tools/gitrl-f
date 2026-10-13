@@ -302,6 +302,7 @@
                                     <property name="fixed-width">90</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="d_renderer_lines">
+                                        <property name="xalign">0.5</property>
                                       </object>
                                     </child>
                                   </object>
