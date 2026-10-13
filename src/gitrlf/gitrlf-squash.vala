@@ -319,11 +319,19 @@ public class Squash : Object
 			var location = top.get_child(STORE + Uuid.string_random());
 
 			flock(all, LOCK_EX);
-			clear(top);
-			location.make_directory();
-			d_hold = hold(location);
-			flock(d_hold, LOCK_EX);
-			Posix.close(all);
+
+			try
+			{
+				clear(top);
+				location.make_directory();
+				d_hold = hold(location);
+				flock(d_hold, LOCK_EX);
+			}
+			finally
+			{
+				Posix.close(all);
+			}
+
 			Ggit.Repository.init_repository(location, true);
 			FileUtils.set_contents(location.resolve_relative_path(
 				"objects/info/alternates").get_path(), objects + "\n");

@@ -27,6 +27,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/squash/a-pick-that-deletes-a-file-a-skipped-commit-changed-deletes-it", test_a_pick_that_deletes_a_file_a_skipped_commit_changed_deletes_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-added-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_added_adds_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-renamed-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_it);
+	Test.add_func("/gitrlf/squash/a-store-that-failed-lets-the-next-one-open", test_a_store_that_failed_lets_the_next_one_open);
 	Test.add_func("/gitrlf/squash/a-store-that-no-window-holds-is-cleared", test_a_store_that_no_window_holds_is_cleared);
 
 	return Test.run();
@@ -143,6 +144,41 @@ private static void test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_
 		assert_cmpstr(replayed(repo, {c, a}), CompareOperator.EQ,
 		              "ADDED a.txt a,ADDED g two");
 
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_store_that_failed_lets_the_next_one_open()
+{
+	try
+	{
+		var repo = Repo.create();
+		var repository = Gitrlf.Repository.open(
+			Gitrlf.Application.discover_repository(repo.path));
+		var folder = Gitrlf.Squash.folder().get_path();
+		var failed = new Gitrlf.Squash(repository);
+		var next = new Gitrlf.Squash(repository);
+
+		DirUtils.create_with_parents(folder, 0700);
+		FileUtils.chmod(folder, 0500);
+
+		try
+		{
+			failed.open();
+		}
+		catch (Error e)
+		{
+		}
+
+		FileUtils.chmod(folder, 0700);
+
+		assert_true(next.open().get_location().query_exists());
+
+		next.remove();
 		repo.remove();
 	}
 	catch (Error e)
