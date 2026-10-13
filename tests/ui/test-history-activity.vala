@@ -290,7 +290,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/click-on-the-shown-commit-hides-the-pane", test_click_on_the_shown_commit_hides_the_pane);
 	Test.add_func("/gitrlf/ui/history-activity/click-selects-and-keeps-the-pane-as-it-is", test_click_selects_and_keeps_the_pane_as_it_is);
 	Test.add_func("/gitrlf/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
-	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-lines-author-and-date", test_columns_are_subject_hash_lines_author_and_date);
+	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-lines-hash-author-and-date", test_columns_are_subject_lines_hash_author_and_date);
 	Test.add_func("/gitrlf/ui/history-activity/ctrl-and-shift-pick-several-rows", test_ctrl_and_shift_pick_several_rows);
 	Test.add_func("/gitrlf/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitrlf/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
@@ -364,7 +364,7 @@ private static Gtk.Border line(Gtk.Widget close)
 
 private static string lines_text(Gtk.TreeView view, Gtk.TreeIter iter)
 {
-	var column = view.get_column(2);
+	var column = view.get_column(1);
 	var text = "";
 
 	for (var i = 0; i < 300 && text.replace(",", "") == ""; i++)
@@ -1139,7 +1139,7 @@ private static void test_click_that_closes_a_file_keeps_the_refs_and_the_list()
 	}
 }
 
-private static void test_columns_are_subject_hash_lines_author_and_date()
+private static void test_columns_are_subject_lines_hash_author_and_date()
 {
 	try
 	{
@@ -1154,7 +1154,7 @@ private static void test_columns_are_subject_hash_lines_author_and_date()
 			titles += column.title;
 		}
 
-		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Hash,Lines,Author,Date");
+		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Lines,Hash,Author,Date");
 		assert_false(window.history.paned.commit_list_view.headers_visible);
 
 		window.destroy();
@@ -1474,7 +1474,7 @@ private static void test_hash_column_shows_the_short_hash()
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var column = view.get_column(1);
+		var column = view.get_column(2);
 		var cell = (Gtk.CellRendererText)column.get_cells().data;
 		Gtk.TreeIter iter;
 
@@ -1613,7 +1613,7 @@ private static void test_lines_column_holds_four_digits_a_side()
 
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var column = view.get_column(2);
+		var column = view.get_column(1);
 		var cells = column.get_cells();
 		var width = column.get_width();
 		Gdk.Rectangle row;
@@ -1659,7 +1659,7 @@ private static void test_lines_column_is_coloured_on_the_row_selected_at_the_sta
 		var repo = counts_repo();
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var cells = view.get_column(2).get_cells();
+		var cells = view.get_column(1).get_cells();
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
@@ -1686,7 +1686,7 @@ private static void test_lines_column_is_plain_on_a_picked_row()
 		var repo = counts_repo();
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var cells = view.get_column(2).get_cells();
+		var cells = view.get_column(1).get_cells();
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
@@ -1737,7 +1737,7 @@ private static void test_lines_column_sets_the_two_numbers_either_side_of_one_li
 		var repo = counts_repo();
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var cells = view.get_column(2).get_cells();
+		var cells = view.get_column(1).get_cells();
 		var added = (Gtk.CellRendererText)cells.first().data;
 		var removed = (Gtk.CellRendererText)cells.last().data;
 		var ends = new Gee.HashSet<int>();
@@ -1786,7 +1786,7 @@ private static void test_lines_column_shows_added_in_green_and_removed_in_red()
 		var repo = counts_repo();
 		var window = opened(repo, {"refs/heads/master"});
 		var view = window.history.paned.commit_list_view;
-		var cells = view.get_column(2).get_cells();
+		var cells = view.get_column(1).get_cells();
 		Gtk.TreeIter iter;
 
 		assert_true(view.model.get_iter_first(out iter));
@@ -3180,7 +3180,7 @@ private static void text_span(Gtk.TreeView view, Gtk.TreeIter iter,
                                Gtk.CellRendererText cell, out int left,
                                out int right)
 {
-	var column = view.get_column(2);
+	var column = view.get_column(1);
 	Gdk.Rectangle row;
 	int start;
 	int width;
@@ -3208,7 +3208,7 @@ private static File ticks_file(Repo repo)
 private static string tint(Gtk.TreeView view, Gtk.TreeIter iter,
                            Gtk.CellRenderer cell)
 {
-	var column = view.get_column(2);
+	var column = view.get_column(1);
 	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24,
 	                                     view.get_allocated_width(),
 	                                     view.get_allocated_height());
