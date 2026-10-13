@@ -282,6 +282,17 @@ public class Squash : Object
 		}
 	}
 
+	private static void include(File config, string path) throws Error
+	{
+		string own;
+		var quoted = path.replace("\\", "\\\\").replace("\"", "\\\"");
+
+		FileUtils.get_contents(config.get_path(), out own);
+		FileUtils.set_contents(config.get_path(),
+		                       "[include]\n\tpath = \"%s\"\n%s".printf(quoted,
+		                                                              own));
+	}
+
 	private static Entry merged(Gitg.Repository store, Entry was, Entry now,
 	                            Entry will) throws Error
 	{
@@ -306,9 +317,10 @@ public class Squash : Object
 	{
 		if (d_store == null)
 		{
-			var objects = History.git(d_repository.get_location(), {
-				"rev-parse", "--path-format=absolute", "--git-path", "objects"
-			}, null)[0];
+			var paths = History.git(d_repository.get_location(), {
+				"rev-parse", "--path-format=absolute", "--git-path", "objects",
+				"--git-path", "config", "--git-path", "info/attributes"
+			}, null);
 			var workdir = d_repository.get_workdir();
 			var top = folder();
 
@@ -334,7 +346,12 @@ public class Squash : Object
 
 			Ggit.Repository.init_repository(location, true);
 			FileUtils.set_contents(location.resolve_relative_path(
-				"objects/info/alternates").get_path(), objects + "\n");
+				"objects/info/alternates").get_path(), paths[0] + "\n");
+			include(location.get_child("config"), paths[1]);
+			DirUtils.create_with_parents(
+				location.get_child("info").get_path(), 0700);
+			FileUtils.symlink(paths[2], location.resolve_relative_path(
+				"info/attributes").get_path());
 			d_store = new Gitg.Repository(location, null);
 
 			if (workdir != null)

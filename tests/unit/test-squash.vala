@@ -27,6 +27,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/squash/a-pick-that-deletes-a-file-a-skipped-commit-changed-deletes-it", test_a_pick_that_deletes_a_file_a_skipped_commit_changed_deletes_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-added-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_added_adds_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-renamed-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_it);
+	Test.add_func("/gitrlf/squash/a-store-reads-the-settings-of-the-repository", test_a_store_reads_the_settings_of_the_repository);
 	Test.add_func("/gitrlf/squash/a-store-that-failed-lets-the-next-one-open", test_a_store_that_failed_lets_the_next_one_open);
 	Test.add_func("/gitrlf/squash/a-store-that-no-window-holds-is-cleared", test_a_store_that_no_window_holds_is_cleared);
 
@@ -144,6 +145,39 @@ private static void test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_
 		assert_cmpstr(replayed(repo, {c, a}), CompareOperator.EQ,
 		              "ADDED a.txt a,ADDED g two");
 
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_store_reads_the_settings_of_the_repository()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("root", "f.y", "y");
+		repo.git({"config", "diff.words.textconv", "strings"});
+		FileUtils.set_contents(repo.path.get_child(".git").get_child("info")
+			.get_child("attributes").get_path(), "*.y diff=words\n");
+
+		var repository = Gitrlf.Repository.open(
+			Gitrlf.Application.discover_repository(repo.path));
+		var squash = new Gitrlf.Squash(repository);
+		var store = squash.open();
+		var flags = Ggit.AttributeCheckFlags.FILE_THEN_INDEX;
+		var config = store.get_config().snapshot();
+
+		assert_cmpstr(store.get_attribute("f.y", "diff", flags),
+		              CompareOperator.EQ,
+		              repository.get_attribute("f.y", "diff", flags));
+		assert_cmpstr(config.get_string("diff.words.textconv"),
+		              CompareOperator.EQ, "strings");
+
+		squash.remove();
 		repo.remove();
 	}
 	catch (Error e)
