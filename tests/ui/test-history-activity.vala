@@ -242,7 +242,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/click-on-the-shown-commit-hides-the-pane", test_click_on_the_shown_commit_hides_the_pane);
 	Test.add_func("/gitrlf/ui/history-activity/click-selects-and-keeps-the-pane-as-it-is", test_click_selects_and_keeps_the_pane_as_it_is);
 	Test.add_func("/gitrlf/ui/history-activity/click-that-closes-a-file-keeps-the-refs-and-the-list", test_click_that_closes_a_file_keeps_the_refs_and_the_list);
-	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-author-and-date", test_columns_are_subject_hash_author_and_date);
+	Test.add_func("/gitrlf/ui/history-activity/columns-are-subject-hash-lines-author-and-date", test_columns_are_subject_hash_lines_author_and_date);
 	Test.add_func("/gitrlf/ui/history-activity/ctrl-and-shift-pick-several-rows", test_ctrl_and_shift_pick_several_rows);
 	Test.add_func("/gitrlf/ui/history-activity/dates-use-gitgs-wording", test_dates_use_gitgs_wording);
 	Test.add_func("/gitrlf/ui/history-activity/detached-head-label-comes-first", test_detached_head_label_comes_first);
@@ -256,6 +256,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitrlf/ui/history-activity/picks-are-kept-across-a-tick", test_picks_are_kept_across_a_tick);
@@ -1061,7 +1062,7 @@ private static void test_click_that_closes_a_file_keeps_the_refs_and_the_list()
 	}
 }
 
-private static void test_columns_are_subject_hash_author_and_date()
+private static void test_columns_are_subject_hash_lines_author_and_date()
 {
 	try
 	{
@@ -1076,7 +1077,7 @@ private static void test_columns_are_subject_hash_author_and_date()
 			titles += column.title;
 		}
 
-		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Hash,Author,Date");
+		assert_cmpstr(string.joinv(",", titles), CompareOperator.EQ, "Subject,Hash,Lines,Author,Date");
 		assert_false(window.history.paned.commit_list_view.headers_visible);
 
 		window.destroy();
@@ -1506,6 +1507,40 @@ private static void test_left_pane_is_never_cut_off()
 		window.history.paned.filter.translate_coordinates(window, 0, 0, out x, out y);
 
 		assert_cmpint(x, CompareOperator.GE, 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_shows_the_added_and_removed_lines()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("first");
+		repo.commit_bytes("second", "file", "a\nb\n".data);
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var column = view.get_column(2);
+		var cell = (Gtk.CellRendererText)column.get_cells().data;
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+
+		for (var i = 0; i < 300 && cell.text == null; i++)
+		{
+			settle(10);
+			column.cell_set_cell_data(view.model, iter, false, false);
+		}
+
+		assert_cmpstr(cell.text, CompareOperator.EQ, "+2/-1");
 
 		window.destroy();
 		repo.remove();

@@ -58,6 +58,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private int d_hold_height;
 	private bool d_ignore_case;
 	private Ggit.OId? d_kept;
+	private LineCounts? d_line_counts;
 	private History? d_line_history;
 	private string? d_line_label;
 	private Cancellable? d_line_search;
@@ -270,6 +271,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
+		d_paned.column_lines.set_cell_data_func(d_paned.renderer_lines,
+		                                        lines_data_func);
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);
 
@@ -419,6 +422,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_box.show_all();
 		d_box.destroy.connect(stop_search);
 		d_box.destroy.connect(drop_squash);
+		d_box.destroy.connect(stop_line_counts);
 
 		d_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
 		d_press.button = Gdk.BUTTON_PRIMARY;
@@ -1860,6 +1864,20 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_diff.options.pathspec = pathspec();
 	}
 
+	private void lines_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell,
+	                             Gtk.TreeModel model, Gtk.TreeIter iter)
+	{
+		var commit = d_model.commit_from_iter(iter);
+
+		if (commit != null)
+		{
+			var text = d_line_counts.text(commit.get_id());
+
+			((Gtk.CellRendererText)cell).text = text;
+			embolden(cell, commit);
+		}
+	}
+
 	private History? listed_history()
 	{
 		if (d_line_history != null)
@@ -2079,6 +2097,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		this.directory = directory;
 		drop_squash();
 		d_squash = new Squash(repository);
+		d_line_counts = new LineCounts(git_directory());
+		d_line_counts.counted.connect(() => {
+			d_paned.commit_list_view.queue_draw();
+		});
 		d_diff.repository = repository;
 		limit_diff();
 		Languages.warm(repository);
@@ -3236,6 +3258,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		if (target >= 0)
 		{
 			select(d_model.get_row(target).get_id());
+		}
+	}
+
+	private void stop_line_counts()
+	{
+		if (d_line_counts != null)
+		{
+			d_line_counts.stop();
 		}
 	}
 

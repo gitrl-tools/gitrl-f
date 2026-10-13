@@ -678,22 +678,22 @@ private static void test_marks_show_in_the_subject_hash_and_author_columns()
 
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
-		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 3), CompareOperator.EQ, 0);
 
 		search_for(window, "fix");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.GT, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
-		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 3), CompareOperator.EQ, 0);
 
 		search_for(window, sha.substring(0, 7));
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.GT, 0);
-		assert_cmpint(marked_pixels(window, 2), CompareOperator.EQ, 0);
+		assert_cmpint(marked_pixels(window, 3), CompareOperator.EQ, 0);
 
 		search_for(window, "tester");
 		assert_cmpint(marked_pixels(window, 0), CompareOperator.EQ, 0);
 		assert_cmpint(marked_pixels(window, 1), CompareOperator.EQ, 0);
-		assert_cmpint(marked_pixels(window, 2), CompareOperator.GT, 0);
+		assert_cmpint(marked_pixels(window, 3), CompareOperator.GT, 0);
 
 		window.destroy();
 		repo.remove();

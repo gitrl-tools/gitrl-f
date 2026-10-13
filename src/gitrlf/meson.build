@@ -18,6 +18,7 @@ gitrlf_lib_sources = files(
   'gitrlf-history-paned.vala',
   'gitrlf-history.vala',
   'gitrlf-languages.vala',
+  'gitrlf-line-counts.vala',
   'gitrlf-line-history.vala',
   'gitrlf-poll.vala',
   'gitrlf-preferences-dialog.vala',

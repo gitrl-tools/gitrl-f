@@ -1941,7 +1941,7 @@ private static void test_the_close_button_lifts_every_search()
 
 		assert_true(window.history.paned.path_bar.show_close_button);
 
-		var before = git_calls();
+		var before = git_calls() - git_calls("--numstat");
 
 		window.history.paned.path_bar.response(Gtk.ResponseType.CLOSE);
 		settle(100);
@@ -1949,7 +1949,7 @@ private static void test_the_close_button_lifts_every_search()
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "e,d,c,b,a");
 		assert_cmpstr(window.history.selected.get_subject(), CompareOperator.EQ, "a");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "");
-		assert_cmpint(git_calls(), CompareOperator.EQ, before);
+		assert_cmpint(git_calls() - git_calls("--numstat"), CompareOperator.EQ, before);
 
 		choose(window, Gitrlf.SearchChoice.LINES);
 
