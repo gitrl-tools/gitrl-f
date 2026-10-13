@@ -276,6 +276,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/line-offsets-point-at-the-text-of-each-line", test_line_offsets_point_at_the_text_of_each_line);
 	Test.add_func("/gitrlf/ui/diff-pane/many-files-show-their-first-rows-first", test_many_files_show_their_first_rows_first);
 	Test.add_func("/gitrlf/ui/diff-pane/orientation-follows-the-layout-setting", test_orientation_follows_the_layout_setting);
+	Test.add_func("/gitrlf/ui/diff-pane/picks-from-side-by-side-branches-show-both", test_picks_from_side_by_side_branches_show_both);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-line-up-their-subjects", test_picks_line_up_their_subjects);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-show-one-diff-of-only-the-picked-commits", test_picks_show_one_diff_of_only_the_picked_commits);
 	Test.add_func("/gitrlf/ui/diff-pane/picks-that-reach-the-first-commit-diff-from-nothing", test_picks_that_reach_the_first_commit_diff_from_nothing);
@@ -1847,6 +1848,36 @@ private static void test_orientation_follows_the_layout_setting()
 		assert_cmpint((panels.position - panels.get_allocated_width() / 2).abs(), CompareOperator.LE, 4);
 
 		settings.reset("orientation");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_picks_from_side_by_side_branches_show_both()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("base", "a.txt");
+		repo.git({"checkout", "--quiet", "-b", "side"});
+		repo.commit("side", "s.txt");
+		repo.git({"checkout", "--quiet", "master"});
+		repo.commit("main", "m.txt");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/side"});
+
+		assert_cmpstr(subjects(window), CompareOperator.EQ, "main,side,base");
+
+		pick_rows(window, {0, 1});
+
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
+		              "s.txt,m.txt");
+
 		window.destroy();
 		repo.remove();
 	}
