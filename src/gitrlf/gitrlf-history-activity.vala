@@ -2750,6 +2750,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 			catch (Error e)
 			{
+				d_diff.commit = null;
+				d_diff.diff = null;
+				show_error(_("Could not combine the picked commits"),
+				           e.message);
 				return;
 			}
 

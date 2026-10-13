@@ -253,6 +253,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-picked-commit-that-merges-keeps-its-colours", test_a_picked_commit_that_merges_keeps_its_colours);
 	Test.add_func("/gitrlf/ui/diff-pane/a-picked-commit-wins-where-a-skipped-one-wrote", test_a_picked_commit_wins_where_a_skipped_one_wrote);
 	Test.add_func("/gitrlf/ui/diff-pane/a-removed-line-digs-from-the-parent", test_a_removed_line_digs_from_the_parent);
+	Test.add_func("/gitrlf/ui/diff-pane/a-replay-that-fails-shows-an-error-not-the-last-diff", test_a_replay_that_fails_shows_an_error_not_the_last_diff);
 	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-opens-in-the-diff-tool", test_a_row_of_the_changes_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-row-of-the-changes-shows-its-diff", test_a_row_of_the_changes_shows_its_diff);
 	Test.add_func("/gitrlf/ui/diff-pane/added-lines-without-a-removed-partner-are-not-word-marked", test_added_lines_without_a_removed_partner_are_not_word_marked);
@@ -1060,6 +1061,41 @@ private static void test_a_removed_line_digs_from_the_parent()
 
 		assert_cmpstr(subjects(window), CompareOperator.EQ, "one");
 		assert_cmpstr(window.history.path_bar_text, CompareOperator.EQ, "History of line 4 of f.c, from %s".printf(two));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_replay_that_fails_shows_an_error_not_the_last_diff()
+{
+	try
+	{
+		var repo = combined_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var folder = Gitrlf.Squash.folder().get_path();
+		string? error = null;
+
+		window.history.show_error.connect((primary, secondary) => {
+			error = primary;
+		});
+		select_subject(window, "four");
+
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
+		              "c.txt");
+
+		DirUtils.create_with_parents(folder, 0700);
+		FileUtils.chmod(folder, 0500);
+		pick_rows(window, {0, 2});
+		FileUtils.chmod(folder, 0700);
+
+		assert_cmpstr(error, CompareOperator.EQ,
+		              "Could not combine the picked commits");
+		assert_cmpint(shown_files(window), CompareOperator.EQ, 0);
 
 		window.destroy();
 		repo.remove();
