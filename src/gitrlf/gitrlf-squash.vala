@@ -20,9 +20,18 @@
 namespace Gitrlf
 {
 
+[CCode (cname = "flock", cheader_filename = "sys/file.h")]
+extern int flock(int fd, int operation);
+
+[CCode (cname = "LOCK_EX", cheader_filename = "sys/file.h")]
+extern const int LOCK_EX;
+
+[CCode (cname = "LOCK_NB", cheader_filename = "sys/file.h")]
+extern const int LOCK_NB;
+
 public class Squash : Object
 {
-	public const string PREFIX = "gitrlf-store-";
+	private const string STORE = "store-";
 
 	private class Entry
 	{
@@ -66,6 +75,7 @@ public class Squash : Object
 		}
 	}
 
+	private int d_hold = -1;
 	private Gitg.Repository d_repository;
 	private Gitg.Repository? d_store;
 
@@ -74,9 +84,10 @@ public class Squash : Object
 		d_repository = repository;
 	}
 
-	private static bool alive(int pid)
+	public static File folder()
 	{
-		return Posix.kill(pid, 0) == 0 || Posix.errno == Posix.EPERM;
+		return File.new_for_path(Environment.get_user_runtime_dir())
+			.get_child("gitrlf");
 	}
 
 	private static Ggit.OId build(Gitg.Repository store, Ggit.Tree? tree,
@@ -159,22 +170,29 @@ public class Squash : Object
 		}
 	}
 
-	private static void clear() throws Error
+	private static void clear(File top) throws Error
 	{
-		var top = File.new_for_path(Environment.get_tmp_dir());
 		var children = top.enumerate_children(
 			"standard::name", FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
 		FileInfo? info;
 
 		while ((info = children.next_file()) != null)
 		{
-			var name = info.get_name();
+			var store = top.get_child(info.get_name());
 
-			if (name.has_prefix(PREFIX)
-			    && !alive(int.parse(name.substring(PREFIX.length))))
+			if (!info.get_name().has_prefix(STORE))
 			{
-				discard(top.get_child(name));
+				continue;
 			}
+
+			var hold = hold(store);
+
+			if (flock(hold, LOCK_EX | LOCK_NB) == 0)
+			{
+				discard(store);
+			}
+
+			Posix.close(hold);
 		}
 	}
 
@@ -247,6 +265,11 @@ public class Squash : Object
 		}
 	}
 
+	private static int hold(File store)
+	{
+		return Posix.open(store.get_path(), Posix.O_RDONLY | Posix.O_DIRECTORY);
+	}
+
 	private static Entry entry_at(Ggit.Tree tree, string path)
 	{
 		try
@@ -283,15 +306,24 @@ public class Squash : Object
 	{
 		if (d_store == null)
 		{
-			clear();
-
-			var location = File.new_for_path(DirUtils.make_tmp(
-				"%s%d-XXXXXX".printf(PREFIX, Posix.getpid())));
 			var objects = History.git(d_repository.get_location(), {
 				"rev-parse", "--path-format=absolute", "--git-path", "objects"
 			}, null)[0];
 			var workdir = d_repository.get_workdir();
+			var top = folder();
 
+			DirUtils.create_with_parents(top.get_path(), 0700);
+
+			var all = Posix.open(top.get_child("lock").get_path(),
+			                     Posix.O_RDWR | Posix.O_CREAT, 0600);
+			var location = top.get_child(STORE + Uuid.string_random());
+
+			flock(all, LOCK_EX);
+			clear(top);
+			location.make_directory();
+			d_hold = hold(location);
+			flock(d_hold, LOCK_EX);
+			Posix.close(all);
 			Ggit.Repository.init_repository(location, true);
 			FileUtils.set_contents(location.resolve_relative_path(
 				"objects/info/alternates").get_path(), objects + "\n");
@@ -314,6 +346,8 @@ public class Squash : Object
 		}
 
 		discard(d_store.get_location());
+		Posix.close(d_hold);
+		d_hold = -1;
 		d_store = null;
 	}
 

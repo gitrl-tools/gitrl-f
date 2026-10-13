@@ -280,14 +280,12 @@ public class Bench : Object
 
 	private static string store_size()
 	{
-		var mine = "%s%d-".printf(Squash.PREFIX, Posix.getpid());
 		string output = "";
 
 		try
 		{
-			Process.spawn_sync(Environment.get_tmp_dir(),
-			                   {"sh", "-c", "du -sh " + mine + "*"}, null,
-			                   SpawnFlags.SEARCH_PATH, null, out output);
+			Process.spawn_sync(Squash.folder().get_path(), {"du", "-sh", "."},
+			                   null, SpawnFlags.SEARCH_PATH, null, out output);
 		}
 		catch (Error e)
 		{

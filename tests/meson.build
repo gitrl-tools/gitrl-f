@@ -63,6 +63,7 @@ foreach name : unit_tests
       'XDG_CACHE_HOME': join_paths(test_home, '.cache'),
       'XDG_CONFIG_HOME': join_paths(test_home, '.config'),
       'XDG_DATA_HOME': join_paths(test_home, '.local', 'share'),
+      'XDG_RUNTIME_DIR': join_paths(test_home, 'run'),
     },
     depends: [gitrlf_exe, gschemas_compiled],
   )
@@ -141,6 +142,7 @@ foreach name : ui_tests
       'XDG_CACHE_HOME': join_paths(test_home, '.cache'),
       'XDG_CONFIG_HOME': join_paths(test_home, '.config'),
       'XDG_DATA_HOME': join_paths(test_home, '.local', 'share'),
+      'XDG_RUNTIME_DIR': join_paths(test_home, 'run'),
     },
     depends: [gschemas_compiled],
     # ui-filter run alone: 106.5 s with 43 tests, 122.1 s with 48 tests.

@@ -20,16 +20,6 @@
 namespace GitrlfTest
 {
 
-private static int gone_process() throws Error
-{
-	var process = new Subprocess.newv({"true"}, SubprocessFlags.NONE);
-	var pid = int.parse(process.get_identifier());
-
-	process.wait();
-
-	return pid;
-}
-
 public static int main(string[] args)
 {
 	Test.init(ref args);
@@ -37,7 +27,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/squash/a-pick-that-deletes-a-file-a-skipped-commit-changed-deletes-it", test_a_pick_that_deletes_a_file_a_skipped_commit_changed_deletes_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-added-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_added_adds_it);
 	Test.add_func("/gitrlf/squash/a-pick-that-edits-a-file-a-skipped-commit-renamed-adds-it", test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_it);
-	Test.add_func("/gitrlf/squash/a-store-of-a-gone-process-is-cleared", test_a_store_of_a_gone_process_is_cleared);
+	Test.add_func("/gitrlf/squash/a-store-that-no-window-holds-is-cleared", test_a_store_that_no_window_holds_is_cleared);
 
 	return Test.run();
 }
@@ -81,12 +71,6 @@ private static string replayed(Repo repo, string[] ids) throws Error
 	squash.remove();
 
 	return string.joinv(",", lines);
-}
-
-private static File store_of(int pid) throws Error
-{
-	return File.new_for_path(DirUtils.make_tmp(
-		"%s%d-XXXXXX".printf(Gitrlf.Squash.PREFIX, pid)));
 }
 
 private static void test_a_pick_that_deletes_a_file_a_skipped_commit_changed_deletes_it()
@@ -167,23 +151,28 @@ private static void test_a_pick_that_edits_a_file_a_skipped_commit_renamed_adds_
 	}
 }
 
-private static void test_a_store_of_a_gone_process_is_cleared()
+private static void test_a_store_that_no_window_holds_is_cleared()
 {
 	try
 	{
 		var repo = Repo.create();
-		var gone = store_of(gone_process());
-		var live = store_of(Posix.getpid());
-		var squash = new Gitrlf.Squash(Gitrlf.Repository.open(
-			Gitrlf.Application.discover_repository(repo.path)));
+		var repository = Gitrlf.Repository.open(
+			Gitrlf.Application.discover_repository(repo.path));
+		var stale = Gitrlf.Squash.folder().get_child("store-stale");
+		var first = new Gitrlf.Squash(repository);
+		var second = new Gitrlf.Squash(repository);
 
-		squash.open();
+		DirUtils.create_with_parents(stale.get_path(), 0700);
 
-		assert_false(gone.query_exists());
-		assert_true(live.query_exists());
+		var held = first.open().get_location();
 
-		squash.remove();
-		DirUtils.remove(live.get_path());
+		second.open();
+
+		assert_false(stale.query_exists());
+		assert_true(held.query_exists());
+
+		first.remove();
+		second.remove();
 		repo.remove();
 	}
 	catch (Error e)
