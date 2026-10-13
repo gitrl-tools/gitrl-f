@@ -35,6 +35,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_choosing;
 	private Ggit.Diff? d_combined;
 	private string? d_combined_key;
+	private Gitg.Commit[] d_combined_picks;
 	private CopyMenu d_copy_menu;
 	private bool d_details_queued;
 	private Gitg.DiffView d_diff;
@@ -1181,8 +1182,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (d_diff.diff == d_combined)
 		{
-			DiffTool.compare_picks_file.begin(d_squash, directory, picks(),
-			                                  delta);
+			DiffTool.compare_picks_file.begin(d_squash, directory,
+			                                  d_combined_picks, delta);
 		}
 		else if (commit != null)
 		{
@@ -2758,6 +2759,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 
 			d_combined_key = key;
+			d_combined_picks = picked;
 			d_diff.new_is_workdir = false;
 			d_diff.diff = d_combined;
 		}

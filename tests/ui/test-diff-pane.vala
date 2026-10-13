@@ -246,6 +246,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/diff-pane/a-combined-diff-offers-no-tools-of-one-commit", test_a_combined_diff_offers_no_tools_of_one_commit);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-menu-shows-the-history-of-the-file", test_a_file_menu_shows_the_history_of_the_file);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-changes-opens-in-the-diff-tool", test_a_file_of_the_changes_opens_in_the_diff_tool);
+	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-picks-opens-after-the-filter-hides-them", test_a_file_of_the_picks_opens_after_the_filter_hides_them);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-of-the-picks-opens-in-the-diff-tool", test_a_file_of_the_picks_opens_in_the_diff_tool);
 	Test.add_func("/gitrlf/ui/diff-pane/a-file-opens-in-the-diff-tool-of-git", test_a_file_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/diff-pane/a-line-shows-its-history", test_a_line_shows_its_history);
@@ -810,6 +811,59 @@ private static void test_a_file_of_the_changes_opens_in_the_diff_tool()
 		record.load_contents(null, out contents, null);
 		assert_cmpstr((string)contents, CompareOperator.EQ,
 		              "one\n--\nedited\n");
+
+		window.destroy();
+		FileUtils.unlink(record.get_path());
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_file_of_the_picks_opens_after_the_filter_hides_them()
+{
+	try
+	{
+		var repo = combined_repo();
+		var record = File.new_for_path(repo.path.get_path() + ".record");
+		var one = repo.git({"rev-parse", "HEAD~3"}).substring(0, 7);
+
+		repo.git({"config", "diff.tool", "record"});
+		repo.git({"config", "difftool.record.cmd",
+		          "{ basename \"$(dirname \"$LOCAL\")\"; cat \"$LOCAL\"; "
+		          + "echo --; basename \"$(dirname \"$REMOTE\")\"; "
+		          + "cat \"$REMOTE\"; } > '" + record.get_path()
+		          + ".part' && mv '" + record.get_path() + ".part' '"
+		          + record.get_path() + "'"});
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		pick_rows(window, {0, 2});
+		window.history.only_matches = true;
+		window.history.search_choice = Gitrlf.SearchChoice.MESSAGES;
+		window.history.search_field.text = "three";
+		window.history.search_field.activate();
+		settle(800);
+
+		assert_cmpint(window.history.picks().length, CompareOperator.EQ, 0);
+		assert_cmpstr(string.joinv(",", headers(window)), CompareOperator.EQ,
+		              "c.txt,b.txt");
+
+		right_click_file(window, "c.txt");
+		activate_item("Open diff in difftool");
+
+		for (var i = 0; i < 100 && !record.query_exists(); i++)
+		{
+			settle(100);
+		}
+
+		uint8[] contents;
+
+		record.load_contents(null, out contents, null);
+		assert_cmpstr((string)contents, CompareOperator.EQ,
+		              "%s\n--\npicks\nc4\n".printf(one));
 
 		window.destroy();
 		FileUtils.unlink(record.get_path());
