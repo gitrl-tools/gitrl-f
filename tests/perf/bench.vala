@@ -67,7 +67,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -155,6 +155,63 @@ public class Bench : Object
 		return 0;
 	}
 
+	private static void picked(Window window, int count)
+	{
+		var selection = window.history.paned.commit_list_view.get_selection();
+		var total = new Timer();
+		var slowest = 0.0;
+		var slowest_row = 0;
+
+		window.history.paned.details_visible = true;
+		selection.unselect_all();
+		selection.select_path(new Gtk.TreePath.from_indices(0));
+		drain();
+		total.start();
+
+		for (var i = 1; i < count; i++)
+		{
+			var step = new Timer();
+
+			selection.select_path(new Gtk.TreePath.from_indices(i));
+			shown(window, i + 1);
+			if (step.elapsed() > slowest)
+			{
+				slowest = step.elapsed();
+				slowest_row = i;
+			}
+		}
+
+		stdout.printf("picks grown one row at a time to %d: %.3f s, slowest step %.3f s at row %d\n",
+		              count, total.elapsed(), slowest, slowest_row);
+
+		selection.unselect_all();
+		drain();
+		window.history.diff_view.message_view.buffer.text = "";
+		total.start();
+		selection.select_range(new Gtk.TreePath.from_indices(0),
+		                       new Gtk.TreePath.from_indices(count - 1));
+		shown(window, count);
+
+		stdout.printf("picks %d at once: %.3f s\n", count, total.elapsed());
+
+		try
+		{
+			var squash = new Squash(window.repository);
+
+			squash.open();
+			total.start();
+			squash.diff(window.history.picks(), null);
+			stdout.printf("replay alone of %d picks: %.3f s\n", count, total.elapsed());
+			squash.remove();
+		}
+		catch (Error e)
+		{
+			stderr.printf("%s\n", e.message);
+		}
+		stdout.printf("scratch store %s\n", store_size());
+		stdout.flush();
+	}
+
 	private static void searched(Window window, string text, Gee.Set<string> every, string[] only)
 	{
 		var timer = new Timer();
@@ -208,6 +265,38 @@ public class Bench : Object
 		drain();
 	}
 
+	private static void shown(Window window, int count)
+	{
+		var heading = ngettext("%d commit", "%d commits", count).printf(count) + "\n";
+		var buffer = window.history.diff_view.message_view.buffer;
+		var timer = new Timer();
+
+		while (!buffer.text.has_prefix(heading) && timer.elapsed() < 600)
+		{
+			drain();
+			Thread.usleep(1000);
+		}
+	}
+
+	private static string store_size()
+	{
+		var mine = "%s%d-".printf(Squash.PREFIX, Posix.getpid());
+		string output = "";
+
+		try
+		{
+			Process.spawn_sync(Environment.get_tmp_dir(),
+			                   {"sh", "-c", "du -sh " + mine + "*"}, null,
+			                   SpawnFlags.SEARCH_PATH, null, out output);
+		}
+		catch (Error e)
+		{
+			return e.message;
+		}
+
+		return output.strip();
+	}
+
 	private static void tick(History history, Ggit.OId[] mainline, string label, Ggit.OId[] tips)
 	{
 		var timer = new Timer();
@@ -243,6 +332,7 @@ public class Bench : Object
 	private static int window(string path, string[] arguments)
 	{
 		var only = new string[0];
+		var picks = 0;
 		string? text = null;
 		string? search = null;
 
@@ -255,6 +345,10 @@ public class Bench : Object
 			else if (arguments[i] == "--search" && i + 1 < arguments.length)
 			{
 				search = arguments[++i];
+			}
+			else if (arguments[i] == "--picks" && i + 1 < arguments.length)
+			{
+				picks = int.parse(arguments[++i]);
 			}
 			else
 			{
@@ -323,6 +417,11 @@ public class Bench : Object
 		drain();
 
 		stdout.printf("window reload %.3f s\n", timer.elapsed());
+
+		if (picks > 0)
+		{
+			picked(window, picks);
+		}
 
 		if (search != null)
 		{

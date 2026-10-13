@@ -87,6 +87,40 @@ stream_big100() {
 	}'
 }
 
+stream_interleaved() {
+	awk '
+	function commit(ref, mark, from, t, msg, path, content) {
+		printf "commit %s\nmark :%d\n", ref, mark
+		printf "author A <a@example.com> %d +0000\ncommitter A <a@example.com> %d +0000\n", t, t
+		printf "data %d\n%s\n", length(msg), msg
+		if (from > 0) {
+			printf "from :%d\n", from
+		}
+		if (path != "") {
+			printf "M 100644 inline %s\ndata %d\n%s\n", path, length(content), content
+		}
+	}
+	BEGIN {
+		t = 1600000000
+		commit("refs/heads/master", 1, 0, t, "Base", "", "")
+		for (f = 0; f < 20000; f++) {
+			content = "base " f "\n"
+			printf "M 100644 inline src/d%d/f%d.cpp\ndata %d\n%s\n", f % 200, f, length(content), content
+		}
+		master = 1
+		side = 1
+		for (n = 0; n < 300; n++) {
+			t += 60
+			commit("refs/heads/master", 2 * n + 2, master, t, "Master change " n, sprintf("src/d%d/f%d.cpp", n % 200, 2 * n), "master " n "\n")
+			master = 2 * n + 2
+			t += 60
+			commit("refs/heads/side", 2 * n + 3, side, t, "Side change " n, sprintf("src/d%d/f%d.cpp", (n + 100) % 200, 2 * n + 1), "side " n "\n")
+			side = 2 * n + 3
+		}
+	}'
+}
+
 mkdir -p "$1"
 build "$1/big" stream_big
 build "$1/big100" stream_big100
+build "$1/interleaved" stream_interleaved
