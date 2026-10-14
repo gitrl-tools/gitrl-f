@@ -63,6 +63,38 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.0" date="2026-10-14">
+      <description>
+        <ul>
+          <li>
+            Ctrl and Shift clicks select more than one commit. The pane then
+            shows one diff of only those commits, applied oldest first. The
+            difftool opens this diff, or one file of it.
+          </li>
+          <li>
+            A new column after the subject shows the lines that each commit
+            adds and removes. The added lines are green and the removed lines
+            are red.
+          </li>
+          <li>
+            The text of the total in the diff pane now gives the two counts
+            apart, for example "2 files in total (+72/-13)".
+          </li>
+          <li>
+            When gitrlf starts from a terminal, it gives the prompt back
+            immediately. The --foreground option keeps the prompt until the
+            window closes, as before.
+          </li>
+          <li>
+            If the difftool does not open, the window shows an error with the
+            cause.
+          </li>
+          <li>
+            The side branch of the icon is now Olympic Blue.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.2" date="2026-10-09">
       <description>
         <ul>
