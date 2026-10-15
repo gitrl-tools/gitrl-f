@@ -675,47 +675,40 @@ public class Bench : Object
 	private static void searched(Window window, string text, Gee.Set<string> every, string[] only)
 	{
 		var timer = new Timer();
-		Gtk.CheckButton? narrow = null;
-
-		foreach (var widget in widgets(window.history.widget))
-		{
-			var check = widget as Gtk.CheckButton;
-
-			if (check != null && check.label == "Display matches only")
-			{
-				narrow = check;
-			}
-		}
 
 		window.history.set_ticks(every);
 		drain();
 		window.history.search_visible = true;
-		window.history.search_field.text = text;
+		drain();
+		typed(window, text);
 
 		timer.start();
-		window.history.search_field.search_changed();
+		window.history.search_field.activate();
 		drain();
 
 		stdout.printf("window search %s, every ref ticked: %.3f s, %s\n", text, timer.elapsed(), window.history.search_count);
 
 		timer.start();
-		narrow.active = true;
+		window.history.only_matches = true;
 		drain();
 
 		stdout.printf("window only matches %s: %.3f s, %d rows\n", text, timer.elapsed(), window.history.rows().length);
 
-		narrow.active = false;
+		window.history.only_matches = false;
 		drain();
 
 		foreach (var name in only)
 		{
 			var ticks = new Gee.HashSet<string>();
 			ticks.add(name);
+			window.history.search_field.text = "";
+			window.history.search_field.activate();
 			window.history.set_ticks(ticks);
+			window.history.search_field.text = text;
 			drain();
 
 			timer.start();
-			window.history.search_field.search_changed();
+			window.history.search_field.activate();
 			drain();
 
 			stdout.printf("window search %s beyond the ticks, only %s: %.3f s, %s\n", text, name, timer.elapsed(), window.history.search_count);
@@ -863,6 +856,32 @@ public class Bench : Object
 
 		stdout.printf("tick, %s: %.3f s, of which lanes %.3f s, %d rows\n", label, timer.elapsed(), lanes, rows.length);
 		stdout.flush();
+	}
+
+	private static void typed(Window window, string text)
+	{
+		var field = window.history.search_field;
+		var timer = new Timer();
+		var slowest = 0.0;
+		var keys = 0;
+		var index = 0;
+		unichar key;
+
+		field.text = "";
+		drain();
+		timer.start();
+
+		while (text.get_next_char(ref index, out key))
+		{
+			var step = new Timer();
+
+			field.text = text.substring(0, index);
+			drain();
+			slowest = double.max(slowest, step.elapsed());
+			keys++;
+		}
+
+		stdout.printf("window typing %s, %d keys: %.3f s, slowest key %.3f s\n", text, keys, timer.elapsed(), slowest);
 	}
 
 	private static double waited(Timer timer, Done done, ref double longest)
