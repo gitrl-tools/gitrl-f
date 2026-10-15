@@ -43,6 +43,8 @@ public static int main(string[] args)
 	              test_a_new_file_counts_as_unstaged);
 	Test.add_func("/gitrlf/changes/an-edit-to-a-new-file-changes-the-key",
 	              test_an_edit_to_a_new_file_changes_the_key);
+	Test.add_func("/gitrlf/changes/lines-sum-the-added-and-removed-lines",
+	              test_lines_sum_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/changes/staged-and-unstaged-are-apart",
 	              test_staged_and_unstaged_are_apart);
 	Test.add_func("/gitrlf/changes/staging-later-shows-on-the-next-read",
@@ -110,6 +112,33 @@ private static void test_an_edit_to_a_new_file_changes_the_key()
 		                               Gitrlf.Changes.unstaged(repository, 3));
 
 		assert_cmpstr(after, CompareOperator.NE, before);
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_sum_the_added_and_removed_lines()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit("one", "notes");
+		write(repo, "notes", "two\nthree\n");
+		repo.git({"add", "notes"});
+		write(repo, "fresh", "a\nb\nc\n");
+
+		var repository = open(repo);
+		var staged = Gitrlf.Changes.staged(repository, 3);
+		var unstaged = Gitrlf.Changes.unstaged(repository, 3);
+
+		assert_cmpstr(Gitrlf.Changes.lines(staged), CompareOperator.EQ,
+		              "+2/-1");
+		assert_cmpstr(Gitrlf.Changes.lines(unstaged), CompareOperator.EQ,
+		              "+3/-0");
 		repo.remove();
 	}
 	catch (Error e)

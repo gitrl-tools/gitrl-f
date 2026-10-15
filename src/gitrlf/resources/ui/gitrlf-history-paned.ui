@@ -187,28 +187,45 @@
                                       <object class="GtkListBoxRow" id="d_unstaged_row">
                                         <property name="visible">True</property>
                                         <child>
-                                          <object class="GtkBox">
+                                          <object class="GtkOverlay" id="d_unstaged_overlay">
                                             <property name="visible">True</property>
-                                            <property name="margin_start">16</property>
-                                            <property name="margin_end">6</property>
                                             <child>
-                                              <object class="GtkLabel">
+                                              <object class="GtkBox">
                                                 <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="label" translatable="yes">Unstaged changes</property>
-                                                <style>
-                                                  <class name="changes-label"/>
-                                                </style>
+                                                <property name="margin_start">16</property>
+                                                <property name="margin_end">6</property>
+                                                <child>
+                                                  <object class="GtkLabel">
+                                                    <property name="visible">True</property>
+                                                    <property name="xalign">0</property>
+                                                    <property name="label" translatable="yes">Unstaged changes</property>
+                                                    <style>
+                                                      <class name="changes-label"/>
+                                                    </style>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkLabel" id="d_unstaged_count">
+                                                    <property name="visible">True</property>
+                                                    <property name="xalign">0</property>
+                                                    <property name="margin_start">4</property>
+                                                    <style>
+                                                      <class name="dim-label"/>
+                                                    </style>
+                                                  </object>
+                                                </child>
                                               </object>
                                             </child>
-                                            <child>
-                                              <object class="GtkLabel" id="d_unstaged_count">
+                                            <child type="overlay">
+                                              <object class="GtkLabel" id="d_unstaged_added">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1</property>
+                                              </object>
+                                            </child>
+                                            <child type="overlay">
+                                              <object class="GtkLabel" id="d_unstaged_removed">
                                                 <property name="visible">True</property>
                                                 <property name="xalign">0</property>
-                                                <property name="margin_start">4</property>
-                                                <style>
-                                                  <class name="dim-label"/>
-                                                </style>
                                               </object>
                                             </child>
                                           </object>
@@ -219,28 +236,45 @@
                                       <object class="GtkListBoxRow" id="d_staged_row">
                                         <property name="visible">True</property>
                                         <child>
-                                          <object class="GtkBox">
+                                          <object class="GtkOverlay" id="d_staged_overlay">
                                             <property name="visible">True</property>
-                                            <property name="margin_start">16</property>
-                                            <property name="margin_end">6</property>
                                             <child>
-                                              <object class="GtkLabel">
+                                              <object class="GtkBox">
                                                 <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="label" translatable="yes">Staged changes</property>
-                                                <style>
-                                                  <class name="changes-label"/>
-                                                </style>
+                                                <property name="margin_start">16</property>
+                                                <property name="margin_end">6</property>
+                                                <child>
+                                                  <object class="GtkLabel">
+                                                    <property name="visible">True</property>
+                                                    <property name="xalign">0</property>
+                                                    <property name="label" translatable="yes">Staged changes</property>
+                                                    <style>
+                                                      <class name="changes-label"/>
+                                                    </style>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkLabel" id="d_staged_count">
+                                                    <property name="visible">True</property>
+                                                    <property name="xalign">0</property>
+                                                    <property name="margin_start">4</property>
+                                                    <style>
+                                                      <class name="dim-label"/>
+                                                    </style>
+                                                  </object>
+                                                </child>
                                               </object>
                                             </child>
-                                            <child>
-                                              <object class="GtkLabel" id="d_staged_count">
+                                            <child type="overlay">
+                                              <object class="GtkLabel" id="d_staged_added">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1</property>
+                                              </object>
+                                            </child>
+                                            <child type="overlay">
+                                              <object class="GtkLabel" id="d_staged_removed">
                                                 <property name="visible">True</property>
                                                 <property name="xalign">0</property>
-                                                <property name="margin_start">4</property>
-                                                <style>
-                                                  <class name="dim-label"/>
-                                                </style>
                                               </object>
                                             </child>
                                           </object>

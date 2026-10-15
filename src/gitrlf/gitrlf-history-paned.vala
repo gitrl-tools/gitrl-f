@@ -78,13 +78,25 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Stack d_stack_list;
 	[GtkChild]
+	private unowned Gtk.Label d_staged_added;
+	[GtkChild]
 	private unowned Gtk.Label d_staged_count;
+	[GtkChild]
+	private unowned Gtk.Overlay d_staged_overlay;
+	[GtkChild]
+	private unowned Gtk.Label d_staged_removed;
 	[GtkChild]
 	private unowned Gtk.ListBoxRow d_staged_row;
 	[GtkChild]
 	private unowned Gtk.Label d_summary;
 	[GtkChild]
+	private unowned Gtk.Label d_unstaged_added;
+	[GtkChild]
 	private unowned Gtk.Label d_unstaged_count;
+	[GtkChild]
+	private unowned Gtk.Overlay d_unstaged_overlay;
+	[GtkChild]
+	private unowned Gtk.Label d_unstaged_removed;
 	[GtkChild]
 	private unowned Gtk.ListBoxRow d_unstaged_row;
 
@@ -281,9 +293,19 @@ public class HistoryPaned : Gtk.Box
 		get { return d_stack_list; }
 	}
 
+	public Gtk.Label staged_added
+	{
+		get { return d_staged_added; }
+	}
+
 	public Gtk.Label staged_count
 	{
 		get { return d_staged_count; }
+	}
+
+	public Gtk.Label staged_removed
+	{
+		get { return d_staged_removed; }
 	}
 
 	public Gtk.ListBoxRow staged_row
@@ -296,9 +318,19 @@ public class HistoryPaned : Gtk.Box
 		get { return d_summary; }
 	}
 
+	public Gtk.Label unstaged_added
+	{
+		get { return d_unstaged_added; }
+	}
+
 	public Gtk.Label unstaged_count
 	{
 		get { return d_unstaged_count; }
+	}
+
+	public Gtk.Label unstaged_removed
+	{
+		get { return d_unstaged_removed; }
 	}
 
 	public Gtk.ListBoxRow unstaged_row
@@ -340,6 +372,13 @@ public class HistoryPaned : Gtk.Box
 		var interface_settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");
 
 		interface_settings.bind("orientation", this, "inner_orientation", SettingsBindFlags.GET);
+
+		d_staged_overlay.get_child_position.connect(place_change_line);
+		d_unstaged_overlay.get_child_position.connect(place_change_line);
+		d_column_lines.notify["x-offset"].connect(queue_change_lines);
+		d_column_lines.notify["width"].connect(queue_change_lines);
+		d_commit_list_view.hadjustment.value_changed.connect(
+			queue_change_lines);
 	}
 
 	public void fit_sidebar()
@@ -358,6 +397,43 @@ public class HistoryPaned : Gtk.Box
 		d_scrolled_window_refs.get_preferred_width(out scrolled, out natural);
 		d_box_sidebar.get_preferred_width(out minimum, out natural);
 		d_paned_sidebar.position = int.max(natural, d_refs_list.widest_row() + scrolled - list);
+	}
+
+	private bool place_change_line(Gtk.Overlay overlay, Gtk.Widget widget,
+	                               out Gdk.Rectangle allocation)
+	{
+		var removed = widget == d_staged_removed
+		              || widget == d_unstaged_removed;
+		var cell = (Gtk.CellRendererText)d_column_lines.get_cells()
+			.nth_data(removed ? 1 : 0);
+		var pad = (int)cell.xpad;
+		int separator;
+		int start;
+		int width;
+		int x;
+		int y;
+
+		d_commit_list_view.style_get("horizontal-separator", out separator);
+		d_column_lines.cell_get_position(cell, out start, out width);
+		d_commit_list_view.convert_bin_window_to_widget_coords(
+			d_column_lines.x_offset + separator / 2 + start, 0, out x, out y);
+		d_commit_list_view.translate_coordinates(overlay, x, 0, out x,
+		                                         out y);
+
+		allocation = Gdk.Rectangle() {
+			x = x + pad,
+			y = 0,
+			width = int.max(width - 2 * pad, 0),
+			height = overlay.get_allocated_height()
+		};
+
+		return true;
+	}
+
+	private void queue_change_lines()
+	{
+		d_staged_overlay.queue_resize();
+		d_unstaged_overlay.queue_resize();
 	}
 }
 

@@ -49,6 +49,19 @@ private static void assert_fits_its_menu(Gtk.MenuItem item)
 	assert_cmpint(item.get_allocated_width(), CompareOperator.GE, natural);
 }
 
+private static Repo changes_repo() throws Error
+{
+	var repo = Repo.create();
+
+	repo.commit_bytes("first", "notes", "a\n".data);
+	repo.commit_bytes("second", "notes", "b\n".data);
+	FileUtils.set_contents(repo.path.get_child("notes").get_path(), "c\n");
+	repo.git({"add", "notes"});
+	FileUtils.set_contents(repo.path.get_child("fresh").get_path(), "d\n");
+
+	return repo;
+}
+
 private static Gtk.CheckButton check_of(Gitrlf.Window window, string short_name)
 {
 	return (Gtk.CheckButton)find_all(row(window.history.paned.refs_list, short_name), typeof(Gtk.CheckButton))[0];
@@ -284,6 +297,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/bottom-pane-is-hidden-at-the-start", test_bottom_pane_is_hidden_at_the_start);
 	Test.add_func("/gitrlf/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
+	Test.add_func("/gitrlf/ui/history-activity/changes-rows-colour-their-lines-until-picked", test_changes_rows_colour_their_lines_until_picked);
+	Test.add_func("/gitrlf/ui/history-activity/changes-rows-set-their-lines-under-the-lines-column", test_changes_rows_set_their_lines_under_the_lines_column);
+	Test.add_func("/gitrlf/ui/history-activity/changes-rows-show-their-added-and-removed-lines", test_changes_rows_show_their_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-a-file-fills-the-window-and-escape-steps-back", test_click_on_a_file_fills_the_window_and_escape_steps_back);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-expand-all-fills-the-window", test_click_on_expand_all_fills_the_window);
 	Test.add_func("/gitrlf/ui/history-activity/click-on-one-of-several-picks-shows-it-alone", test_click_on_one_of_several_picks_shows_it_alone);
@@ -360,6 +376,94 @@ private static Gtk.Border line(Gtk.Widget close)
 	var box = ((Gtk.Bin)close.get_ancestor(typeof(Gtk.Revealer))).get_child();
 
 	return box.get_style_context().get_border(box.get_state_flags());
+}
+
+private static Gdk.Rectangle lines_cell(Gitrlf.Window window,
+                                        Gtk.Widget? row, int index)
+{
+	var view = window.history.paned.commit_list_view;
+	var column = view.get_column(1);
+	var cell = column.get_cells().nth_data(index);
+	Gdk.Rectangle area;
+	int start;
+	int width;
+	int x;
+	int y;
+
+	view.get_cell_area(new Gtk.TreePath.first(), column, out area);
+	column.cell_get_position(cell, out start, out width);
+	view.convert_bin_window_to_widget_coords(area.x + start, area.y, out x,
+	                                         out y);
+	view.translate_coordinates(view.get_parent(), x, y, out x, out y);
+
+	if (row != null)
+	{
+		row.translate_coordinates(view.get_parent(), 0, 0, out start,
+		                          out y);
+		area.height = row.get_allocated_height();
+	}
+
+	return Gdk.Rectangle() {
+		x = x, y = y, width = width, height = area.height
+	};
+}
+
+private static string lines_ink(Gitrlf.Window window, Gtk.Widget? row)
+{
+	var surface = drawn(window.history.paned.commit_list_view.get_parent());
+	var data = (uint8*)surface.get_data();
+	var stride = surface.get_stride();
+	var edge = surface.get_width();
+	var last = lines_cell(window, row, 1);
+	var back = data + (last.y + last.height / 2) * stride
+	           + (int.min(last.x + last.width, edge) - 2) * 4;
+	var spans = new string[0];
+
+	for (var index = 0; index < 2; index++)
+	{
+		var cell = lines_cell(window, row, index);
+		var end = int.min(cell.x + cell.width, edge);
+		var strongest = 0;
+		var left = -1;
+		var right = -1;
+
+		for (var pass = 0; pass < 2; pass++)
+		{
+			for (var j = cell.y; j < cell.y + cell.height; j++)
+			{
+				for (var i = cell.x; i < end; i++)
+				{
+					var pixel = data + j * stride + i * 4;
+					var contrast = ((int)pixel[0] - back[0]).abs()
+					               + ((int)pixel[1] - back[1]).abs()
+					               + ((int)pixel[2] - back[2]).abs();
+
+					if (pass == 0)
+					{
+						strongest = int.max(strongest, contrast);
+					}
+					else if (contrast * 2 > strongest && strongest > 0)
+					{
+						left = left < 0 ? i : int.min(left, i);
+						right = int.max(right, i);
+					}
+				}
+			}
+		}
+
+		spans += left < 0 ? "none" : "%d-%d".printf(left, right);
+	}
+
+	return string.joinv(",", spans);
+}
+
+private static string lines_tint(Gitrlf.Window window, Gtk.Widget row,
+                                 int index)
+{
+	var view = window.history.paned.commit_list_view;
+
+	return tint_in(drawn(view.get_parent()), lines_cell(window, row, index),
+	               view.get_style_context());
 }
 
 private static string lines_text(Gtk.TreeView view, Gtk.TreeIter iter)
@@ -885,6 +989,119 @@ private static void test_bytes_that_are_not_utf8_show_as_replacements()
 
 		window.destroy();
 		message.delete();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_changes_rows_colour_their_lines_until_picked()
+{
+	try
+	{
+		var repo = changes_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		var view = paned.commit_list_view;
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+		lines_text(view, iter);
+		view.scroll_to_cell(view.model.get_path(iter), view.get_column(1),
+		                    false, 0, 0);
+		settle(300);
+
+		assert_cmpstr(lines_tint(window, paned.staged_row, 0),
+		              CompareOperator.EQ, "green");
+		assert_cmpstr(lines_tint(window, paned.staged_row, 1),
+		              CompareOperator.EQ, "red");
+
+		paned.changes.select_row(paned.staged_row);
+		settle(300);
+
+		assert_cmpstr(lines_tint(window, paned.staged_row, 0),
+		              CompareOperator.EQ, "green 0, red 0");
+		assert_cmpstr(lines_tint(window, paned.staged_row, 1),
+		              CompareOperator.EQ, "green 0, red 0");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_changes_rows_set_their_lines_under_the_lines_column()
+{
+	try
+	{
+		var repo = changes_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		var view = paned.commit_list_view;
+		Gtk.TreeIter iter;
+		int width;
+		int height;
+
+		assert_true(view.model.get_iter_first(out iter));
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+1,-1");
+
+		view.scroll_to_cell(view.model.get_path(iter), view.get_column(1),
+		                    false, 0, 0);
+		settle(300);
+
+		var below = lines_ink(window, null);
+
+		assert_false("none" in below);
+		assert_cmpstr(lines_ink(window, paned.staged_row), CompareOperator.EQ,
+		              below);
+
+		window.get_size(out width, out height);
+		window.resize(width + (int)view.hadjustment.upper, height);
+		settle(500);
+
+		assert_cmpstr(lines_ink(window, null), CompareOperator.NE, below);
+		assert_cmpstr(lines_ink(window, paned.staged_row), CompareOperator.EQ,
+		              lines_ink(window, null));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_changes_rows_show_their_added_and_removed_lines()
+{
+	try
+	{
+		var repo = changes_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		assert_cmpstr(paned.staged_added.get_text(), CompareOperator.EQ, "+1");
+		assert_cmpstr(paned.staged_removed.get_text(), CompareOperator.EQ,
+		              "-1");
+		assert_cmpstr(paned.unstaged_added.get_text(), CompareOperator.EQ,
+		              "+1");
+		assert_cmpstr(paned.unstaged_removed.get_text(), CompareOperator.EQ,
+		              "");
+
+		FileUtils.set_contents(repo.path.get_child("fresh").get_path(),
+		                       "d\ne\nf\n");
+		window.history.read_changes();
+		settle(100);
+
+		assert_cmpstr(paned.unstaged_added.get_text(), CompareOperator.EQ,
+		              "+3");
+
+		window.destroy();
 		repo.remove();
 	}
 	catch (Error e)
@@ -3212,19 +3429,12 @@ private static string tint(Gtk.TreeView view, Gtk.TreeIter iter,
 	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24,
 	                                     view.get_allocated_width(),
 	                                     view.get_allocated_height());
-	var style = view.get_style_context();
-	var green = 0;
-	var red = 0;
-	Gdk.RGBA green_tint;
-	Gdk.RGBA red_tint;
 	Gdk.Rectangle row;
 	int start;
 	int width;
 	int x;
 	int y;
 
-	style.lookup_color("chameleon3", out green_tint);
-	style.lookup_color("scarletred3", out red_tint);
 	settle(100);
 	view.scroll_to_cell(view.model.get_path(iter), column, false, 0, 0);
 	settle(100);
@@ -3235,11 +3445,26 @@ private static string tint(Gtk.TreeView view, Gtk.TreeIter iter,
 	view.convert_bin_window_to_widget_coords(row.x + start, row.y, out x,
 	                                         out y);
 
-	var data = (uint8*)surface.get_data();
+	return tint_in(surface, Gdk.Rectangle() {
+		x = x, y = y, width = width, height = row.height
+	}, view.get_style_context());
+}
 
-	for (var j = y; j < y + row.height; j++)
+private static string tint_in(Cairo.ImageSurface surface, Gdk.Rectangle area,
+                              Gtk.StyleContext style)
+{
+	var data = (uint8*)surface.get_data();
+	var green = 0;
+	var red = 0;
+	Gdk.RGBA green_tint;
+	Gdk.RGBA red_tint;
+
+	style.lookup_color("chameleon3", out green_tint);
+	style.lookup_color("scarletred3", out red_tint);
+
+	for (var j = area.y; j < area.y + area.height; j++)
 	{
-		for (var i = x; i < x + width; i++)
+		for (var i = area.x; i < area.x + area.width; i++)
 		{
 			var pixel = data + j * surface.get_stride() + i * 4;
 

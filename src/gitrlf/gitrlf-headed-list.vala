@@ -94,10 +94,10 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 			allocation.width, allocation.height - shown
 		};
 
+		d_body.size_allocate(rest);
 		d_header.set_child_visible(shown > 0);
 		d_header.size_allocate(top);
 		((Gtk.Scrollable)d_header).vadjustment.value = d_fold;
-		d_body.size_allocate(rest);
 	}
 
 	private void follow_body()

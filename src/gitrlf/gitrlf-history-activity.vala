@@ -99,6 +99,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Squash? d_squash;
 	private Ggit.Diff? d_staged;
 	private string? d_staged_key;
+	private string? d_staged_lines;
 	private Settings d_state;
 	private string? d_text;
 	private Gee.Set<string> d_ticks;
@@ -107,6 +108,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private string? d_unfold_path;
 	private Ggit.Diff? d_unstaged;
 	private string? d_unstaged_key;
+	private string? d_unstaged_lines;
 	private string[] d_unticked;
 	private bool d_waiting;
 
@@ -618,6 +620,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				d_paned.commit_list_view.get_selection().unselect_all();
 			}
 
+			show_change_lines();
 			queue_details();
 		});
 		d_paned.changes.row_activated.connect(() => {
@@ -1919,6 +1922,27 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_diff.options.pathspec = pathspec();
 	}
 
+	private string line_markup(string piece, int index)
+	{
+		return "<span foreground=\"%s\">%s</span>"
+			.printf(d_line_tints[index], piece);
+	}
+
+	private string? line_piece(string? text, int index)
+	{
+		if (text != null)
+		{
+			var count = text.split("/")[index];
+
+			if (int.parse(count) != 0)
+			{
+				return count;
+			}
+		}
+
+		return null;
+	}
+
 	private void lines_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell,
 	                             Gtk.TreeModel model, Gtk.TreeIter iter)
 	{
@@ -1926,23 +1950,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		if (commit != null)
 		{
-			var text = d_line_counts.text(commit.get_id());
 			var index = layout.get_cells().index(cell);
+			var piece = line_piece(d_line_counts.text(commit.get_id()), index);
 			var label = (Gtk.CellRendererText)cell;
 			var view = d_paned.commit_list_view;
 			var lit = view.get_selection().iter_is_selected(iter)
 			          && !view.get_style_context().has_class("unlit");
-			string? piece = null;
-
-			if (text != null)
-			{
-				var count = text.split("/")[index];
-
-				if (int.parse(count) != 0)
-				{
-					piece = count;
-				}
-			}
 
 			if (piece == null || lit)
 			{
@@ -1950,8 +1963,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 			else
 			{
-				label.markup = "<span foreground=\"%s\">%s</span>"
-					.printf(d_line_tints[index], piece);
+				label.markup = line_markup(piece, index);
 			}
 
 			embolden(cell, commit);
@@ -2386,6 +2398,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_staged_key = staged_key;
 		d_unstaged = unstaged;
 		d_unstaged_key = unstaged_key;
+
+		try
+		{
+			d_staged_lines = Changes.lines(staged);
+			d_unstaged_lines = Changes.lines(unstaged);
+		}
+		catch (Error e)
+		{
+			d_staged_lines = null;
+			d_unstaged_lines = null;
+		}
+
 		show_changes();
 	}
 
@@ -2796,6 +2820,31 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_ticks();
 	}
 
+	private void show_change_lines()
+	{
+		Gtk.ListBoxRow[] rows = { d_paned.staged_row, d_paned.unstaged_row };
+		string?[] texts = { d_staged_lines, d_unstaged_lines };
+		Gtk.Label[] labels = { d_paned.staged_added, d_paned.staged_removed,
+		                       d_paned.unstaged_added,
+		                       d_paned.unstaged_removed };
+
+		for (var i = 0; i < labels.length; i++)
+		{
+			var row = i / 2;
+			var index = i % 2;
+			var piece = line_piece(texts[row], index);
+
+			if (piece == null || rows[row].is_selected())
+			{
+				labels[i].set_text(piece ?? "");
+			}
+			else
+			{
+				labels[i].set_markup(line_markup(piece, index));
+			}
+		}
+	}
+
 	private void show_changes()
 	{
 		Gtk.ListBoxRow[] rows = { d_paned.staged_row, d_paned.unstaged_row };
@@ -2818,6 +2867,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_paned.changes.visible = d_paned.staged_row.visible
 		                          || d_paned.unstaged_row.visible;
+		show_change_lines();
 		queue_details();
 	}
 

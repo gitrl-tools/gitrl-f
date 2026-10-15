@@ -59,6 +59,27 @@ public class Changes : Object
 		return text.str;
 	}
 
+	public static string lines(Ggit.Diff diff) throws Error
+	{
+		var added = 0;
+		var removed = 0;
+
+		diff.foreach(null, null, null, (delta, hunk, line) => {
+			if (line.get_origin() == Ggit.DiffLineType.ADDITION)
+			{
+				added++;
+			}
+			else if (line.get_origin() == Ggit.DiffLineType.DELETION)
+			{
+				removed++;
+			}
+
+			return 0;
+		});
+
+		return LineCounts.text_of(added, removed);
+	}
+
 	private static Ggit.DiffOptions options(int context)
 	{
 		var options = new Ggit.DiffOptions();
