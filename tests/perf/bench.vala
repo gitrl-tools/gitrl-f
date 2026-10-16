@@ -26,6 +26,18 @@ public class Bench : Object
 
 	private const ulong SETTLE_WAIT = 2000;
 
+	private delegate bool Done();
+
+	private static Gtk.Menu? attached(Gtk.Widget widget)
+	{
+		foreach (var menu in Gtk.Menu.get_for_attach_widget(widget))
+		{
+			return (Gtk.Menu)menu;
+		}
+
+		return null;
+	}
+
 	private static void changes(Gitg.Repository repository) throws Error
 	{
 		var context = new Ggit.DiffOptions().n_context_lines;
@@ -46,6 +58,40 @@ public class Bench : Object
 		stdout.printf("uncommitted changes: read %.3f s, keys %.3f s, line counts %.3f s, staged %u files %s, unstaged %u files %s\n",
 		              read, keys, timer.elapsed(), (uint)staged.get_num_deltas(),
 		              staged_lines, (uint)unstaged.get_num_deltas(), unstaged_lines);
+	}
+
+	private static double click(Gdk.Window target, double x, double y)
+	{
+		var timer = new Timer();
+		var time = (uint32)(get_monotonic_time() / 1000);
+		var pointer = target.get_display().get_default_seat().get_pointer();
+		var longest = 0.0;
+		int root_x;
+		int root_y;
+
+		target.get_root_coords((int)x, (int)y, out root_x, out root_y);
+
+		foreach (var type in new Gdk.EventType[] { Gdk.EventType.BUTTON_PRESS, Gdk.EventType.BUTTON_RELEASE })
+		{
+			var event = new Gdk.Event(type);
+
+			target.ref();
+			event.button.window = target;
+			event.button.button = Gdk.BUTTON_SECONDARY;
+			event.button.time = time;
+			event.button.x = x;
+			event.button.y = y;
+			event.button.x_root = root_x;
+			event.button.y_root = root_y;
+			event.set_device(pointer);
+			event.set_source_device(pointer);
+
+			timer.start();
+			Gtk.main_do_event(event);
+			longest = double.max(longest, timer.elapsed());
+		}
+
+		return longest;
 	}
 
 	private static void detailed(Window window, string commit, string? word, int limit)
@@ -154,6 +200,26 @@ public class Bench : Object
 		stdout.flush();
 	}
 
+	private static Gitg.DiffViewFile? diff_file(Window window, Ggit.OId id, string path)
+	{
+		var shown = window.history.diff_view.commit;
+
+		if (shown == null || !shown.get_id().equal(id))
+		{
+			return null;
+		}
+
+		foreach (var file in window.history.diff_view.get_files())
+		{
+			if (file.info != null && file.info.delta.get_new_file().get_path() == path)
+			{
+				return file;
+			}
+		}
+
+		return null;
+	}
+
 	private static void drain()
 	{
 		while (Gtk.events_pending())
@@ -238,11 +304,140 @@ public class Bench : Object
 		}
 	}
 
+	private static Gtk.MenuItem? item(Gtk.Menu menu, string prefix)
+	{
+		foreach (var child in menu.get_children())
+		{
+			var found = child as Gtk.MenuItem;
+
+			if (found != null && found.label != null && found.label.has_prefix(prefix))
+			{
+				return found;
+			}
+		}
+
+		return null;
+	}
+
+	private static Gtk.Menu? line_menu(Window window, Ggit.OId id, string path, int line)
+	{
+		var history = window.history;
+		var selection = history.paned.commit_list_view.get_selection();
+		var rows = history.rows();
+		Gitg.DiffViewFile? file = null;
+		Gtk.Menu? menu = null;
+		var longest = 0.0;
+		var changed = false;
+
+		history.paned.details_visible = true;
+		selection.unselect_all();
+		waited(new Timer(), () => history.diff_view.commit == null, ref longest);
+
+		var handler = history.diff_view.files_changed.connect(() => {
+			changed = true;
+		});
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			if (rows[i].get_id().equal(id))
+			{
+				selection.select_path(new Gtk.TreePath.from_indices(i));
+			}
+		}
+
+		waited(new Timer(), () => changed && (file = diff_file(window, id, path)) != null, ref longest);
+		history.diff_view.disconnect(handler);
+
+		if (file == null)
+		{
+			return null;
+		}
+
+		file.expanded = true;
+		waited(new Timer(), () => file.get_text_views().length > 0 && file.get_lines().size > 0, ref longest);
+		drain();
+
+		var view = file.get_text_views()[0];
+		var lines = file.get_lines();
+
+		for (var i = 0; i < lines.size; i++)
+		{
+			if (lines[i].get_new_lineno() == line)
+			{
+				Gtk.TextIter iter;
+				Gdk.Rectangle location;
+				int x;
+				int y;
+
+				view.buffer.get_iter_at_offset(out iter, file.get_line_offset(view, i));
+				view.buffer.place_cursor(iter);
+				view.get_iter_location(iter, out location);
+				view.buffer_to_window_coords(Gtk.TextWindowType.TEXT, location.x + 1, location.y + location.height / 2, out x, out y);
+				click(view.get_window(Gtk.TextWindowType.TEXT), x, y);
+				waited(new Timer(), () => (menu = attached(view)) != null && menu.visible, ref longest);
+			}
+		}
+
+		return menu;
+	}
+
+	private static void lines(Window window, Gee.Set<string> every, string commit, string path, int line)
+	{
+		var history = window.history;
+		var id = new Ggit.OId.from_string(commit);
+		var timer = new Timer();
+
+		history.set_ticks(every);
+		drain();
+
+		var menu = line_menu(window, id, path, line);
+		var show = menu != null ? item(menu, "Show history of this line") : null;
+
+		if (show == null)
+		{
+			stdout.printf("lines %s:%d: no line history item\n", path, line);
+			return;
+		}
+
+		var longest = 0.0;
+
+		timer.start();
+		show.activate();
+		menu.popdown();
+
+		var done = waited(timer, () => history.paned.path_label.get_text().has_prefix("History of line"), ref longest);
+
+		stdout.printf("line history %s:%d from %s: %.3f s, longest stall %.3f s, %d rows\n",
+		              path, line, commit.substring(0, 7), done, longest, history.rows().length);
+
+		history.paned.path_bar.response(Gtk.ResponseType.CLOSE);
+		drain();
+		menu = line_menu(window, id, path, line);
+
+		var blame = menu != null ? item(menu, "Go to the commit that last changed") : null;
+
+		if (blame == null)
+		{
+			stdout.printf("blame %s:%d: no blame item\n", path, line);
+			return;
+		}
+
+		longest = 0.0;
+		timer.start();
+		blame.activate();
+		menu.popdown();
+		done = waited(timer, () => history.hidden_text != "" || (history.selected != null && !history.selected.get_id().equal(id)), ref longest);
+
+		stdout.printf("blame %s:%d from %s: %.3f s, longest stall %.3f s, went to %s\n",
+		              path, line, commit.substring(0, 7), done, longest,
+		              history.selected != null ? history.selected.get_id().to_string().substring(0, 7) : history.hidden_text);
+	}
+
 	public static int main(string[] args)
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [--menu <commit>] [--glance <commit>] [--lines <commit> <path> <line>] [--split <full ref name> <full ref name>] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -304,6 +499,95 @@ public class Bench : Object
 		}
 
 		return 0;
+	}
+
+	private static void menu(Window window, Gee.Set<string> every, string commit, bool open)
+	{
+		var history = window.history;
+		var view = history.paned.commit_list_view;
+		var id = new Ggit.OId.from_string(commit);
+		var row = -1;
+
+		history.set_ticks(every);
+		drain();
+
+		var rows = history.rows();
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			if (rows[i].get_id().equal(id))
+			{
+				row = i;
+			}
+		}
+
+		if (row < 0)
+		{
+			stdout.printf("menu on %s: not in the list\n", commit);
+			return;
+		}
+
+		var path = new Gtk.TreePath.from_indices(row);
+		var copy = attached(view);
+		var timer = new Timer();
+		var shown = -1.0;
+		Gdk.Rectangle cell;
+
+		view.scroll_to_cell(path, null, true, 0.5f, 0);
+		drain();
+		view.get_background_area(path, view.get_column(1), out cell);
+
+		var handler = copy.draw.connect(() => {
+			if (shown < 0)
+			{
+				shown = timer.elapsed();
+			}
+
+			return false;
+		});
+
+		timer.start();
+
+		var longest = click(view.get_bin_window(), cell.x + 10, cell.y + cell.height / 2);
+		var blocked = longest;
+		var tag = item(copy, "First tag");
+		var merge = item(copy, "Merged into");
+		var holders = item(copy, "Branches and tags");
+		var held = 0;
+
+		waited(timer, () => shown >= 0, ref longest);
+
+		var tagged = waited(timer, () => tag.label != "First tag with this commit...", ref longest);
+		var merged = waited(timer, () => merge == null || !merge.visible || merge.label != "Merged into...", ref longest);
+
+		stdout.printf("menu on %s: shown %.3f s, click blocked %.3f s, first tag %.3f s (%s), merge %.3f s (%s), longest stall %.3f s",
+		              commit.substring(0, 7), shown, blocked, tagged, tag.label, merged,
+		              merge == null ? "none" : merge.visible ? merge.label : "hidden", longest);
+
+		if (open)
+		{
+			timer.start();
+			copy.select_item(holders);
+
+			var opened = timer.elapsed();
+
+			foreach (var child in ((Gtk.Menu)holders.submenu).get_children())
+			{
+				if (child is Gtk.CheckMenuItem)
+				{
+					held++;
+				}
+			}
+
+			copy.deselect();
+			stdout.printf(", %d holders opened in %.3f s", held, opened);
+		}
+
+		stdout.printf("\n");
+
+		copy.disconnect(handler);
+		copy.popdown();
+		drain();
 	}
 
 	private static double peak_memory()
@@ -464,6 +748,93 @@ public class Bench : Object
 		}
 	}
 
+	private static void split(Window window, Gee.Set<string> every, string name, string other)
+	{
+		var history = window.history;
+		var list = history.paned.refs_list;
+		var timer = new Timer();
+		var shown = -1.0;
+		RefsRow? row = null;
+		string? label = null;
+
+		history.set_ticks(every);
+		drain();
+
+		foreach (var child in list.get_children())
+		{
+			var candidate = child as RefsRow;
+
+			if (candidate != null && candidate.reference.name == name)
+			{
+				row = candidate;
+			}
+		}
+
+		foreach (var reference in list.refs_in_order())
+		{
+			if (reference.name == other)
+			{
+				label = reference.short_name;
+			}
+		}
+
+		if (row == null || label == null)
+		{
+			stdout.printf("split %s from %s: no such ref\n", name, other);
+			return;
+		}
+
+		Gtk.Allocation allocation;
+		var copy = attached(list);
+
+		row.get_allocation(out allocation);
+
+		var handler = copy.draw.connect(() => {
+			if (shown < 0)
+			{
+				shown = timer.elapsed();
+			}
+
+			return false;
+		});
+
+		timer.start();
+
+		var longest = click(list.get_window(), 10, allocation.y + allocation.height / 2);
+		var blocked = longest;
+
+		waited(timer, () => shown >= 0, ref longest);
+		copy.disconnect(handler);
+
+		var splits = item(copy, "Go to where it splits from");
+		var entries = (Gtk.Menu)splits.submenu;
+		var menu_stall = longest;
+
+		timer.start();
+		copy.select_item(splits);
+
+		var opened = timer.elapsed();
+		var count = entries.get_children().length();
+		var entry = item(entries, label);
+
+		copy.deselect();
+
+		history.paned.commit_list_view.get_selection().unselect_all();
+		drain();
+		longest = 0.0;
+		timer.start();
+		entry.activate();
+		copy.popdown();
+
+		var done = waited(timer, () => history.selected != null || history.hidden_text != "", ref longest);
+
+		stdout.printf("split menu on %s: shown %.3f s, click blocked %.3f s, longest stall %.3f s, %u entries opened in %.3f s\n",
+		              name, shown, blocked, menu_stall, count, opened);
+		stdout.printf("split %s from %s: %.3f s, longest stall %.3f s, went to %s\n",
+		              name, other, done, longest,
+		              history.selected != null ? history.selected.get_id().to_string().substring(0, 7) : history.hidden_text);
+	}
+
 	private static string store_size()
 	{
 		string output = "";
@@ -494,6 +865,27 @@ public class Bench : Object
 		stdout.flush();
 	}
 
+	private static double waited(Timer timer, Done done, ref double longest)
+	{
+		var step = new Timer();
+		var start = timer.elapsed();
+
+		while (!done() && timer.elapsed() - start < 60)
+		{
+			if (!Gtk.events_pending())
+			{
+				Thread.usleep(500);
+				continue;
+			}
+
+			step.start();
+			Gtk.main_iteration();
+			longest = double.max(longest, step.elapsed());
+		}
+
+		return timer.elapsed();
+	}
+
 	private static Gtk.Widget[] widgets(Gtk.Widget root)
 	{
 		var found = new Gtk.Widget[] { root };
@@ -517,6 +909,10 @@ public class Bench : Object
 	{
 		var groups = new string[0];
 		var only = new string[0];
+		var menus = new string[0];
+		var opens = new bool[0];
+		var lined = new string[0];
+		var splits = new string[0];
 		var picks = 0;
 		string? text = null;
 		string? search = null;
@@ -526,7 +922,23 @@ public class Bench : Object
 
 		for (var i = 0; i < arguments.length; i++)
 		{
-			if (arguments[i] == "--text" && i + 1 < arguments.length)
+			if ((arguments[i] == "--menu" || arguments[i] == "--glance") && i + 1 < arguments.length)
+			{
+				opens += arguments[i] == "--menu";
+				menus += arguments[++i];
+			}
+			else if (arguments[i] == "--lines" && i + 3 < arguments.length)
+			{
+				lined += arguments[++i];
+				lined += arguments[++i];
+				lined += arguments[++i];
+			}
+			else if (arguments[i] == "--split" && i + 2 < arguments.length)
+			{
+				splits += arguments[++i];
+				splits += arguments[++i];
+			}
+			else if (arguments[i] == "--text" && i + 1 < arguments.length)
 			{
 				text = arguments[++i];
 			}
@@ -623,6 +1035,21 @@ public class Bench : Object
 		drain();
 
 		stdout.printf("window reload %.3f s\n", timer.elapsed());
+
+		for (var i = 0; i < menus.length; i++)
+		{
+			menu(window, every, menus[i], opens[i]);
+		}
+
+		for (var i = 0; i + 2 < lined.length; i += 3)
+		{
+			lines(window, every, lined[i], lined[i + 1], int.parse(lined[i + 2]));
+		}
+
+		for (var i = 0; i + 1 < splits.length; i += 2)
+		{
+			split(window, every, splits[i], splits[i + 1]);
+		}
 
 		if (commit != null)
 		{
