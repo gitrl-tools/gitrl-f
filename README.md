@@ -131,6 +131,13 @@ meson install -C _build
 
 The install puts `gitrlf` in `~/.local/bin`, with `gitf` as a short name for it if no other program called `gitf` is on the `PATH`. That folder must be on the `PATH`. GLib and bash find the settings schema and the TAB completion with no more configuration.
 
+Uninstalling does not remove `gitf`. Remove it first, then uninstall:
+
+```bash
+~/.local/share/gitrl-f/alias-link.sh remove
+ninja -C _build uninstall
+```
+
 ## How to run it
 
 ```bash
