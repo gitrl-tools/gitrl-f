@@ -22,6 +22,28 @@ namespace Gitrlf
 
 public class Bench : Object
 {
+	private static void changes(Gitg.Repository repository) throws Error
+	{
+		var context = new Ggit.DiffOptions().n_context_lines;
+		var timer = new Timer();
+		var staged = Changes.staged(repository, context);
+		var unstaged = Changes.unstaged(repository, context);
+		var read = timer.elapsed();
+
+		timer.start();
+		Changes.key(repository, staged);
+		Changes.key(repository, unstaged);
+		var keys = timer.elapsed();
+
+		timer.start();
+		var staged_lines = Changes.lines(staged);
+		var unstaged_lines = Changes.lines(unstaged);
+
+		stdout.printf("uncommitted changes: read %.3f s, keys %.3f s, line counts %.3f s, staged %u files %s, unstaged %u files %s\n",
+		              read, keys, timer.elapsed(), (uint)staged.get_num_deltas(),
+		              staged_lines, (uint)unstaged.get_num_deltas(), unstaged_lines);
+	}
+
 	private static void drain()
 	{
 		while (Gtk.events_pending())
@@ -162,6 +184,7 @@ public class Bench : Object
 			}
 
 			stdout.printf("poll snapshot %.2f ms\n", timer.elapsed() * 1000 / 20);
+			changes(repository);
 			stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
 		}
 		catch (Error e)
