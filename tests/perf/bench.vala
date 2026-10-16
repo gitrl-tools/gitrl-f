@@ -228,6 +228,62 @@ public class Bench : Object
 		}
 	}
 
+	private static void entered(Window window, SearchChoice choice, string text, bool regex, Gee.Set<string> every, string[] only)
+	{
+		var history = window.history;
+		var kind = choice == SearchChoice.FILES ? "Files" : (regex ? "Changed lines, regex," : "Changed lines");
+		var sets = new Gee.ArrayList<Gee.Set<string>>();
+
+		sets.add(every);
+
+		foreach (var name in only)
+		{
+			var ticks = new Gee.HashSet<string>();
+			ticks.add(name);
+			sets.add(ticks);
+		}
+
+		foreach (var ticks in sets)
+		{
+			var timer = new Timer();
+
+			history.set_ticks(ticks);
+			history.search_visible = true;
+			history.search_choice = choice;
+			drain();
+
+			foreach (var widget in widgets(history.widget))
+			{
+				var toggle = widget as Gtk.ToggleButton;
+
+				if (toggle != null && toggle.label == "Regex")
+				{
+					toggle.active = regex;
+				}
+			}
+
+			history.search_field.text = text;
+			drain();
+
+			timer.start();
+			history.search_field.activate();
+
+			while ((history.path_bar_text.has_prefix("Searching") || history.path_bar_text.has_prefix("Reading")) && timer.elapsed() < 600)
+			{
+				drain();
+				Thread.usleep(1000);
+			}
+
+			drain();
+
+			stdout.printf("window enter in %s %s, %s: %.3f s, %s, %s\n", kind, text, ticks == every ? "every ref ticked" : "only " + ticks.to_array()[0], timer.elapsed(), history.summary_text, history.search_count);
+			stdout.flush();
+
+			history.search_visible = false;
+			drain();
+		}
+	}
+
 	private static void filtered(Window window, string text, Gee.Set<string> every, string[] only, string path)
 	{
 		var timer = new Timer();
@@ -437,7 +493,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [--menu <commit>] [--glance <commit>] [--lines <commit> <path> <line>] [--split <full ref name> <full ref name>] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [--menu <commit>] [--glance <commit>] [--lines <commit> <path> <line>] [--split <full ref name> <full ref name>] [--changed <text>] [--files <paths>] [--regex] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -938,6 +994,9 @@ public class Bench : Object
 		string? commit = null;
 		string? word = null;
 		var rows = int.MAX;
+		string? changed = null;
+		string? files = null;
+		var regex = false;
 
 		for (var i = 0; i < arguments.length; i++)
 		{
@@ -984,6 +1043,18 @@ public class Bench : Object
 			else if (arguments[i] == "--rows" && i + 1 < arguments.length)
 			{
 				rows = int.parse(arguments[++i]);
+			}
+			else if (arguments[i] == "--changed" && i + 1 < arguments.length)
+			{
+				changed = arguments[++i];
+			}
+			else if (arguments[i] == "--files" && i + 1 < arguments.length)
+			{
+				files = arguments[++i];
+			}
+			else if (arguments[i] == "--regex")
+			{
+				regex = true;
 			}
 			else
 			{
@@ -1083,6 +1154,16 @@ public class Bench : Object
 		if (search != null)
 		{
 			searched(window, search, every, only);
+		}
+
+		if (changed != null)
+		{
+			entered(window, SearchChoice.LINES, changed, regex, every, only);
+		}
+
+		if (files != null)
+		{
+			entered(window, SearchChoice.FILES, files, regex, every, only);
 		}
 
 		stdout.printf("peak resident memory %.0f MiB\n", peak_memory());
