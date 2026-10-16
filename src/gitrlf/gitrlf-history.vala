@@ -20,6 +20,8 @@
 namespace Gitrlf
 {
 
+public delegate void RecordsFunc(int index, string[] records);
+
 public class History : Object
 {
 	private Gitg.Commit[] d_commits;
@@ -294,6 +296,59 @@ public class History : Object
 		}
 
 		return records(output);
+	}
+
+	public static async void git_each(File directory, string[] arguments, string[] inputs, Cancellable cancellable, RecordsFunc collect) throws Error
+	{
+		var next = 0;
+		var running = 0;
+		Error? error = null;
+		SourceFunc resume = git_each.callback;
+		SourceFunc? launch = null;
+
+		launch = () => {
+			var index = next++;
+
+			running++;
+			git_async.begin(directory, arguments, inputs[index], cancellable, (obj, res) => {
+				running--;
+
+				try
+				{
+					collect(index, git_async.end(res));
+				}
+				catch (Error e)
+				{
+					error = error ?? e;
+				}
+
+				if (next < inputs.length && error == null)
+				{
+					launch();
+				}
+				else if (running == 0)
+				{
+					resume();
+				}
+			});
+
+			return false;
+		};
+
+		while (running < get_num_processors() && next < inputs.length)
+		{
+			launch();
+		}
+
+		if (running > 0)
+		{
+			yield;
+		}
+
+		if (error != null)
+		{
+			throw error;
+		}
 	}
 
 	public static Gee.HashMap<Ggit.OId, V> id_map<V>()

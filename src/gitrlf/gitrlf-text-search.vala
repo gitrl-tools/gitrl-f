@@ -22,9 +22,40 @@ namespace Gitrlf
 
 public class TextSearch : Object
 {
-	public static async Gee.Set<Ggit.OId> run(File directory, Ggit.OId[] tips, Filter filter, Cancellable cancellable, out Gee.Map<Ggit.OId, Gee.List<string>> names) throws Error
+	private const int BLOCK = 8;
+
+	private static string[] chunks(History history)
 	{
+		var count = int.min((int)get_num_processors(), (history.size + BLOCK - 1) / BLOCK);
+		var lists = new StringBuilder[count];
+		var ret = new string[0];
+
+		for (var i = 0; i < count; i++)
+		{
+			lists[i] = new StringBuilder();
+		}
+
+		for (var i = 0; i < history.size; i++)
+		{
+			unowned StringBuilder list = lists[i / BLOCK % count];
+
+			list.append(history.at(i).get_id().to_string());
+			list.append_c('\n');
+		}
+
+		foreach (unowned StringBuilder list in lists)
+		{
+			ret += list.str;
+		}
+
+		return ret;
+	}
+
+	public static async Gee.Set<Ggit.OId> run(File directory, History history, Ggit.OId[] tips, Filter filter, Cancellable cancellable, out Gee.Map<Ggit.OId, Gee.List<string>> names) throws Error
+	{
+		var listed = !filter.follow && filter.paths.length == 0;
 		var input = new StringBuilder();
+		var records = new string[0];
 
 		foreach (var tip in tips)
 		{
@@ -32,7 +63,13 @@ public class TextSearch : Object
 			input.append_c('\n');
 		}
 
-		var records = yield History.git_async(directory, filter.log_arguments(), input.str, cancellable);
+		yield History.git_each(directory, filter.log_arguments(listed), listed ? chunks(history) : new string[] { input.str }, cancellable, (index, part) => {
+			foreach (var record in part)
+			{
+				records += record;
+			}
+		});
+
 		var found = History.id_set();
 		var named = History.id_map<Gee.List<string>>();
 		Ggit.OId? current = null;

@@ -197,6 +197,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/filter-history/a-straight-line-joins-across-the-commits-left-out", test_a_straight_line_joins_across_the_commits_left_out);
 	Test.add_func("/gitrlf/filter-history/case-is-matched-unless-it-is-ignored", test_case_is_matched_unless_it_is_ignored);
 	Test.add_func("/gitrlf/filter-history/path-limit-starts-stay-lists-of-one", test_path_limit_starts_stay_lists_of_one);
+	Test.add_func("/gitrlf/filter-history/the-search-of-a-long-history-finds-what-git-log-s-finds", test_the_search_of_a_long_history_finds_what_git_log_s_finds);
 
 	return Test.run();
 }
@@ -421,6 +422,56 @@ private static void test_path_limit_starts_stay_lists_of_one()
 
 		assert_cmpint(history.starts_of(master).length, CompareOperator.EQ, 1);
 		assert_cmpstr(history.lookup(history.start_of(master)).get_subject(), CompareOperator.EQ, "a");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_search_of_a_long_history_finds_what_git_log_s_finds()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		for (var i = 0; i < 41; i++)
+		{
+			repo.commit("c%d".printf(i), "f%d".printf(i % 3), i % 4 == 0 ? "needle %d".printf(i) : "hay %d".printf(i));
+		}
+
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var refs = Gitrlf.Refs.read(repository);
+		var history = new Gitrlf.History(repository, refs, false);
+		var filter = new Gitrlf.Filter("needle", false, false, {}, false);
+		var expected = repo.git({"log", "--branches", "--format=%H", "-Sneedle"}).strip().split("\n");
+		var loop = new MainLoop();
+		var found = new Gee.HashSet<string>();
+
+		Gitrlf.TextSearch.run.begin(repo.path, history, Gitrlf.History.tips_of(refs), filter, new Cancellable(), (obj, res) => {
+			try
+			{
+				Gee.Map<Ggit.OId, Gee.List<string>> names;
+
+				foreach (var id in Gitrlf.TextSearch.run.end(res, out names))
+				{
+					found.add(id.to_string());
+				}
+			}
+			catch (Error e)
+			{
+				Test.fail_printf("%s", e.message);
+			}
+
+			loop.quit();
+		});
+
+		loop.run();
+
+		assert_cmpint(found.size, CompareOperator.EQ, expected.length);
+		assert_true(found.contains_all_array(expected));
 
 		repo.remove();
 	}

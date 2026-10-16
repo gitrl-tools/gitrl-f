@@ -37,7 +37,7 @@ public class Dump : Object
 		var regex = command_line.regex != null;
 		var filter = new Filter(regex ? command_line.regex : command_line.text, command_line.ignore_case, regex, command_line.paths, false);
 
-		TextSearch.run.begin(directory, tips, filter, new Cancellable(), (obj, res) => {
+		TextSearch.run.begin(directory, history, tips, filter, new Cancellable(), (obj, res) => {
 			try
 			{
 				Gee.Map<Ggit.OId, Gee.List<string>> names;

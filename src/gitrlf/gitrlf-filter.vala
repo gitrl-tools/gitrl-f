@@ -90,9 +90,14 @@ public class Filter : Object
 		return string.joinv(" ", words);
 	}
 
-	public string[] log_arguments()
+	public string[] log_arguments(bool listed)
 	{
 		string[] argv = { "log", "-z", "--stdin", "--no-textconv", "--format=%x01%H" };
+
+		if (listed)
+		{
+			argv += "--no-walk=unsorted";
+		}
 
 		if (text != null)
 		{

@@ -2667,7 +2667,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		filter.path_match = d_files_regex ? new TextMatch(d_paths[0], d_files_case, true) : null;
 
-		TextSearch.run.begin(start, tips, filter, cancellable, (obj, res) => {
+		TextSearch.run.begin(start, d_full, tips, filter, cancellable, (obj, res) => {
 			Gee.Set<Ggit.OId> matches;
 			Gee.Map<Ggit.OId, Gee.List<string>> names;
 
