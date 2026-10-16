@@ -22,6 +22,10 @@ namespace Gitrlf
 
 public class Bench : Object
 {
+	private const int FIND_STEPS = 5;
+
+	private const ulong SETTLE_WAIT = 2000;
+
 	private static void changes(Gitg.Repository repository) throws Error
 	{
 		var context = new Ggit.DiffOptions().n_context_lines;
@@ -42,6 +46,112 @@ public class Bench : Object
 		stdout.printf("uncommitted changes: read %.3f s, keys %.3f s, line counts %.3f s, staged %u files %s, unstaged %u files %s\n",
 		              read, keys, timer.elapsed(), (uint)staged.get_num_deltas(),
 		              staged_lines, (uint)unstaged.get_num_deltas(), unstaged_lines);
+	}
+
+	private static void detailed(Window window, string commit, string? word, int limit)
+	{
+		var history = window.history;
+		var diff = history.diff_view;
+		var id = new Ggit.OId.from_string(commit);
+		var rows = history.rows();
+		var row = 0;
+
+		while (row < rows.length && !rows[row].get_id().equal(id))
+		{
+			row++;
+		}
+
+		if (row == rows.length)
+		{
+			stderr.printf("%s is not in the list\n", commit);
+			return;
+		}
+
+		var path = new Gtk.TreePath.from_indices(row);
+		var view = history.paned.commit_list_view;
+		var added = 0;
+
+		foreach (var widget in widgets(diff))
+		{
+			if (widget is Gtk.Grid && ((Gtk.Buildable)widget).get_name() == "grid_files")
+			{
+				((Gtk.Grid)widget).add.connect_after(() => added++);
+			}
+		}
+
+		history.paned.details_visible = false;
+		view.get_selection().unselect_all();
+		view.get_selection().select_path(path);
+		view.scroll_to_cell(path, null, false, 0, 0);
+		settle();
+
+		var timer = new Timer();
+		var first = -1.0;
+		var handler = diff.files_changed.connect(() => {
+			first = first < 0 ? timer.elapsed() : first;
+		});
+
+		history.paned.details_visible = true;
+
+		while (diff.diff == null || added < int.min(limit, (int)diff.diff.get_num_deltas()))
+		{
+			if (Gtk.events_pending())
+			{
+				Gtk.main_iteration();
+			}
+			else
+			{
+				Thread.usleep(1000);
+			}
+		}
+
+		diff.disconnect(handler);
+
+		if (added < diff.diff.get_num_deltas())
+		{
+			stdout.printf("diff of %s, %d of %d files: first files %.3f s, %d files %.3f s\n",
+			              commit, added, (int)diff.diff.get_num_deltas(), first, added, timer.elapsed());
+			return;
+		}
+
+		settle();
+
+		stdout.printf("diff of %s, %d files: first files %.3f s, every file %.3f s\n",
+		              commit, added, first, timer.elapsed());
+		stdout.flush();
+
+		if (word == null)
+		{
+			return;
+		}
+
+		var field = history.find_bar.field;
+
+		timer.start();
+		window.activate_action("search", null);
+		settle();
+
+		stdout.printf("find bar opened: %.3f s\n", timer.elapsed());
+
+		field.text = word;
+		settle();
+
+		timer.start();
+		field.activate();
+		settle();
+
+		stdout.printf("find %s, Enter: %.3f s, %s\n", word, timer.elapsed(), history.find_bar.count);
+
+		for (var i = 0; i < FIND_STEPS; i++)
+		{
+			timer.start();
+			field.activate();
+			settle();
+
+			stdout.printf("find %s, Enter to the next match: %.3f s, %s\n", word, timer.elapsed(), history.find_bar.count);
+		}
+
+		stdout.flush();
 	}
 
 	private static void drain()
@@ -132,7 +242,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -331,6 +441,16 @@ public class Bench : Object
 		drain();
 	}
 
+	private static void settle()
+	{
+		do
+		{
+			drain();
+			Thread.usleep(SETTLE_WAIT);
+		}
+		while (Gtk.events_pending());
+	}
+
 	private static void shown(Window window, int count)
 	{
 		var heading = ngettext("%d commit", "%d commits", count).printf(count) + "\n";
@@ -400,6 +520,9 @@ public class Bench : Object
 		var picks = 0;
 		string? text = null;
 		string? search = null;
+		string? commit = null;
+		string? word = null;
+		var rows = int.MAX;
 
 		for (var i = 0; i < arguments.length; i++)
 		{
@@ -418,6 +541,18 @@ public class Bench : Object
 			else if (arguments[i] == "--group" && i + 1 < arguments.length)
 			{
 				groups += arguments[++i];
+			}
+			else if (arguments[i] == "--diff" && i + 1 < arguments.length)
+			{
+				commit = arguments[++i];
+			}
+			else if (arguments[i] == "--find" && i + 1 < arguments.length)
+			{
+				word = arguments[++i];
+			}
+			else if (arguments[i] == "--rows" && i + 1 < arguments.length)
+			{
+				rows = int.parse(arguments[++i]);
 			}
 			else
 			{
@@ -488,6 +623,11 @@ public class Bench : Object
 		drain();
 
 		stdout.printf("window reload %.3f s\n", timer.elapsed());
+
+		if (commit != null)
+		{
+			detailed(window, commit, word, rows);
+		}
 
 		if (picks > 0)
 		{
