@@ -23,8 +23,13 @@ namespace Gitrlf
 public class Bench : Object
 {
 	private const int FIND_STEPS = 5;
+	private const uint PROBE = 10;
+	private const double QUIET = 1.0;
 
 	private const ulong SETTLE_WAIT = 2000;
+
+	private static double[] s_frames;
+	private static double s_painted;
 
 	private delegate bool Done();
 
@@ -92,6 +97,26 @@ public class Bench : Object
 		}
 
 		return longest;
+	}
+
+	private static double[] cpu_times()
+	{
+		string stat;
+
+		try
+		{
+			FileUtils.get_contents("/proc/self/stat", out stat);
+		}
+		catch
+		{
+			return { 0, 0 };
+		}
+
+		var fields = stat.substring(stat.last_index_of(")") + 2).split(" ");
+		var tick = (double)Posix.sysconf(Posix._SC_CLK_TCK);
+
+		return { (double.parse(fields[11]) + double.parse(fields[12])) / tick,
+		         (double.parse(fields[13]) + double.parse(fields[14])) / tick };
 	}
 
 	private static void detailed(Window window, string commit, string? word, int limit)
@@ -284,6 +309,42 @@ public class Bench : Object
 		}
 	}
 
+	private static void expanded(Window window)
+	{
+		foreach (var widget in widgets(window.history.paned.refs_list))
+		{
+			var header = widget as RefsHeader;
+
+			if (header == null || header.parent_group != null)
+			{
+				continue;
+			}
+
+			var open = header.expanded;
+
+			for (var i = 0; i < 2; i++)
+			{
+				quiet();
+
+				var main = thread_seconds();
+				var count = s_frames.length;
+				var timer = new Timer();
+
+				header.expanded = !header.expanded;
+
+				var wait = frame(count, timer);
+				var last = quiet();
+
+				stdout.printf("refs panel %s %s: painted after %.1f ms, main thread %.1f ms, last frame %.1f ms after\n",
+				              header.expanded ? "expand" : "fold", header.title,
+				              wait * 1000, (s_painted - main) * 1000, last * 1000);
+			}
+
+			header.expanded = open;
+			quiet();
+		}
+	}
+
 	private static void filtered(Window window, string text, Gee.Set<string> every, string[] only, string path)
 	{
 		var timer = new Timer();
@@ -315,6 +376,17 @@ public class Bench : Object
 
 			stdout.printf("window tick under the filter, only %s: %.3f s\n", name, timer.elapsed());
 		}
+	}
+
+	private static double frame(int count, Timer timer)
+	{
+		while (s_frames.length == count && timer.elapsed() < QUIET)
+		{
+			drain();
+			Thread.usleep(100);
+		}
+
+		return timer.elapsed();
 	}
 
 	private static void grouped(Window window, string[] keys)
@@ -358,6 +430,40 @@ public class Bench : Object
 				              (after - before).abs(), timer.elapsed());
 			}
 		}
+	}
+
+	private static void idled(Window window, int seconds)
+	{
+		var done = false;
+		var frames = s_frames.length;
+		var start = cpu_times();
+		var main = thread_seconds();
+		var probe = new Timer();
+		var last = 0.0;
+		var stall = 0.0;
+
+		Timeout.add_seconds(seconds, () => {
+			done = true;
+			return false;
+		});
+		Timeout.add(PROBE, () => {
+			stall = double.max(stall, probe.elapsed() - last);
+			last = probe.elapsed();
+			return !done;
+		});
+
+		while (!done)
+		{
+			Gtk.main_iteration();
+		}
+
+		var end = cpu_times();
+
+		stdout.printf("idle %d s, polling %s: process %.3f s, main thread %.3f s, children %.3f s, %d frames, "
+		              + "longest gap between %u ms probes %.1f ms\n",
+		              seconds, window.polling ? "on" : "off", end[0] - start[0],
+		              thread_seconds() - main, end[1] - start[1],
+		              s_frames.length - frames, PROBE, stall * 1000);
 	}
 
 	private static Gtk.MenuItem? item(Gtk.Menu menu, string prefix)
@@ -493,7 +599,7 @@ public class Bench : Object
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [--menu <commit>] [--glance <commit>] [--lines <commit> <path> <line>] [--split <full ref name> <full ref name>] [--changed <text>] [--files <paths>] [--regex] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [--diff <commit> [--find <text>] [--rows <files>]] [--menu <commit>] [--glance <commit>] [--lines <commit> <path> <line>] [--split <full ref name> <full ref name>] [--changed <text>] [--files <paths>] [--regex] [--scroll <pages>] [--idle <seconds>] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -728,6 +834,44 @@ public class Bench : Object
 		stdout.flush();
 	}
 
+	private static double quiet()
+	{
+		var timer = new Timer();
+		var count = s_frames.length;
+		var last = 0.0;
+
+		while (timer.elapsed() - last < QUIET)
+		{
+			drain();
+
+			if (s_frames.length != count)
+			{
+				count = s_frames.length;
+				last = timer.elapsed();
+			}
+
+			Thread.usleep(1000);
+		}
+
+		return last;
+	}
+
+	private static void scrolled(Window window, int pages)
+	{
+		var settings = new Settings(Config.APPLICATION_ID + ".preferences.interface");
+		var list = window.history.paned.scrolled_window_commit_list.vadjustment;
+		var panel = (Gtk.ScrolledWindow)window.history.paned.refs_list.get_ancestor(typeof(Gtk.ScrolledWindow));
+		var refs = panel.vadjustment;
+
+		settings.set_boolean("enable-monitoring", false);
+		stepped(list, "list page by page", pages, list.page_size);
+		stepped(list, "list jump to the end", 1, list.upper);
+		stepped(list, "list jump to the top", 1, -list.upper);
+		stepped(refs, "refs panel page by page", pages, refs.page_size);
+		expanded(window);
+		settings.set_boolean("enable-monitoring", true);
+	}
+
 	private static void searched(Window window, string text, Gee.Set<string> every, string[] only)
 	{
 		var timer = new Timer();
@@ -884,6 +1028,58 @@ public class Bench : Object
 		              history.selected != null ? history.selected.get_id().to_string().substring(0, 7) : history.hidden_text);
 	}
 
+	private static void stepped(Gtk.Adjustment adjustment, string label, int pages, double step)
+	{
+		quiet();
+
+		var first = s_frames.length;
+		var start = cpu_times();
+		var main = thread_seconds();
+		var steps = 0;
+		var slowest = 0.0;
+
+		while (steps < pages)
+		{
+			var before = adjustment.value;
+			var count = s_frames.length;
+			var timer = new Timer();
+
+			adjustment.value += step;
+
+			if (adjustment.value == before)
+			{
+				break;
+			}
+
+			slowest = double.max(slowest, frame(count, timer));
+			steps++;
+		}
+
+		if (steps == 0)
+		{
+			stdout.printf("%s: nothing to scroll\n", label);
+			return;
+		}
+
+		var stepping = s_frames.length;
+		var last = quiet();
+		var end = cpu_times();
+		double[] frames = s_frames[first:stepping];
+
+		Posix.qsort(frames, frames.length, sizeof(double), (a, b) => {
+			var x = *(double *)a;
+			var y = *(double *)b;
+			return x < y ? -1 : (x > y ? 1 : 0);
+		});
+
+		stdout.printf("%s, %d steps: frame median %.1f ms, slowest %.1f ms, scroll to painted slowest %.1f ms, "
+		              + "main thread %.3f s, children %.3f s, %d frames after the last step, last %.3f s after\n",
+		              label, steps, frames[frames.length / 2] * 1000,
+		              frames[frames.length - 1] * 1000, slowest * 1000,
+		              s_painted - main, end[1] - start[1],
+		              s_frames.length - stepping, last);
+	}
+
 	private static string store_size()
 	{
 		string output = "";
@@ -899,6 +1095,22 @@ public class Bench : Object
 		}
 
 		return output.strip();
+	}
+
+	private static double thread_seconds()
+	{
+		string stat;
+
+		try
+		{
+			FileUtils.get_contents("/proc/thread-self/schedstat", out stat);
+		}
+		catch
+		{
+			return 0;
+		}
+
+		return double.parse(stat.split(" ")[0]) / 1e9;
 	}
 
 	private static void tick(History history, Ggit.OId[] mainline, string label, Ggit.OId[] tips)
@@ -994,6 +1206,8 @@ public class Bench : Object
 		string? commit = null;
 		string? word = null;
 		var rows = int.MAX;
+		var pages = 0;
+		var idle = 0;
 		string? changed = null;
 		string? files = null;
 		var regex = false;
@@ -1044,6 +1258,14 @@ public class Bench : Object
 			{
 				rows = int.parse(arguments[++i]);
 			}
+			else if (arguments[i] == "--scroll" && i + 1 < arguments.length)
+			{
+				pages = int.parse(arguments[++i]);
+			}
+			else if (arguments[i] == "--idle" && i + 1 < arguments.length)
+			{
+				idle = int.parse(arguments[++i]);
+			}
 			else if (arguments[i] == "--changed" && i + 1 < arguments.length)
 			{
 				changed = arguments[++i];
@@ -1076,6 +1298,15 @@ public class Bench : Object
 
 		var window = new Window(app);
 		window.show();
+
+		var painting = new Timer();
+
+		s_frames = new double[0];
+		window.get_frame_clock().before_paint.connect(() => painting.start());
+		window.get_frame_clock().after_paint.connect(() => {
+			s_frames += painting.elapsed();
+			s_painted = thread_seconds();
+		});
 		drain();
 
 		var timer = new Timer();
@@ -1154,6 +1385,16 @@ public class Bench : Object
 		if (search != null)
 		{
 			searched(window, search, every, only);
+		}
+
+		if (pages > 0)
+		{
+			scrolled(window, pages);
+		}
+
+		if (idle > 0)
+		{
+			idled(window, idle);
 		}
 
 		if (changed != null)
