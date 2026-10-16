@@ -338,7 +338,8 @@ public class DiffFindBar : Gtk.SearchBar
 		}
 
 		Gtk.TextIter iter;
-		var view = view_at(d_find.get_match(d_find.current), out iter);
+		var view = view_at(d_diff.get_files(),
+		                   d_find.get_match(d_find.current), out iter);
 
 		if (view == null)
 		{
@@ -548,7 +549,7 @@ public class DiffFindBar : Gtk.SearchBar
 		{
 			var match = d_find.get_match(i);
 			Gtk.TextIter iter;
-			var view = view_at(match, out iter);
+			var view = view_at(files, match, out iter);
 
 			if (view == null || !files[match.file].expanded)
 			{
@@ -677,10 +678,10 @@ public class DiffFindBar : Gtk.SearchBar
 		return new TextMatch(d_field.text, d_switches.match_case, d_switches.regex).error;
 	}
 
-	private Gtk.TextView? view_at(DiffMatch match, out Gtk.TextIter iter)
+	private static Gtk.TextView? view_at(Gee.List<Gitg.DiffViewFile> files,
+	                                     DiffMatch match,
+	                                     out Gtk.TextIter iter)
 	{
-		var files = d_diff.get_files();
-
 		iter = {};
 
 		if (match.file >= files.size)
