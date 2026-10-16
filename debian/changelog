@@ -1,3 +1,21 @@
+gitrl-f (0.10.1-1) noble; urgency=medium
+
+  * A reload is faster when the refs do not change. With 863 refs, a reload
+    takes 0.47 s, not 0.82 s.
+  * The line counts of the uncommitted changes are faster. With 20298
+    changed files, they take 0.96 s, not 1.38 s.
+  * The search of messages, authors and hashes is faster. In 100000
+    commits, Enter takes about 0.17 s, not 0.26 s, and Display matches only
+    about 0.08 s, not 0.41 s.
+  * The Changed lines search runs one git process for each processor. In
+    100000 commits, it takes 1.96 s, not 4.13 s.
+  * The diff of a commit with many files fills faster. With 20000 files,
+    the first 2000 files show after 4.2 s, not 9.3 s.
+  * The window no longer stops for a moment every 2 s while it checks the
+    work tree for changes.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 16 Oct 2026 16:22:35 +0200
+
 gitrl-f (0.10.0-1) noble; urgency=medium
 
   * The Unstaged changes and Staged changes rows above the list show the
