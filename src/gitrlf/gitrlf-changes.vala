@@ -61,23 +61,22 @@ public class Changes : Object
 
 	public static string lines(Ggit.Diff diff) throws Error
 	{
-		var added = 0;
-		var removed = 0;
+		size_t added = 0;
+		size_t removed = 0;
 
-		diff.foreach(null, null, null, (delta, hunk, line) => {
-			if (line.get_origin() == Ggit.DiffLineType.ADDITION)
-			{
-				added++;
-			}
-			else if (line.get_origin() == Ggit.DiffLineType.DELETION)
-			{
-				removed++;
-			}
+		for (size_t i = 0; i < diff.get_num_deltas(); i++)
+		{
+			size_t context;
+			size_t additions;
+			size_t deletions;
 
-			return 0;
-		});
+			new Ggit.Patch.from_diff(diff, i).get_line_stats(
+				out context, out additions, out deletions);
+			added += additions;
+			removed += deletions;
+		}
 
-		return LineCounts.text_of(added, removed);
+		return LineCounts.text_of((int)added, (int)removed);
 	}
 
 	private static Ggit.DiffOptions options(int context)
