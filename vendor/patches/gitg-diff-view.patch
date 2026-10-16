@@ -16,15 +16,18 @@
  	[GtkChild( name = "event_box" )]
  	private unowned Gtk.EventBox d_event_box;
  
-@@ -48,6 +57,7 @@
+@@ -46,8 +55,10 @@
+ 	private Ggit.DiffOptions? d_options;
+ 	private Cancellable d_cancellable;
  	private ulong d_expanded_notify;
++	private Gee.ArrayList<DiffViewFile> d_files = new Gee.ArrayList<DiffViewFile>();
  	private ulong d_parent_commit_notify;
  	private bool d_changes_inline;
 +	private int d_message_width;
  
  	Gdk.RGBA d_color_link;
  	Gdk.RGBA color_hovered_link;
-@@ -57,6 +67,8 @@
+@@ -57,6 +68,8 @@
  	private uint d_reveal_options_timeout;
  	private uint d_unreveal_options_timeout;
  
@@ -33,7 +36,7 @@
  	private static Gee.HashSet<string> s_image_mime_types;
  
  	public Ggit.DiffOptions options
-@@ -72,11 +84,6 @@
+@@ -72,11 +85,6 @@
  		}
  	}
  
@@ -45,7 +48,7 @@
  	public Ggit.Diff? diff
  	{
  		get { return d_diff; }
-@@ -92,6 +99,21 @@
+@@ -92,6 +100,21 @@
  		}
  	}
  
@@ -67,7 +70,7 @@
  	public Commit? commit
  	{
  		get { return d_commit; }
-@@ -107,6 +129,10 @@
+@@ -107,6 +130,10 @@
  		}
  	}
  
@@ -78,7 +81,7 @@
  	public virtual signal void options_changed()
  	{
  		if (d_commit != null)
-@@ -217,6 +243,8 @@
+@@ -217,6 +244,8 @@
  		d_text_view_message.has_tooltip = true;
  		d_text_view_message.query_tooltip.connect (on_query_tooltip_event);
  		d_text_view_message.style_updated.connect (load_colors_from_theme);
@@ -87,25 +90,15 @@
  
  		load_colors_from_theme(d_text_view_message);
  
-@@ -249,6 +277,25 @@
+@@ -249,6 +278,15 @@
  		}
  	}
  
 +	public Gee.List<DiffViewFile> get_files()
 +	{
 +		var files = new Gee.ArrayList<DiffViewFile>();
-+		var rows = new Gee.HashMap<DiffViewFile, int>();
 +
-+		foreach (var child in d_grid_files.get_children())
-+		{
-+			int row;
-+
-+			d_grid_files.child_get(child, "top-attach", out row);
-+			files.add((DiffViewFile) child);
-+			rows[(DiffViewFile) child] = row;
-+		}
-+
-+		files.sort((a, b) => rows[a] - rows[b]);
++		files.add_all(d_files);
 +
 +		return files;
 +	}
@@ -113,7 +106,7 @@
  	private static Regex s_message_regexp;
  
  	static construct
-@@ -455,6 +502,23 @@
+@@ -455,6 +493,23 @@
  		}
  	}
  
@@ -137,7 +130,7 @@
  	private bool on_motion_notify_event (Gtk.Widget widget, Gdk.EventMotion evt)
  	{
  		int x, y;
-@@ -579,6 +643,8 @@
+@@ -579,6 +634,8 @@
  			parse_smart_text(buffer);
  
  			d_text_view_message.visible = (message != "");
@@ -146,7 +139,7 @@
  		}
  		else
  		{
-@@ -639,25 +705,6 @@
+@@ -639,25 +696,6 @@
  		SignalHandler.unblock(d_commit_details, d_expanded_notify);
  	}
  
@@ -172,7 +165,7 @@
  	private string? primary_path(Ggit.DiffDelta delta)
  	{
  		var path = delta.get_old_file().get_path();
-@@ -730,11 +777,94 @@
+@@ -730,11 +768,95 @@
  		check_finish();
  	}
  
@@ -240,6 +233,7 @@
 +			}
 +
 +			d_grid_files.add(file);
++			d_files.add(file);
 +
 +			file.notify["expanded"].connect(auto_update_expanded);
 +		}
@@ -269,7 +263,7 @@
  		Ggit.DiffHunk? current_hunk = null;
  		Gee.ArrayList<Ggit.DiffLine>? current_lines = null;
  		var current_is_binary = false;
-@@ -756,8 +886,6 @@
+@@ -756,8 +878,6 @@
  
  			if (current_file != null)
  			{
@@ -278,7 +272,7 @@
  				files.add(current_file);
  
  				current_file = null;
-@@ -826,11 +954,11 @@
+@@ -826,11 +946,11 @@
  					bool can_diff_as_image = mime_type_for_image != null && s_image_mime_types.contains(mime_type_for_image);
  					bool can_diff_as_text = ContentType.is_mime_type(mime_type_for_image, "text/plain");
  
@@ -292,7 +286,7 @@
  					}
  					if (!can_diff_as_image && !current_is_binary && !can_diff_as_text)
  					{
-@@ -839,21 +967,9 @@
+@@ -839,21 +959,9 @@
  					}
  					if (can_diff_as_text)
  					{
@@ -317,7 +311,7 @@
  					}
  					if (current_is_binary)
  					{
-@@ -893,8 +1009,8 @@
+@@ -893,8 +1001,8 @@
  											{
  												info = new DiffViewFileInfo(repository, delta, new_is_workdir);
  											}
@@ -328,7 +322,7 @@
  												return 0;
  											},
  									(delta, binary) => {
-@@ -941,7 +1057,7 @@
+@@ -941,7 +1049,7 @@
  							stderr.printf (@"Error: $(error.message)\n");
  						}
  						if (current_is_binary)
@@ -337,7 +331,16 @@
  					}
  					return 0;
  				},
-@@ -1018,22 +1134,32 @@
+@@ -998,6 +1106,8 @@
+ 		var file_widgets = d_grid_files.get_children();
+ 		var was_expanded = new Gee.HashSet<string>();
+ 
++		d_files.clear();
++
+ 		foreach (var file in file_widgets)
+ 		{
+ 			unowned DiffViewFile f = (DiffViewFile) file;
+@@ -1018,22 +1128,32 @@
  		d_commit_details.expanded = (files.size <= 1 || !default_collapse_all);
  		d_commit_details.expander_visible = (files.size > 1);
  
@@ -381,7 +384,7 @@
  	}
  
  	private void auto_update_expanded()
-@@ -1050,26 +1176,6 @@
+@@ -1050,26 +1170,6 @@
  		auto_change_expanded(true);
  	}
  
@@ -408,7 +411,7 @@
  	private void update_hide_show_options(Gdk.Window window, int ex, int ey)
  	{
  		void *data;
-@@ -1152,4 +1258,29 @@
+@@ -1152,4 +1252,29 @@
  	}
  }
  

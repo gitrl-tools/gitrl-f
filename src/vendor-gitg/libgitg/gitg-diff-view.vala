@@ -55,6 +55,7 @@ public class Gitg.DiffView : Gtk.Grid
 	private Ggit.DiffOptions? d_options;
 	private Cancellable d_cancellable;
 	private ulong d_expanded_notify;
+	private Gee.ArrayList<DiffViewFile> d_files = new Gee.ArrayList<DiffViewFile>();
 	private ulong d_parent_commit_notify;
 	private bool d_changes_inline;
 	private int d_message_width;
@@ -280,18 +281,8 @@ public class Gitg.DiffView : Gtk.Grid
 	public Gee.List<DiffViewFile> get_files()
 	{
 		var files = new Gee.ArrayList<DiffViewFile>();
-		var rows = new Gee.HashMap<DiffViewFile, int>();
 
-		foreach (var child in d_grid_files.get_children())
-		{
-			int row;
-
-			d_grid_files.child_get(child, "top-attach", out row);
-			files.add((DiffViewFile) child);
-			rows[(DiffViewFile) child] = row;
-		}
-
-		files.sort((a, b) => rows[a] - rows[b]);
+		files.add_all(d_files);
 
 		return files;
 	}
@@ -841,6 +832,7 @@ public class Gitg.DiffView : Gtk.Grid
 			}
 
 			d_grid_files.add(file);
+			d_files.add(file);
 
 			file.notify["expanded"].connect(auto_update_expanded);
 		}
@@ -1113,6 +1105,8 @@ public class Gitg.DiffView : Gtk.Grid
 
 		var file_widgets = d_grid_files.get_children();
 		var was_expanded = new Gee.HashSet<string>();
+
+		d_files.clear();
 
 		foreach (var file in file_widgets)
 		{
