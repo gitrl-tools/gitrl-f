@@ -33,6 +33,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.Box d_box;
 	private bool[] d_cases;
 	private CopyMenu d_changes_menu;
+	private Gitg.Repository? d_checked;
+	private Cancellable? d_checking;
 	private SearchChoice d_choice;
 	private Gtk.CheckButton[] d_choice_boxes;
 	private Gtk.RadioButton[] d_choice_buttons;
@@ -86,6 +88,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool d_press_on_row;
 	private bool d_press_on_shown;
 	private string[]? d_reading;
+	private int d_reads;
 	private Gee.List<Ref> d_refs;
 	private bool d_regex;
 	private bool[] d_regexes;
@@ -448,6 +451,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_box.show_all();
 		d_box.destroy.connect(stop_search);
 		d_box.destroy.connect(drop_squash);
+		d_box.destroy.connect(stop_checking);
 		d_box.destroy.connect(stop_line_counts);
 
 		d_press = new Gtk.GestureMultiPress(d_paned.commit_list_view);
@@ -1078,6 +1082,62 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool changes_apply()
 	{
 		return d_lines == null && (d_text != null || d_paths.length > 0);
+	}
+
+	public async void check_changes()
+	{
+		if (d_repository == null || d_checking != null)
+		{
+			return;
+		}
+
+		var checking = new Cancellable();
+		var current = d_repository;
+		var reads = d_reads;
+		var context = d_diff.options.n_context_lines;
+		Ggit.Diff? staged = null;
+		Ggit.Diff? unstaged = null;
+		string? staged_key = null;
+		string? unstaged_key = null;
+
+		d_checking = checking;
+
+		try
+		{
+			if (d_checked == null)
+			{
+				d_checked = Repository.open(d_repository.location);
+			}
+
+			var repository = d_checked;
+
+			yield Gitg.Async.thread(() => {
+				staged = Changes.staged(repository, context);
+				unstaged = Changes.unstaged(repository, context);
+				staged_key = Changes.key(repository, staged);
+				unstaged_key = Changes.key(repository, unstaged);
+			});
+		}
+		catch (Error e)
+		{
+			staged_key = null;
+		}
+
+		if (checking.is_cancelled())
+		{
+			return;
+		}
+
+		d_checking = null;
+
+		if (staged_key == null || current != d_repository || reads != d_reads
+		    || (staged_key == d_staged_key && unstaged_key == d_unstaged_key))
+		{
+			return;
+		}
+
+		d_checked = null;
+		take_changes(staged, unstaged, staged_key, unstaged_key);
 	}
 
 	private static string choice_name(SearchChoice choice)
@@ -2150,6 +2210,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		stop_search();
 		drop_lines();
 		d_all = null;
+		d_checked = null;
 		d_find_closed = false;
 		d_names = null;
 		light_selection(d_paned.details_visible);
@@ -2383,28 +2444,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return;
 		}
 
-		if (staged_key == d_staged_key && unstaged_key == d_unstaged_key)
-		{
-			return;
-		}
-
-		d_staged = staged;
-		d_staged_key = staged_key;
-		d_unstaged = unstaged;
-		d_unstaged_key = unstaged_key;
-
-		try
-		{
-			d_staged_lines = Changes.lines(staged);
-			d_unstaged_lines = Changes.lines(unstaged);
-		}
-		catch (Error e)
-		{
-			d_staged_lines = null;
-			d_unstaged_lines = null;
-		}
-
-		show_changes();
+		d_reads++;
+		take_changes(staged, unstaged, staged_key, unstaged_key);
 	}
 
 	private History read_history(Gee.List<Ref> refs) throws Error
@@ -3395,6 +3436,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
+	private void stop_checking()
+	{
+		if (d_checking != null)
+		{
+			d_checking.cancel();
+		}
+	}
+
 	private void stop_line_counts()
 	{
 		if (d_line_counts != null)
@@ -3443,6 +3492,33 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		apply(d_text != null ? d_text : "", d_ignore_case, d_regex, paths);
+	}
+
+	private void take_changes(Ggit.Diff staged, Ggit.Diff unstaged,
+	                          string staged_key, string unstaged_key)
+	{
+		if (staged_key == d_staged_key && unstaged_key == d_unstaged_key)
+		{
+			return;
+		}
+
+		d_staged = staged;
+		d_staged_key = staged_key;
+		d_unstaged = unstaged;
+		d_unstaged_key = unstaged_key;
+
+		try
+		{
+			d_staged_lines = Changes.lines(staged);
+			d_unstaged_lines = Changes.lines(unstaged);
+		}
+		catch (Error e)
+		{
+			d_staged_lines = null;
+			d_unstaged_lines = null;
+		}
+
+		show_changes();
 	}
 
 	private void tick_and_show()
