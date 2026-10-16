@@ -63,6 +63,29 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.10.0" date="2026-10-16">
+      <description>
+        <ul>
+          <li>
+            The Unstaged changes and Staged changes rows above the list show
+            the lines that they add and remove, under the line counts column,
+            as the commit rows do.
+          </li>
+          <li>
+            The added and removed counts are nearer to each other, as in
+            "+489-54", and the column is 8 pixels narrower.
+          </li>
+          <li>
+            A tick redraws the history faster in a big repository. In a test
+            repository, a tick of every ref takes 0.27 s, not 0.46 s.
+          </li>
+          <li>
+            The install adds gitf, a short name for gitrlf, unless another
+            program called gitf is on the PATH.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.0" date="2026-10-14">
       <description>
         <ul>

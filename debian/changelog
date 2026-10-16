@@ -1,3 +1,17 @@
+gitrl-f (0.10.0-1) noble; urgency=medium
+
+  * The Unstaged changes and Staged changes rows above the list show the
+    lines that they add and remove, under the line counts column, as the
+    commit rows do.
+  * The added and removed counts are nearer to each other, as in "+489-54",
+    and the column is 8 pixels narrower.
+  * A tick redraws the history faster in a big repository. In a test
+    repository, a tick of every ref takes 0.27 s, not 0.46 s.
+  * The install adds gitf, a short name for gitrlf, unless another program
+    called gitf is on the PATH.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 16 Oct 2026 12:42:52 +0200
+
 gitrl-f (0.9.0-1) noble; urgency=medium
 
   * Ctrl and Shift clicks select more than one commit. The pane then shows
