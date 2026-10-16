@@ -9,6 +9,7 @@ project(
 application_id = 'io.github.li9i.gitrlf'
 gitrlf_name = meson.project_name()
 gitrlf_binary = 'gitrlf'
+gitrlf_alias = 'gitf'
 gitrlf_version = meson.project_version()
 gitrlf_gettext = gitrlf_name
 

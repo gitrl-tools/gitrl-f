@@ -20,14 +20,17 @@ cd "$dest$prefix"
 find . -type f -o -type l | sed 's|^\./||' | sort >"$dest/installed"
 
 sort >"$dest/expected" <<'LIST'
+bin/gitf
 bin/gitrlf
 share/applications/io.github.li9i.gitrlf.desktop
+share/bash-completion/completions/gitf
 share/bash-completion/completions/gitrlf
 share/glib-2.0/schemas/io.github.li9i.gitrlf.gschema.xml
 share/icons/hicolor/128x128/apps/io.github.li9i.gitrlf.png
 share/icons/hicolor/48x48/apps/io.github.li9i.gitrlf.png
 share/icons/hicolor/64x64/apps/io.github.li9i.gitrlf.png
 share/icons/hicolor/symbolic/apps/io.github.li9i.gitrlf-symbolic.svg
+share/man/man1/gitf.1
 share/man/man1/gitrlf.1
 share/metainfo/io.github.li9i.gitrlf.metainfo.xml
 LIST
@@ -36,6 +39,14 @@ if ! diff -u "$dest/expected" "$dest/installed"; then
 	echo "test-meson-install.sh: the installed files differ from the list" >&2
 	exit 1
 fi
+
+for link in bin/gitf share/bash-completion/completions/gitf \
+	share/man/man1/gitf.1; do
+	if ! cmp -s "$link" "$(dirname "$link")/gitrlf${link##*/gitf}"; then
+		echo "test-meson-install.sh: $link is not the same as gitrlf" >&2
+		exit 1
+	fi
+done
 
 warnings=$(groff -man -ww -z share/man/man1/gitrlf.1 2>&1)
 

@@ -90,3 +90,9 @@ gitrlf_exe = executable(
   install: true,
   install_dir: gitrlf_bindir,
 )
+
+install_symlink(
+  gitrlf_alias,
+  pointing_to: gitrlf_binary,
+  install_dir: gitrlf_bindir,
+)

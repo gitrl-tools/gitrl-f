@@ -42,17 +42,20 @@ docker run --rm -e GITRLF_VERSION="$upstream" \
 
 	echo "--- the command runs ---"
 	test "$(gitrlf --version)" = "gitrlf $GITRLF_VERSION"
+	test "$(gitf --version)" = "gitrlf $GITRLF_VERSION"
 
 	echo "--- files are where the package said ---"
 	test -x /usr/bin/gitrlf
 	test -f /usr/share/applications/io.github.li9i.gitrlf.desktop
 	test -f /usr/share/metainfo/io.github.li9i.gitrlf.metainfo.xml
 	test -f /usr/share/man/man1/gitrlf.1.gz
+	test -f /usr/share/man/man1/gitf.1.gz
 	for size in 128 64 48; do
 		test -f "/usr/share/icons/hicolor/${size}x${size}/apps/io.github.li9i.gitrlf.png"
 	done
 	test -f /usr/share/icons/hicolor/symbolic/apps/io.github.li9i.gitrlf-symbolic.svg
 	test -f /usr/share/bash-completion/completions/gitrlf
+	test -f /usr/share/bash-completion/completions/gitf
 
 	echo "--- the schema was compiled on install ---"
 	for schema in preferences.interface preferences.history state.window state.history; do
@@ -65,6 +68,7 @@ docker run --rm -e GITRLF_VERSION="$upstream" \
 	echo "--- remove ---"
 	apt-get remove -y -qq gitrl-f >/dev/null
 	test ! -e /usr/bin/gitrlf
+	test ! -e /usr/bin/gitf
 	test ! -e /usr/share/bash-completion/completions/gitrlf
 
 	echo "--- purge ---"

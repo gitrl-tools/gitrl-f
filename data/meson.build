@@ -111,10 +111,22 @@ install_man(
   ),
 )
 
+install_symlink(
+  gitrlf_alias + '.1',
+  pointing_to: gitrlf_binary + '.1',
+  install_dir: join_paths(gitrlf_prefix, get_option('mandir'), 'man1'),
+)
+
 bash_completion_dir = join_paths(gitrlf_datadir, 'bash-completion', 'completions')
 
 install_data(
   'gitrlf.bash-completion',
   install_dir: bash_completion_dir,
   rename: gitrlf_binary,
+)
+
+install_symlink(
+  gitrlf_alias,
+  pointing_to: gitrlf_binary,
+  install_dir: bash_completion_dir,
 )

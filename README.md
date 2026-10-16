@@ -129,7 +129,7 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-The install puts `gitrlf` in `~/.local/bin`, which must be on the `PATH`. GLib and bash find the settings schema and the TAB completion with no more configuration.
+The install puts `gitrlf`, and `gitf` as a short name for it, in `~/.local/bin`, which must be on the `PATH`. GLib and bash find the settings schema and the TAB completion with no more configuration.
 
 ## How to run it
 

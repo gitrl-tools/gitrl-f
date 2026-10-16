@@ -15,6 +15,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 mkdir -p "$tmp/completions"
 cp "$script" "$tmp/completions/gitrlf"
+ln -s gitrlf "$tmp/completions/gitf"
 export BASH_COMPLETION_USER_DIR=$tmp
 
 git init -q -b master "$tmp/origin"
@@ -91,5 +92,6 @@ expect "gitrlf --text " ""
 expect "gitrlf -G " ""
 expect "gitrlf --regex " ""
 expect "gitrlf -S foo " "$refs"
+expect "gitf " "$refs"
 
 exit $status
