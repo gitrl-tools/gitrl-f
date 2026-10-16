@@ -190,13 +190,32 @@ public class History : Object
 	{
 		var tips = tip_names(refs);
 		var records = git(directory, log_arguments(paths, topological), string.joinv("\n", tips) + "\n");
-		var starts = new Gee.HashMap<string, string>();
+		var context = new MainContext();
+		Gee.Map<string, string>? starts = null;
+		Error? error = null;
 
-		foreach (var tip in missing(records, tips))
+		context.push_thread_default();
+		read_starts.begin(directory, missing(records, tips), paths, new Cancellable(), (obj, res) => {
+			try
+			{
+				starts = read_starts.end(res);
+			}
+			catch (Error e)
+			{
+				error = e;
+			}
+		});
+
+		while (starts == null && error == null)
 		{
-			var found = git(directory, start_arguments(tip, paths), null);
+			context.iteration(true);
+		}
 
-			starts[tip] = found.length > 0 ? found[0] : "";
+		context.pop_thread_default();
+
+		if (error != null)
+		{
+			throw error;
 		}
 
 		load_log(repository, records, tips, starts);
@@ -641,16 +660,27 @@ public class History : Object
 		string[] kept = paths;
 		var tips = tip_names(refs);
 		var records = yield git_async(directory, log_arguments(kept, topological), string.joinv("\n", tips) + "\n", cancellable);
-		var starts = new Gee.HashMap<string, string>();
-
-		foreach (var tip in missing(records, tips))
-		{
-			var found = yield git_async(directory, start_arguments(tip, kept), null, cancellable);
-
-			starts[tip] = found.length > 0 ? found[0] : "";
-		}
+		var starts = yield read_starts(directory, missing(records, tips), kept, cancellable);
 
 		return new History.from_log(repository, records, tips, starts);
+	}
+
+	private static async Gee.Map<string, string> read_starts(File directory, string[] tips, string[] paths, Cancellable cancellable) throws Error
+	{
+		string[] kept = tips;
+		var starts = new Gee.HashMap<string, string>();
+		var inputs = new string[0];
+
+		foreach (var tip in kept)
+		{
+			inputs += tip + "\n";
+		}
+
+		yield git_each(directory, start_arguments(paths), inputs, cancellable, (index, found) => {
+			starts[kept[index]] = found.length > 0 ? found[0] : "";
+		});
+
+		return starts;
 	}
 
 	public Gee.List<Ref> refs_holding(Ggit.OId id, Gee.List<Ref> refs)
@@ -739,9 +769,9 @@ public class History : Object
 		return launcher.spawnv(argv);
 	}
 
-	private static string[] start_arguments(string tip, string[] paths)
+	private static string[] start_arguments(string[] paths)
 	{
-		string[] rev_list = { "rev-list", "-1", tip, "--" };
+		string[] rev_list = { "rev-list", "-1", "--stdin", "--" };
 
 		foreach (var path in paths)
 		{
