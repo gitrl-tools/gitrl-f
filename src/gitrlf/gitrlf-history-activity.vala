@@ -1484,18 +1484,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return found;
 		}
 
-		var shown = History.id_set();
-
-		foreach (var row in rows())
-		{
-			shown.add(row.get_id());
-		}
-
 		for (var i = 0; i < source.size; i++)
 		{
 			var commit = source.at(i);
 
-			if (!shown.contains(commit.get_id()) && d_query.matches(commit))
+			if (d_query.matches(commit))
 			{
 				found += commit.get_id();
 			}
