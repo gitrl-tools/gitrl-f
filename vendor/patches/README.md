@@ -264,9 +264,9 @@ Adds `add_lines()`, which adds the added and removed lines of a list of diff lin
 
 ## gitg-lanes.patch
 
-Three changes.
+Seven changes.
 
-**1. Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`.** Two places read the parents of a commit: `prepare_lanes()` and `expand_lanes()`. They now ask `parent_ids()`, which calls that function when it is set, and reads the commit when it is not. `Gitg.Lanes` does not own the function: the caller owns the lanes and must live longer than them. An owned function held a reference to its caller, and the two were never freed.
+**1. Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`.** `next()` reads the parents of a commit through `parent_ids()`, which calls that function when it is set, and reads the commit when it is not. It gives them to the two places that use them: `prepare_lanes()` and `expand_lanes()`. `Gitg.Lanes` does not own the function: the caller owns the lanes and must live longer than them. An owned function held a reference to its caller, and the two were never freed.
 
 Under a path limit, gitrl-f shows only the commits that change the paths. It takes the parents of each one from `git log --parents`, which rewrites them to the nearest shown ancestors. libgit2 has no history simplification by path. The lanes must follow the rewritten parents, or the graph does not join from one shown commit to the next. The commit object holds its real parents, so the lanes need another source.
 
@@ -274,7 +274,17 @@ Under a path limit, gitrl-f shows only the commits that change the paths. It tak
 
 **3. Does not make the list of lanes for a hidden commit.** `next()` copied every lane into a new list for each commit, and the caller drops that list when `next()` returns false, which it does for a hidden commit. A hidden commit is one on the first parent line of the mainline that no ticked ref reaches. `next()` now gives null for it, as it already does for a commit that it saves as a miss. The same tick took 0.255 s with this change and the one above (measured).
 
-**Cost.** None. With no path limit, no function is set, and the lanes read the parents of the commit as upstream does. Every caller, `Gitg.CommitModel` included, reads the list only when `next()` returns true. The pixel comparison with gitg is unchanged at zero differing pixels.
+**4. Reads the parents of a commit one time in `next()`.** `expand_lanes()` and `prepare_lanes()` each read them before. With no parents function, each read makes a `Ggit.CommitParents` object and a copy of the id of each parent.
+
+**5. Changes the lane of a container in place for each row.** `LaneContainer.next()` copied its lane, then cleared the tag and the list of merges of the copy. Nothing else holds the lane of a container: `lanes_list()` gives copies to the commit, and a collapsed lane keeps only the colour and the two ids. Thus the copy was a new object for each lane of each shown row, and the old lane was freed.
+
+**6. Does not copy the colour of a lane.** Four places replaced the colour of a lane with a copy of it, which is a new `Gitg.Color` with the same index. Nothing changes the index of a colour after `Color.next()` makes it, because `next_index()` has no caller. The renderer reads only the index, through `r`, `g` and `b`. Thus a copy and the original draw the same colour.
+
+**7. Keeps the lanes in a `GenericArray`, not a `Gee.LinkedList`.** Each `foreach` on the `Gee.LinkedList` made an iterator object, and `next()` did four or five of them for each row. A `foreach` on a `GenericArray` is a loop on an index, with no object. `collapse_lanes()` removed a lane through its iterator, and now removes it by its index. The order of the lanes, and each insert and remove, are the same.
+
+The lanes of a tick of every ref of a history of 100000 commits took 0.27 s before changes 4 to 7, without a window. Change 5 made this 0.23 s, and change 4 then made it 0.19 s. Change 6 then made it 0.14 s, and change 7 made it 0.09 s. Each time is the median of three runs, measured on 2026-10-16.
+
+**Cost.** None. With no path limit, no function is set, and the lanes read the parents of the commit as upstream does. Every caller, `Gitg.CommitModel` included, reads the list only when `next()` returns true. A dump of the rows is the same before and after changes 4 to 7. For each lane of each row, the dump has the colour index, the tag, the merges and the boundary. It covered four repositories and a path limit and a text filter. It ticked every ref, one ref, half of the refs, and every ref with no mainline, then ticked again on the same history. The captures of the pixel comparison are the same before and after, at zero differing pixels.
 
 ## resources.xml.patch
 

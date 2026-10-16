@@ -29,7 +29,7 @@ public class Lanes : Object
 	public Gee.LinkedList<Commit> miss_commits {get; set; }
 
 	private SList<weak Commit> d_previous;
-	private Gee.LinkedList<LaneContainer> d_lanes;
+	private GenericArray<LaneContainer> d_lanes;
 	private HashTable<Ggit.OId, CollapsedLane> d_collapsed;
 	private Gee.HashSet<Ggit.OId>? d_roots;
 
@@ -59,7 +59,6 @@ public class Lanes : Object
 		public void next(int index)
 		{
 			var hidden = is_hidden;
-			lane = lane.copy();
 
 			lane.tag = LaneTag.NONE;
 			lane.from = new SList<int>();
@@ -160,7 +159,7 @@ public class Lanes : Object
 	public void reset(Ggit.OId[]?            reserved = null,
 	                  Gee.HashSet<Ggit.OId>? roots    = null)
 	{
-		d_lanes = new Gee.LinkedList<LaneContainer>();
+		d_lanes = new GenericArray<LaneContainer>();
 		miss_commits = new Gee.LinkedList<Commit>();
 		d_roots = roots;
 
@@ -188,11 +187,12 @@ public class Lanes : Object
 	                 bool save_miss = false)
 	{
 		var myoid = next.get_id();
+		var parents = parent_ids(next);
 
 		if (inactive_enabled)
 		{
 			collapse_lanes();
-			expand_lanes(next);
+			expand_lanes(next, parents);
 		}
 
 		LaneContainer? mylane = find_lane_by_oid(myoid, out nextpos);
@@ -213,13 +213,10 @@ public class Lanes : Object
 			mylane = new LaneContainer(myoid, null);
 
 			d_lanes.add(mylane);
-			nextpos = (int)d_lanes.size - 1;
+			nextpos = d_lanes.length - 1;
 		}
 		else
 		{
-			// copy the color here because the commit is a new stop
-			mylane.lane.color = mylane.lane.color.copy();
-
 			mylane.to = null;
 			mylane.from = next.get_id();
 
@@ -246,14 +243,14 @@ public class Lanes : Object
 			lanes = lanes_list();
 		}
 
-		prepare_lanes(next, nextpos, hidden);
+		prepare_lanes(next, nextpos, hidden, parents);
 
 		return !hidden;
 	}
 
-	private void prepare_lanes(Commit next, int pos, bool hidden)
+	private void prepare_lanes(Commit next, int pos, bool hidden,
+	                           Ggit.OId[] parents)
 	{
-		var parents = parent_ids(next);
 		var myoid = next.get_id();
 
 		if (!hidden)
@@ -289,8 +286,6 @@ public class Lanes : Object
 						mylane.is_hidden = false;
 					}
 
-					mylane.lane.color = mylane.lane.color.copy();
-
 					if (mylane.inactive >= 0)
 					{
 						mylane.inactive = 0;
@@ -306,8 +301,6 @@ public class Lanes : Object
 					{
 						container.lane.from.append(pos);
 					}
-
-					container.lane.color = container.lane.color.copy();
 
 					if (!hidden)
 					{
@@ -327,8 +320,6 @@ public class Lanes : Object
 				// there is no parent yet which can proceed on the current
 				// commit lane, so set it now
 				mylane.to = poid;
-
-				mylane.lane.color = mylane.lane.color.copy();
 			}
 			else if (!hidden)
 			{
@@ -415,11 +406,9 @@ public class Lanes : Object
 	{
 		int index = 0;
 
-		var iter = d_lanes.iterator();
-
-		while (iter.next())
+		while (index < d_lanes.length)
 		{
-			var container = iter.get();
+			var container = d_lanes[index];
 
 			if (container.inactive != inactive_max + inactive_gap)
 			{
@@ -430,7 +419,7 @@ public class Lanes : Object
 			collapse_lane(container, container.lane.from.data);
 			update_current_lane_merge_indices(index, -1);
 
-			iter.remove();
+			d_lanes.remove_index(index);
 		}
 	}
 
@@ -490,7 +479,7 @@ public class Lanes : Object
 	{
 		var index = lane.index;
 		var ln = new Lane.with_color(lane.color);
-		var len = d_lanes.size;
+		var len = d_lanes.length;
 
 		if (index > len)
 		{
@@ -566,11 +555,11 @@ public class Lanes : Object
 		}
 	}
 
-	private void expand_lanes(Commit commit)
+	private void expand_lanes(Commit commit, Ggit.OId[] parents)
 	{
 		expand_lane_from_oid(commit.get_id());
 
-		foreach (var parent in parent_ids(commit))
+		foreach (var parent in parents)
 		{
 			expand_lane_from_oid(parent);
 		}
