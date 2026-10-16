@@ -86,6 +86,17 @@ docker run --rm -e GITRLF_VERSION="$upstream" \
 		exit 1
 	fi
 
+	echo "--- it keeps a gitf of another owner ---"
+	echo other >/usr/bin/gitf
+	apt-get install -y -qq /tmp/gitrlf.deb >/dev/null
+	test "$(cat /usr/bin/gitf)" = other
+	test ! -e /usr/share/bash-completion/completions/gitf
+	test ! -e /usr/share/man/man1/gitf.1.gz
+	apt-get remove -y -qq gitrl-f >/dev/null
+	test "$(cat /usr/bin/gitf)" = other
+	rm /usr/bin/gitf
+	dpkg --purge gitrl-f
+
 	echo "--- it takes the place of gittree ---"
 	apt-get install -y -qq /tmp/gittree.deb >/dev/null
 	apt-get install -y -qq /tmp/gitrlf.deb >/dev/null

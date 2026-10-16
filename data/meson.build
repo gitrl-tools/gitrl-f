@@ -111,12 +111,6 @@ install_man(
   ),
 )
 
-install_symlink(
-  gitrlf_alias + '.1',
-  pointing_to: gitrlf_binary + '.1',
-  install_dir: join_paths(gitrlf_prefix, get_option('mandir'), 'man1'),
-)
-
 bash_completion_dir = join_paths(gitrlf_datadir, 'bash-completion', 'completions')
 
 install_data(
@@ -125,8 +119,25 @@ install_data(
   rename: gitrlf_binary,
 )
 
-install_symlink(
-  gitrlf_alias,
-  pointing_to: gitrlf_binary,
-  install_dir: bash_completion_dir,
+alias_link_conf = configuration_data()
+alias_link_conf.set('BINARY', gitrlf_binary)
+alias_link_conf.set('ALIAS', gitrlf_alias)
+alias_link_conf.set('BINDIR', gitrlf_bindir)
+alias_link_conf.set('COMPLETIONDIR', bash_completion_dir)
+alias_link_conf.set(
+  'MANDIR',
+  join_paths(gitrlf_prefix, get_option('mandir'), 'man1'),
 )
+
+alias_link_script = configure_file(
+  input: 'alias-link.sh.in',
+  output: 'alias-link.sh',
+  configuration: alias_link_conf,
+  install: true,
+  install_dir: gitrlf_pkgdatadir,
+  install_mode: 'rwxr-xr-x',
+)
+
+if get_option('alias_link')
+  meson.add_install_script(alias_link_script, 'add')
+endif
