@@ -51,7 +51,7 @@ sudo add-apt-repository ppa:li9i/gitrl-f
 sudo apt-get install gitrl-f
 ```
 
-The package is `gitrl-f`. The command is `gitrlf`. In bash, TAB completes its options, then the names of the refs, and after `--` the paths.
+The package is `gitrl-f`. The command is `gitrlf`, or `gitf` for short. In bash, TAB completes its options, then the names of the refs, and after `--` the paths.
 
 ### `.deb` package
 
