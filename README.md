@@ -51,7 +51,7 @@ sudo add-apt-repository ppa:li9i/gitrl-f
 sudo apt-get install gitrl-f
 ```
 
-The package is `gitrl-f`. The command is `gitrlf`, or `gitf` for short. The install adds `gitf` only if `/usr/bin/gitf` does not exist yet. In bash, TAB completes its options, then the names of the refs, and after `--` the paths.
+The package is `gitrl-f`. The command is `gitrlf`, or `gitf` for short. The install adds `gitf` only if no other program called `gitf` is on the `PATH`. In bash, TAB completes its options, then the names of the refs, and after `--` the paths.
 
 ### `.deb` package
 
@@ -129,7 +129,7 @@ meson setup --prefix="$HOME/.local" _build
 meson install -C _build
 ```
 
-The install puts `gitrlf` in `~/.local/bin`, with `gitf` as a short name for it if `~/.local/bin/gitf` does not exist yet. That folder must be on the `PATH`. GLib and bash find the settings schema and the TAB completion with no more configuration.
+The install puts `gitrlf` in `~/.local/bin`, with `gitf` as a short name for it if no other program called `gitf` is on the `PATH`. That folder must be on the `PATH`. GLib and bash find the settings schema and the TAB completion with no more configuration.
 
 ## How to run it
 

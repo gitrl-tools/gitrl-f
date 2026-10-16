@@ -97,6 +97,16 @@ docker run --rm -e GITRLF_VERSION="$upstream" \
 	rm /usr/bin/gitf
 	dpkg --purge gitrl-f
 
+	echo "--- it does not hide a gitf on the PATH ---"
+	printf "#!/bin/sh\necho other\n" >/usr/local/bin/gitf
+	chmod +x /usr/local/bin/gitf
+	apt-get install -y -qq /tmp/gitrlf.deb >/dev/null
+	test ! -e /usr/bin/gitf
+	test ! -e /usr/share/bash-completion/completions/gitf
+	test ! -e /usr/share/man/man1/gitf.1.gz
+	rm /usr/local/bin/gitf
+	dpkg --purge gitrl-f
+
 	echo "--- it takes the place of gittree ---"
 	apt-get install -y -qq /tmp/gittree.deb >/dev/null
 	apt-get install -y -qq /tmp/gitrlf.deb >/dev/null
