@@ -152,9 +152,9 @@ public class Search : Object
 		return result.str;
 	}
 
-	public static bool matches(Gitg.Commit commit, TextMatch match)
+	public static bool matches(Gitg.Commit commit, Ggit.Signature author,
+	                           TextMatch match)
 	{
-		var author = commit.get_author();
 		var haystack = string.join("\n",
 		                           commit.get_message(),
 		                           author.get_name(),

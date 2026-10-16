@@ -61,10 +61,10 @@ private static void test_each_field_matches_without_regard_to_case()
 
 		foreach (var needle in new string[] { "analytical", "BERNOULLI", "ada love", "engine.ORG", hash.substring(10, 12), hash.up() })
 		{
-			assert_true(Gitrlf.Search.matches(commit, plain(needle)));
+			assert_true(Gitrlf.Search.matches(commit, commit.get_author(), plain(needle)));
 		}
 
-		assert_false(Gitrlf.Search.matches(commit, plain("babbage")));
+		assert_false(Gitrlf.Search.matches(commit, commit.get_author(), plain("babbage")));
 
 		repo.remove();
 	}
@@ -116,10 +116,10 @@ private static void test_the_switches_narrow_the_fields()
 		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
 		var commit = repository.lookup<Gitg.Commit>(new Ggit.OId.from_string(repo.git({"rev-parse", "HEAD"}).strip()));
 
-		assert_true(Gitrlf.Search.matches(commit, new Gitrlf.TextMatch("Analytical", true, false)));
-		assert_false(Gitrlf.Search.matches(commit, new Gitrlf.TextMatch("analytical", true, false)));
-		assert_true(Gitrlf.Search.matches(commit, new Gitrlf.TextMatch("^the body", false, true)));
-		assert_false(Gitrlf.Search.matches(commit, new Gitrlf.TextMatch("subject.the", false, true)));
+		assert_true(Gitrlf.Search.matches(commit, commit.get_author(), new Gitrlf.TextMatch("Analytical", true, false)));
+		assert_false(Gitrlf.Search.matches(commit, commit.get_author(), new Gitrlf.TextMatch("analytical", true, false)));
+		assert_true(Gitrlf.Search.matches(commit, commit.get_author(), new Gitrlf.TextMatch("^the body", false, true)));
+		assert_false(Gitrlf.Search.matches(commit, commit.get_author(), new Gitrlf.TextMatch("subject.the", false, true)));
 
 		repo.remove();
 	}

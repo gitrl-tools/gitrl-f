@@ -189,7 +189,7 @@ public class SearchQuery : Object
 			return false;
 		}
 
-		if (!d_plain.is_empty && !Search.matches(commit, d_plain))
+		if (!d_plain.is_empty && !Search.matches(commit, author, d_plain))
 		{
 			return false;
 		}
