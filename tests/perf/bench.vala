@@ -63,11 +63,54 @@ public class Bench : Object
 		}
 	}
 
+	private static void grouped(Window window, string[] keys)
+	{
+		var timer = new Timer();
+
+		foreach (var key in keys)
+		{
+			Gtk.CheckButton? box = null;
+
+			foreach (var child in window.history.paned.refs_list.get_children())
+			{
+				var header = child as RefsHeader;
+
+				if (header == null || header.key != key)
+				{
+					continue;
+				}
+
+				foreach (var widget in widgets(header))
+				{
+					if (box == null && widget is Gtk.CheckButton)
+					{
+						box = (Gtk.CheckButton)widget;
+					}
+				}
+			}
+
+			for (var i = 0; i < 2; i++)
+			{
+				var before = window.history.ticks.size;
+
+				timer.start();
+				box.clicked();
+				drain();
+
+				var after = window.history.ticks.size;
+
+				stdout.printf("window group box %s, %s %d refs: %.3f s\n", key,
+				              after > before ? "ticks" : "unticks",
+				              (after - before).abs(), timer.elapsed());
+			}
+		}
+	}
+
 	public static int main(string[] args)
 	{
 		if (args.length < 2)
 		{
-			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [<full ref name>...]\n", args[0], args[0]);
+			stderr.printf("usage: %s <repository> [<full ref name>...]\n       %s --window <repository> [--text <text>] [--search <text>] [--picks <rows>] [--group <key>] [<full ref name>...]\n", args[0], args[0]);
 			return 2;
 		}
 
@@ -329,6 +372,7 @@ public class Bench : Object
 
 	private static int window(string path, string[] arguments)
 	{
+		var groups = new string[0];
 		var only = new string[0];
 		var picks = 0;
 		string? text = null;
@@ -347,6 +391,10 @@ public class Bench : Object
 			else if (arguments[i] == "--picks" && i + 1 < arguments.length)
 			{
 				picks = int.parse(arguments[++i]);
+			}
+			else if (arguments[i] == "--group" && i + 1 < arguments.length)
+			{
+				groups += arguments[++i];
 			}
 			else
 			{
@@ -409,6 +457,8 @@ public class Bench : Object
 
 			stdout.printf("window tick, only %s: %.3f s\n", name, timer.elapsed());
 		}
+
+		grouped(window, groups);
 
 		timer.start();
 		window.activate_action("reload", null);
