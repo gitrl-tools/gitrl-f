@@ -50,6 +50,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/search-words/a-bad-date-is-a-problem", test_a_bad_date_is_a_problem);
 	Test.add_func("/gitrlf/search-words/dates-keep-the-start-of-a-year-month-or-day", test_dates_keep_the_start_of_a_year_month_or_day);
+	Test.add_func("/gitrlf/search-words/each-search-keeps-its-own-answer", test_each_search_keeps_its_own_answer);
 	Test.add_func("/gitrlf/search-words/every-part-must-hold", test_every_part_must_hold);
 	Test.add_func("/gitrlf/search-words/marks-go-to-their-columns", test_marks_go_to_their_columns);
 	Test.add_func("/gitrlf/search-words/text-with-no-word-is-plain", test_text_with_no_word_is_plain);
@@ -90,6 +91,18 @@ private static void test_dates_keep_the_start_of_a_year_month_or_day()
 	assert_false(holds("before:2026"));
 	assert_false(holds("before:2026-01-01"));
 	assert_true(holds("after:2026-01 before:2026-02"));
+}
+
+private static void test_each_search_keeps_its_own_answer()
+{
+	var found = new Gitrlf.SearchQuery("bernoulli", false, false);
+	var missed = new Gitrlf.SearchQuery("babbage", false, false);
+
+	for (var i = 0; i < 2; i++)
+	{
+		assert_true(found.matches(s_commit));
+		assert_false(missed.matches(s_commit));
+	}
 }
 
 private static void test_every_part_must_hold()

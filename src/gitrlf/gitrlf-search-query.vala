@@ -22,6 +22,9 @@ namespace Gitrlf
 
 public class SearchQuery : Object
 {
+	private static Quark s_known = Quark.from_string("gitrlf-search-known");
+	private static size_t s_made;
+
 	private DateTime? d_after;
 	private TextMatch[] d_authors;
 	private DateTime? d_before;
@@ -29,6 +32,7 @@ public class SearchQuery : Object
 	private TextMatch[] d_hashes;
 	private TextMatch[] d_messages;
 	private TextMatch d_plain;
+	private size_t d_stamp;
 
 	public bool is_empty
 	{
@@ -57,6 +61,8 @@ public class SearchQuery : Object
 		this.text = text;
 		this.match_case = match_case;
 		this.regex = regex;
+
+		d_stamp = ++s_made;
 
 		d_authors = new TextMatch[0];
 		d_hashes = new TextMatch[0];
@@ -153,30 +159,8 @@ public class SearchQuery : Object
 		return marks({});
 	}
 
-	private TextMatch[] marks(TextMatch[] words)
+	private bool holds(Gitg.Commit commit)
 	{
-		var ret = new TextMatch[0];
-
-		if (!d_plain.is_empty)
-		{
-			ret += d_plain;
-		}
-
-		foreach (var word in words)
-		{
-			ret += word;
-		}
-
-		return ret;
-	}
-
-	public bool matches(Gitg.Commit commit)
-	{
-		if (problem != null || d_empty)
-		{
-			return false;
-		}
-
 		var author = commit.get_author();
 
 		if (d_after != null && author.get_time().compare(d_after) < 0)
@@ -202,6 +186,44 @@ public class SearchQuery : Object
 		return all_hold(d_authors, author.get_name() + "\n" + author.get_email())
 		    && all_hold(d_messages, commit.get_message())
 		    && all_hold(d_hashes, commit.get_id().to_string());
+	}
+
+	private TextMatch[] marks(TextMatch[] words)
+	{
+		var ret = new TextMatch[0];
+
+		if (!d_plain.is_empty)
+		{
+			ret += d_plain;
+		}
+
+		foreach (var word in words)
+		{
+			ret += word;
+		}
+
+		return ret;
+	}
+
+	public bool matches(Gitg.Commit commit)
+	{
+		if (problem != null || d_empty)
+		{
+			return false;
+		}
+
+		var known = (size_t)commit.get_qdata<void*>(s_known);
+
+		if (known / 2 == d_stamp)
+		{
+			return known % 2 == 1;
+		}
+
+		var hit = holds(commit);
+
+		commit.set_qdata_full(s_known, (void*)(d_stamp * 2 + (hit ? 1 : 0)), null);
+
+		return hit;
 	}
 
 	private static void next_word(MatchInfo info)
