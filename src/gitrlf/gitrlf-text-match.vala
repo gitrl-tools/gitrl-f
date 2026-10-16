@@ -82,6 +82,32 @@ public class TextMatch : Object
 		return result;
 	}
 
+	private bool contains_text(string haystack)
+	{
+		var start = 0;
+		unichar c = 0;
+
+		do
+		{
+			var index = start;
+			var i = 0;
+
+			while (i < d_needle.length && haystack.get_next_char(ref index, out c)
+			       && (d_match_case ? c : c.tolower()) == d_needle[i])
+			{
+				i++;
+			}
+
+			if (i == d_needle.length)
+			{
+				return true;
+			}
+		}
+		while (haystack.get_next_char(ref start, out c));
+
+		return false;
+	}
+
 	public TextSpan[] find(string haystack)
 	{
 		if (error != null || is_empty)
@@ -162,7 +188,12 @@ public class TextMatch : Object
 
 	public bool matches(string haystack)
 	{
-		return find(haystack).length > 0;
+		if (d_regex_ready || error != null || is_empty)
+		{
+			return find(haystack).length > 0;
+		}
+
+		return contains_text(haystack);
 	}
 
 	private bool matches_at(unichar[] haystack, int start)

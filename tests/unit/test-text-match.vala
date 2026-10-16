@@ -60,6 +60,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/text-match/expressions-read-posix-extended", test_expressions_read_posix_extended);
 	Test.add_func("/gitrlf/text-match/expressions-work-line-by-line", test_expressions_work_line_by_line);
 	Test.add_func("/gitrlf/text-match/offsets-count-characters", test_offsets_count_characters);
+	Test.add_func("/gitrlf/text-match/plain-text-is-found-anywhere", test_plain_text_is_found_anywhere);
 
 	return Test.run();
 }
@@ -186,6 +187,16 @@ private static void test_offsets_count_characters()
 	assert_cmpstr(found(new Gitrlf.TextMatch("latte", true, true), text), CompareOperator.EQ, "11+5");
 	assert_cmpstr(found(new Gitrlf.TextMatch("crème", false, true), "CAFÉ CRÈME"), CompareOperator.EQ, "5+5");
 	assert_cmpstr(found(new Gitrlf.TextMatch("cr.me", true, true), text), CompareOperator.EQ, "5+5");
+}
+
+private static void test_plain_text_is_found_anywhere()
+{
+	assert_true(new Gitrlf.TextMatch("aab", true, false).matches("aaab"));
+	assert_true(new Gitrlf.TextMatch("c", true, false).matches("abc"));
+	assert_false(new Gitrlf.TextMatch("bcd", true, false).matches("abc"));
+	assert_false(new Gitrlf.TextMatch("a", true, false).matches(""));
+	assert_true(new Gitrlf.TextMatch("crème", false, false).matches("CAFÉ CRÈME"));
+	assert_false(new Gitrlf.TextMatch("crème", true, false).matches("CAFÉ CRÈME"));
 }
 
 }
