@@ -1525,16 +1525,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	{
 		var directory = git_directory();
 		var line = yield History.git_async(directory, { "rev-list", "--first-parent", branch }, null, cancellable);
+
+		if (commit in line)
+		{
+			return commit;
+		}
+
 		var on_line = new Gee.HashSet<string>();
 
 		foreach (var id in line)
 		{
 			on_line.add(id);
-		}
-
-		if (on_line.contains(commit))
-		{
-			return commit;
 		}
 
 		var path = yield History.git_async(directory, { "rev-list", "--ancestry-path", commit + ".." + branch }, null, cancellable);
