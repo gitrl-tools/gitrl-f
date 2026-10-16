@@ -94,6 +94,9 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitrlf/ui/refs-panel/a-reload-follows-the-new-graph-order", test_a_reload_follows_the_new_graph_order);
+	Test.add_func("/gitrlf/ui/refs-panel/a-reload-gives-the-rows-the-new-targets", test_a_reload_gives_the_rows_the_new_targets);
+	Test.add_func("/gitrlf/ui/refs-panel/a-reload-shows-the-new-ticks", test_a_reload_shows_the_new_ticks);
 	Test.add_func("/gitrlf/ui/refs-panel/all-ticks-every-ref-whatever-the-filter-shows", test_all_ticks_every_ref_whatever_the_filter_shows);
 	Test.add_func("/gitrlf/ui/refs-panel/detached-head-row", test_detached_head_row);
 	Test.add_func("/gitrlf/ui/refs-panel/each-level-is-indented-by-12-pixels", test_each_level_is_indented_by_12_pixels);
@@ -152,6 +155,16 @@ private static Gitrlf.RefsList panel(Repo repo, out Gee.List<Gitrlf.Ref> refs) t
 	return list;
 }
 
+private static void reload(Gitrlf.RefsList list, Repo repo,
+                           Gee.Set<string> ticks) throws Error
+{
+	var repository = Gitrlf.Repository.open(
+		Gitrlf.Application.discover_repository(repo.path));
+	var refs = Gitrlf.Refs.read(repository);
+
+	list.set_refs(refs, ticks, new Gitrlf.History(repository, refs, false));
+}
+
 private static void settle(int milliseconds)
 {
 	for (var i = 0; i < milliseconds / 10; i++)
@@ -171,6 +184,87 @@ private static string sorted(Gee.Set<string> names)
 	list.add_all(names);
 	list.sort();
 	return string.joinv(",", list.to_array());
+}
+
+private static void test_a_reload_follows_the_new_graph_order()
+{
+	try
+	{
+		var repo = fixture();
+		Gee.List<Gitrlf.Ref> refs;
+		var list = panel(repo, out refs);
+		var before = layout(list);
+
+		repo.checkout("feature/scan");
+		repo.commit("feature two", "feature");
+		repo.checkout("master");
+		reload(list, repo, list.ticks);
+
+		assert_cmpstr(layout(list), CompareOperator.NE, before);
+		assert_cmpstr(layout(list), CompareOperator.EQ,
+		              layout(panel(repo, out refs)));
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_reload_gives_the_rows_the_new_targets()
+{
+	try
+	{
+		var repo = fixture();
+		Gee.List<Gitrlf.Ref> refs;
+		var list = panel(repo, out refs);
+		string? activated = null;
+
+		var moved = repo.commit("master five");
+
+		repo.git({"update-ref", "refs/remotes/backup/master", "master"});
+		reload(list, repo, list.ticks);
+		list.ref_activated.connect((reference) => {
+			activated = reference.target.to_string();
+		});
+		list.row_activated(row(list, "master"));
+
+		assert_cmpstr(activated, CompareOperator.EQ, moved);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_reload_shows_the_new_ticks()
+{
+	try
+	{
+		var repo = fixture();
+		Gee.List<Gitrlf.Ref> refs;
+		var list = panel(repo, out refs);
+		var ticks = new Gee.HashSet<string>();
+
+		ticks.add("refs/heads/master");
+		reload(list, repo, ticks);
+
+		assert_cmpstr(sorted(list.ticks), CompareOperator.EQ,
+		              "refs/heads/master");
+		assert_true(row(list, "master").ticked);
+		assert_false(row(list, "fix/stamp").ticked);
+		assert_cmpstr(label_of(header(list, "section:local"), 1),
+		              CompareOperator.EQ, "1/3");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_all_ticks_every_ref_whatever_the_filter_shows()

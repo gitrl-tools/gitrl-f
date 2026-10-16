@@ -27,6 +27,7 @@ public class RefsList : Gtk.ListBox
 	private Gee.ArrayList<RefsHeader> d_headers;
 	private string d_needle;
 	private Gee.ArrayList<RefsRow> d_rows;
+	private string? d_shape;
 	private Gee.HashSet<string> d_ticks;
 
 	public string filter_text
@@ -148,7 +149,7 @@ public class RefsList : Gtk.ListBox
 		foreach (var reference in refs)
 		{
 			var parts = reference.short_name.split("/");
-			var position = history != null ? history.position(reference.target) : int.MAX;
+			var position = position_of(reference, history);
 
 			for (var i = 0; i < parts.length; i++)
 			{
@@ -325,6 +326,11 @@ public class RefsList : Gtk.ListBox
 		ref_activated(((RefsRow)row).reference);
 	}
 
+	private static int position_of(Ref reference, History? history)
+	{
+		return history != null ? history.position(reference.target) : int.MAX;
+	}
+
 	public Gee.List<Ref> refs_in_order()
 	{
 		var refs = new Gee.ArrayList<Ref>();
@@ -339,6 +345,31 @@ public class RefsList : Gtk.ListBox
 
 	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks, History? history)
 	{
+		var shape = shape_of(refs, history);
+
+		d_ticks.clear();
+		d_ticks.add_all(ticks);
+
+		if (shape == d_shape)
+		{
+			var named = new Gee.HashMap<string, Ref>();
+
+			foreach (var reference in refs)
+			{
+				named[reference.name] = reference;
+			}
+
+			foreach (var row in d_rows)
+			{
+				row.reference = named[row.reference.name];
+			}
+
+			show_ticks();
+			return;
+		}
+
+		d_shape = shape;
+
 		foreach (var child in get_children())
 		{
 			child.destroy();
@@ -346,8 +377,6 @@ public class RefsList : Gtk.ListBox
 
 		d_headers.clear();
 		d_rows.clear();
-		d_ticks.clear();
-		d_ticks.add_all(ticks);
 
 		Ref? detached = null;
 		var locals = new Gee.ArrayList<Ref>();
@@ -405,6 +434,39 @@ public class RefsList : Gtk.ListBox
 		d_ticks.clear();
 		d_ticks.add_all(ticks);
 		show_ticks();
+	}
+
+	private static string shape_of(Gee.List<Ref> refs, History? history)
+	{
+		var positions = new Gee.ArrayList<int>();
+		var ranks = new Gee.HashMap<int, int>();
+		var text = new StringBuilder();
+
+		foreach (var reference in refs)
+		{
+			positions.add(position_of(reference, history));
+		}
+
+		positions.sort((a, b) => a < b ? -1 : (a > b ? 1 : 0));
+
+		foreach (var position in positions)
+		{
+			if (!ranks.has_key(position))
+			{
+				ranks[position] = ranks.size;
+			}
+		}
+
+		foreach (var reference in refs)
+		{
+			text.append_printf("%d %d %s %s %s %s\n",
+			                   ranks[position_of(reference, history)],
+			                   reference.kind, reference.head.to_string(),
+			                   reference.remote, reference.name,
+			                   reference.short_name);
+		}
+
+		return text.str;
 	}
 
 	private void show_ticks()
