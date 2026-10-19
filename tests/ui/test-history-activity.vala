@@ -1089,12 +1089,12 @@ private static void test_changes_rows_show_their_added_and_removed_lines()
 		assert_cmpstr(paned.staged_removed.get_text(), CompareOperator.EQ,
 		              "-1");
 		assert_cmpstr(paned.unstaged_added.get_text(), CompareOperator.EQ,
-		              "+1");
+		              "");
 		assert_cmpstr(paned.unstaged_removed.get_text(), CompareOperator.EQ,
 		              "");
 
-		FileUtils.set_contents(repo.path.get_child("fresh").get_path(),
-		                       "d\ne\nf\n");
+		FileUtils.set_contents(repo.path.get_child("notes").get_path(),
+		                       "c\nd\ne\nf\n");
 		window.history.read_changes();
 		settle(100);
 

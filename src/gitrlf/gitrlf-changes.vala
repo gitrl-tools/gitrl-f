@@ -70,6 +70,11 @@ public class Changes : Object
 			size_t additions;
 			size_t deletions;
 
+			if (diff.get_delta(i).get_status() == Ggit.DeltaType.UNTRACKED)
+			{
+				continue;
+			}
+
 			new Ggit.Patch.from_diff(diff, i).get_line_stats(
 				out context, out additions, out deletions);
 			added += additions;
