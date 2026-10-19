@@ -63,6 +63,23 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.10.2" date="2026-10-19">
+      <description>
+        <ul>
+          <li>
+            The Unstaged changes row no longer counts the lines of untracked
+            files. To count them, the app read each untracked file in full.
+            With 1 GB of untracked text, the window took 5.7 s to open and
+            stopped for 5.4 s after each edit. It now opens in 0.3 s and does
+            not stop.
+          </li>
+          <li>
+            The window checks for edits and new commits every 2 s. Before,
+            the first check after the window opened came up to 2.75 s later.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.10.1" date="2026-10-16">
       <description>
         <ul>
