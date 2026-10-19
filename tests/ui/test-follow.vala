@@ -49,6 +49,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/follow/f5-reloads-at-once", test_f5_reloads_at_once);
 	Test.add_func("/gitrlf/ui/follow/monitoring-off-stops-the-poll", test_monitoring_off_stops_the_poll);
 	Test.add_func("/gitrlf/ui/follow/new-commit-keeps-the-top-row-in-place", test_new_commit_keeps_the_top_row_in_place);
+	Test.add_func("/gitrlf/ui/follow/poll-checks-two-seconds-after-it-starts", test_poll_checks_two_seconds_after_it_starts);
 	Test.add_func("/gitrlf/ui/follow/poll-finds-a-new-commit", test_poll_finds_a_new_commit);
 	Test.add_func("/gitrlf/ui/follow/selection-and-scroll-are-kept", test_selection_and_scroll_are_kept);
 	Test.add_func("/gitrlf/ui/follow/snapshot-changes-when-a-branch-appears", test_snapshot_changes_when_a_branch_appears);
@@ -272,6 +273,48 @@ private static void test_new_commit_keeps_the_top_row_in_place()
 		assert_cmpstr(top_row(window), CompareOperator.EQ, "commit 30 -10");
 
 		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_poll_checks_two_seconds_after_it_starts()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("one");
+
+		var poll = new Gitrlf.Poll();
+		var timer = new Timer();
+		var ticked = false;
+
+		poll.repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		poll.ticked.connect(() => ticked = true);
+		poll.start();
+
+		while (!ticked)
+		{
+			settle(10);
+		}
+
+		poll.stop();
+		settle(500);
+		ticked = false;
+		poll.start();
+		timer.start();
+
+		while (!ticked)
+		{
+			settle(10);
+		}
+
+		poll.stop();
+
+		assert_cmpstr("%.1f".printf(timer.elapsed()), CompareOperator.EQ, "2.0");
 		repo.remove();
 	}
 	catch (Error e)

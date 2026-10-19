@@ -111,7 +111,7 @@ public class Poll : Object
 		if (d_timeout == 0)
 		{
 			reset();
-			d_timeout = Timeout.add_seconds(2, () => {
+			d_timeout = Timeout.add(2000, () => {
 				check();
 				return true;
 			});
