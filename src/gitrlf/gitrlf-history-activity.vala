@@ -301,6 +301,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		fit_lines_column();
+		d_paned.restore_column_widths();
 
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);

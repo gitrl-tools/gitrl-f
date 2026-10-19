@@ -169,6 +169,15 @@
     </key>
   </schema>
   <schema gettext-domain="@GETTEXT_PACKAGE@" id="@APPLICATION_ID@.state.history" path="@SCHEMA_PATH@/state/history/">
+    <key name="column-order" type="as">
+      <default>[]</default>
+    </key>
+    <key name="column-widths" type="a{sv}">
+      <default>{}</default>
+    </key>
+    <key name="hidden-columns" type="as">
+      <default>[]</default>
+    </key>
     <key name="paned-sidebar-dragged" type="b">
       <default>false</default>
     </key>

@@ -29,6 +29,7 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 	private Gtk.Adjustment d_inner;
 	private Gtk.Adjustment? d_outer;
 	private bool d_syncing;
+	private Gtk.Widget? d_titles;
 
 	public Gtk.Adjustment hadjustment { get; set construct; }
 	public Gtk.ScrollablePolicy hscroll_policy { get; set; }
@@ -65,7 +66,11 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 
 	public override void add(Gtk.Widget widget)
 	{
-		if (d_header == null)
+		if (d_titles == null)
+		{
+			d_titles = widget;
+		}
+		else if (d_header == null)
 		{
 			d_header = widget;
 		}
@@ -119,8 +124,14 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 	public override void forall_internal(bool include_internals,
 	                                     Gtk.Callback callback)
 	{
+		var titles = d_titles;
 		var header = d_header;
 		var body = d_body;
+
+		if (titles != null)
+		{
+			callback(titles);
+		}
 
 		if (header != null)
 		{
@@ -145,12 +156,16 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 	{
 		int header_minimum;
 		int header_natural;
+		int titles_minimum;
+		int titles_natural;
 
 		d_header.get_preferred_height(out header_minimum,
 		                              out header_natural);
+		d_titles.get_preferred_height(out titles_minimum,
+		                              out titles_natural);
 		d_body.get_preferred_height(out minimum, out natural);
-		minimum += header_natural;
-		natural += header_natural;
+		minimum += header_natural + titles_natural;
+		natural += header_natural + titles_natural;
 	}
 
 	public override void get_preferred_width(out int minimum,
@@ -158,12 +173,16 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 	{
 		int header_minimum;
 		int header_natural;
+		int titles_minimum;
+		int titles_natural;
 
 		d_header.get_preferred_width(out header_minimum,
 		                             out header_natural);
+		d_titles.get_preferred_width(out titles_minimum,
+		                             out titles_natural);
 		d_body.get_preferred_width(out minimum, out natural);
-		minimum = int.max(minimum, header_minimum);
-		natural = int.max(natural, header_natural);
+		minimum = int.max(minimum, int.max(header_minimum, titles_minimum));
+		natural = int.max(natural, int.max(header_natural, titles_natural));
 	}
 
 	private int header_height(int width)
@@ -182,6 +201,7 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 		if (d_body != null)
 		{
 			((Gtk.Scrollable)d_body).hadjustment = hadjustment;
+			((Gtk.Scrollable)d_titles).hadjustment = hadjustment;
 		}
 	}
 
@@ -210,7 +230,11 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 	{
 		widget.unparent();
 
-		if (widget == d_header)
+		if (widget == d_titles)
+		{
+			d_titles = null;
+		}
+		else if (widget == d_header)
 		{
 			d_header = null;
 		}
@@ -225,6 +249,20 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 		var width = allocation.width;
 		var fold = 0;
 		var height = 0;
+		int minimum;
+		int natural;
+
+		d_titles.get_preferred_height_for_width(width, out minimum,
+		                                        out natural);
+
+		var pinned = int.min(natural, allocation.height);
+		Gtk.Allocation top = {
+			allocation.x, allocation.y, width, pinned
+		};
+		Gtk.Allocation rest = {
+			allocation.x, allocation.y + pinned,
+			width, allocation.height - pinned
+		};
 
 		set_allocation(allocation);
 		d_arranging = true;
@@ -233,17 +271,18 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 		{
 			fold = d_fold;
 			height = header_height(width);
-			arrange(allocation);
+			arrange(rest);
 		}
 		while (fold != d_fold || height != header_height(width));
 
 		d_arranging = false;
+		d_titles.size_allocate(top);
 		d_syncing = true;
 		d_outer.configure(d_fold + d_inner.value, 0,
 		                  height + d_inner.upper,
 		                  d_inner.step_increment,
 		                  d_inner.page_increment,
-		                  allocation.height);
+		                  rest.height);
 		d_syncing = false;
 	}
 }

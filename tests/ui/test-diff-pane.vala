@@ -2268,10 +2268,8 @@ private static void test_the_changes_rows_scroll_away_with_the_list()
 		var list = paned.scrolled_window_commit_list;
 		var adjustment = list.vadjustment;
 		var pitch = row_y(window, 1) - row_y(window, 0);
-		int list_y;
+		var list_y = top_of_rows(window);
 		int staged_y;
-
-		list.translate_coordinates(window, 0, 0, null, out list_y);
 
 		assert_cmpint(window_y(window, 0), CompareOperator.EQ,
 		              list_y + 2 * pitch);
@@ -2322,15 +2320,13 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 		var view = paned.commit_list_view;
 		var unstaged = paned.unstaged_row;
 		var pitch = row_y(window, 1) - row_y(window, 0);
-		int list_y;
 		int unstaged_y;
 		int staged_y;
 		int grey_x;
 		int blue_x;
 
-		var list = paned.scrolled_window_commit_list;
+		var list_y = top_of_rows(window);
 
-		list.translate_coordinates(window, 0, 0, null, out list_y);
 		unstaged.translate_coordinates(window, 0, 0, null, out unstaged_y);
 		paned.staged_row.translate_coordinates(window, 0, 0, null,
 		                                       out staged_y);
@@ -2705,6 +2701,17 @@ private static void test_word_marks_reach_across_a_no_newline_marker()
 	}
 }
 
+
+private static int top_of_rows(Gitrlf.Window window)
+{
+	var titles = window.history.paned.titles;
+	int y;
+
+	titles.translate_coordinates(window, 0, titles.get_allocated_height(),
+	                             null, out y);
+
+	return y;
+}
 
 private static string total_row(Gitrlf.Window window)
 {

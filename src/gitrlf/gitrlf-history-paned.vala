@@ -82,6 +82,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Label d_staged_count;
 	[GtkChild]
+	private unowned Gtk.Box d_staged_label;
+	[GtkChild]
 	private unowned Gtk.Overlay d_staged_overlay;
 	[GtkChild]
 	private unowned Gtk.Label d_staged_removed;
@@ -90,9 +92,13 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.Label d_summary;
 	[GtkChild]
+	private unowned Gtk.TreeView d_titles;
+	[GtkChild]
 	private unowned Gtk.Label d_unstaged_added;
 	[GtkChild]
 	private unowned Gtk.Label d_unstaged_count;
+	[GtkChild]
+	private unowned Gtk.Box d_unstaged_label;
 	[GtkChild]
 	private unowned Gtk.Overlay d_unstaged_overlay;
 	[GtkChild]
@@ -100,8 +106,15 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.ListBoxRow d_unstaged_row;
 
+	private const string[] TITLE_PROPERTIES = {
+		"expand", "fixed-width", "min-width", "reorderable", "resizable",
+		"sizing", "title", "visible"
+	};
+
+	private Gee.HashMap<Gtk.TreeViewColumn, Gtk.TreeViewColumn> d_columns;
 	private int d_pressed;
 	private Settings d_state_settings;
+	private CopyMenu d_titles_menu;
 
 	public Gtk.Button all_button
 	{
@@ -318,6 +331,11 @@ public class HistoryPaned : Gtk.Box
 		get { return d_summary; }
 	}
 
+	public Gtk.TreeView titles
+	{
+		get { return d_titles; }
+	}
+
 	public Gtk.Label unstaged_added
 	{
 		get { return d_unstaged_added; }
@@ -375,10 +393,93 @@ public class HistoryPaned : Gtk.Box
 
 		d_staged_overlay.get_child_position.connect(place_change_line);
 		d_unstaged_overlay.get_child_position.connect(place_change_line);
+		d_staged_overlay.size_allocate.connect_after(place_change_label);
+		d_unstaged_overlay.size_allocate.connect_after(place_change_label);
 		d_column_lines.notify["x-offset"].connect(queue_change_lines);
 		d_column_lines.notify["width"].connect(queue_change_lines);
+		d_column_subject.notify["x-offset"].connect(queue_change_lines);
+		d_column_subject.notify["width"].connect(queue_change_lines);
+		d_column_lines.notify["visible"].connect(queue_change_lines);
+		d_column_subject.notify["visible"].connect(queue_change_lines);
 		d_commit_list_view.hadjustment.value_changed.connect(
 			queue_change_lines);
+
+		restore_column_order();
+		restore_hidden_columns();
+		add_titles();
+		d_titles_menu = new CopyMenu(d_titles);
+		d_titles_menu.find.connect(fill_titles_menu);
+		d_commit_list_view.columns_changed.connect(save_column_order);
+		d_titles.columns_changed.connect(follow_titles);
+		destroy.connect(() => {
+			d_titles.columns_changed.disconnect(follow_titles);
+			d_commit_list_view.columns_changed.disconnect(save_column_order);
+			d_columns.clear();
+		});
+	}
+
+	private void add_titles()
+	{
+		d_columns = new Gee.HashMap<Gtk.TreeViewColumn, Gtk.TreeViewColumn>();
+		d_titles.model = new Gtk.ListStore(1, typeof(string));
+
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			var title = new Gtk.TreeViewColumn();
+
+			foreach (var property in TITLE_PROPERTIES)
+			{
+				column.bind_property(property, title, property,
+				                     BindingFlags.BIDIRECTIONAL
+				                     | BindingFlags.SYNC_CREATE);
+			}
+
+			d_columns[title] = column;
+			d_titles.append_column(title);
+			column.notify["width"].connect(keep_fixed_width);
+		}
+
+		fit_titles();
+		d_titles.style_updated.connect(fit_titles);
+	}
+
+	private Gtk.TreeViewColumn? column_named(string name)
+	{
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			if (name_of(column) == name)
+			{
+				return column;
+			}
+		}
+
+		return null;
+	}
+
+	private bool fill_titles_menu(double x, double y)
+	{
+		var shown = 0;
+
+		foreach (var title in d_titles.get_columns())
+		{
+			shown += title.visible ? 1 : 0;
+		}
+
+		foreach (var title in d_titles.get_columns())
+		{
+			var item = new Gtk.CheckMenuItem.with_label(title.title);
+
+			item.active = title.visible;
+			item.sensitive = !title.visible || shown > 1;
+			item.toggled.connect(() => {
+				title.visible = item.active;
+				save_hidden_columns();
+			});
+			item.show();
+			d_titles_menu.add(item);
+		}
+
+		return true;
 	}
 
 	public void fit_sidebar()
@@ -399,6 +500,72 @@ public class HistoryPaned : Gtk.Box
 		d_paned_sidebar.position = int.max(natural, d_refs_list.widest_row() + scrolled - list);
 	}
 
+	private void fit_titles()
+	{
+		foreach (var title in d_titles.get_columns())
+		{
+			int least;
+			int natural;
+
+			title.get_button().get_preferred_width(out least, out natural);
+			title.min_width = natural;
+		}
+	}
+
+	private void follow_titles()
+	{
+		Gtk.TreeViewColumn? previous = null;
+
+		foreach (var title in d_titles.get_columns())
+		{
+			d_commit_list_view.move_column_after(d_columns[title], previous);
+			previous = d_columns[title];
+		}
+	}
+
+	private void keep_fixed_width(Object column, ParamSpec property)
+	{
+		var list_column = (Gtk.TreeViewColumn)column;
+
+		if (list_column.fixed_width == -1)
+		{
+			list_column.fixed_width = list_column.width;
+		}
+	}
+
+	private static string name_of(Gtk.TreeViewColumn column)
+	{
+		return ((Gtk.Buildable)column).get_name();
+	}
+
+	private int overlay_x(Gtk.Widget overlay, int x)
+	{
+		int widget_x;
+		int y;
+
+		d_commit_list_view.convert_bin_window_to_widget_coords(x, 0,
+		                                                       out widget_x,
+		                                                       out y);
+		d_commit_list_view.translate_coordinates(overlay, widget_x, 0,
+		                                         out widget_x, out y);
+
+		return widget_x;
+	}
+
+	private void place_change_label(Gtk.Widget overlay,
+	                                Gtk.Allocation allocation)
+	{
+		var label = overlay == d_staged_overlay ? d_staged_label
+		                                        : d_unstaged_label;
+		Gtk.Allocation subject = {
+			allocation.x + overlay_x(overlay, d_column_subject.x_offset),
+			allocation.y, d_column_subject.width, allocation.height
+		};
+
+		label.set_child_visible(d_column_subject.visible);
+		label.size_allocate(subject);
+	}
+
 	private bool place_change_line(Gtk.Overlay overlay, Gtk.Widget widget,
 	                               out Gdk.Rectangle allocation)
 	{
@@ -410,18 +577,14 @@ public class HistoryPaned : Gtk.Box
 		int separator;
 		int start;
 		int width;
-		int x;
-		int y;
 
 		d_commit_list_view.style_get("horizontal-separator", out separator);
 		d_column_lines.cell_get_position(cell, out start, out width);
-		d_commit_list_view.convert_bin_window_to_widget_coords(
-			d_column_lines.x_offset + separator / 2 + start, 0, out x, out y);
-		d_commit_list_view.translate_coordinates(overlay, x, 0, out x,
-		                                         out y);
+		widget.set_child_visible(d_column_lines.visible && width > 2 * pad);
 
 		allocation = Gdk.Rectangle() {
-			x = x + pad,
+			x = overlay_x(overlay, d_column_lines.x_offset + separator / 2
+			                       + start) + pad,
 			y = 0,
 			width = int.max(width - 2 * pad, 0),
 			height = overlay.get_allocated_height()
@@ -434,6 +597,92 @@ public class HistoryPaned : Gtk.Box
 	{
 		d_staged_overlay.queue_resize();
 		d_unstaged_overlay.queue_resize();
+	}
+
+	private void restore_column_order()
+	{
+		Gtk.TreeViewColumn? previous = null;
+
+		foreach (var name in d_state_settings.get_strv("column-order"))
+		{
+			var column = column_named(name);
+
+			if (column != null)
+			{
+				d_commit_list_view.move_column_after(column, previous);
+				previous = column;
+			}
+		}
+	}
+
+	public void restore_column_widths()
+	{
+		var widths = new VariantDict(
+			d_state_settings.get_value("column-widths"));
+
+		foreach (var title in d_titles.get_columns())
+		{
+			var width = widths.lookup_value(name_of(d_columns[title]),
+			                                VariantType.INT32);
+
+			if (width != null)
+			{
+				title.expand = false;
+				title.fixed_width = width.get_int32();
+			}
+
+			title.notify["fixed-width"].connect(save_column_width);
+		}
+	}
+
+	private void restore_hidden_columns()
+	{
+		foreach (var name in d_state_settings.get_strv("hidden-columns"))
+		{
+			var column = column_named(name);
+
+			if (column != null)
+			{
+				column.visible = false;
+			}
+		}
+	}
+
+	private void save_column_order()
+	{
+		var names = new string[0];
+
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			names += name_of(column);
+		}
+
+		d_state_settings.set_strv("column-order", names);
+	}
+
+	private void save_column_width(Object title, ParamSpec property)
+	{
+		var column = (Gtk.TreeViewColumn)title;
+		var widths = new VariantDict(
+			d_state_settings.get_value("column-widths"));
+
+		widths.insert_value(name_of(d_columns[column]), column.fixed_width);
+		d_state_settings.set_value("column-widths", widths.end());
+	}
+
+	private void save_hidden_columns()
+	{
+		var names = new string[0];
+
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			if (!column.visible)
+			{
+				names += name_of(column);
+			}
+		}
+
+		d_state_settings.set_strv("hidden-columns", names);
 	}
 }
 

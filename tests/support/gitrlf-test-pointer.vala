@@ -22,13 +22,7 @@ namespace GitrlfTest
 
 private static void centre(Gtk.Widget widget, out int x, out int y)
 {
-	int origin_x;
-	int origin_y;
-
-	widget.translate_coordinates(widget.get_toplevel(), widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
-	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
-	x += origin_x;
-	y += origin_y;
+	screen_point(widget, widget.get_allocated_width() / 2, widget.get_allocated_height() / 2, out x, out y);
 }
 
 public static void click_at(int x, int y, int count, int button = 1)
@@ -77,6 +71,17 @@ public static void press_key(string name)
 public static void release_pointer()
 {
 	xdotool({"mouseup", "1"});
+}
+
+public static void screen_point(Gtk.Widget widget, int x, int y, out int screen_x, out int screen_y)
+{
+	int origin_x;
+	int origin_y;
+
+	widget.translate_coordinates(widget.get_toplevel(), x, y, out screen_x, out screen_y);
+	widget.get_toplevel().get_window().get_origin(out origin_x, out origin_y);
+	screen_x += origin_x;
+	screen_y += origin_y;
 }
 
 private static void xdotool(string[] arguments)
