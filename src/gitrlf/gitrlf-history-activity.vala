@@ -301,7 +301,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		fit_lines_column();
-		d_paned.restore_column_widths();
+		d_paned.watch_column_widths();
 
 		d_paned.column_date.set_cell_data_func(d_paned.renderer_date, date_data_func);
 		d_paned.commit_list_view.size_allocate.connect_after(fit_changes_rows);
@@ -2269,6 +2269,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
 		d_paned.refs_list.fold_unticked();
 		d_paned.fit_sidebar();
+		d_paned.restore_column_widths(repository.get_location().get_path());
 
 		if (text != null && d_history != null)
 		{

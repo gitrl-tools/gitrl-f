@@ -112,7 +112,11 @@ public class HistoryPaned : Gtk.Box
 	};
 
 	private Gee.HashMap<Gtk.TreeViewColumn, Gtk.TreeViewColumn> d_columns;
+	private Variant d_default_widths;
+	private bool d_fitting;
 	private int d_pressed;
+	private string d_repository_path;
+	private bool d_saving;
 	private Settings d_state_settings;
 	private CopyMenu d_titles_menu;
 
@@ -410,6 +414,7 @@ public class HistoryPaned : Gtk.Box
 		d_titles_menu = new CopyMenu(d_titles);
 		d_titles_menu.find.connect(fill_titles_menu);
 		d_commit_list_view.columns_changed.connect(save_column_order);
+		d_commit_list_view.draw.connect_after(keep_fitted_subject);
 		d_titles.columns_changed.connect(follow_titles);
 		destroy.connect(() => {
 			d_titles.columns_changed.disconnect(follow_titles);
@@ -512,6 +517,18 @@ public class HistoryPaned : Gtk.Box
 		}
 	}
 
+	private Variant fixed_widths()
+	{
+		var widths = new VariantDict();
+
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			widths.insert_value(name_of(column), column.fixed_width);
+		}
+
+		return widths.end();
+	}
+
 	private void follow_titles()
 	{
 		Gtk.TreeViewColumn? previous = null;
@@ -521,6 +538,19 @@ public class HistoryPaned : Gtk.Box
 			d_commit_list_view.move_column_after(d_columns[title], previous);
 			previous = d_columns[title];
 		}
+	}
+
+	private bool keep_fitted_subject()
+	{
+		if (d_fitting)
+		{
+			d_fitting = false;
+			d_column_subject.expand = false;
+			d_column_subject.fixed_width = d_column_subject.width;
+			save_column_widths();
+		}
+
+		return false;
 	}
 
 	private void keep_fixed_width(Object column, ParamSpec property)
@@ -615,24 +645,32 @@ public class HistoryPaned : Gtk.Box
 		}
 	}
 
-	public void restore_column_widths()
+	public void restore_column_widths(string repository)
 	{
-		var widths = new VariantDict(
-			d_state_settings.get_value("column-widths"));
+		var saved = new VariantDict(
+			d_state_settings.get_value("column-widths")).lookup_value(
+			repository, VariantType.VARDICT);
+		var widths = saved ?? d_default_widths;
 
-		foreach (var title in d_titles.get_columns())
+		d_saving = false;
+
+		foreach (var column in d_commit_list_view.get_columns())
 		{
-			var width = widths.lookup_value(name_of(d_columns[title]),
-			                                VariantType.INT32);
-
-			if (width != null)
-			{
-				title.expand = false;
-				title.fixed_width = width.get_int32();
-			}
-
-			title.notify["fixed-width"].connect(save_column_width);
+			column.expand = false;
+			column.fixed_width = widths.lookup_value(
+				name_of(column), VariantType.INT32).get_int32();
 		}
+
+		d_fitting = saved == null;
+
+		if (d_fitting)
+		{
+			d_column_subject.expand = true;
+			d_column_subject.fixed_width = d_column_subject.min_width;
+		}
+
+		d_repository_path = repository;
+		d_saving = true;
 	}
 
 	private void restore_hidden_columns()
@@ -660,14 +698,18 @@ public class HistoryPaned : Gtk.Box
 		d_state_settings.set_strv("column-order", names);
 	}
 
-	private void save_column_width(Object title, ParamSpec property)
+	private void save_column_widths()
 	{
-		var column = (Gtk.TreeViewColumn)title;
-		var widths = new VariantDict(
+		if (!d_saving)
+		{
+			return;
+		}
+
+		var saved = new VariantDict(
 			d_state_settings.get_value("column-widths"));
 
-		widths.insert_value(name_of(d_columns[column]), column.fixed_width);
-		d_state_settings.set_value("column-widths", widths.end());
+		saved.insert_value(d_repository_path, fixed_widths());
+		d_state_settings.set_value("column-widths", saved.end());
 	}
 
 	private void save_hidden_columns()
@@ -683,6 +725,16 @@ public class HistoryPaned : Gtk.Box
 		}
 
 		d_state_settings.set_strv("hidden-columns", names);
+	}
+
+	public void watch_column_widths()
+	{
+		d_default_widths = fixed_widths();
+
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			column.notify["fixed-width"].connect(save_column_widths);
+		}
 	}
 }
 
