@@ -1,4 +1,4 @@
-.TH GITRLF 1 "2026-10-19" "gitrl-f @VERSION@" "User Commands"
+.TH GITRLF 1 "2026-10-21" "gitrl-f @VERSION@" "User Commands"
 .SH NAME
 gitrlf, gitf \- the history of the git refs that you tick
 .SH SYNOPSIS

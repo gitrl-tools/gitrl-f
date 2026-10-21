@@ -1,3 +1,17 @@
+gitrl-f (0.11.0-1) noble; urgency=medium
+
+  * A row of titles is above the list. To move a column, drag its title. To
+    change the width of a column, drag the edge of its title. A column does
+    not become narrower than its title. To show or hide columns, right-click
+    a title. The app keeps these choices for the next start.
+  * Each repository keeps its own column widths. When a repository opens for
+    the first time, the Subject column fills the space that the other
+    columns leave. Thus all the columns show and no horizontal scroll bar
+    shows. If the window is too narrow for all the columns, Subject is as
+    wide as its title.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Wed, 21 Oct 2026 14:19:28 +0200
+
 gitrl-f (0.10.2-1) noble; urgency=medium
 
   * The Unstaged changes row no longer counts the lines of untracked files.

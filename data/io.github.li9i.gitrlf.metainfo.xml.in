@@ -63,6 +63,26 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.11.0" date="2026-10-21">
+      <description>
+        <ul>
+          <li>
+            A row of titles is above the list. To move a column, drag its
+            title. To change the width of a column, drag the edge of its
+            title. A column does not become narrower than its title. To show
+            or hide columns, right-click a title. The app keeps these
+            choices for the next start.
+          </li>
+          <li>
+            Each repository keeps its own column widths. When a repository
+            opens for the first time, the Subject column fills the space
+            that the other columns leave. Thus all the columns show and no
+            horizontal scroll bar shows. If the window is too narrow for all
+            the columns, Subject is as wide as its title.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.10.2" date="2026-10-19">
       <description>
         <ul>
