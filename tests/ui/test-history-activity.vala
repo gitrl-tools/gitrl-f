@@ -849,14 +849,10 @@ private static void test_a_column_narrowed_by_its_title_stays_as_wide_as_its_tit
 		var subject = window.history.paned.titles.get_column(0).get_button();
 		int least;
 		int title;
-		int x;
-		int y;
 
 		settle(400);
 		subject.get_preferred_width(out least, out title);
-		screen_point(subject, subject.get_allocated_width() - 1, subject.get_allocated_height() / 2, out x, out y);
-		drag(x, y, x - subject.get_allocated_width(), y);
-		settle(400);
+		drag_subject_edge(window, -subject.get_allocated_width());
 
 		assert_cmpint(window.history.paned.column_subject.width, CompareOperator.EQ, title);
 		assert_titles_in_line(window);
@@ -928,17 +924,12 @@ private static void test_a_column_widened_by_its_title_keeps_its_width()
 
 		var window = opened(repo, {"refs/heads/master"});
 		var subject = window.history.paned.titles.get_column(0);
-		var button = subject.get_button();
-		int x;
-		int y;
 
 		settle(400);
 
 		var width = subject.width;
 
-		screen_point(button, button.get_allocated_width() - 1, button.get_allocated_height() / 2, out x, out y);
-		drag(x, y, x + 50, y);
-		settle(400);
+		drag_subject_edge(window, 50);
 
 		assert_cmpint(window.history.paned.column_subject.width, CompareOperator.EQ, width + 50);
 
