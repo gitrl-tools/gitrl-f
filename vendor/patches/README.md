@@ -9,12 +9,12 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Eighteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Nineteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gitrl-f takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
 - gitrl-f does not take gitrl-z's patch to `gitg-lanes.vala`, which changes the settings schema that the lanes read. gitrl-f has a history, and it reads gitg's own `preferences.history` settings. Its own patch to that file is a different one, below.
-- gitrl-f does not take gitrl-z's patch to `gitg-color.vala`, which adds `Color.from_index()`. Nothing in gitrl-f needs it.
+- gitrl-f takes only the second part of gitrl-z's patch to `gitg-color.vala`, which changes the palette. The first part adds `Color.from_index()`, and nothing in gitrl-f needs it.
 - The diff pane keeps gitg's Unif and Split switcher on each file, which gitrl-z hides.
 - The parts of four patches that give the find bar of the diff its view of the pane, and all of `gitg-diff-view-file-info.patch`, are gitrl-f's own. gitrl-z has no find in the diff.
 - The part of `gitg-diff-view.patch` that gives the commit message to the search of the list, and all of `gitg-diff-view-commit-details.patch`, are gitrl-f's own.
@@ -293,6 +293,14 @@ Removes two entries from the resource list of `libgitg`: `ui/gitg-authentication
 **Why.** The authentication dialog is for remote operations, which are out of scope. `gitg-sidebar.vala` is not vendored, because the refs panel of gitrl-f does not use `Gitg.Sidebar`, so that template has no class. A resource list that names a file which is not vendored does not compile. The other entries stay in upstream's order. The `/org/gnome/gitg` prefix stays, because the vendored Vala files name these paths in their `[GtkTemplate]` attributes. The resources are internal to the gitrl-f binary, so the prefix cannot collide with the installed gitg.
 
 **Cost.** None. gitrl-z also removes these two entries, but it sorts the list again, adds a comment, and has no patch for the file.
+
+## gitg-color.patch
+
+Changes the palette. `#204a87` is the first colour, and `#4e9a06`, `#ce5c00`, `#8ae234`, `#fcaf3e` and `#e9b96e` are removed. The other colours keep their order.
+
+**Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its lane. `style.css` gives `#4e9a06` to the labels of remote branches and `#ce5c00` to the labels of tags. With these colours in the palette, a branch label could have the colour of a remote branch or of a tag. `#8ae234`, `#fcaf3e` and `#e9b96e` are lighter shades of these two colours, and were too near them. `#204a87` is the colour that gitg gives to all branch labels.
+
+**Cost.** The lanes do not have the colours of gitg, and the palette has 9 colours, not 14. The pixel suite finds a difference at each dot and line.
 
 ## gitg-cell-renderer-lanes.patch
 

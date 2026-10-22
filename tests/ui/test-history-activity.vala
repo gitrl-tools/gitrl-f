@@ -318,6 +318,16 @@ private static void ink_range(Cairo.ImageSurface surface, int y, out int darkest
 	}
 }
 
+private static Gdk.RGBA kind_fill(Gtk.StyleContext context, string kind)
+{
+	context.save();
+	context.add_class(kind);
+	var fill = (Gdk.RGBA)context.get_property("background-color", context.get_state());
+	context.restore();
+
+	return fill;
+}
+
 private static int label_x(Gitrlf.Window window, int row, string name)
 {
 	var view = window.history.paned.commit_list_view;
@@ -358,6 +368,24 @@ private static Gitg.Color lane_colour(uint index)
 	colour.idx = index;
 
 	return colour;
+}
+
+private static string[] lane_colours()
+{
+	var colours = new string[0];
+
+	Gitg.Color.reset();
+	var first = Gitg.Color.next();
+	var lane = first;
+
+	do
+	{
+		colours += rgba_of(lane).to_string();
+		lane = Gitg.Color.next();
+	}
+	while (lane.idx != first.idx);
+
+	return colours;
 }
 
 private static uint lane_of(Gitrlf.Window window, string subject)
@@ -441,6 +469,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-added-in-green-and-removed-in-red", test_lines_column_shows_added_in_green_and_removed_in_red);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
+	Test.add_func("/gitrlf/ui/history-activity/no-line-has-the-colours-of-a-remote-or-a-tag", test_no_line_has_the_colours_of_a_remote_or_a_tag);
 	Test.add_func("/gitrlf/ui/history-activity/opening-another-repository-in-the-window-brings-its-own-column-widths", test_opening_another_repository_in_the_window_brings_its_own_column_widths);
 	Test.add_func("/gitrlf/ui/history-activity/path-bar-and-path-notice", test_path_bar_and_path_notice);
 	Test.add_func("/gitrlf/ui/history-activity/picks-are-kept-across-a-tick", test_picks_are_kept_across_a_tick);
@@ -469,6 +498,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-outside-the-picks-opens-its-commit", test_the_commit_menu_outside_the_picks_opens_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-reports-a-difftool-that-fails", test_the_commit_menu_reports_a_difftool_that_fails);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
+	Test.add_func("/gitrlf/ui/history-activity/the-first-line-has-the-blue-of-a-branch", test_the_first_line_has_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-row-scrolls-into-view-under-the-titles", test_the_last_row_scrolls_into_view_under_the_titles);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-row-under-the-pointer-is-tinted-before-it-is-picked", test_the_row_under_the_pointer_is_tinted_before_it_is_picked);
@@ -2714,6 +2744,28 @@ private static void test_no_button_covers_the_full_diff()
 	}
 }
 
+private static void test_no_line_has_the_colours_of_a_remote_or_a_tag()
+{
+	application();
+
+	var context = new Gtk.TreeView().get_style_context();
+	var lanes = lane_colours();
+	string[] shades = { "chameleon1", "chameleon2", "chameleon3", "orange1", "orange2", "orange3", "chocolate1", "chocolate2", "chocolate3" };
+
+	foreach (var kind in new string[] { "remote", "tag" })
+	{
+		assert_false(kind_fill(context, kind).to_string() in lanes);
+	}
+
+	foreach (var name in shades)
+	{
+		Gdk.RGBA shade;
+
+		assert_true(context.lookup_color(name, out shade));
+		assert_false(shade.to_string() in lanes);
+	}
+}
+
 private static void test_opening_another_repository_in_the_window_brings_its_own_column_widths()
 {
 	try
@@ -3217,8 +3269,8 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 		var width = 120;
 		var height = 23;
 		var middle = height / 2;
-		var yellow = lane_colour(0);
-		var blue = lane_colour(3);
+		var yellow = lane_colour(1);
+		var blue = lane_colour(0);
 		int darkest;
 		int lightest;
 
@@ -3711,6 +3763,15 @@ private static void test_the_commit_menu_widens_for_a_long_first_tag()
 	{
 		Test.fail_printf("%s", e.message);
 	}
+}
+
+private static void test_the_first_line_has_the_blue_of_a_branch()
+{
+	application();
+
+	var context = new Gtk.TreeView().get_style_context();
+
+	assert_cmpstr(lane_colours()[0], CompareOperator.EQ, kind_fill(context, "branch").to_string());
 }
 
 private static void test_the_last_row_scrolls_into_view_under_the_titles()
