@@ -9,7 +9,7 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Sixteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Eighteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gitrl-f takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
@@ -293,3 +293,25 @@ Removes two entries from the resource list of `libgitg`: `ui/gitg-authentication
 **Why.** The authentication dialog is for remote operations, which are out of scope. `gitg-sidebar.vala` is not vendored, because the refs panel of gitrl-f does not use `Gitg.Sidebar`, so that template has no class. A resource list that names a file which is not vendored does not compile. The other entries stay in upstream's order. The `/org/gnome/gitg` prefix stays, because the vendored Vala files name these paths in their `[GtkTemplate]` attributes. The resources are internal to the gitrl-f binary, so the prefix cannot collide with the installed gitg.
 
 **Cost.** None. gitrl-z also removes these two entries, but it sorts the list again, adds a comment, and has no patch for the file.
+
+## gitg-cell-renderer-lanes.patch
+
+Gives the colour of the lane of the commit to the labels of that commit.
+
+**Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its lane. Only the lane renderer knows that colour. gitrl-z has the same patch.
+
+**Cost.** None.
+
+## gitg-label-renderer.patch
+
+Two changes. gitrl-z has the same patch.
+
+**1. Draws the label of the checked-out branch with a pointed left end.**
+
+**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. Its colours are those of the other branch labels. When HEAD is detached, no label changes.
+
+**2. Fills the label of a local branch with the colour of its lane.**
+
+**Why.** gitg fills each label with the colour of its kind. Thus the label does not show which line of the graph it is on. The labels of remote branches, tags and the stash keep the colour of their kind, so that the kinds stay different. The text of the label is light or dark, whichever has more contrast with the fill. The style class `light-fill` gives the dark text. `gitrlf-style.css` gives its colour, because `style.css` must stay byte for byte the stylesheet of gitg.
+
+**Cost.** The label of the checked-out branch is 8 pixels wider than before, and the labels of local branches do not have the colours of gitg. Thus the pixel suite finds a difference at each label of a local branch.

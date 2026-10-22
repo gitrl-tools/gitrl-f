@@ -18,7 +18,6 @@
  */namespace GitrlfTest
 {
 
-private const uint32 BLUE = 0x204a87;
 private const string FILE_RECORD = "cat \"$LOCAL\"; echo --; cat \"$REMOTE\"";
 private const uint32 GOLD = 0xc4a000;
 private const uint32 GREY = 0x888a85;
@@ -125,9 +124,10 @@ private static Gtk.Widget[] find_named(Gtk.Widget widget, string type_name)
 	return found;
 }
 
-private static int first_inked(Gtk.Widget widget, int y, uint32 rgb)
+private static int first_inked(Gtk.Widget widget, int y, uint32 rgb,
+                               int from = 0)
 {
-	var x = 0;
+	var x = from;
 
 	while (x < widget.get_allocated_width() && !inked(widget, x, y, rgb))
 	{
@@ -2315,6 +2315,7 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 	try
 	{
 		var repo = changes_repo();
+		repo.git({"checkout", "--quiet", "-b", "side"});
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
 		var view = paned.commit_list_view;
@@ -2323,7 +2324,7 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 		int unstaged_y;
 		int staged_y;
 		int grey_x;
-		int blue_x;
+		int gold_x;
 
 		var list_y = top_of_rows(window);
 
@@ -2341,22 +2342,24 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 			window, first_inked(unstaged, pitch / 2, GREY), 0,
 			out grey_x, null);
 		view.translate_coordinates(
-			window, first_inked(view, row_y(window, 0) + pitch / 2, BLUE),
-			0, out blue_x, null);
+			window,
+			first_inked(view, row_y(window, 0) + pitch / 2, GOLD,
+			            lane_x(1) - 8),
+			0, out gold_x, null);
 
-		assert_cmpint(grey_x, CompareOperator.EQ, blue_x);
+		assert_cmpint(grey_x, CompareOperator.EQ, gold_x);
 
 		var label = label_with(unstaged, "Unstaged changes");
 		var grey = inked_rows(label, label.get_allocated_width() / 2, 0,
 		                      pitch, GREY);
-		var blue = inked_rows(view, lane_x(1) + 4, row_y(window, 0),
-		                      pitch, BLUE);
+		var gold = inked_rows(view, lane_x(1) + 4, row_y(window, 0),
+		                      pitch, GOLD);
 
-		assert_true(blue.contains("#"));
+		assert_true(gold.contains("#"));
 		assert_cmpint(grey.index_of_char('#'), CompareOperator.EQ,
-		              blue.index_of_char('#'));
+		              gold.index_of_char('#'));
 		assert_cmpint(grey.last_index_of_char('#'), CompareOperator.EQ,
-		              blue.last_index_of_char('#'));
+		              gold.last_index_of_char('#'));
 
 		repo.git({"stash", "--quiet", "--include-untracked"});
 		settle(2600);

@@ -34,3 +34,7 @@ viewport.changes {
 	padding: 0 6px;
 	margin: 2px;
 }
+
+.branch.light-fill {
+	color: @aluminium6;
+}

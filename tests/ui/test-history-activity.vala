@@ -298,6 +298,26 @@ private static string folded(Gitrlf.Window window)
 	return string.joinv("|", keys);
 }
 
+private static int ink_of(uint8* pixel)
+{
+	return pixel[0] + pixel[1] + pixel[2];
+}
+
+private static void ink_range(Cairo.ImageSurface surface, int y, out int darkest, out int lightest)
+{
+	darkest = 3 * 255;
+	lightest = 0;
+
+	for (var j = y - 3; j <= y + 3; j++)
+	{
+		for (var i = 8; i < right_end(surface, y) - 3; i++)
+		{
+			darkest = int.min(darkest, ink_of(pixel_at(surface, i, j)));
+			lightest = int.max(lightest, ink_of(pixel_at(surface, i, j)));
+		}
+	}
+}
+
 private static int label_x(Gitrlf.Window window, int row, string name)
 {
 	var view = window.history.paned.commit_list_view;
@@ -330,6 +350,14 @@ private static int label_x(Gitrlf.Window window, int row, string name)
 private static string labels(Gitrlf.HistoryActivity activity, int row)
 {
 	return string.joinv(",", activity.labels_for(activity.rows()[row]));
+}
+
+private static Gitg.Color lane_colour(uint index)
+{
+	var colour = new Gitg.Color();
+	colour.idx = index;
+
+	return colour;
 }
 
 private static uint lane_of(Gitrlf.Window window, string subject)
@@ -427,6 +455,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitrlf/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
+	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-colour-of-their-lines", test_the_branch_labels_take_the_colour_of_their_lines);
+	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end-and-the-fill-of-the-others", test_the_checked_out_label_has_a_pointed_end_and_the_fill_of_the_others);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-leaves-out-the-rows-between-picks", test_the_commit_menu_leaves_out_the_rows_between_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
@@ -636,6 +666,25 @@ private static Repo picks_repo() throws Error
 	return repo;
 }
 
+private static Cairo.ImageSurface pill_of(Gitg.Repository repository, Gtk.Widget widget, string name, Gitg.Color lane, int width, int height) throws Error
+{
+	var font = widget.get_style_context().get_font(Gtk.StateFlags.NORMAL);
+	var labels = new SList<Gitg.Ref>();
+	var surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, width, height);
+	Gdk.Rectangle area = { 0, 0, width, height };
+
+	labels.append(repository.lookup_reference(name));
+	Gitg.LabelRenderer.draw(widget, font, new Cairo.Context(surface), labels, area, lane);
+	surface.flush();
+
+	return surface;
+}
+
+private static uint8* pixel_at(Cairo.ImageSurface surface, int x, int y)
+{
+	return (uint8*)surface.get_data() + y * surface.get_stride() + x * 4;
+}
+
 private static void point_at_row(Gitrlf.Window window, int row)
 {
 	int x;
@@ -644,6 +693,11 @@ private static void point_at_row(Gitrlf.Window window, int row)
 	row_centre(window, row, out x, out y);
 	point_at(x, y);
 	settle(300);
+}
+
+private static Gdk.RGBA rgba_of(Gitg.Color colour)
+{
+	return { colour.r, colour.g, colour.b, 1 };
 }
 
 private static void right_click(Gitrlf.Window window, int row, int column, int x)
@@ -658,6 +712,18 @@ private static void right_click(Gitrlf.Window window, int row, int column, int x
 
 	click_at(origin_x + cell.x + x, origin_y + cell.y + cell.height / 2, 1, 3);
 	settle(300);
+}
+
+private static int right_end(Cairo.ImageSurface surface, int y)
+{
+	var x = surface.get_width() - 1;
+
+	while (pixel_at(surface, x, y)[3] == 0)
+	{
+		x--;
+	}
+
+	return x;
 }
 
 private static void row_centre(Gitrlf.Window window, int row, out int x, out int y)
@@ -3127,6 +3193,96 @@ private static void test_summary_counts_rows_of_commits()
 		assert_cmpstr(window.history.summary_text, CompareOperator.EQ, "Showing 3 of 8 commits");
 
 		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_branch_labels_take_the_colour_of_their_lines()
+{
+	try
+	{
+		application();
+
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("side");
+		repo.git({"tag", "v1"});
+
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var view = new Gtk.TreeView();
+		var width = 120;
+		var height = 23;
+		var middle = height / 2;
+		var yellow = lane_colour(0);
+		var blue = lane_colour(3);
+		int darkest;
+		int lightest;
+
+		var on_yellow = pill_of(repository, view, "refs/heads/side", yellow, width, height);
+		var fill = pixel_at(on_yellow, right_end(on_yellow, middle) - 3, middle);
+		ink_range(on_yellow, middle, out darkest, out lightest);
+
+		assert_true(close_to(fill, rgba_of(yellow)));
+		assert_cmpint(darkest, CompareOperator.LT, ink_of(fill) - 48);
+		assert_cmpint(lightest, CompareOperator.LE, ink_of(fill) + 48);
+
+		var on_blue = pill_of(repository, view, "refs/heads/side", blue, width, height);
+		fill = pixel_at(on_blue, right_end(on_blue, middle) - 3, middle);
+		ink_range(on_blue, middle, out darkest, out lightest);
+
+		assert_true(close_to(fill, rgba_of(blue)));
+		assert_cmpint(lightest, CompareOperator.GT, ink_of(fill) + 48);
+		assert_cmpint(darkest, CompareOperator.GE, ink_of(fill) - 48);
+
+		var tag = pill_of(repository, view, "refs/tags/v1", yellow, width, height);
+
+		assert_false(close_to(pixel_at(tag, right_end(tag, middle) - 3, middle), rgba_of(yellow)));
+
+		var head = pill_of(repository, view, "refs/heads/master", yellow, width, height);
+		fill = pixel_at(head, right_end(head, middle) - 3, middle);
+		ink_range(head, middle, out darkest, out lightest);
+
+		assert_true(close_to(fill, rgba_of(yellow)));
+		assert_cmpint(darkest, CompareOperator.LT, ink_of(fill) - 48);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_checked_out_label_has_a_pointed_end_and_the_fill_of_the_others()
+{
+	try
+	{
+		application();
+
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("side");
+
+		var repository = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var view = new Gtk.TreeView();
+		var width = 120;
+		var height = 23;
+		var middle = height / 2;
+
+		var lane = lane_colour(0);
+		var head = pill_of(repository, view, "refs/heads/master", lane, width, height);
+		var other = pill_of(repository, view, "refs/heads/side", lane, width, height);
+
+		assert_cmpint(pixel_at(head, 5, 4)[3], CompareOperator.EQ, 0);
+		assert_cmpint(pixel_at(other, 5, 4)[3], CompareOperator.GT, 0);
+
+		assert_true(close_to(pixel_at(head, right_end(head, middle) - 3, middle), rgba_of(lane)));
+		assert_true(close_to(pixel_at(other, right_end(other, middle) - 3, middle), rgba_of(lane)));
+
 		repo.remove();
 	}
 	catch (Error e)
