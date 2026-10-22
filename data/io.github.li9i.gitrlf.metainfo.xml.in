@@ -63,6 +63,29 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.12.0" date="2026-10-22">
+      <description>
+        <ul>
+          <li>
+            The label of the checked-out branch has a pointed left end.
+          </li>
+          <li>
+            The label of a local branch has the colour of its lane. The text
+            of the label is light or dark, whichever is easier to read. The
+            labels of remote branches, tags and the stash keep their colours.
+          </li>
+          <li>
+            The first lane is blue, and no lane has the colour of a remote
+            branch or of a tag.
+          </li>
+          <li>
+            A lane with no activity for many rows does not stop with an
+            arrow. It continues to the commit where the branch starts. To get
+            the arrows again, set Collapse inactive lanes in Preferences.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.11.0" date="2026-10-21">
       <description>
         <ul>
