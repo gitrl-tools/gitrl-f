@@ -65,7 +65,7 @@
       </description>
     </key>
     <key name="collapse-inactive-lanes-enabled" type="b">
-      <default>true</default>
+      <default>false</default>
       <description>
         Setting that indicates whether to collapse history lanes which do not
         show activity. Enabling this can provide a cleaner history view when

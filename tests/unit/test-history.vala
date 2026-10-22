@@ -276,6 +276,9 @@ private static void test_long_history_folds_a_lane()
 		repo.commit("side one", "side");
 		repo.checkout("master");
 
+		var history = new Settings(Gitrlf.Config.APPLICATION_ID + ".preferences.history");
+		history.set_boolean("collapse-inactive-lanes-enabled", true);
+
 		var opened = open(repo.path);
 		var chosen = tips(opened, {"master", "side"});
 		var mainline = Gitrlf.History.mainline(opened.repository, true);
@@ -294,6 +297,7 @@ private static void test_long_history_folds_a_lane()
 		assert_cmpstr(lanes_of(rows), CompareOperator.EQ,
 		              lanes_of(gitg_rows(opened.repository, chosen, mainline, Ggit.SortMode.TOPOLOGICAL | Ggit.SortMode.TIME)));
 
+		history.reset("collapse-inactive-lanes-enabled");
 		repo.remove();
 	}
 	catch (Error e)

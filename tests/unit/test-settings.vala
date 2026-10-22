@@ -35,7 +35,7 @@ private const string[] KEYS = {
 	"preferences.diff|tab-width|4",
 	"preferences.diff|wrap|false",
 	"preferences.history|collapse-inactive-lanes|2",
-	"preferences.history|collapse-inactive-lanes-enabled|true",
+	"preferences.history|collapse-inactive-lanes-enabled|false",
 	"preferences.history|mainline-head|true",
 	"preferences.history|topological-order|false",
 	"preferences.interface|enable-diff-highlighting|true",
