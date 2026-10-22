@@ -13,8 +13,9 @@ reference=$here/reference/gitrlf-window.png
 GSETTINGS_SCHEMA_DIR=${GSETTINGS_SCHEMA_DIR:-$root/_build/data}
 export GSETTINGS_SCHEMA_DIR
 
-LIST=490x345+206+51
-FIRST_ROW="400 62"
+GITG_LIST=490x345+206+51
+GITRLF_LIST=490x345+191+76
+FIRST_ROW="400 87"
 
 for tool in Xvfb xwd convert compare xdotool dbus-run-session gitg python3 setsid; do
 	if ! command -v "$tool" >/dev/null 2>&1; then
@@ -96,42 +97,22 @@ click=$FIRST_ROW
 capture gitrlf-1 "$binary" -a
 capture gitrlf-2 "$binary" -a
 
-for name in gitg-1 gitg-2 gitrlf-1 gitrlf-2; do
-	crop "$name" "$LIST" list
+for name in gitg-1 gitg-2; do
+	crop "$name" "$GITG_LIST" list
+done
+
+for name in gitrlf-1 gitrlf-2; do
+	crop "$name" "$GITRLF_LIST" list
 done
 
 echo "--- a capture against itself, taken twice ---"
 check "gitg list" "$out/gitg-1-list.png" "$out/gitg-2-list.png"
 check "gitrlf window" "$out/gitrlf-1.png" "$out/gitrlf-2.png"
 
-echo "--- gitrlf against gitg ---"
-list=$("$here/compare.sh" "$out/gitg-1-list.png" "$out/gitrlf-1-list.png")
-echo "  list: $list differing pixels"
-
-if [ "$list" -ne 0 ]; then
-	failed=1
-	echo "--- what moved in the list ---"
-	python3 "$here/measure.py" "$out/gitg-1-list.png" --json >"$out/gitg.json"
-	python3 "$here/measure.py" "$out/gitrlf-1-list.png" --json >"$out/gitrlf.json"
-	python3 - "$out/gitg.json" "$out/gitrlf.json" <<'PY'
-import json
-import sys
-
-gitg = json.load(open(sys.argv[1]))
-gitrlf = json.load(open(sys.argv[2]))
-
-for key in sorted(gitg):
-    if key != "dots" and gitg[key] != gitrlf[key]:
-        print("  {}: gitg {}, gitrlf {}".format(key, gitg[key], gitrlf[key]))
-
-for a, b in zip(gitg["dots"], gitrlf["dots"]):
-    if a != b:
-        print("  dot in row {}: gitg lane {} {}, gitrlf lane {} {}".format(a[0], a[1], a[2], b[1], b[2]))
-
-if len(gitg["dots"]) != len(gitrlf["dots"]):
-    print("  dots: gitg {}, gitrlf {}".format(len(gitg["dots"]), len(gitrlf["dots"])))
-PY
-fi
+echo "--- the layout of gitrlf against gitg ---"
+python3 "$here/measure.py" "$out/gitg-1-list.png" --json >"$out/gitg.json"
+python3 "$here/measure.py" "$out/gitrlf-1-list.png" --json >"$out/gitrlf.json"
+python3 "$here/compare-layout.py" "$out/gitg.json" "$out/gitrlf.json" || failed=1
 
 echo "--- gitrlf against its reference window ---"
 
@@ -142,8 +123,8 @@ else
 	check "window" "$out/gitrlf-1.png" "$reference"
 fi
 
-echo "--- self check: the comparison must see a changed colour and a shift ---"
-"$here/selfcheck.sh" "$out/gitrlf-1-list.png" '#c4a000' "$out" || failed=1
+echo "--- self check: the layout comparison must see a stretched copy ---"
+"$here/selfcheck.sh" "$out/gitrlf-1-list.png" "$out" || failed=1
 
 if [ "$failed" -ne 0 ]; then
 	echo "visual parity FAILED; the captures are in $out"

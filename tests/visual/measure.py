@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Read the geometry of a commit graph from a capture of the list.
 
-The pixel comparison says how many pixels differ. This says what moved: the
-place of the first lane and the first row, the space between lanes, the
+The place of the first lane and the first row, the space between lanes, the
 radius of a commit dot, the height of a row, and the colour at the centre of
-each dot, read from the capture alone.
+each dot, read from the capture alone. compare-layout.py compares the number
+of rows, the lane spacing, the dot radius and the row height of two lists.
 
 A lane line is two pixels wide and a dot is ten, so an opening of the mask of
 lane colours removes the lines and keeps the dots. A label pill is wider than
