@@ -74,6 +74,8 @@ namespace Gitg
 			{
 				minimum_width = w;
 			}
+
+			natural_width += w;
 		}
 
 		private void draw_arrow(Cairo.Context context,

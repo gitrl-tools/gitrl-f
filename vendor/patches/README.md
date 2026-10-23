@@ -304,9 +304,15 @@ Changes the palette. `#204a87` is the first colour, and `#4e9a06`, `#ce5c00`, `#
 
 ## gitg-cell-renderer-lanes.patch
 
-Gives the colour of the lane of the commit to the labels of that commit.
+Two changes.
+
+**1. Gives the colour of the lane of the commit to the labels of that commit.**
 
 **Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its lane. Only the lane renderer knows that colour. gitrl-z has the same patch.
+
+**2. Adds the width of the lanes and the labels to the natural width of the cell.**
+
+**Why.** The cell draws the lanes and the labels, and then the subject to their right. gitg gives only the width of the subject as the natural width. A double click on the edge of the Subject title sets the column to the natural width of its widest row. Without this change, the end of the subject was cut by the width of the lanes and the labels.
 
 **Cost.** None.
 

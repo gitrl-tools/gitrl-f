@@ -445,6 +445,7 @@ public class HistoryPaned : Gtk.Box
 
 			d_columns[title] = column;
 			d_titles.append_column(title);
+			title.notify["fixed-width"].connect(fit_column);
 			column.notify["width"].connect(keep_fixed_width);
 		}
 
@@ -514,6 +515,20 @@ public class HistoryPaned : Gtk.Box
 		}
 
 		return true;
+	}
+
+	private void fit_column(Object title, ParamSpec property)
+	{
+		var column = d_columns[(Gtk.TreeViewColumn)title];
+
+		if (!d_saving || column.fixed_width != -1)
+		{
+			return;
+		}
+
+		column.fixed_width = column == d_column_lines
+		                     ? width_in(d_default_widths, column)
+		                     : widest_entry(column);
 	}
 
 	public void fit_sidebar()
@@ -699,8 +714,7 @@ public class HistoryPaned : Gtk.Box
 
 		foreach (var column in d_commit_list_view.get_columns())
 		{
-			column.fixed_width = widths.lookup_value(
-				name_of(column), VariantType.INT32).get_int32();
+			column.fixed_width = width_in(widths, column);
 		}
 
 		d_spare = spare == null ? 0 : spare.get_int32();
@@ -772,6 +786,33 @@ public class HistoryPaned : Gtk.Box
 		{
 			column.notify["fixed-width"].connect(keep_spare);
 		}
+	}
+
+	private int widest_entry(Gtk.TreeViewColumn column)
+	{
+		var area = column.get_area();
+		var context = area.create_context();
+		var least = 0;
+		var natural = 0;
+		int separator;
+
+		d_commit_list_view.model.foreach((model, path, iter) => {
+			column.cell_set_cell_data(model, iter, false, false);
+			area.get_preferred_width(context, d_commit_list_view, out least,
+			                         out natural);
+			return false;
+		});
+
+		d_commit_list_view.style_get("horizontal-separator", out separator);
+		context.get_preferred_width(out least, out natural);
+
+		return natural + separator;
+	}
+
+	private static int width_in(Variant widths, Gtk.TreeViewColumn column)
+	{
+		return widths.lookup_value(name_of(column), VariantType.INT32)
+		       .get_int32();
 	}
 
 	private static int width_of(Gtk.TreeViewColumn column)
