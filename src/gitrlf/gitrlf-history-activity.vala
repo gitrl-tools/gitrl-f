@@ -966,6 +966,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
+	private void add_show_item()
+	{
+		var item = new Gtk.MenuItem.with_label(_("Show diff"));
+
+		item.activate.connect(() => {
+			set_details(true);
+		});
+		item.show();
+		d_copy_menu.add(item);
+	}
+
 	private void add_split_item(Ref reference, CopyMenu menu)
 	{
 		var item = new Gtk.MenuItem.with_label(_("Go to where it splits from"));
@@ -1509,8 +1520,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		add_first_tag_item(commit.get_id());
 		add_merge_item(commit.get_id());
 		d_copy_menu.add_separator();
-		add_compare_item(view.get_selection().path_is_selected(path)
-		                 ? picks() : new Gitg.Commit[] { commit });
+
+		var picked = view.get_selection().path_is_selected(path);
+
+		if (picked && !d_paned.details_visible)
+		{
+			add_show_item();
+		}
+
+		add_compare_item(picked ? picks() : new Gitg.Commit[] { commit });
 
 		return true;
 	}

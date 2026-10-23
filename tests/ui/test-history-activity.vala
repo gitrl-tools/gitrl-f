@@ -491,12 +491,14 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-first-tag", test_the_commit_menu_names_the_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-names-the-merge-that-brought-it-in", test_the_commit_menu_names_the_merge_that_brought_it_in);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-offers-the-diff-only-on-hidden-picks", test_the_commit_menu_offers_the_diff_only_on_hidden_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-in-the-diff-tool-of-git", test_the_commit_menu_opens_in_the_diff_tool_of_git);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-on-every-column", test_the_commit_menu_opens_on_every_column);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-one-commit-when-no-store-can-be-made", test_the_commit_menu_opens_one_commit_when_no_store_can_be_made);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-opens-several-picks-as-one-diff", test_the_commit_menu_opens_several_picks_as_one_diff);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-outside-the-picks-opens-its-commit", test_the_commit_menu_outside_the_picks_opens_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-reports-a-difftool-that-fails", test_the_commit_menu_reports_a_difftool_that_fails);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-shows-the-diff-of-the-picks", test_the_commit_menu_shows_the_diff_of_the_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
 	Test.add_func("/gitrlf/ui/history-activity/the-first-line-has-the-blue-of-a-branch", test_the_first_line_has_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-row-scrolls-into-view-under-the-titles", test_the_last_row_scrolls_into_view_under_the_titles);
@@ -3539,6 +3541,40 @@ private static void test_the_commit_menu_names_the_merge_that_brought_it_in()
 	}
 }
 
+private static void test_the_commit_menu_offers_the_diff_only_on_hidden_picks()
+{
+	try
+	{
+		var repo = picks_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, row_of(window, "third"));
+		click_row_holding(window, row_of(window, "second"), "shift");
+		right_click(window, row_of(window, "fourth"), 1, 10);
+
+		assert_nonnull(copy_item());
+		assert_null(menu_item("Show diff"));
+		((Gtk.Menu)copy_item().get_parent()).popdown();
+		settle(100);
+
+		click_row(window, row_of(window, "second"), 2);
+		assert_true(details_shown(window));
+		right_click(window, row_of(window, "second"), 1, 10);
+
+		assert_nonnull(copy_item());
+		assert_null(menu_item("Show diff"));
+		((Gtk.Menu)copy_item().get_parent()).popdown();
+		settle(100);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_the_commit_menu_opens_in_the_diff_tool_of_git()
 {
 	try
@@ -3728,6 +3764,41 @@ private static void test_the_commit_menu_reports_a_difftool_that_fails()
 		FileUtils.chmod(folder, 0700);
 
 		assert_cmpstr(error, CompareOperator.EQ, "Could not open the difftool");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_shows_the_diff_of_the_picks()
+{
+	try
+	{
+		var repo = picks_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, row_of(window, "third"));
+		click_row_holding(window, row_of(window, "second"), "shift");
+		assert_false(details_shown(window));
+
+		right_click(window, row_of(window, "second"), 1, 10);
+
+		var item = menu_item("Show diff");
+
+		assert_nonnull(item);
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(300);
+
+		var text = window.history.diff_view.message_view.buffer.text;
+
+		assert_true(details_shown(window));
+		assert_cmpstr(picked(window), CompareOperator.EQ, "third,second");
+		assert_true(text.has_prefix("2 commits\n"));
 
 		window.destroy();
 		repo.remove();
