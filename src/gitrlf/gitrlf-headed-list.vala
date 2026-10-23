@@ -56,6 +56,8 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 
 	public Gtk.ScrollablePolicy vscroll_policy { get; set; }
 
+	public signal void allocating(int width);
+
 	construct
 	{
 		set_has_window(false);
@@ -252,6 +254,7 @@ public class HeadedList : Gtk.Container, Gtk.Scrollable
 		int minimum;
 		int natural;
 
+		allocating(width);
 		d_titles.get_preferred_height_for_width(width, out minimum,
 		                                        out natural);
 

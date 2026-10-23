@@ -166,7 +166,7 @@
                         <property name="can_focus">True</property>
                         <property name="shadow-type">none</property>
                         <child>
-                          <object class="GitrlfHeadedList">
+                          <object class="GitrlfHeadedList" id="d_headed_list">
                             <property name="visible">True</property>
                             <child>
                               <object class="GtkTreeView" id="d_titles">

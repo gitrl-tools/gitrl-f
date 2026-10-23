@@ -48,6 +48,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.SearchEntry d_filter;
 	[GtkChild]
+	private unowned HeadedList d_headed_list;
+	[GtkChild]
 	private unowned Gtk.Button d_none;
 	[GtkChild]
 	private unowned Gtk.Label d_notice;
@@ -112,13 +114,15 @@ public class HistoryPaned : Gtk.Box
 	};
 
 	private Gee.HashMap<Gtk.TreeViewColumn, Gtk.TreeViewColumn> d_columns;
+	private bool d_arranging;
 	private Variant d_default_widths;
-	private bool d_fitting;
 	private int d_pressed;
 	private string d_repository_path;
 	private bool d_saving;
+	private int d_spare;
 	private Settings d_state_settings;
 	private CopyMenu d_titles_menu;
+	private int d_width;
 
 	public Gtk.Button all_button
 	{
@@ -414,7 +418,7 @@ public class HistoryPaned : Gtk.Box
 		d_titles_menu = new CopyMenu(d_titles);
 		d_titles_menu.find.connect(fill_titles_menu);
 		d_commit_list_view.columns_changed.connect(save_column_order);
-		d_commit_list_view.draw.connect_after(keep_fitted_subject);
+		d_headed_list.allocating.connect(fill_subject);
 		d_titles.columns_changed.connect(follow_titles);
 		destroy.connect(() => {
 			d_titles.columns_changed.disconnect(follow_titles);
@@ -459,6 +463,31 @@ public class HistoryPaned : Gtk.Box
 		}
 
 		return null;
+	}
+
+	private void fill_subject(int width)
+	{
+		d_width = width;
+
+		foreach (var column in d_commit_list_view.get_columns())
+		{
+			if (column == d_column_subject)
+			{
+				continue;
+			}
+
+			if (column.fixed_width == -1)
+			{
+				return;
+			}
+
+			width -= width_of(column);
+		}
+
+		d_arranging = true;
+		d_column_subject.fixed_width = int.max(width - d_spare,
+		                                       d_column_subject.min_width);
+		d_arranging = false;
 	}
 
 	private bool fill_titles_menu(double x, double y)
@@ -540,19 +569,6 @@ public class HistoryPaned : Gtk.Box
 		}
 	}
 
-	private bool keep_fitted_subject()
-	{
-		if (d_fitting)
-		{
-			d_fitting = false;
-			d_column_subject.expand = false;
-			d_column_subject.fixed_width = d_column_subject.width;
-			save_column_widths();
-		}
-
-		return false;
-	}
-
 	private void keep_fixed_width(Object column, ParamSpec property)
 	{
 		var list_column = (Gtk.TreeViewColumn)column;
@@ -561,6 +577,32 @@ public class HistoryPaned : Gtk.Box
 		{
 			list_column.fixed_width = list_column.width;
 		}
+	}
+
+	private void keep_spare(Object column, ParamSpec property)
+	{
+		var changed = (Gtk.TreeViewColumn)column;
+		Gtk.TreeViewColumn? last = null;
+
+		if (d_arranging || !d_saving || changed.fixed_width == -1)
+		{
+			return;
+		}
+
+		d_spare = d_width;
+
+		foreach (var shown in d_commit_list_view.get_columns())
+		{
+			d_spare -= width_of(shown);
+			last = shown.visible ? shown : last;
+		}
+
+		if (changed == last)
+		{
+			d_spare = 0;
+		}
+
+		save_column_widths();
 	}
 
 	private static string name_of(Gtk.TreeViewColumn column)
@@ -651,24 +693,17 @@ public class HistoryPaned : Gtk.Box
 			d_state_settings.get_value("column-widths")).lookup_value(
 			repository, VariantType.VARDICT);
 		var widths = saved ?? d_default_widths;
+		var spare = widths.lookup_value("spare", VariantType.INT32);
 
 		d_saving = false;
 
 		foreach (var column in d_commit_list_view.get_columns())
 		{
-			column.expand = false;
 			column.fixed_width = widths.lookup_value(
 				name_of(column), VariantType.INT32).get_int32();
 		}
 
-		d_fitting = saved == null;
-
-		if (d_fitting)
-		{
-			d_column_subject.expand = true;
-			d_column_subject.fixed_width = d_column_subject.min_width;
-		}
-
+		d_spare = spare == null ? 0 : spare.get_int32();
 		d_repository_path = repository;
 		d_saving = true;
 	}
@@ -707,8 +742,10 @@ public class HistoryPaned : Gtk.Box
 
 		var saved = new VariantDict(
 			d_state_settings.get_value("column-widths"));
+		var widths = new VariantDict(fixed_widths());
 
-		saved.insert_value(d_repository_path, fixed_widths());
+		widths.insert_value("spare", d_spare);
+		saved.insert_value(d_repository_path, widths.end());
 		d_state_settings.set_value("column-widths", saved.end());
 	}
 
@@ -733,8 +770,14 @@ public class HistoryPaned : Gtk.Box
 
 		foreach (var column in d_commit_list_view.get_columns())
 		{
-			column.notify["fixed-width"].connect(save_column_widths);
+			column.notify["fixed-width"].connect(keep_spare);
 		}
+	}
+
+	private static int width_of(Gtk.TreeViewColumn column)
+	{
+		return column.visible ? int.max(column.fixed_width, column.min_width)
+		                      : 0;
 	}
 }
 
