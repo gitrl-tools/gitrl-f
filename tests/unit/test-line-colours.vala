@@ -69,14 +69,14 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gitrlf/line-colours/each-dictionary-set-has-eight-colours", test_each_dictionary_set_has_eight_colours);
+	Test.add_func("/gitrlf/line-colours/each-dictionary-set-has-five-colours", test_each_dictionary_set_has_five_colours);
 	Test.add_func("/gitrlf/line-colours/the-default-is-the-picked-scheme", test_the_default_is_the_picked_scheme);
 	Test.add_func("/gitrlf/line-colours/the-first-dictionary-set-is-the-one-on-the-page", test_the_first_dictionary_set_is_the_one_on_the_page);
 
 	return Test.run();
 }
 
-private static void test_each_dictionary_set_has_eight_colours()
+private static void test_each_dictionary_set_has_five_colours()
 {
 	double[] light = { 0xee / 255.0, 0xee / 255.0, 0xec / 255.0 };
 	double[] dark = { 0x2e / 255.0, 0x34 / 255.0, 0x36 / 255.0 };
@@ -92,8 +92,8 @@ private static void test_each_dictionary_set_has_eight_colours()
 			seen.add(hex);
 		}
 
-		assert_cmpuint(Gitg.Color.size(), CompareOperator.EQ, 8);
-		assert_cmpint(seen.size, CompareOperator.EQ, 8);
+		assert_cmpuint(Gitg.Color.size(), CompareOperator.EQ, 5);
+		assert_cmpint(seen.size, CompareOperator.EQ, 5);
 
 		for (uint i = 0; i < Gitg.Color.size(); i++)
 		{
@@ -112,15 +112,15 @@ private static void test_the_default_is_the_picked_scheme()
 	Gitrlf.LineColours.use("dictionary-2");
 	Gitrlf.LineColours.use("default");
 
-	assert_cmpstr(hexes(), CompareOperator.EQ, "204a87,6c3566,729fcf,ef2929,34e2e2,f37fb7,fce94f");
-	assert_cmpstr(tones(), CompareOperator.EQ, "light,light,light,light,dark,dark,dark");
+	assert_cmpstr(hexes(), CompareOperator.EQ, "204a87,6c3566,729fcf,a40000,ad7fa8,f37fb7,fce94f");
+	assert_cmpstr(tones(), CompareOperator.EQ, "light,light,light,light,light,light,dark");
 }
 
 private static void test_the_first_dictionary_set_is_the_one_on_the_page()
 {
 	Gitrlf.LineColours.use("dictionary-1");
 
-	assert_cmpstr(hexes(), CompareOperator.EQ, "111314,064f6e,644b1e,7a4456,437742,00b49b,f48067,f99d1b");
+	assert_cmpstr(hexes(), CompareOperator.EQ, "1c4286,ab2439,1a7444,986f2d,97acc8");
 
 	Gitrlf.LineColours.use("default");
 }

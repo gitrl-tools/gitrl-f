@@ -23,69 +23,51 @@ namespace Gitrlf
 public class LineColours : Object
 {
 	private const Gitg.Color.Rgb[] SET_1 = {
-		{17, 19, 20, false},
-		{6, 79, 110, false},
-		{100, 75, 30, false},
-		{122, 68, 86, false},
-		{67, 119, 66, false},
-		{0, 180, 155, true},
-		{244, 128, 103, true},
-		{249, 157, 27, true}
-	};
-
-	private const Gitg.Color.Rgb[] SET_2 = {
-		{89, 37, 106, false},
-		{6, 79, 110, false},
+		{28, 66, 134, false},
 		{171, 36, 57, false},
-		{67, 119, 66, false},
+		{26, 116, 68, false},
 		{152, 111, 45, false},
-		{154, 114, 170, false},
-		{243, 127, 148, true},
 		{151, 172, 200, true}
 	};
 
+	private const Gitg.Color.Rgb[] SET_2 = {
+		{30, 14, 63, false},
+		{121, 51, 39, false},
+		{0, 110, 184, false},
+		{0, 180, 155, true},
+		{216, 163, 123, true}
+	};
+
 	private const Gitg.Color.Rgb[] SET_3 = {
-		{17, 19, 20, false},
-		{6, 79, 110, false},
-		{100, 75, 30, false},
-		{122, 68, 86, false},
-		{218, 82, 93, false},
+		{5, 18, 48, false},
+		{118, 44, 25, false},
 		{0, 151, 141, true},
-		{249, 157, 27, true},
+		{244, 128, 103, true},
 		{181, 177, 216, true}
 	};
 
 	private const Gitg.Color.Rgb[] SET_4 = {
-		{17, 19, 20, false},
-		{28, 66, 134, false},
-		{100, 75, 30, false},
-		{122, 68, 86, false},
-		{26, 116, 68, false},
+		{78, 29, 76, false},
+		{6, 79, 110, false},
+		{67, 119, 66, false},
 		{218, 82, 93, false},
-		{0, 180, 155, true},
 		{249, 157, 27, true}
 	};
 
 	private const Gitg.Color.Rgb[] SET_5 = {
-		{89, 37, 106, false},
-		{0, 91, 141, false},
-		{113, 80, 47, false},
-		{203, 47, 67, false},
-		{163, 106, 165, false},
-		{0, 148, 101, false},
-		{192, 169, 179, true},
-		{243, 162, 87, true}
+		{30, 14, 63, false},
+		{128, 38, 38, false},
+		{26, 116, 68, false},
+		{0, 113, 144, false},
+		{216, 163, 123, true}
 	};
 
 	private const Gitg.Color.Rgb[] SET_6 = {
-		{80, 19, 69, false},
-		{18, 53, 78, false},
-		{204, 18, 54, false},
-		{163, 106, 165, false},
+		{5, 18, 48, false},
+		{100, 75, 30, false},
+		{140, 76, 98, false},
 		{0, 180, 155, true},
-		{244, 128, 103, true},
-		{249, 157, 27, true},
-		{181, 177, 216, true}
+		{244, 128, 103, true}
 	};
 
 	public static void use(string name)

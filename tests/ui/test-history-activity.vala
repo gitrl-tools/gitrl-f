@@ -2180,7 +2180,7 @@ private static void test_choosing_a_set_of_line_colours_recolours_the_lines()
 		application().activate_action("line-colours", new Variant.string("dictionary-1"));
 		drain();
 
-		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "111314");
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "1c4286");
 
 		application().activate_action("line-colours", new Variant.string("default"));
 		drain();
@@ -3868,7 +3868,7 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 		var width = 120;
 		var height = 23;
 		var middle = height / 2;
-		var light = lane_colour(4);
+		var light = lane_colour(6);
 		var blue = lane_colour(0);
 		var sky = lane_colour(2);
 		int darkest;
