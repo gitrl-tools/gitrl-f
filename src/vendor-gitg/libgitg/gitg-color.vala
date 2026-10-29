@@ -22,24 +22,25 @@ namespace Gitg
 
 public class Color : Object
 {
-	private struct Rgb
+	public struct Rgb
 	{
-		ushort r;
-		ushort g;
-		ushort b;
+		public ushort r;
+		public ushort g;
+		public ushort b;
+		public bool dark_text;
 	}
 
-	private const Rgb[] palette = {
-		{32, 74, 135},
-		{108, 53, 102},
-		{164, 0, 0},
-
-		{114, 159, 207},
-		{173, 127, 168},
-		{239, 41, 41},
-		{52, 226, 226},
-		{243, 127, 183}
+	private const Rgb[] standard = {
+		{32, 74, 135, false},
+		{108, 53, 102, false},
+		{114, 159, 207, false},
+		{239, 41, 41, false},
+		{52, 226, 226, true},
+		{243, 127, 183, true},
+		{252, 233, 79, true}
 	};
+
+	private static Rgb[]? chosen;
 
 	private static uint current_index;
 
@@ -50,19 +51,40 @@ public class Color : Object
 		current_index = 0;
 	}
 
+	public static void use_palette(Rgb[]? colours)
+	{
+		chosen = colours;
+		current_index = 0;
+	}
+
+	private static unowned Rgb[] palette()
+	{
+		return chosen != null ? chosen : standard;
+	}
+
+	private Rgb rgb
+	{
+		get { return palette()[idx % size()]; }
+	}
+
 	public double r
 	{
-		get { return palette[idx].r / 255.0; }
+		get { return rgb.r / 255.0; }
 	}
 
 	public double g
 	{
-		get { return palette[idx].g / 255.0; }
+		get { return rgb.g / 255.0; }
 	}
 
 	public double b
 	{
-		get { return palette[idx].b / 255.0; }
+		get { return rgb.b / 255.0; }
+	}
+
+	public bool dark_text
+	{
+		get { return rgb.dark_text; }
 	}
 
 	public void components(out double r, out double g, out double b)
@@ -76,7 +98,7 @@ public class Color : Object
 	{
 		uint next = current_index++;
 
-		if (current_index == palette.length)
+		if (current_index == size())
 		{
 			current_index = 0;
 		}
@@ -95,14 +117,14 @@ public class Color : Object
 	public static Color from_index(uint index)
 	{
 		Color ret = new Color();
-		ret.idx = index % palette.length;
+		ret.idx = index % size();
 
 		return ret;
 	}
 
 	public static uint size()
 	{
-		return palette.length;
+		return palette().length;
 	}
 
 	public Color next_index()

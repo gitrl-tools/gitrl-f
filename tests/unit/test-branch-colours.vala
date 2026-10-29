@@ -55,11 +55,11 @@ private static Gee.Set<string> every_name(Gee.List<Gitrlf.Ref> refs)
 	return names;
 }
 
-private static string line_of(Gee.Map<Ggit.OId, int> lines, string target)
+private static string line_of(Gee.Map<Ggit.OId, Gitg.Color> lines, string target)
 {
 	var id = new Ggit.OId.from_string(target);
 
-	return lines.has_key(id) ? lines[id].to_string() : "none";
+	return lines.has_key(id) ? lines[id].idx.to_string() : "none";
 }
 
 public static int main(string[] args)
@@ -68,6 +68,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/branch-colours/a-branch-keeps-its-colour-when-others-come", test_a_branch_keeps_its_colour_when_others_come);
 	Test.add_func("/gitrlf/branch-colours/a-branch-may-be-deep-blue", test_a_branch_may_be_deep_blue);
+	Test.add_func("/gitrlf/branch-colours/a-branch-saved-past-the-last-colour-takes-another", test_a_branch_saved_past_the_last_colour_takes_another);
 	Test.add_func("/gitrlf/branch-colours/a-deleted-branch-gives-its-colour-back", test_a_deleted_branch_gives_its_colour_back);
 	Test.add_func("/gitrlf/branch-colours/a-line-shows-the-colour-of-a-ticked-branch-only", test_a_line_shows_the_colour_of_a_ticked_branch_only);
 	Test.add_func("/gitrlf/branch-colours/a-line-takes-the-colour-of-its-first-branch-by-name", test_a_line_takes_the_colour_of_its_first_branch_by_name);
@@ -120,6 +121,17 @@ private static void test_a_branch_may_be_deep_blue()
 	var colours = new Gitrlf.BranchColours(saved_of({"alpha:0", "beta:1"}), refs);
 
 	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:0,beta:1");
+}
+
+private static void test_a_branch_saved_past_the_last_colour_takes_another()
+{
+	var refs = new Gee.ArrayList<Gitrlf.Ref>();
+	refs.add(branch("alpha"));
+	refs.add(branch("beta"));
+
+	var colours = new Gitrlf.BranchColours(saved_of({"alpha:%u".printf(Gitg.Color.size()), "beta:0"}), refs);
+
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:1,beta:0");
 }
 
 private static void test_a_checkout_changes_no_line()
@@ -212,7 +224,7 @@ private static void test_a_new_branch_takes_the_least_used_colour()
 		refs.add(branch(name));
 	}
 
-	var colours = new Gitrlf.BranchColours(saved_of({"a:0", "b:1", "c:2", "d:3", "e:4", "f:5", "g:6", "h:7", "i:0"}), refs);
+	var colours = new Gitrlf.BranchColours(saved_of({"a:0", "b:1", "c:2", "d:3", "e:4", "f:5", "g:6", "h:0", "i:2"}), refs);
 
 	assert_cmpint(colours.of_branch("j"), CompareOperator.EQ, 1);
 }
@@ -245,7 +257,7 @@ private static void test_branches_take_every_colour_in_turn()
 
 	var colours = new Gitrlf.BranchColours(saved_of({}), refs);
 
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7,i:0");
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:0,i:1");
 }
 
 private static void test_new_branches_take_colours_in_name_order()

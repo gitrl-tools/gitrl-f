@@ -23,6 +23,7 @@ namespace Gitrlf
 public class BranchColours : Object
 {
 	private Gee.Map<string, int> d_colours;
+	private Gee.Map<string, Gitg.Color> d_lines;
 	private Gee.Set<string> d_locals;
 
 	public Gee.Map<string, int> saved
@@ -36,6 +37,7 @@ public class BranchColours : Object
 		var fresh = new Gee.ArrayList<string>();
 
 		d_colours = new Gee.HashMap<string, int>();
+		d_lines = new Gee.HashMap<string, Gitg.Color>();
 		d_locals = new Gee.HashSet<string>();
 
 		foreach (var reference in refs)
@@ -49,7 +51,7 @@ public class BranchColours : Object
 
 			d_locals.add(name);
 
-			if (saved.has_key(name))
+			if (saved.has_key(name) && saved[name] < used.length)
 			{
 				d_colours[name] = saved[name];
 				used[saved[name]]++;
@@ -95,15 +97,33 @@ public class BranchColours : Object
 		return d_locals.contains(name) ? name : null;
 	}
 
+	public bool keep()
+	{
+		var changed = false;
+
+		foreach (var entry in d_lines.entries)
+		{
+			if (d_colours[entry.key] != entry.value.idx)
+			{
+				d_colours[entry.key] = (int)entry.value.idx;
+				changed = true;
+			}
+		}
+
+		return changed;
+	}
+
 	public int of_branch(string name)
 	{
 		return d_colours[name];
 	}
 
-	public Gee.Map<Ggit.OId, int> of_tips(Gee.List<Ref> refs, Gee.Set<string> ticks)
+	public Gee.Map<Ggit.OId, Gitg.Color> of_tips(Gee.List<Ref> refs, Gee.Set<string> ticks)
 	{
 		var names = History.id_map<string>();
-		var colours = History.id_map<int>();
+		var colours = History.id_map<Gitg.Color>();
+
+		d_lines = new Gee.HashMap<string, Gitg.Color>();
 
 		foreach (var reference in refs)
 		{
@@ -113,8 +133,17 @@ public class BranchColours : Object
 			if (name != null && ticks.contains(reference.name) && (!names.has_key(tip) || Refs.compare_natural(name, names[tip]) < 0))
 			{
 				names[tip] = name;
-				colours[tip] = of_branch(name);
 			}
+		}
+
+		foreach (var entry in names.entries)
+		{
+			if (!d_lines.has_key(entry.value))
+			{
+				d_lines[entry.value] = Gitg.Color.from_index(of_branch(entry.value));
+			}
+
+			colours[entry.key] = d_lines[entry.value];
 		}
 
 		return colours;

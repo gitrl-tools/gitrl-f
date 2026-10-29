@@ -24,9 +24,11 @@ public delegate void RecordsFunc(int index, string[] records);
 
 public class History : Object
 {
+	private const int NEAR = 2;
+
 	private Gitg.Commit[] d_commits;
 	private Gee.HashMap<Ggit.OId, int> d_index;
-	private Gee.Map<Ggit.OId, int> d_colours;
+	private Gee.Map<Ggit.OId, Gitg.Color> d_colours;
 	private Gitg.Lanes d_lanes;
 	private Gee.HashSet<Gitg.Color> d_owned;
 	private int[] d_parents;
@@ -255,7 +257,7 @@ public class History : Object
 			return null;
 		}
 
-		var colour = Gitg.Color.from_index(d_colours[id]);
+		var colour = d_colours[id];
 		d_owned.add(colour);
 
 		return colour;
@@ -288,9 +290,12 @@ public class History : Object
 					seen.add(colour);
 				}
 
-				if (i > 0 && shown[i] && shown[i - 1])
+				for (var j = int.max(0, i - NEAR); j < i; j++)
 				{
-					touch(touching, colour, lanes[i - 1].color);
+					if (shown[i] && shown[j])
+					{
+						touch(touching, colour, lanes[j].color);
+					}
 				}
 
 				foreach (var from in lanes[i].from)
@@ -312,12 +317,6 @@ public class History : Object
 
 		foreach (var colour in seen)
 		{
-			if (colour in d_owned)
-			{
-				done.add(colour);
-				continue;
-			}
-
 			var taken = new bool[size];
 
 			foreach (var other in touching[colour])
@@ -881,13 +880,13 @@ public class History : Object
 		return resolved.get_target();
 	}
 
-	public Gitg.Commit[] tick(Ggit.OId[] tips, Ggit.OId[] mainline, Gee.Map<Ggit.OId, int>? colours = null)
+	public Gitg.Commit[] tick(Ggit.OId[] tips, Ggit.OId[] mainline, Gee.Map<Ggit.OId, Gitg.Color>? colours = null)
 	{
 		var reached = new bool[d_commits.length];
 		var starts = new int[0];
 		var roots = id_set();
 
-		d_colours = id_map<int>();
+		d_colours = id_map<Gitg.Color>();
 		d_owned = new Gee.HashSet<Gitg.Color>();
 
 		foreach (var tip in tips)

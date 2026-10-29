@@ -265,6 +265,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_ticks = new Gee.HashSet<string>();
 		d_settings = new Settings(Config.APPLICATION_ID + ".preferences.history");
 		d_state = new Settings(Config.APPLICATION_ID + ".state.history");
+		LineColours.use(d_settings.get_string("line-colours"));
 
 		d_beyond = new Ggit.OId[0];
 		d_cases = { false, false, false };
@@ -670,6 +671,16 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_settings.changed["topological-order"].connect(() => {
 			refresh();
+		});
+		d_settings.changed["line-colours"].connect(() => {
+			LineColours.use(d_settings.get_string("line-colours"));
+
+			if (d_repository != null)
+			{
+				colour_branches();
+			}
+
+			show_ticks();
 		});
 		d_settings.changed["mainline-head"].connect(() => {
 			show_ticks();
@@ -1279,7 +1290,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var saved = new VariantDict(d_state.get_value("branch-colours"));
 		var stored = saved.lookup_value(path, new VariantType("a{si}"));
 		var known = new Gee.HashMap<string, int>();
-		var colours = new VariantBuilder(new VariantType("a{si}"));
 
 		if (stored != null)
 		{
@@ -1294,14 +1304,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_colours = new BranchColours(known, d_refs);
-
-		foreach (var entry in d_colours.saved.entries)
-		{
-			colours.add("{si}", entry.key, entry.value);
-		}
-
-		saved.insert_value(path, colours.end());
-		d_state.set_value("branch-colours", saved.end());
+		save_colours();
 	}
 
 	private string[]? combined_paths(Gitg.Commit[] picked)
@@ -2755,6 +2758,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return ret;
 	}
 
+	private void save_colours()
+	{
+		var path = d_repository.get_location().get_path();
+		var saved = new VariantDict(d_state.get_value("branch-colours"));
+		var colours = new VariantBuilder(new VariantType("a{si}"));
+
+		foreach (var entry in d_colours.saved.entries)
+		{
+			colours.add("{si}", entry.key, entry.value);
+		}
+
+		saved.insert_value(path, colours.end());
+		d_state.set_value("branch-colours", saved.end());
+	}
+
 	private bool scans()
 	{
 		return follows() || (d_paths.length > 0 && d_files_regex);
@@ -3348,6 +3366,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 
 			rows = history.tick(tips, History.mainline(d_repository, d_settings.get_boolean("mainline-head")), d_colours.of_tips(d_refs, d_ticks));
+
+			if (d_colours.keep())
+			{
+				save_colours();
+			}
 		}
 
 		d_paned.commit_list_view.model = null;

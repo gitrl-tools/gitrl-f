@@ -80,6 +80,24 @@
         Setting that indicates whether to show the history in topological order.
       </description>
     </key>
+    <key name="line-colours" type="s">
+      <choices>
+        <choice value="default"/>
+        <choice value="dictionary-1"/>
+        <choice value="dictionary-2"/>
+        <choice value="dictionary-3"/>
+        <choice value="dictionary-4"/>
+        <choice value="dictionary-5"/>
+        <choice value="dictionary-6"/>
+      </choices>
+      <default>'default'</default>
+      <summary>Line Colours</summary>
+      <description>
+         The colours of the lines and branch labels of the history. The
+         dictionary sets come from A Dictionary of Color Combinations by
+         Sanzo Wada.
+      </description>
+    </key>
     <key name="mainline-head" type="b">
       <default>false</default>
       <summary>Mainline Head</summary>

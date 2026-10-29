@@ -478,6 +478,7 @@ public static int main(string[] args)
 	Gtk.test_init(ref args);
 
 	Test.add_func("/gitrlf/ui/history-activity/a-branch-keeps-its-colour-after-a-checkout-and-a-restart", test_a_branch_keeps_its_colour_after_a_checkout_and_a_restart);
+	Test.add_func("/gitrlf/ui/history-activity/a-branch-keeps-the-colour-it-took-to-part-from-a-close-line", test_a_branch_keeps_the_colour_it_took_to_part_from_a_close_line);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-dragged-by-its-title-keeps-its-place", test_a_column_dragged_by_its_title_keeps_its_place);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-edge-changes-only-its-column", test_a_column_edge_changes_only_its_column);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-narrowed-by-its-title-stays-as-wide-as-its-title", test_a_column_narrowed_by_its_title_stays_as_wide_as_its_title);
@@ -501,6 +502,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/bottom-pane-spans-the-refs-panel-and-the-list", test_bottom_pane_spans_the_refs_panel_and_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/bytes-that-are-not-utf8-show-as-replacements", test_bytes_that_are_not_utf8_show_as_replacements);
 	Test.add_func("/gitrlf/ui/history-activity/changes-rows-colour-their-lines-until-picked", test_changes_rows_colour_their_lines_until_picked);
+	Test.add_func("/gitrlf/ui/history-activity/choosing-a-set-of-line-colours-recolours-the-lines", test_choosing_a_set_of_line_colours_recolours_the_lines);
 	Test.add_func("/gitrlf/ui/history-activity/changes-rows-hide-a-count-with-no-room-in-the-lines-column", test_changes_rows_hide_a_count_with_no_room_in_the_lines_column);
 	Test.add_func("/gitrlf/ui/history-activity/changes-rows-hide-the-parts-of-hidden-columns", test_changes_rows_hide_the_parts_of_hidden_columns);
 	Test.add_func("/gitrlf/ui/history-activity/changes-rows-set-their-label-in-the-subject-column", test_changes_rows_set_their_label_in_the_subject_column);
@@ -1030,6 +1032,49 @@ private static void test_a_branch_keeps_its_colour_after_a_checkout_and_a_restar
 		assert_cmpstr(alpha, CompareOperator.NE, gamma);
 
 		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_branch_keeps_the_colour_it_took_to_part_from_a_close_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "alpha"});
+		repo.commit("alpha one", "alpha");
+		repo.git({"checkout", "--quiet", "-b", "beta", "master"});
+		repo.commit("beta one", "beta");
+		repo.checkout("master");
+
+		var state = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var path = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path)).get_location().get_path();
+		var pairs = new VariantBuilder(new VariantType("a{si}"));
+		var saved = new VariantDict(null);
+
+		pairs.add("{si}", "alpha", 3);
+		pairs.add("{si}", "beta", 3);
+		saved.insert_value(path, pairs.end());
+		state.set_value("branch-colours", saved.end());
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/beta"});
+		var lower = subjects_of(window).index_of("alpha one") > subjects_of(window).index_of("beta one") ? "alpha" : "beta";
+		var parted = line_hex(window, lower + " one");
+
+		assert_cmpstr(line_hex(window, "alpha one"), CompareOperator.NE, line_hex(window, "beta one"));
+
+		window.destroy();
+		window = opened(repo, {"refs/heads/master", "refs/heads/" + lower});
+
+		assert_cmpstr(line_hex(window, lower + " one"), CompareOperator.EQ, parted);
+
+		window.destroy();
+		state.reset("branch-colours");
 		repo.remove();
 	}
 	catch (Error e)
@@ -2108,6 +2153,39 @@ private static void test_changes_rows_show_their_added_and_removed_lines()
 
 		assert_cmpstr(paned.unstaged_added.get_text(), CompareOperator.EQ,
 		              "+3");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_choosing_a_set_of_line_colours_recolours_the_lines()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "beta"});
+		repo.commit("beta one", "beta");
+		repo.checkout("master");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/beta"});
+
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "204a87");
+
+		application().activate_action("line-colours", new Variant.string("dictionary-1"));
+		drain();
+
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "111314");
+
+		application().activate_action("line-colours", new Variant.string("default"));
+		drain();
+
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "204a87");
 
 		window.destroy();
 		repo.remove();
@@ -3240,7 +3318,7 @@ private static void test_no_line_has_the_colours_of_the_stash_or_the_changes()
 
 	var context = new Gtk.TreeView().get_style_context();
 	var lanes = lane_colours();
-	string[] shades = { "butter1", "butter2", "butter3" };
+	string[] shades = { "butter2", "butter3" };
 
 	foreach (var kind in new string[] { "stash", "changes-label" })
 	{
@@ -3790,8 +3868,9 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 		var width = 120;
 		var height = 23;
 		var middle = height / 2;
-		var light = lane_colour(3);
+		var light = lane_colour(4);
 		var blue = lane_colour(0);
+		var sky = lane_colour(2);
 		int darkest;
 		int lightest;
 
@@ -3810,6 +3889,13 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 		assert_true(close_to(fill, rgba_of(blue)));
 		assert_cmpint(lightest, CompareOperator.GT, ink_of(fill) + 48);
 		assert_cmpint(darkest, CompareOperator.GE, ink_of(fill) - 48);
+
+		var on_sky = pill_of(repository, view, "refs/heads/side", sky, width, height);
+		fill = pixel_at(on_sky, right_end(on_sky, middle) - 3, middle);
+		ink_range(on_sky, middle, out darkest, out lightest);
+
+		assert_true(close_to(fill, rgba_of(sky)));
+		assert_cmpint(lightest, CompareOperator.GT, ink_of(fill) + 48);
 
 		var tag = pill_of(repository, view, "refs/tags/v1", light, width, height);
 

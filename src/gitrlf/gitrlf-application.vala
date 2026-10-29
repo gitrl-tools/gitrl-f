@@ -302,6 +302,7 @@ public class Application : Gtk.Application
 		Gtk.Window.set_default_icon_name(Config.APPLICATION_ID);
 
 		add_action_entries(s_action_entries, this);
+		add_action(new Settings(Config.APPLICATION_ID + ".preferences.history").create_action("line-colours"));
 
 		set_accels_for_action("app.quit", {"<Primary>q"});
 		set_accels_for_action("win.reload", {"F5"});

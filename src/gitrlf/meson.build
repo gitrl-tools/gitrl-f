@@ -4,6 +4,7 @@ gitrlf_lib_sources = files(
   'gitrlf-bar-row.vala',
   'gitrlf-bar-spacer.vala',
   'gitrlf-branch-colours.vala',
+  'gitrlf-line-colours.vala',
   'gitrlf-changes.vala',
   'gitrlf-command-line.vala',
   'gitrlf-copy-menu.vala',

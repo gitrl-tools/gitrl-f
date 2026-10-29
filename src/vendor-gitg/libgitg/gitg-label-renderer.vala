@@ -94,14 +94,6 @@ namespace Gitg
 			return style_class;
 		}
 
-		private static double contrast(Color fill, Gdk.RGBA text)
-		{
-			var a = luminance(fill.r, fill.g, fill.b);
-			var b = luminance(text.red, text.green, text.blue);
-
-			return (double.max(a, b) + 0.05) / (double.min(a, b) + 0.05);
-		}
-
 		private static void label_path(Cairo.Context cr,
 		                               double        left,
 		                               double        top,
@@ -135,36 +127,6 @@ namespace Gitg
 			}
 
 			cr.close_path();
-		}
-
-		private static double luminance(double red, double green, double blue)
-		{
-			double[] channels = { red, green, blue };
-			double[] weights = { 0.2126, 0.7152, 0.0722 };
-			var sum = 0.0;
-
-			for (var i = 0; i < channels.length; i++)
-			{
-				var c = channels[i];
-				var linear = c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-
-				sum += weights[i] * linear;
-			}
-
-			return sum;
-		}
-
-		private static void pick_text(Gtk.StyleContext context, Color fill)
-		{
-			var state = context.get_state();
-			var light = context.get_color(state);
-
-			context.add_class("light-fill");
-
-			if (contrast(fill, light) > contrast(fill, context.get_color(state)))
-			{
-				context.remove_class("light-fill");
-			}
 		}
 
 		private static int point_width(Ref r)
@@ -252,9 +214,9 @@ namespace Gitg
 			var tip = point_width(r);
 			var fill = r.parsed_name.rtype == RefType.BRANCH ? lane : null;
 
-			if (fill != null)
+			if (fill != null && fill.dark_text)
 			{
-				pick_text(context, fill);
+				context.add_class("light-fill");
 			}
 
 			var rtl = (widget.get_style_context().get_state() & Gtk.StateFlags.DIR_RTL) != 0;

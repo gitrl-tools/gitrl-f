@@ -59,12 +59,12 @@ private static string[] labels_of(MenuModel menu)
 		for (var j = 0; j < section.get_n_items(); j++)
 		{
 			string label;
-			string action;
+			string? action = null;
 
 			section.get_item_attribute(j, Menu.ATTRIBUTE_LABEL, "s", out label);
 			section.get_item_attribute(j, Menu.ATTRIBUTE_ACTION, "s", out action);
 
-			labels += "%d:%s:%s".printf(i, label, action);
+			labels += "%d:%s:%s".printf(i, label, action ?? "");
 		}
 	}
 
@@ -77,6 +77,7 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/ui/window/about-credits-the-logo-and-links-the-site", test_about_credits_the_logo_and_links_the_site);
 	Test.add_func("/gitrlf/ui/window/header-bar-order", test_header_bar_order);
+	Test.add_func("/gitrlf/ui/window/line-colours-menu", test_line_colours_menu);
 	Test.add_func("/gitrlf/ui/window/menu-entries", test_menu_entries);
 	Test.add_func("/gitrlf/ui/window/shortcuts", test_shortcuts);
 	Test.add_func("/gitrlf/ui/window/size-is-kept", test_size_is_kept);
@@ -168,6 +169,52 @@ private static void test_header_bar_order()
 	repo.remove();
 }
 
+private static void test_line_colours_menu()
+{
+	var window = new Gitrlf.Window(application());
+	var builder = new Gtk.Builder.from_resource("/io/github/li9i/gitrlf/ui/gitrlf-menus.ui");
+	var gear = (MenuModel)builder.get_object("gear-menu");
+	var submenu = gear.get_item_link(2, Menu.LINK_SECTION).get_item_link(0, Menu.LINK_SUBMENU);
+	var choices = new string[0];
+
+	for (var i = 0; i < submenu.get_n_items(); i++)
+	{
+		var section = submenu.get_item_link(i, Menu.LINK_SECTION);
+		string? heading = null;
+
+		submenu.get_item_attribute(i, Menu.ATTRIBUTE_LABEL, "s", out heading);
+
+		for (var j = 0; j < section.get_n_items(); j++)
+		{
+			string label;
+			string action;
+			string target;
+
+			section.get_item_attribute(j, Menu.ATTRIBUTE_LABEL, "s", out label);
+			section.get_item_attribute(j, Menu.ATTRIBUTE_ACTION, "s", out action);
+			section.get_item_attribute(j, Menu.ATTRIBUTE_TARGET, "s", out target);
+
+			choices += "%s:%s:%s:%s".printf(heading ?? "", label, action, target);
+		}
+	}
+
+	assert_cmpstr(string.joinv("|", choices), CompareOperator.EQ,
+	              ":_Default:app.line-colours:default|"
+	              + "A Dictionary of Color Combinations:Set _1:app.line-colours:dictionary-1|"
+	              + "A Dictionary of Color Combinations:Set _2:app.line-colours:dictionary-2|"
+	              + "A Dictionary of Color Combinations:Set _3:app.line-colours:dictionary-3|"
+	              + "A Dictionary of Color Combinations:Set _4:app.line-colours:dictionary-4|"
+	              + "A Dictionary of Color Combinations:Set _5:app.line-colours:dictionary-5|"
+	              + "A Dictionary of Color Combinations:Set _6:app.line-colours:dictionary-6");
+
+	var action = application().lookup_action("line-colours");
+
+	assert_nonnull(action);
+	assert_cmpstr(action.get_state().get_string(), CompareOperator.EQ, "default");
+
+	window.destroy();
+}
+
 private static void test_menu_entries()
 {
 	var window = new Gitrlf.Window(application());
@@ -186,7 +233,7 @@ private static void test_menu_entries()
 
 	assert_nonnull(menu_button);
 	assert_cmpstr(string.joinv("|", labels_of(menu_button.menu_model)), CompareOperator.EQ,
-	              "0:_New Window:app.new-window|1:_Reload:win.reload|2:_Preferences:win.preferences|2:_About gitrl-f:app.about|2:_Quit:app.quit");
+	              "0:_New Window:app.new-window|1:_Reload:win.reload|2:_Line Colours:|3:_Preferences:win.preferences|3:_About gitrl-f:app.about|3:_Quit:app.quit");
 
 	window.destroy();
 }

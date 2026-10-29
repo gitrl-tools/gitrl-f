@@ -28,6 +28,7 @@ unit_tests = [
   'diff-tool',
   'filter-history',
   'history',
+  'line-colours',
   'line-counts',
   'line-history',
   'path-history',
