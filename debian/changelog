@@ -1,3 +1,22 @@
+gitrl-f (0.13.0-1) noble; urgency=medium
+
+  * A right click on a selected commit shows Show diff when the diff pane is
+    closed.
+  * The Subject column takes each change in the width of the list. A
+    narrower window no longer cuts the last columns or shows a horizontal
+    scroll bar.
+  * A double click on the edge of a column title sets the column to its
+    widest row.
+  * Each local branch keeps its colour, also after you check out another
+    branch. origin/x has the colour of x.
+  * A branch label has the colour of its line. Deep blue is only for the
+    line of the checked-out branch.
+  * Two lines that touch never have the same colour. Light teal and pink are
+    new.
+  * The labels of local branches come before the labels of remote branches.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Thu, 29 Oct 2026 14:14:53 +0100
+
 gitrl-f (0.12.0-1) noble; urgency=medium
 
   * The label of the checked-out branch has a pointed left end.
@@ -102,4 +121,3 @@ gitrl-f (0.8.2-1) noble; urgency=medium
     position as the branch labels.
 
  -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 09 Oct 2026 09:31:41 +0200
-

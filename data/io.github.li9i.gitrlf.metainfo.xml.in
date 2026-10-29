@@ -63,6 +63,41 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.13.0" date="2026-10-29">
+      <description>
+        <ul>
+          <li>
+            A right click on a selected commit shows Show diff when the diff
+            pane is closed.
+          </li>
+          <li>
+            The Subject column takes each change in the width of the list. A
+            narrower window no longer cuts the last columns or shows a
+            horizontal scroll bar.
+          </li>
+          <li>
+            A double click on the edge of a column title sets the column to
+            its widest row.
+          </li>
+          <li>
+            Each local branch keeps its colour, also after you check out
+            another branch. origin/x has the colour of x.
+          </li>
+          <li>
+            A branch label has the colour of its line. Deep blue is only for
+            the line of the checked-out branch.
+          </li>
+          <li>
+            Two lines that touch never have the same colour. Light teal and
+            pink are new.
+          </li>
+          <li>
+            The labels of local branches come before the labels of remote
+            branches.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.12.0" date="2026-10-22">
       <description>
         <ul>
