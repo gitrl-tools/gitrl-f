@@ -28,6 +28,7 @@ public class History : Object
 	private Gee.HashMap<Ggit.OId, int> d_index;
 	private Gee.Map<Ggit.OId, int> d_colours;
 	private Gitg.Lanes d_lanes;
+	private Gee.HashSet<Gitg.Color> d_owned;
 	private int[] d_parents;
 	private int[] d_parents_start;
 	private Gee.HashMap<Ggit.OId, Gee.List<Ggit.OId>> d_starts;
@@ -249,7 +250,91 @@ public class History : Object
 
 	private Gitg.Color? colour_of(Ggit.OId id)
 	{
-		return d_colours.has_key(id) ? Gitg.Color.from_index(d_colours[id]) : null;
+		if (!d_colours.has_key(id))
+		{
+			return null;
+		}
+
+		var colour = Gitg.Color.from_index(d_colours[id]);
+		d_owned.add(colour);
+
+		return colour;
+	}
+
+	private void dodge(Gitg.Commit[] rows)
+	{
+		var seen = new Gee.ArrayList<Gitg.Color>();
+		var touching = new Gee.HashMap<Gitg.Color, Gee.HashSet<Gitg.Color>>();
+		var above = new Gitg.Lane[0];
+
+		foreach (var commit in rows)
+		{
+			var lanes = new Gitg.Lane[0];
+			var shown = new bool[0];
+
+			foreach (var lane in commit.get_lanes())
+			{
+				shown += (lane.tag & Gitg.LaneTag.HIDDEN) == 0 && (lane.from != null || lanes.length == commit.mylane);
+				lanes += lane;
+			}
+
+			for (var i = 0; i < lanes.length; i++)
+			{
+				var colour = lanes[i].color;
+
+				if (!touching.has_key(colour))
+				{
+					touching[colour] = new Gee.HashSet<Gitg.Color>();
+					seen.add(colour);
+				}
+
+				if (i > 0 && shown[i] && shown[i - 1])
+				{
+					touch(touching, colour, lanes[i - 1].color);
+				}
+
+				foreach (var from in lanes[i].from)
+				{
+					if (from < above.length)
+					{
+						touch(touching, colour, above[from].color);
+					}
+				}
+			}
+
+			above = lanes;
+		}
+
+		seen.sort((a, b) => (int)(b in d_owned) - (int)(a in d_owned));
+
+		var done = new Gee.HashSet<Gitg.Color>();
+		var size = Gitg.Color.size();
+
+		foreach (var colour in seen)
+		{
+			var taken = new bool[size];
+
+			foreach (var other in touching[colour])
+			{
+				if (other in done)
+				{
+					taken[other.idx] = true;
+				}
+			}
+
+			for (uint step = 0; step < size; step++)
+			{
+				var index = (colour.idx + step) % size;
+
+				if (!taken[index] && (step == 0 || index != Gitg.Color.checked_out))
+				{
+					colour.idx = index;
+					break;
+				}
+			}
+
+			done.add(colour);
+		}
 	}
 
 	public static Error failure(Bytes errors)
@@ -797,6 +882,7 @@ public class History : Object
 		var roots = id_set();
 
 		d_colours = id_map<int>();
+		d_owned = new Gee.HashSet<Gitg.Color>();
 
 		foreach (var tip in tips)
 		{
@@ -871,6 +957,8 @@ public class History : Object
 			}
 		}
 
+		dodge(rows);
+
 		return rows;
 	}
 
@@ -900,6 +988,15 @@ public class History : Object
 		}
 
 		return tips;
+	}
+
+	private static void touch(Gee.Map<Gitg.Color, Gee.Set<Gitg.Color>> touching, Gitg.Color a, Gitg.Color b)
+	{
+		if (a != b)
+		{
+			touching[a].add(b);
+			touching[b].add(a);
+		}
 	}
 
 	private static int[] uncovered(int[] candidates, int[] through, int[] through_start, int[] through_end, int[] marks, ref int stamp)

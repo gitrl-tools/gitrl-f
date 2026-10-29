@@ -36,7 +36,9 @@ public class Color : Object
 
 		{114, 159, 207},
 		{173, 127, 168},
-		{239, 41, 41}
+		{239, 41, 41},
+		{52, 226, 226},
+		{243, 127, 183}
 	};
 
 	private static uint current_index;

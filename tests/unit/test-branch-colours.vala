@@ -169,14 +169,14 @@ private static void test_a_new_branch_takes_the_least_used_colour()
 {
 	var refs = new Gee.ArrayList<Gitrlf.Ref>();
 
-	foreach (var name in new string[] { "a", "b", "c", "d", "e", "f", "g", "h" })
+	foreach (var name in new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" })
 	{
 		refs.add(branch(name));
 	}
 
-	var colours = new Gitrlf.BranchColours(saved_of({"a:1", "b:2", "c:3", "d:4", "e:5", "f:1", "g:3"}), refs);
+	var colours = new Gitrlf.BranchColours(saved_of({"a:1", "b:2", "c:3", "d:4", "e:5", "f:6", "g:7", "h:1", "i:3"}), refs);
 
-	assert_cmpint(colours.of_branch("h"), CompareOperator.EQ, 2);
+	assert_cmpint(colours.of_branch("j"), CompareOperator.EQ, 2);
 }
 
 private static void test_a_remote_branch_shares_the_colour_of_its_local_twin()
@@ -212,14 +212,14 @@ private static void test_no_branch_takes_the_colour_of_the_checked_out_line()
 {
 	var refs = new Gee.ArrayList<Gitrlf.Ref>();
 
-	foreach (var name in new string[] { "a", "b", "c", "d", "e", "f" })
+	foreach (var name in new string[] { "a", "b", "c", "d", "e", "f", "g", "h" })
 	{
 		refs.add(branch(name));
 	}
 
 	var colours = new Gitrlf.BranchColours(saved_of({}), refs);
 
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "a:1,b:2,c:3,d:4,e:5,f:1");
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "a:1,b:2,c:3,d:4,e:5,f:6,g:7,h:1");
 }
 
 private static void test_the_checked_out_line_is_deep_blue()

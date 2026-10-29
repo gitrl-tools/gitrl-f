@@ -304,9 +304,9 @@ Removes two entries from the resource list of `libgitg`: `ui/gitg-authentication
 
 Four changes.
 
-**1. Changes the palette.** `#204a87` is the first colour. `#4e9a06`, `#ce5c00`, `#8ae234`, `#fcaf3e`, `#e9b96e`, `#c4a000`, `#fce94f` and `#888a85` are removed. The other colours keep their order.
+**1. Changes the palette.** `#204a87` is the first colour. `#4e9a06`, `#ce5c00`, `#8ae234`, `#fcaf3e`, `#e9b96e`, `#c4a000`, `#fce94f` and `#888a85` are removed. The other colours keep their order. `#34e2e2` and `#f37fb7` are added at the end.
 
-**Why.** `gitg-label-renderer.patch` fills the label of a local branch with a colour from this palette. `style.css` gives `#4e9a06` to the labels of remote branches, `#ce5c00` to the labels of tags and `#c4a000` to the label of the stash. `gitrlf-style.css` gives `#888a85` to the label of the uncommitted changes. With these colours in the palette, a branch label could have the colour of a label of another kind. `#8ae234`, `#fcaf3e`, `#e9b96e` and `#fce94f` are lighter shades of these colours, and were too near them. `#204a87` is the colour that gitg gives to all branch labels.
+**Why.** `gitg-label-renderer.patch` fills the label of a local branch with a colour from this palette. `style.css` gives `#4e9a06` to the labels of remote branches, `#ce5c00` to the labels of tags and `#c4a000` to the label of the stash. `gitrlf-style.css` gives `#888a85` to the label of the uncommitted changes. With these colours in the palette, a branch label could have the colour of a label of another kind. `#8ae234`, `#fcaf3e`, `#e9b96e` and `#fce94f` are lighter shades of these colours, and were too near them. `#204a87` is the colour that gitg gives to all branch labels. `#34e2e2` and `#f37fb7` are not near the colours of these kinds, and with them, two lines next to each other have the same colour less frequently. They are at the end, so that the colour that is saved for each branch keeps its index.
 
 **2. Adds `Color.from_index()`**, which makes the colour at an index. It is the function of gitrl-z.
 
@@ -320,7 +320,7 @@ Four changes.
 
 **Why.** The line of the checked-out branch, or of a detached HEAD, is the only deep blue line. Thus it is easy to find, also where it is not the leftmost line. A line that no branch starts takes its colour from the turns of `next()`, so the turns must not give the deep blue.
 
-**Cost.** The lanes do not have the colours of gitg, and the palette has 6 colours, not 14. The branches get only 5 of them. With more than 5 local branches, two branches have the same colour. The pixel suite finds a difference at each dot and line.
+**Cost.** The lanes do not have the colours of gitg, and the palette has 8 colours, not 14. The branches get only 7 of them. With more than 7 local branches, two branches have the same colour. The pixel suite finds a difference at each dot and line.
 
 ## gitg-cell-renderer-lanes.patch
 

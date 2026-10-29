@@ -38,9 +38,18 @@ private static uint colour_of(Gitg.Commit[] rows, string subject)
 	assert_not_reached();
 }
 
-private static Gitg.Commit[] coloured(Opened opened, string[] shorts)
+private static Gitg.Commit[] coloured(Opened opened, string[] shorts, string[] saved = {})
 {
-	var colours = new Gitrlf.BranchColours(new Gee.HashMap<string, int>(), opened.refs);
+	var known = new Gee.HashMap<string, int>();
+
+	foreach (var pair in saved)
+	{
+		var parts = pair.split(":");
+
+		known[parts[0]] = int.parse(parts[1]);
+	}
+
+	var colours = new Gitrlf.BranchColours(known, opened.refs);
 	var ticks = new Gee.HashSet<string>();
 
 	foreach (var reference in opened.refs)
@@ -116,11 +125,15 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gitrlf/history/a-branch-line-keeps-its-colour-over-a-line-with-no-branch", test_a_branch_line_keeps_its_colour_over_a_line_with_no_branch);
 	Test.add_func("/gitrlf/history/a-branch-line-keeps-its-colour-until-it-is-checked-out", test_a_branch_line_keeps_its_colour_until_it_is_checked_out);
+	Test.add_func("/gitrlf/history/a-line-does-not-share-a-colour-with-a-line-it-joins", test_a_line_does_not_share_a_colour_with_a_line_it_joins);
+	Test.add_func("/gitrlf/history/a-line-does-not-share-a-colour-with-the-line-beside-it", test_a_line_does_not_share_a_colour_with_the_line_beside_it);
 	Test.add_func("/gitrlf/history/a-line-that-no-branch-names-is-never-deep-blue", test_a_line_that_no_branch_names_is_never_deep_blue);
 	Test.add_func("/gitrlf/history/commits-a-ticked-branch-shares-with-an-unticked-one-are-drawn", test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn);
 	Test.add_func("/gitrlf/history/count-is-rows-of-commits", test_count_is_rows_of_commits);
 	Test.add_func("/gitrlf/history/graph-lines-join-from-row-to-row", test_graph_lines_join_from_row_to_row);
+	Test.add_func("/gitrlf/history/lines-that-slide-side-by-side-do-not-share-a-colour", test_lines_that_slide_side_by_side_do_not_share_a_colour);
 	Test.add_func("/gitrlf/history/lanes-are-gitgs", test_lanes_are_gitgs);
 	Test.add_func("/gitrlf/history/long-history-folds-a-lane", test_long_history_folds_a_lane);
 	Test.add_func("/gitrlf/history/mainline-is-the-checked-out-branch-only", test_mainline_is_the_checked_out_branch_only);
@@ -159,6 +172,35 @@ private static string subjects(Gitg.Commit[] rows)
 	return string.joinv(",", parts);
 }
 
+private static void test_a_branch_line_keeps_its_colour_over_a_line_with_no_branch()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "side"});
+		repo.commit("side one", "side");
+		repo.checkout("master");
+		repo.commit("master two");
+		repo.git({"checkout", "--quiet", "-b", "beta", "master~1"});
+		repo.commit("beta one", "beta");
+		repo.checkout("master");
+		repo.merge("side");
+		repo.delete_branch("side");
+
+		var rows = coloured(open(repo.path), {"master", "beta"}, {"beta:1"});
+
+		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 1);
+		assert_cmpuint(colour_of(rows, "side one"), CompareOperator.NE, 1);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_branch_line_keeps_its_colour_until_it_is_checked_out()
 {
 	try
@@ -183,6 +225,64 @@ private static void test_a_branch_line_keeps_its_colour_until_it_is_checked_out(
 		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 1);
 		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 0);
 		assert_cmpuint(colour_of(rows, "base"), CompareOperator.EQ, 0);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_does_not_share_a_colour_with_a_line_it_joins()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("zero");
+		repo.commit("one");
+		repo.git({"checkout", "--quiet", "-b", "alpha"});
+		repo.commit("alpha one", "alpha");
+		repo.commit("alpha two", "alpha");
+		repo.git({"checkout", "--quiet", "-b", "gamma", "master~1"});
+		repo.commit("gamma one", "gamma");
+		repo.git({"checkout", "--quiet", "-b", "beta", "alpha~1"});
+		repo.commit("beta one", "beta");
+		repo.checkout("master");
+
+		var rows = coloured(open(repo.path), {"master", "alpha", "beta", "gamma"}, {"alpha:3", "beta:3", "gamma:5"});
+
+		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 3);
+		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 5);
+		assert_cmpuint(colour_of(rows, "alpha two"), CompareOperator.NE, 3);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_does_not_share_a_colour_with_the_line_beside_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("zero");
+		repo.commit("one");
+		repo.commit("two");
+		repo.git({"checkout", "--quiet", "-b", "alpha", "master~2"});
+		repo.commit("alpha one", "alpha");
+		repo.git({"checkout", "--quiet", "-b", "beta", "master~1"});
+		repo.commit("beta one", "beta");
+		repo.checkout("master");
+
+		var rows = coloured(open(repo.path), {"master", "alpha", "beta"}, {"alpha:3", "beta:3"});
+
+		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 3);
+		assert_cmpuint(colour_of(rows, "alpha one"), CompareOperator.NE, 3);
+		assert_cmpuint(colour_of(rows, "alpha one"), CompareOperator.NE, 0);
 
 		repo.remove();
 	}
@@ -341,6 +441,37 @@ private static void test_lanes_are_gitgs()
 
 			assert_cmpstr(ours, CompareOperator.EQ, gitgs);
 		}
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_that_slide_side_by_side_do_not_share_a_colour()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("zero");
+		repo.commit("one");
+		repo.commit("two");
+		repo.commit("three");
+		repo.git({"checkout", "--quiet", "-b", "gamma", "master~2"});
+		repo.commit("gamma one", "gamma");
+		repo.git({"checkout", "--quiet", "-b", "beta", "master~1"});
+		repo.commit("beta one", "beta");
+		repo.git({"checkout", "--quiet", "-b", "alpha", "master~3"});
+		repo.commit("alpha one", "alpha");
+		repo.checkout("master");
+
+		var rows = coloured(open(repo.path), {"master", "alpha", "beta", "gamma"}, {"alpha:3", "beta:5", "gamma:3"});
+
+		assert_cmpuint(colour_of(rows, "alpha one"), CompareOperator.EQ, 3);
+		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 5);
+		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.NE, 3);
 
 		repo.remove();
 	}
