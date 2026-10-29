@@ -1875,6 +1875,19 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
+	private static int label_rank(Gitg.Ref label)
+	{
+		switch (label.parsed_name.rtype)
+		{
+		case Gitg.RefType.BRANCH:
+			return 0;
+		case Gitg.RefType.REMOTE:
+			return 1;
+		default:
+			return 2;
+		}
+	}
+
 	public string[] labels_for(Gitg.Commit commit)
 	{
 		var names = new string[0];
@@ -3637,12 +3650,21 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		}
 
+		var refs = new SList<Gitg.Ref>();
+
 		foreach (var label in d_repository.refs_for_id(commit.get_id()))
 		{
 			if (d_ticks.contains(label.get_name()))
 			{
-				labels.append(label);
+				refs.append(label);
 			}
+		}
+
+		refs.sort((a, b) => label_rank(a) - label_rank(b));
+
+		foreach (var label in refs)
+		{
+			labels.append(label);
 		}
 
 		return labels;

@@ -535,6 +535,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-sets-the-two-numbers-either-side-of-one-line", test_lines_column_sets_the_two_numbers_either_side_of_one_line);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-added-in-green-and-removed-in-red", test_lines_column_shows_added_in_green_and_removed_in_red);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
+	Test.add_func("/gitrlf/ui/history-activity/local-branch-labels-come-before-remote-ones", test_local_branch_labels_come_before_remote_ones);
 	Test.add_func("/gitrlf/ui/history-activity/no-button-covers-the-full-diff", test_no_button_covers_the_full_diff);
 	Test.add_func("/gitrlf/ui/history-activity/no-line-has-the-colours-of-a-remote-or-a-tag", test_no_line_has_the_colours_of_a_remote_or_a_tag);
 	Test.add_func("/gitrlf/ui/history-activity/no-line-has-the-colours-of-the-stash-or-the-changes", test_no_line_has_the_colours_of_the_stash_or_the_changes);
@@ -3141,6 +3142,31 @@ private static void test_lines_column_shows_the_added_and_removed_lines()
 		assert_true(view.model.get_iter_first(out iter));
 
 		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+2,-1");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_local_branch_labels_come_before_remote_ones()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("side");
+		repo.git({"tag", "v1"});
+		repo.git({"pack-refs", "--all"});
+		repo.git({"update-ref", "refs/remotes/origin/side", "HEAD"});
+		repo.git({"update-ref", "refs/remotes/origin/master", "HEAD"});
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/side", "refs/remotes/origin/master", "refs/remotes/origin/side", "refs/tags/v1"});
+
+		assert_cmpstr(labels(window.history, 0), CompareOperator.EQ, "master,side,origin/master,origin/side,v1");
 
 		window.destroy();
 		repo.remove();
