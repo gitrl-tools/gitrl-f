@@ -1,16 +1,14 @@
 --- a/libgitg/gitg-label-renderer.vala
 +++ b/libgitg/gitg-label-renderer.vala
-@@ -23,6 +23,9 @@
+@@ -23,6 +23,7 @@
  	{
  		private const int margin = 2;
  		private const int padding = 6;
 +		private const int point = 8;
-+
-+		public delegate Color? ColorFunc(Ref r);
  
  		private static string label_text(Ref r)
  		{
-@@ -40,7 +43,7 @@
+@@ -40,7 +41,7 @@
  			layout.set_markup(smaller, -1);
  			layout.get_pixel_size(out w, null);
  
@@ -19,7 +17,7 @@
  		}
  
  		public static int width(Gtk.Widget             widget,
-@@ -93,6 +96,132 @@
+@@ -93,6 +94,132 @@
  			return style_class;
  		}
  
@@ -152,22 +150,22 @@
  		private static int render_label(Gtk.Widget    widget,
  		                                Cairo.Context cr,
  		                                Pango.Layout  layout,
-@@ -100,7 +229,8 @@
+@@ -100,7 +227,8 @@
  		                                double        x,
  		                                double        y,
  		                                int           height,
 -		                                bool          use_state)
 +		                                bool          use_state,
-+		                                ColorFunc?    color_of = null)
++		                                Color?        lane = null)
  		{
  			var context = widget.get_style_context();
  			var smaller = label_text(r);
-@@ -121,39 +251,62 @@
+@@ -121,39 +249,62 @@
  				context.add_class(style_class);
  			}
  
 +			var tip = point_width(r);
-+			var fill = r.parsed_name.rtype == RefType.BRANCH && color_of != null ? color_of(r) : null;
++			var fill = r.parsed_name.rtype == RefType.BRANCH ? lane : null;
 +
 +			if (fill != null)
 +			{
@@ -236,17 +234,17 @@
  		                        SList<Ref>            labels,
 -		                        Gdk.Rectangle         area)
 +		                        Gdk.Rectangle         area,
-+		                        ColorFunc?            color_of = null)
++		                        Color?                lane = null)
  		{
  			double pos;
  
-@@ -185,7 +338,8 @@
+@@ -185,7 +336,8 @@
  				                     (int)pos,
  				                     area.y,
  				                     area.height,
 -				                     true);
 +				                     true,
-+				                     color_of);
++				                     lane);
  
  				var o = w + padding * 2 + margin;
  				pos += rtl ? -o : o;

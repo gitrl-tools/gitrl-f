@@ -116,7 +116,8 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
-	Test.add_func("/gitrlf/history/a-branch-line-keeps-its-colour-whichever-branch-is-checked-out", test_a_branch_line_keeps_its_colour_whichever_branch_is_checked_out);
+	Test.add_func("/gitrlf/history/a-branch-line-keeps-its-colour-until-it-is-checked-out", test_a_branch_line_keeps_its_colour_until_it_is_checked_out);
+	Test.add_func("/gitrlf/history/a-line-that-no-branch-names-is-never-deep-blue", test_a_line_that_no_branch_names_is_never_deep_blue);
 	Test.add_func("/gitrlf/history/commits-a-ticked-branch-shares-with-an-unticked-one-are-drawn", test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn);
 	Test.add_func("/gitrlf/history/count-is-rows-of-commits", test_count_is_rows_of_commits);
 	Test.add_func("/gitrlf/history/graph-lines-join-from-row-to-row", test_graph_lines_join_from_row_to_row);
@@ -128,6 +129,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/history/order-is-git-logs", test_order_is_git_logs);
 	Test.add_func("/gitrlf/history/refs-that-hold-a-commit-are-those-of-git", test_refs_that_hold_a_commit_are_those_of_git);
 	Test.add_func("/gitrlf/history/shallow-boundary-ends-the-history", test_shallow_boundary_ends_the_history);
+	Test.add_func("/gitrlf/history/the-line-of-a-detached-head-is-deep-blue", test_the_line_of_a_detached_head_is_deep_blue);
 	Test.add_func("/gitrlf/history/ticking-does-not-read-the-repository-again", test_ticking_does_not_read_the_repository_again);
 	Test.add_func("/gitrlf/history/topological-order-keeps-children-above-parents", test_topological_order_keeps_children_above_parents);
 
@@ -157,7 +159,7 @@ private static string subjects(Gitg.Commit[] rows)
 	return string.joinv(",", parts);
 }
 
-private static void test_a_branch_line_keeps_its_colour_whichever_branch_is_checked_out()
+private static void test_a_branch_line_keeps_its_colour_until_it_is_checked_out()
 {
 	try
 	{
@@ -168,16 +170,45 @@ private static void test_a_branch_line_keeps_its_colour_whichever_branch_is_chec
 		repo.git({"checkout", "--quiet", "-b", "gamma", "master"});
 		repo.commit("gamma one", "gamma");
 
-		foreach (var name in new string[] { "beta", "gamma" })
-		{
-			repo.checkout(name);
+		repo.checkout("beta");
+		var rows = coloured(open(repo.path), {"master", "beta", "gamma"});
 
-			var rows = coloured(open(repo.path), {"master", "beta", "gamma"});
+		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 0);
+		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 2);
+		assert_cmpuint(colour_of(rows, "base"), CompareOperator.EQ, 0);
 
-			assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 0);
-			assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 1);
-			assert_cmpuint(colour_of(rows, "base"), CompareOperator.EQ, colour_of(rows, name + " one"));
-		}
+		repo.checkout("gamma");
+		rows = coloured(open(repo.path), {"master", "beta", "gamma"});
+
+		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 1);
+		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 0);
+		assert_cmpuint(colour_of(rows, "base"), CompareOperator.EQ, 0);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_that_no_branch_names_is_never_deep_blue()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "side"});
+		repo.commit("side one", "side");
+		repo.checkout("master");
+		repo.commit("master two");
+		repo.merge("side");
+		repo.delete_branch("side");
+
+		var rows = coloured(open(repo.path), {"master"});
+
+		assert_cmpuint(colour_of(rows, "master two"), CompareOperator.EQ, 0);
+		assert_cmpuint(colour_of(rows, "side one"), CompareOperator.NE, 0);
 
 		repo.remove();
 	}
@@ -545,6 +576,27 @@ private static void test_shallow_boundary_ends_the_history()
 		assert_cmpstr(subjects(rows), CompareOperator.EQ, "two");
 		assert_cmpint(opened.history.size, CompareOperator.EQ, 1);
 		assert_cmpint(opened.history.parents_of(rows[0]).length, CompareOperator.EQ, 0);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_line_of_a_detached_head_is_deep_blue()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "beta"});
+		repo.commit("beta one", "beta");
+		repo.git({"checkout", "--quiet", "--detach"});
+		repo.delete_branch("beta");
+
+		assert_cmpuint(colour_of(coloured(open(repo.path), {"master", "HEAD"}), "beta one"), CompareOperator.EQ, 0);
 
 		repo.remove();
 	}

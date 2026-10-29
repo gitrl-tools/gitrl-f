@@ -278,7 +278,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned = new HistoryPaned();
 		d_paned.commit_list_view.model = d_model;
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
-		d_paned.renderer_subject.set_color_func(colour_of_label);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 
@@ -1303,11 +1302,6 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		saved.insert_value(path, colours.end());
 		d_state.set_value("branch-colours", saved.end());
-	}
-
-	private Gitg.Color? colour_of_label(Gitg.Ref label)
-	{
-		return Gitg.Color.from_index(d_colours.of_branch(label.parsed_name.shortname));
 	}
 
 	private string[]? combined_paths(Gitg.Commit[] picked)

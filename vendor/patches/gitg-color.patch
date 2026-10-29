@@ -1,6 +1,6 @@
 --- a/libgitg/gitg-color.vala
 +++ b/libgitg/gitg-color.vala
-@@ -30,20 +30,12 @@
+@@ -30,25 +30,19 @@
  	}
  
  	private const Rgb[] palette = {
@@ -21,7 +21,26 @@
  		{239, 41, 41}
  	};
  
-@@ -98,6 +90,19 @@
+ 	private static uint current_index;
+ 
++	public const uint checked_out = 0;
++
+ 	public uint idx = 0;
+ 
+ 	public static void reset()
+@@ -80,6 +74,11 @@
+ 
+ 	private static uint inc_index()
+ 	{
++		if (current_index == checked_out)
++		{
++			current_index++;
++		}
++
+ 		uint next = current_index++;
+ 
+ 		if (current_index == palette.length)
+@@ -98,6 +97,19 @@
  		return ret;
  	}
  

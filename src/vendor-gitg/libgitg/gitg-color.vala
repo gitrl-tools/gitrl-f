@@ -41,6 +41,8 @@ public class Color : Object
 
 	private static uint current_index;
 
+	public const uint checked_out = 0;
+
 	public uint idx = 0;
 
 	public static void reset()
@@ -72,6 +74,11 @@ public class Color : Object
 
 	private static uint inc_index()
 	{
+		if (current_index == checked_out)
+		{
+			current_index++;
+		}
+
 		uint next = current_index++;
 
 		if (current_index == palette.length)

@@ -1,14 +1,6 @@
 --- a/libgitg/gitg-cell-renderer-lanes.vala
 +++ b/libgitg/gitg-cell-renderer-lanes.vala
-@@ -28,6 +28,7 @@
- 		public unowned SList<Ref> labels { get; set; }
- 
- 		private int d_last_height;
-+		private unowned LabelRenderer.ColorFunc? d_color_func;
- 
- 		private delegate double DirectionFunc(double i);
- 
-@@ -74,6 +75,8 @@
+@@ -74,6 +74,8 @@
  			{
  				minimum_width = w;
  			}
@@ -17,24 +9,12 @@
  		}
  
  		private void draw_arrow(Cairo.Context context,
-@@ -240,7 +243,7 @@
+@@ -240,7 +242,7 @@
  
  			context.save();
  			context.translate(offset, 0);
 -			LabelRenderer.draw(widget, font_desc, context, labels, area);
-+			LabelRenderer.draw(widget, font_desc, context, labels, area, d_color_func);
++			LabelRenderer.draw(widget, font_desc, context, labels, area, commit.lane.color);
  			context.restore();
  		}
- 
-@@ -336,6 +339,11 @@
- 			                                    x - offset,
- 			                                    out hot_x);
- 		}
-+
-+		public void set_color_func(LabelRenderer.ColorFunc? func)
-+		{
-+			d_color_func = func;
-+		}
- 	}
- }
  
