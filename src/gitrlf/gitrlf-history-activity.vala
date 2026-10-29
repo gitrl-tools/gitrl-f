@@ -39,6 +39,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private Gtk.CheckButton[] d_choice_boxes;
 	private Gtk.RadioButton[] d_choice_buttons;
 	private bool d_choosing;
+	private BranchColours? d_colours;
 	private Ggit.Diff? d_combined;
 	private string? d_combined_key;
 	private Gitg.Commit[] d_combined_picks;
@@ -277,6 +278,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned = new HistoryPaned();
 		d_paned.commit_list_view.model = d_model;
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
+		d_paned.renderer_subject.set_color_func(colour_of_label);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 
@@ -1270,6 +1272,42 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return parts.length == 2 ? _("%s and %s").printf(parts[0], parts[1]) : parts[0];
+	}
+
+	private void colour_branches()
+	{
+		var path = d_repository.get_location().get_path();
+		var saved = new VariantDict(d_state.get_value("branch-colours"));
+		var stored = saved.lookup_value(path, new VariantType("a{si}"));
+		var known = new Gee.HashMap<string, int>();
+		var colours = new VariantBuilder(new VariantType("a{si}"));
+
+		if (stored != null)
+		{
+			var iter = stored.iterator();
+			string name;
+			int index;
+
+			while (iter.next("{si}", out name, out index))
+			{
+				known[name] = index;
+			}
+		}
+
+		d_colours = new BranchColours(known, d_refs);
+
+		foreach (var entry in d_colours.saved.entries)
+		{
+			colours.add("{si}", entry.key, entry.value);
+		}
+
+		saved.insert_value(path, colours.end());
+		d_state.set_value("branch-colours", saved.end());
+	}
+
+	private Gitg.Color? colour_of_label(Gitg.Ref label)
+	{
+		return Gitg.Color.from_index(d_colours.of_branch(label.parsed_name.shortname));
 	}
 
 	private string[]? combined_paths(Gitg.Commit[] picked)
@@ -2272,6 +2310,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		Languages.warm(repository);
 		d_refs = refs;
 		d_ticks = resolved;
+		colour_branches();
 
 		try
 		{
@@ -2621,6 +2660,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_refs = refs;
 		d_ticks = Ticks.carry(d_ticks, previous, refs);
+		colour_branches();
 		d_full = history;
 		d_all = null;
 
@@ -3300,7 +3340,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				}
 			}
 
-			rows = history.tick(tips, History.mainline(d_repository, d_settings.get_boolean("mainline-head")));
+			rows = history.tick(tips, History.mainline(d_repository, d_settings.get_boolean("mainline-head")), d_colours.of_tips(d_refs, d_ticks));
 		}
 
 		d_paned.commit_list_view.model = null;

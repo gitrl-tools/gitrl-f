@@ -25,6 +25,35 @@ private class Opened : Object
 	public Gitg.Repository repository;
 }
 
+private static uint colour_of(Gitg.Commit[] rows, string subject)
+{
+	foreach (var commit in rows)
+	{
+		if (commit.get_subject() == subject)
+		{
+			return commit.lane.color.idx;
+		}
+	}
+
+	assert_not_reached();
+}
+
+private static Gitg.Commit[] coloured(Opened opened, string[] shorts)
+{
+	var colours = new Gitrlf.BranchColours(new Gee.HashMap<string, int>(), opened.refs);
+	var ticks = new Gee.HashSet<string>();
+
+	foreach (var reference in opened.refs)
+	{
+		if (reference.short_name in shorts)
+		{
+			ticks.add(reference.name);
+		}
+	}
+
+	return opened.history.tick(tips(opened, shorts), Gitrlf.History.mainline(opened.repository, true), colours.of_tips(opened.refs, ticks));
+}
+
 private static Gitg.Commit[] gitg_rows(Gitg.Repository repository, Ggit.OId[] include, Ggit.OId[] permanent, Ggit.SortMode mode)
 {
 	var model = new Gitg.CommitModel(repository);
@@ -87,12 +116,13 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gitrlf/history/a-branch-line-keeps-its-colour-whichever-branch-is-checked-out", test_a_branch_line_keeps_its_colour_whichever_branch_is_checked_out);
 	Test.add_func("/gitrlf/history/commits-a-ticked-branch-shares-with-an-unticked-one-are-drawn", test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn);
 	Test.add_func("/gitrlf/history/count-is-rows-of-commits", test_count_is_rows_of_commits);
 	Test.add_func("/gitrlf/history/graph-lines-join-from-row-to-row", test_graph_lines_join_from_row_to_row);
 	Test.add_func("/gitrlf/history/lanes-are-gitgs", test_lanes_are_gitgs);
 	Test.add_func("/gitrlf/history/long-history-folds-a-lane", test_long_history_folds_a_lane);
-	Test.add_func("/gitrlf/history/mainline-is-gitgs", test_mainline_is_gitgs);
+	Test.add_func("/gitrlf/history/mainline-is-the-checked-out-branch-only", test_mainline_is_the_checked_out_branch_only);
 	Test.add_func("/gitrlf/history/merge-sends-a-line-to-each-parent", test_merge_sends_a_line_to_each_parent);
 	Test.add_func("/gitrlf/history/only-commits-that-a-ticked-ref-reaches-are-drawn", test_only_commits_that_a_ticked_ref_reaches_are_drawn);
 	Test.add_func("/gitrlf/history/order-is-git-logs", test_order_is_git_logs);
@@ -125,6 +155,36 @@ private static string subjects(Gitg.Commit[] rows)
 	}
 
 	return string.joinv(",", parts);
+}
+
+private static void test_a_branch_line_keeps_its_colour_whichever_branch_is_checked_out()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "beta"});
+		repo.commit("beta one", "beta");
+		repo.git({"checkout", "--quiet", "-b", "gamma", "master"});
+		repo.commit("gamma one", "gamma");
+
+		foreach (var name in new string[] { "beta", "gamma" })
+		{
+			repo.checkout(name);
+
+			var rows = coloured(open(repo.path), {"master", "beta", "gamma"});
+
+			assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 0);
+			assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 1);
+			assert_cmpuint(colour_of(rows, "base"), CompareOperator.EQ, colour_of(rows, name + " one"));
+		}
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn()
@@ -306,7 +366,7 @@ private static void test_long_history_folds_a_lane()
 	}
 }
 
-private static void test_mainline_is_gitgs()
+private static void test_mainline_is_the_checked_out_branch_only()
 {
 	try
 	{
@@ -317,19 +377,16 @@ private static void test_mainline_is_gitgs()
 		var opened = open(repo.path);
 		var head = repo.git({"rev-parse", "HEAD"}).strip();
 		var master = repo.git({"rev-parse", "master"}).strip();
-		var fix = repo.git({"rev-parse", "fix/stamp"}).strip();
 
 		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, head);
 		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, false)), CompareOperator.EQ, "");
 
 		repo.git({"config", "init.defaultBranch", "master"});
-		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, master + "," + head);
-
-		repo.git({"config", "gitg.mainline", "refs/heads/fix/stamp,refs/heads/nope,refs/heads/master"});
-		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, fix + "," + master + "," + head);
+		repo.git({"config", "gitg.mainline", "refs/heads/fix/stamp,refs/heads/master"});
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, head);
 
 		repo.checkout("master");
-		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, fix + "," + master);
+		assert_cmpstr(ids(Gitrlf.History.mainline(opened.repository, true)), CompareOperator.EQ, master);
 
 		repo.remove();
 	}

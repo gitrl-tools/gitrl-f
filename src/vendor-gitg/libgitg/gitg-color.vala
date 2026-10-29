@@ -31,13 +31,10 @@ public class Color : Object
 
 	private const Rgb[] palette = {
 		{32, 74, 135},
-		{196, 160, 0},
 		{108, 53, 102},
 		{164, 0, 0},
 
 		{114, 159, 207},
-		{252, 233, 79},
-		{136, 138, 133},
 		{173, 127, 168},
 		{239, 41, 41}
 	};
@@ -91,6 +88,19 @@ public class Color : Object
 		ret.idx = inc_index();
 
 		return ret;
+	}
+
+	public static Color from_index(uint index)
+	{
+		Color ret = new Color();
+		ret.idx = index % palette.length;
+
+		return ret;
+	}
+
+	public static uint size()
+	{
+		return palette.length;
 	}
 
 	public Color next_index()

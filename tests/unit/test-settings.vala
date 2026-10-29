@@ -45,6 +45,7 @@ private const string[] KEYS = {
 	"preferences.interface|style-scheme|'classic'",
 	"preferences.interface|use-default-font|true",
 	"preferences.interface|use-gravatar|false",
+	"state.history|branch-colours|{}",
 	"state.history|column-order|[]",
 	"state.history|column-widths|{}",
 	"state.history|hidden-columns|[]",

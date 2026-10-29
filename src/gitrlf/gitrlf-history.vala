@@ -26,6 +26,7 @@ public class History : Object
 {
 	private Gitg.Commit[] d_commits;
 	private Gee.HashMap<Ggit.OId, int> d_index;
+	private Gee.Map<Ggit.OId, int> d_colours;
 	private Gitg.Lanes d_lanes;
 	private int[] d_parents;
 	private int[] d_parents_start;
@@ -69,6 +70,7 @@ public class History : Object
 
 		index_parents(parents, counts);
 		d_lanes = new Gitg.Lanes();
+		d_lanes.set_color_func(colour_of);
 	}
 
 	public History.filtered(History history, Gee.Set<Ggit.OId> matches, Gee.List<Ref> refs)
@@ -183,6 +185,7 @@ public class History : Object
 		}
 
 		d_lanes = new Gitg.Lanes();
+		d_lanes.set_color_func(colour_of);
 		d_lanes.set_parents_func(parents_of);
 	}
 
@@ -242,6 +245,11 @@ public class History : Object
 		d_commits = new Gitg.Commit[0];
 		d_index = id_map<int>();
 		d_starts = id_map<Gee.List<Ggit.OId>>();
+	}
+
+	private Gitg.Color? colour_of(Ggit.OId id)
+	{
+		return d_colours.has_key(id) ? Gitg.Color.from_index(d_colours[id]) : null;
 	}
 
 	public static Error failure(Bytes errors)
@@ -466,6 +474,7 @@ public class History : Object
 		}
 
 		d_lanes = new Gitg.Lanes();
+		d_lanes.set_color_func(colour_of);
 		d_lanes.set_parents_func(parents_of);
 	}
 
@@ -489,36 +498,6 @@ public class History : Object
 	public static Ggit.OId[] mainline(Gitg.Repository repository, bool with_head)
 	{
 		var ids = new Ggit.OId[0];
-		string[] names = {};
-
-		try
-		{
-			var config = repository.get_config().snapshot();
-
-			try
-			{
-				names = config.get_string("gitg.mainline").split(",");
-			}
-			catch
-			{
-				names = { "refs/heads/" + config.get_string("init.defaultBranch") };
-			}
-		}
-		catch {}
-
-		foreach (var name in names)
-		{
-			try
-			{
-				var id = target_of(repository.lookup_reference(name));
-
-				if (id != null)
-				{
-					ids += id;
-				}
-			}
-			catch {}
-		}
 
 		if (with_head)
 		{
@@ -534,18 +513,7 @@ public class History : Object
 			catch {}
 		}
 
-		var seen = id_set();
-		var ret = new Ggit.OId[0];
-
-		foreach (var id in ids)
-		{
-			if (seen.add(id))
-			{
-				ret += id;
-			}
-		}
-
-		return ret;
+		return ids;
 	}
 
 	private static string[] missing(string[] records, string[] tips)
@@ -822,11 +790,13 @@ public class History : Object
 		return resolved.get_target();
 	}
 
-	public Gitg.Commit[] tick(Ggit.OId[] tips, Ggit.OId[] mainline)
+	public Gitg.Commit[] tick(Ggit.OId[] tips, Ggit.OId[] mainline, Gee.Map<Ggit.OId, int>? colours = null)
 	{
 		var reached = new bool[d_commits.length];
 		var starts = new int[0];
 		var roots = id_set();
+
+		d_colours = id_map<int>();
 
 		foreach (var tip in tips)
 		{
@@ -834,6 +804,11 @@ public class History : Object
 			{
 				starts += d_index[id];
 				roots.add(id);
+
+				if (colours != null && colours.has_key(tip))
+				{
+					d_colours[id] = colours[tip];
+				}
 			}
 		}
 

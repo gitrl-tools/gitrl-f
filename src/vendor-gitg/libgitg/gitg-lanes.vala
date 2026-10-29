@@ -129,6 +129,25 @@ public class Lanes : Object
 		reset();
 	}
 
+	public delegate Color? ColorFunc(Ggit.OId id);
+
+	private unowned ColorFunc? d_color_func;
+
+	public void set_color_func(ColorFunc? func)
+	{
+		d_color_func = func;
+	}
+
+	private Color? color_of(Ggit.OId id)
+	{
+		if (d_color_func != null)
+		{
+			return d_color_func(id);
+		}
+
+		return null;
+	}
+
 	public delegate Ggit.OId[] ParentsFunc(Commit commit);
 
 	private unowned ParentsFunc? d_parents_func;
@@ -169,7 +188,7 @@ public class Lanes : Object
 		{
 			foreach (var r in reserved)
 			{
-				var ct = new LaneContainer(null, r);
+				var ct = new LaneContainer.with_color(null, r, color_of(r));
 				ct.inactive = -1;
 				ct.is_hidden = true;
 
@@ -210,7 +229,7 @@ public class Lanes : Object
 		if (mylane == null)
 		{
 			// there is no lane reserved for this commit, add a new lane
-			mylane = new LaneContainer(myoid, null);
+			mylane = new LaneContainer.with_color(myoid, null, color_of(myoid));
 
 			d_lanes.add(mylane);
 			nextpos = d_lanes.length - 1;

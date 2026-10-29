@@ -21,6 +21,7 @@ test_env_base = {
 }
 
 unit_tests = [
+  'branch-colours',
   'changes',
   'cli',
   'diff-find',
