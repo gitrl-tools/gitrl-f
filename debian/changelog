@@ -1,3 +1,22 @@
+gitrl-f (0.14.0-1) noble; urgency=medium
+
+  * A checkout changes no colour and moves no line. Deep blue is a usual
+    branch colour. Only the pointed end of its label shows the checked-out
+    branch.
+  * "Preserve mainline for currently checked out branch" is off by default.
+  * Two lines of one colour are never side by side, joined, or with one line
+    between them. When the line of a branch must change its colour, the branch
+    keeps the new colour.
+  * A branch and its remote branch keep one colour, also when their lines are
+    side by side.
+  * The default colours are new: deep blue, plum, sky blue, dark red, light
+    purple, pink and yellow. Each colour has its own label text.
+  * Line Colours in the menu gives the default colours or one of six sets of
+    five colours. The sets come from A Dictionary of Color Combinations by
+    Sanzo Wada.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Thu, 29 Oct 2026 18:31:00 +0100
+
 gitrl-f (0.13.0-1) noble; urgency=medium
 
   * A right click on a selected commit shows Show diff when the diff pane is

@@ -63,6 +63,39 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.14.0" date="2026-10-29">
+      <description>
+        <ul>
+          <li>
+            A checkout changes no colour and moves no line. Deep blue is a
+            usual branch colour. Only the pointed end of its label shows the
+            checked-out branch.
+          </li>
+          <li>
+            "Preserve mainline for currently checked out branch" is
+            off by default.
+          </li>
+          <li>
+            Two lines of one colour are never side by side, joined, or with
+            one line between them. When the line of a branch must change its
+            colour, the branch keeps the new colour.
+          </li>
+          <li>
+            A branch and its remote branch keep one colour, also when their
+            lines are side by side.
+          </li>
+          <li>
+            The default colours are new: deep blue, plum, sky blue, dark red,
+            light purple, pink and yellow. Each colour has its own label text.
+          </li>
+          <li>
+            Line Colours in the menu gives the default colours or one of six
+            sets of five colours. The sets come from A Dictionary of Color
+            Combinations by Sanzo Wada.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.13.0" date="2026-10-29">
       <description>
         <ul>
