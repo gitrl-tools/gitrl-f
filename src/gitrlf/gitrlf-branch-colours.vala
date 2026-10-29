@@ -49,7 +49,7 @@ public class BranchColours : Object
 
 			d_locals.add(name);
 
-			if (saved.has_key(name) && saved[name] != Gitg.Color.checked_out)
+			if (saved.has_key(name))
 			{
 				d_colours[name] = saved[name];
 				used[saved[name]]++;
@@ -68,7 +68,7 @@ public class BranchColours : Object
 
 			for (var i = 0; i < used.length; i++)
 			{
-				if (i != Gitg.Color.checked_out && (least < 0 || used[i] < used[least]))
+				if (least < 0 || used[i] < used[least])
 				{
 					least = i;
 				}
@@ -114,14 +114,6 @@ public class BranchColours : Object
 			{
 				names[tip] = name;
 				colours[tip] = of_branch(name);
-			}
-		}
-
-		foreach (var reference in refs)
-		{
-			if (reference.head)
-			{
-				colours[reference.target] = (int)Gitg.Color.checked_out;
 			}
 		}
 

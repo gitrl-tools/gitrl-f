@@ -67,15 +67,15 @@ public static int main(string[] args)
 	Test.init(ref args);
 
 	Test.add_func("/gitrlf/branch-colours/a-branch-keeps-its-colour-when-others-come", test_a_branch_keeps_its_colour_when_others_come);
-	Test.add_func("/gitrlf/branch-colours/a-branch-saved-with-the-checked-out-colour-takes-another", test_a_branch_saved_with_the_checked_out_colour_takes_another);
+	Test.add_func("/gitrlf/branch-colours/a-branch-may-be-deep-blue", test_a_branch_may_be_deep_blue);
 	Test.add_func("/gitrlf/branch-colours/a-deleted-branch-gives-its-colour-back", test_a_deleted_branch_gives_its_colour_back);
 	Test.add_func("/gitrlf/branch-colours/a-line-shows-the-colour-of-a-ticked-branch-only", test_a_line_shows_the_colour_of_a_ticked_branch_only);
 	Test.add_func("/gitrlf/branch-colours/a-line-takes-the-colour-of-its-first-branch-by-name", test_a_line_takes_the_colour_of_its_first_branch_by_name);
 	Test.add_func("/gitrlf/branch-colours/a-new-branch-takes-the-least-used-colour", test_a_new_branch_takes_the_least_used_colour);
 	Test.add_func("/gitrlf/branch-colours/a-remote-branch-shares-the-colour-of-its-local-twin", test_a_remote_branch_shares_the_colour_of_its_local_twin);
+	Test.add_func("/gitrlf/branch-colours/a-checkout-changes-no-line", test_a_checkout_changes_no_line);
+	Test.add_func("/gitrlf/branch-colours/branches-take-every-colour-in-turn", test_branches_take_every_colour_in_turn);
 	Test.add_func("/gitrlf/branch-colours/new-branches-take-colours-in-name-order", test_new_branches_take_colours_in_name_order);
-	Test.add_func("/gitrlf/branch-colours/no-branch-takes-the-colour-of-the-checked-out-line", test_no_branch_takes_the_colour_of_the_checked_out_line);
-	Test.add_func("/gitrlf/branch-colours/the-checked-out-line-is-deep-blue", test_the_checked_out_line_is_deep_blue);
 
 	return Test.run();
 }
@@ -108,10 +108,10 @@ private static void test_a_branch_keeps_its_colour_when_others_come()
 
 	var colours = new Gitrlf.BranchColours(saved_of({"beta:4"}), refs);
 
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:1,beta:4,gamma:2");
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:0,beta:4,gamma:1");
 }
 
-private static void test_a_branch_saved_with_the_checked_out_colour_takes_another()
+private static void test_a_branch_may_be_deep_blue()
 {
 	var refs = new Gee.ArrayList<Gitrlf.Ref>();
 	refs.add(branch("alpha"));
@@ -119,7 +119,45 @@ private static void test_a_branch_saved_with_the_checked_out_colour_takes_anothe
 
 	var colours = new Gitrlf.BranchColours(saved_of({"alpha:0", "beta:1"}), refs);
 
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:2,beta:1");
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:0,beta:1");
+}
+
+private static void test_a_checkout_changes_no_line()
+{
+	var refs = new Gee.ArrayList<Gitrlf.Ref>();
+	refs.add(branch("alpha", ONE));
+	refs.add(branch("beta", TWO));
+	refs.add(branch("gamma", THREE));
+
+	var colours = new Gitrlf.BranchColours(saved_of({"alpha:3", "beta:5"}), refs);
+	var ticks = every_name(refs);
+	var lines = new string[0];
+
+	foreach (var head in new string[] { "alpha", "beta", "gamma" })
+	{
+		var checked_out = new Gee.ArrayList<Gitrlf.Ref>();
+
+		checked_out.add(branch("alpha", ONE, head == "alpha"));
+		checked_out.add(branch("beta", TWO, head == "beta"));
+		checked_out.add(branch("gamma", THREE, head == "gamma"));
+
+		var tips = colours.of_tips(checked_out, ticks);
+
+		lines += string.joinv(",", { line_of(tips, ONE), line_of(tips, TWO), line_of(tips, THREE) });
+	}
+
+	assert_cmpstr(lines[0], CompareOperator.EQ, "3,5,0");
+	assert_cmpstr(lines[1], CompareOperator.EQ, lines[0]);
+	assert_cmpstr(lines[2], CompareOperator.EQ, lines[0]);
+
+	var detached = new Gee.ArrayList<Gitrlf.Ref>();
+	detached.add(new Gitrlf.Ref("HEAD", "HEAD", Gitrlf.RefKind.LOCAL, "", new Ggit.OId.from_string(FOUR), true));
+	detached.add(branch("alpha", ONE));
+
+	var tips = new Gitrlf.BranchColours(saved_of({"alpha:3"}), detached).of_tips(detached, ticks);
+
+	assert_cmpstr(line_of(tips, FOUR), CompareOperator.EQ, "none");
+	assert_cmpstr(line_of(tips, ONE), CompareOperator.EQ, "3");
 }
 
 private static void test_a_deleted_branch_gives_its_colour_back()
@@ -128,9 +166,9 @@ private static void test_a_deleted_branch_gives_its_colour_back()
 	refs.add(branch("alpha"));
 	refs.add(branch("delta"));
 
-	var colours = new Gitrlf.BranchColours(saved_of({"alpha:1", "gone:2"}), refs);
+	var colours = new Gitrlf.BranchColours(saved_of({"alpha:0", "gone:1"}), refs);
 
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:1,delta:2");
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:0,delta:1");
 }
 
 private static void test_a_line_shows_the_colour_of_a_ticked_branch_only()
@@ -146,7 +184,7 @@ private static void test_a_line_shows_the_colour_of_a_ticked_branch_only()
 
 	var lines = colours.of_tips(refs, ticks);
 
-	assert_cmpstr(line_of(lines, ONE), CompareOperator.EQ, "2");
+	assert_cmpstr(line_of(lines, ONE), CompareOperator.EQ, "1");
 	assert_cmpstr(line_of(lines, TWO), CompareOperator.EQ, "none");
 }
 
@@ -162,7 +200,7 @@ private static void test_a_line_takes_the_colour_of_its_first_branch_by_name()
 	var lines = colours.of_tips(refs, every_name(refs));
 
 	assert_cmpstr(line_of(lines, ONE), CompareOperator.EQ, "3");
-	assert_cmpstr(line_of(lines, TWO), CompareOperator.EQ, "4");
+	assert_cmpstr(line_of(lines, TWO), CompareOperator.EQ, "0");
 }
 
 private static void test_a_new_branch_takes_the_least_used_colour()
@@ -174,9 +212,9 @@ private static void test_a_new_branch_takes_the_least_used_colour()
 		refs.add(branch(name));
 	}
 
-	var colours = new Gitrlf.BranchColours(saved_of({"a:1", "b:2", "c:3", "d:4", "e:5", "f:6", "g:7", "h:1", "i:3"}), refs);
+	var colours = new Gitrlf.BranchColours(saved_of({"a:0", "b:1", "c:2", "d:3", "e:4", "f:5", "g:6", "h:7", "i:0"}), refs);
 
-	assert_cmpint(colours.of_branch("j"), CompareOperator.EQ, 2);
+	assert_cmpint(colours.of_branch("j"), CompareOperator.EQ, 1);
 }
 
 private static void test_a_remote_branch_shares_the_colour_of_its_local_twin()
@@ -191,9 +229,23 @@ private static void test_a_remote_branch_shares_the_colour_of_its_local_twin()
 	var colours = new Gitrlf.BranchColours(saved_of({}), refs);
 	var lines = colours.of_tips(refs, every_name(refs));
 
-	assert_cmpstr(line_of(lines, TWO), CompareOperator.EQ, "1");
+	assert_cmpstr(line_of(lines, TWO), CompareOperator.EQ, "0");
 	assert_cmpstr(line_of(lines, THREE), CompareOperator.EQ, "none");
-	assert_cmpstr(line_of(lines, FOUR), CompareOperator.EQ, "2");
+	assert_cmpstr(line_of(lines, FOUR), CompareOperator.EQ, "1");
+}
+
+private static void test_branches_take_every_colour_in_turn()
+{
+	var refs = new Gee.ArrayList<Gitrlf.Ref>();
+
+	foreach (var name in new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i" })
+	{
+		refs.add(branch(name));
+	}
+
+	var colours = new Gitrlf.BranchColours(saved_of({}), refs);
+
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7,i:0");
 }
 
 private static void test_new_branches_take_colours_in_name_order()
@@ -205,48 +257,7 @@ private static void test_new_branches_take_colours_in_name_order()
 
 	var colours = new Gitrlf.BranchColours(saved_of({}), refs);
 
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:1,beta:2,gamma:3");
-}
-
-private static void test_no_branch_takes_the_colour_of_the_checked_out_line()
-{
-	var refs = new Gee.ArrayList<Gitrlf.Ref>();
-
-	foreach (var name in new string[] { "a", "b", "c", "d", "e", "f", "g", "h" })
-	{
-		refs.add(branch(name));
-	}
-
-	var colours = new Gitrlf.BranchColours(saved_of({}), refs);
-
-	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "a:1,b:2,c:3,d:4,e:5,f:6,g:7,h:1");
-}
-
-private static void test_the_checked_out_line_is_deep_blue()
-{
-	var refs = new Gee.ArrayList<Gitrlf.Ref>();
-	refs.add(branch("alpha", ONE));
-	refs.add(branch("beta", ONE, true));
-	refs.add(branch("gamma", TWO));
-
-	var colours = new Gitrlf.BranchColours(saved_of({"alpha:3"}), refs);
-	var ticks = new Gee.HashSet<string>();
-	ticks.add("refs/heads/alpha");
-
-	var lines = colours.of_tips(refs, ticks);
-	var blue = Gitg.Color.from_index(int.parse(line_of(lines, ONE)));
-
-	assert_cmpfloat(blue.r * 255, CompareOperator.EQ, 32);
-	assert_cmpfloat(blue.g * 255, CompareOperator.EQ, 74);
-	assert_cmpfloat(blue.b * 255, CompareOperator.EQ, 135);
-
-	var detached = new Gee.ArrayList<Gitrlf.Ref>();
-	detached.add(new Gitrlf.Ref("HEAD", "HEAD", Gitrlf.RefKind.LOCAL, "", new Ggit.OId.from_string(THREE), true));
-	detached.add(branch("alpha", ONE));
-
-	lines = new Gitrlf.BranchColours(saved_of({"alpha:3"}), detached).of_tips(detached, ticks);
-
-	assert_cmpstr(line_of(lines, THREE), CompareOperator.EQ, line_of(colours.of_tips(refs, ticks), ONE));
+	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:0,beta:1,gamma:2");
 }
 
 }

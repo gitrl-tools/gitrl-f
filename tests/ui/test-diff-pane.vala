@@ -2228,16 +2228,22 @@ private static void test_the_changes_rows_draw_no_line_to_head()
 		repo.checkout("master");
 		repo.git({"stash", "pop", "--quiet", "--index"});
 
+		var history = new Settings(Gitrlf.Config.APPLICATION_ID + ".preferences.history");
+		history.set_boolean("mainline-head", true);
+
 		var window = opened(repo, {"refs/heads/master", "refs/heads/dev"});
 		var view = window.history.paned.commit_list_view;
 		var rows = window.history.rows();
 		var middle = (row_y(window, 0) + row_y(window, 1)) / 2;
+		var head = rows[1].lane.color;
+		var rgb = (uint32)Math.round(head.r * 255) << 16 | (uint32)Math.round(head.g * 255) << 8 | (uint32)Math.round(head.b * 255);
 
 		assert_true(window.history.paned.changes.visible);
 		assert_cmpstr(rows[1].get_subject(), CompareOperator.EQ, "two");
 		assert_cmpint((int)rows[1].mylane, CompareOperator.EQ, 0);
-		assert_false(inked(view, lane_x(0), middle, BLUE));
+		assert_false(inked(view, lane_x(0), middle, rgb));
 
+		history.reset("mainline-head");
 		window.destroy();
 		repo.remove();
 	}

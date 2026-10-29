@@ -302,7 +302,7 @@ Removes two entries from the resource list of `libgitg`: `ui/gitg-authentication
 
 ## gitg-color.patch
 
-Four changes.
+Three changes.
 
 **1. Changes the palette.** `#204a87` is the first colour. `#4e9a06`, `#ce5c00`, `#8ae234`, `#fcaf3e`, `#e9b96e`, `#c4a000`, `#fce94f` and `#888a85` are removed. The other colours keep their order. `#34e2e2` and `#f37fb7` are added at the end.
 
@@ -316,11 +316,7 @@ Four changes.
 
 **Why.** gitrl-f gives a new branch the colour that the fewest branches have. To do this, it counts each colour of the palette.
 
-**4. Keeps the first colour, `#204a87`, for the line of the checked-out commit.** `Color.checked_out` is its index, and `next()` does not give it.
-
-**Why.** The line of the checked-out branch, or of a detached HEAD, is the only deep blue line. Thus it is easy to find, also where it is not the leftmost line. A line that no branch starts takes its colour from the turns of `next()`, so the turns must not give the deep blue.
-
-**Cost.** The lanes do not have the colours of gitg, and the palette has 8 colours, not 14. The branches get only 7 of them. With more than 7 local branches, two branches have the same colour. The pixel suite finds a difference at each dot and line.
+**Cost.** The lanes do not have the colours of gitg, and the palette has 8 colours, not 14. With more than 8 local branches, two branches have the same colour. The pixel suite finds a difference at each dot and line.
 
 ## gitg-cell-renderer-lanes.patch
 
@@ -342,7 +338,7 @@ Two changes. gitrl-z has the same patch.
 
 **1. Draws the label of the checked-out branch with a pointed left end.**
 
-**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. Its colours are those of the other branch labels. When HEAD is detached, no label changes.
+**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. Its colours are those of the other branch labels, so that a checkout changes no colour. When HEAD is detached, no label changes.
 
 **2. Fills the label of a local branch with the colour of its lane.**
 

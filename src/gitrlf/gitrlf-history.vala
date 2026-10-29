@@ -312,6 +312,12 @@ public class History : Object
 
 		foreach (var colour in seen)
 		{
+			if (colour in d_owned)
+			{
+				done.add(colour);
+				continue;
+			}
+
 			var taken = new bool[size];
 
 			foreach (var other in touching[colour])
@@ -326,7 +332,7 @@ public class History : Object
 			{
 				var index = (colour.idx + step) % size;
 
-				if (!taken[index] && (step == 0 || index != Gitg.Color.checked_out))
+				if (!taken[index])
 				{
 					colour.idx = index;
 					break;

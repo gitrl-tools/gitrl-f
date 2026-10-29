@@ -1001,26 +1001,20 @@ private static void test_a_branch_keeps_its_colour_after_a_checkout_and_a_restar
 
 		var window = opened(repo, {"refs/heads/master", "refs/heads/beta", "refs/heads/gamma"});
 		var beta = line_hex(window, "beta one");
-
-		assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, "204a87");
-		assert_cmpstr(beta, CompareOperator.NE, "204a87");
-
-		repo.checkout("beta");
-		window.history.refresh();
-		drain();
-
 		var gamma = line_hex(window, "gamma one");
 
-		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "204a87");
-		assert_cmpstr(gamma, CompareOperator.NE, "204a87");
+		assert_cmpstr(beta, CompareOperator.EQ, "204a87");
 		assert_cmpstr(gamma, CompareOperator.NE, beta);
 
-		repo.checkout("master");
-		window.history.refresh();
-		drain();
+		foreach (var head in new string[] { "beta", "gamma", "master" })
+		{
+			repo.checkout(head);
+			window.history.refresh();
+			drain();
 
-		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, beta);
-		assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, gamma);
+			assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, beta);
+			assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, gamma);
+		}
 
 		window.destroy();
 		repo.git({"checkout", "--quiet", "-b", "alpha", "master"});
@@ -1034,7 +1028,6 @@ private static void test_a_branch_keeps_its_colour_after_a_checkout_and_a_restar
 		assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, gamma);
 		assert_cmpstr(alpha, CompareOperator.NE, beta);
 		assert_cmpstr(alpha, CompareOperator.NE, gamma);
-		assert_cmpstr(alpha, CompareOperator.NE, "204a87");
 
 		window.destroy();
 		repo.remove();
@@ -2822,7 +2815,7 @@ private static void test_history_settings_keep_the_top_row()
 		settle(100);
 		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
 
-		settings.set_boolean("mainline-head", false);
+		settings.set_boolean("mainline-head", true);
 		settle(100);
 		assert_cmpstr(top_row(window), CompareOperator.EQ, "base 30 -10");
 
@@ -2860,11 +2853,11 @@ private static void test_history_settings_redraw_the_list()
 		var by_time = subjects_of(window);
 
 		assert_cmpstr(by_time, CompareOperator.EQ, "master two,side two,side one,master one,base");
-		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 0);
-
-		settings.set_boolean("mainline-head", false);
-		drain();
 		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 1);
+
+		settings.set_boolean("mainline-head", true);
+		drain();
+		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 0);
 
 		settings.set_boolean("topological-order", true);
 		drain();
@@ -3766,11 +3759,10 @@ private static void test_the_branch_labels_on_a_commit_take_the_colour_of_its_li
 		var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/beta"});
 		var line = line_hex(window, "second");
 
-		assert_cmpstr(line, CompareOperator.NE, "204a87");
 		assert_cmpstr(label_fill(window, 0, "alpha"), CompareOperator.EQ, line);
 		assert_cmpstr(label_fill(window, 0, "beta"), CompareOperator.EQ, line);
-		assert_cmpstr(line_hex(window, "first"), CompareOperator.EQ, "204a87");
-		assert_cmpstr(label_fill(window, 1, "master"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(line_hex(window, "first"), CompareOperator.EQ, line);
+		assert_cmpstr(label_fill(window, 1, "master"), CompareOperator.EQ, line);
 
 		window.destroy();
 		sizes.reset("size");

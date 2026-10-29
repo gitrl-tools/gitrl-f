@@ -36,7 +36,7 @@ private const string[] KEYS = {
 	"preferences.diff|wrap|false",
 	"preferences.history|collapse-inactive-lanes|2",
 	"preferences.history|collapse-inactive-lanes-enabled|false",
-	"preferences.history|mainline-head|true",
+	"preferences.history|mainline-head|false",
 	"preferences.history|topological-order|false",
 	"preferences.interface|enable-diff-highlighting|true",
 	"preferences.interface|enable-monitoring|true",
