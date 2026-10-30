@@ -87,7 +87,7 @@ public class BranchColours : Object
 		}
 	}
 
-	private string? branch_of(Ref reference)
+	public string? branch_of(Ref reference)
 	{
 		var name = reference.short_name;
 

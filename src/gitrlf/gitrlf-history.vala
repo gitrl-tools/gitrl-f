@@ -507,7 +507,7 @@ public class History : Object
 		}
 	}
 
-	private static bool holds(SList<Gitg.Lane> lanes, uint line)
+	public static bool holds(SList<Gitg.Lane> lanes, uint line)
 	{
 		foreach (var lane in lanes)
 		{

@@ -513,6 +513,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_changes_menu = new CopyMenu(d_paned.changes);
 		d_changes_menu.find.connect(fill_changes_menu);
 
+		d_paned.commit_list_view.has_tooltip = true;
+		d_paned.commit_list_view.query_tooltip.connect(show_line_names);
+
 		d_paned.commit_list_view.move_cursor.connect(() => {
 			light_selection(true);
 			return false;
@@ -1089,6 +1092,28 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		{
 			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_author().get_name(), d_query.author_marks());
 		}
+	}
+
+	private static double bend_x(double from, double to, double down)
+	{
+		var low = 0.0;
+		var high = 1.0;
+
+		for (var i = 0; i < 20; i++)
+		{
+			var middle = (low + high) / 2;
+
+			if (middle * (1.5 - 1.5 * middle + middle * middle) < down)
+			{
+				low = middle;
+			}
+			else
+			{
+				high = middle;
+			}
+		}
+
+		return from + (to - from) * low * low * (3 - 2 * low);
 	}
 
 	private static string bold_list(string[] paths)
@@ -2052,10 +2077,101 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_diff.options.pathspec = pathspec();
 	}
 
+	private bool line_at(int row, int x, int y, int height, out uint line,
+	                     out int top)
+	{
+		var width = (double)d_paned.renderer_subject.lane_width;
+		var dot = d_paned.renderer_subject.dot_width / 2.0;
+		var commit = d_model.get_row(row);
+		var middle = height / 2.0;
+		var upper = y < middle ? row - 1 : row;
+		var down = (y < middle ? y + middle : y - middle) / height;
+		var nearest = width / 2;
+		var found = false;
+
+		line = commit.lane.line;
+		top = row;
+
+		if (Math.fabs(x - (commit.mylane + 0.5) * width) <= dot
+		    && Math.fabs(y - middle) <= dot)
+		{
+			return true;
+		}
+
+		if (upper < 0 || upper + 1 >= d_model.size)
+		{
+			return false;
+		}
+
+		unowned SList<Gitg.Lane> above = d_model.get_row(upper).get_lanes();
+		var to = 0;
+
+		foreach (var lane in d_model.get_row(upper + 1).get_lanes())
+		{
+			if ((lane.tag & Gitg.LaneTag.HIDDEN) == 0)
+			{
+				foreach (var from in lane.from)
+				{
+					var gap = Math.fabs(x - bend_x((from + 0.5) * width,
+					                               (to + 0.5) * width, down));
+
+					if (gap < nearest)
+					{
+						nearest = gap;
+						line = History.holds(above, lane.line)
+						       ? above.nth_data(from).line : lane.line;
+						top = upper;
+						found = true;
+					}
+				}
+			}
+
+			to++;
+		}
+
+		return found;
+	}
+
 	private string line_markup(string piece, int index)
 	{
 		return "<span foreground=\"%s\">%s</span>"
 			.printf(d_line_tints[index], piece);
+	}
+
+	private string[] line_names(uint line, int top)
+	{
+		var rows = new Gee.TreeSet<int>();
+		var shown = new Gee.HashSet<string>();
+		var names = new string[0];
+
+		foreach (var reference in d_refs)
+		{
+			var path = d_model.path_from_commit(reference.target);
+			var branch = reference.name.has_prefix("refs/heads/")
+			             || (reference.kind == RefKind.REMOTE
+			                 && d_colours.branch_of(reference) == null);
+
+			if (path != null && branch && d_ticks.contains(reference.name)
+			    && path.get_indices()[0] <= top
+			    && d_model.get_row(path.get_indices()[0]).lane.line == line)
+			{
+				rows.add(path.get_indices()[0]);
+				shown.add(reference.name);
+			}
+		}
+
+		foreach (var row in rows)
+		{
+			foreach (var label in ticked_labels(d_model.get_row(row)))
+			{
+				if (label.get_name() in shown)
+				{
+					names += label.parsed_name.shortname;
+				}
+			}
+		}
+
+		return names;
 	}
 
 	private string? line_piece(string? text, int index)
@@ -3191,6 +3307,49 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_line_label = lines.start == lines.end ? _("History of line %s of %s, from %s").printf("<b>%d</b>".printf(lines.start), name, from)
 		                                        : _("History of lines %s to %s of %s, from %s").printf("<b>%d</b>".printf(lines.start), "<b>%d</b>".printf(lines.end), name, from);
 		search_lines();
+	}
+
+	private bool show_line_names(int x, int y, bool keyboard,
+	                             Gtk.Tooltip tooltip)
+	{
+		var view = d_paned.commit_list_view;
+		int bin_x;
+		int bin_y;
+		int cell_x;
+		int cell_y;
+		uint line;
+		int top;
+		Gtk.TreePath? path;
+		Gtk.TreeViewColumn? column;
+		Gdk.Rectangle area;
+
+		view.convert_widget_to_bin_window_coords(x, y, out bin_x, out bin_y);
+
+		if (!view.get_path_at_pos(bin_x, bin_y, out path, out column,
+		                          out cell_x, out cell_y)
+		    || column != d_paned.column_subject)
+		{
+			return false;
+		}
+
+		view.get_background_area(path, column, out area);
+
+		if (!line_at(path.get_indices()[0], cell_x, cell_y, area.height,
+		             out line, out top))
+		{
+			return false;
+		}
+
+		var names = line_names(line, top);
+
+		if (names.length == 0)
+		{
+			return false;
+		}
+
+		tooltip.set_text(string.joinv("\n", names));
+
+		return true;
 	}
 
 	private void show_match_count()

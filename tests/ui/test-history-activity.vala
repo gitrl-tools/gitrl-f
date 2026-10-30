@@ -494,6 +494,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-the-subject-edge-leaves-out-the-changes-rows", test_a_double_click_on_the_subject_edge_leaves_out_the_changes_rows);
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
+	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
+	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
+	Test.add_func("/gitrlf/ui/history-activity/a-line-with-no-branch-above-it-names-none", test_a_line_with_no_branch_above_it_names_none);
 	Test.add_func("/gitrlf/ui/history-activity/a-repository-opened-for-the-first-time-fits-its-columns-to-the-list", test_a_repository_opened_for_the_first_time_fits_its_columns_to_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/a-repository-opened-in-a-narrow-window-gives-the-subject-its-title-width", test_a_repository_opened_in_a_narrow_window_gives_the_subject_its_title_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
@@ -622,6 +625,30 @@ private static string line_hex(Gitrlf.Window window, string subject)
 	}
 
 	assert_not_reached();
+}
+
+private static string? line_tip(Gitrlf.Window window, int row, uint lane, double down)
+{
+	var view = window.history.paned.commit_list_view;
+	var width = window.history.paned.renderer_subject.lane_width;
+	Gdk.Rectangle area;
+	int origin_x;
+	int origin_y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out area);
+	view.get_bin_window().get_origin(out origin_x, out origin_y);
+	point_at(origin_x + area.x + (int)(lane * width + width / 2), origin_y + area.y + (int)(area.height * down));
+	settle(1000);
+
+	foreach (var toplevel in Gtk.Window.list_toplevels())
+	{
+		if (toplevel.get_type().name() == "GtkTooltipWindow" && toplevel.visible)
+		{
+			return ((Gtk.Label)find_all(toplevel, typeof(Gtk.Label))[0]).label;
+		}
+	}
+
+	return null;
 }
 
 private static Gdk.Rectangle lines_cell(Gitrlf.Window window,
@@ -1587,6 +1614,91 @@ private static void test_a_group_with_no_tick_opens_folded()
 		var window = opened(repo, {"refs/heads/master", "refs/heads/feature/scan"});
 
 		assert_cmpstr(folded(window), CompareOperator.EQ, "local:fix|section:remotes|remote:origin|section:tags");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_names_the_local_branches_at_or_above_the_pointer()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.git({"checkout", "--quiet", "-b", "feature"});
+		repo.commit("second", "feature");
+		repo.git({"update-ref", "refs/remotes/origin/feature", "HEAD"});
+		repo.commit("third", "feature");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature", "refs/remotes/origin/feature"});
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "third,second,first");
+		assert_cmpstr(line_tip(window, 1, 0, 0.1), CompareOperator.EQ, "feature");
+		assert_cmpstr(line_tip(window, 1, 0, 0.9), CompareOperator.EQ, "feature");
+		assert_cmpstr(line_tip(window, 2, 0, 0.5), CompareOperator.EQ, "feature\nmaster");
+		assert_null(line_tip(window, 1, 4, 0.5));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_names_a_remote_branch_with_no_local_branch()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.git({"checkout", "--quiet", "-b", "fix"});
+		repo.commit("fix one", "fix");
+		repo.git({"update-ref", "refs/remotes/origin/fix", "HEAD"});
+		repo.checkout("master");
+		repo.delete_branch("fix");
+
+		var window = opened(repo, {"refs/heads/master", "refs/remotes/origin/fix"});
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "fix one,first");
+		assert_cmpuint(lane_of(window, "fix one"), CompareOperator.EQ, 1);
+		assert_cmpstr(line_tip(window, 0, 1, 0.5), CompareOperator.EQ, "origin/fix");
+		assert_cmpstr(line_tip(window, 1, 0, 0.5), CompareOperator.EQ, "master");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_with_no_branch_above_it_names_none()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.git({"checkout", "--quiet", "-b", "side"});
+		repo.commit("side one", "side");
+		repo.checkout("master");
+		repo.commit("main two");
+		repo.merge("side");
+		repo.delete_branch("side");
+
+		var window = opened(repo, {"refs/heads/master"});
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "Merge branch 'side',main two,side one,first");
+		assert_cmpuint(lane_of(window, "side one"), CompareOperator.EQ, 1);
+		assert_cmpstr(line_tip(window, 2, 0, 0.5), CompareOperator.EQ, "master");
+		assert_null(line_tip(window, 2, 1, 0.5));
 
 		window.destroy();
 		repo.remove();
