@@ -25,6 +25,36 @@ private class Opened : Object
 	public Gitg.Repository repository;
 }
 
+private static string blue_rows(Gitg.Commit[] rows)
+{
+	var parts = new string[0];
+
+	foreach (var commit in rows)
+	{
+		if (commit.lane.color.is_head)
+		{
+			parts += commit.get_subject();
+		}
+	}
+
+	return string.joinv(",", parts);
+}
+
+private static string colour_at(Gitg.Commit[] rows, string subject, uint position)
+{
+	foreach (var commit in rows)
+	{
+		if (commit.get_subject() == subject)
+		{
+			var colour = commit.get_lanes().nth_data(position).color;
+
+			return colour.is_head ? "head" : colour.idx.to_string();
+		}
+	}
+
+	assert_not_reached();
+}
+
 private static uint colour_of(Gitg.Commit[] rows, string subject)
 {
 	foreach (var commit in rows)
@@ -99,6 +129,19 @@ private static string ids(Ggit.OId[] oids)
 	return string.joinv(",", parts);
 }
 
+private static uint lane_of(Gitg.Commit[] rows, string subject)
+{
+	foreach (var commit in rows)
+	{
+		if (commit.get_subject() == subject)
+		{
+			return commit.mylane;
+		}
+	}
+
+	assert_not_reached();
+}
+
 private static string lanes_of(Gitg.Commit[] rows)
 {
 	var text = new StringBuilder();
@@ -109,7 +152,14 @@ private static string lanes_of(Gitg.Commit[] rows)
 
 		foreach (var lane in commit.get_lanes())
 		{
-			text.append_printf(" %u,%d", lane.color.idx, (int)lane.tag);
+			if (lane.color.is_head)
+			{
+				text.append_printf(" head,%d", (int)lane.tag);
+			}
+			else
+			{
+				text.append_printf(" %u,%d", lane.color.idx, (int)lane.tag);
+			}
 
 			foreach (var from in lane.from)
 			{
@@ -129,10 +179,14 @@ public static int main(string[] args)
 
 	Test.add_func("/gitrlf/history/a-branch-and-its-remote-keep-one-colour-side-by-side", test_a_branch_and_its_remote_keep_one_colour_side_by_side);
 	Test.add_func("/gitrlf/history/a-branch-line-keeps-its-colour-over-a-line-with-no-branch", test_a_branch_line_keeps_its_colour_over_a_line_with_no_branch);
-	Test.add_func("/gitrlf/history/a-checkout-changes-no-colour-and-moves-no-line", test_a_checkout_changes_no_colour_and_moves_no_line);
+	Test.add_func("/gitrlf/history/a-checkout-puts-its-line-far-left-and-only-that-line-turns-blue", test_a_checkout_puts_its_line_far_left_and_only_that_line_turns_blue);
+	Test.add_func("/gitrlf/history/a-detached-or-hidden-checkout-paints-no-line-blue", test_a_detached_or_hidden_checkout_paints_no_line_blue);
+	Test.add_func("/gitrlf/history/a-folded-checked-out-line-is-blue-on-both-sides-of-the-fold", test_a_folded_checked_out_line_is_blue_on_both_sides_of_the_fold);
 	Test.add_func("/gitrlf/history/a-line-colour-that-changes-is-kept-for-its-branch", test_a_line_colour_that_changes_is_kept_for_its_branch);
 	Test.add_func("/gitrlf/history/a-line-with-no-branch-does-not-share-a-colour-with-a-line-it-joins", test_a_line_with_no_branch_does_not_share_a_colour_with_a_line_it_joins);
 	Test.add_func("/gitrlf/history/a-line-with-no-branch-does-not-share-a-colour-with-the-line-beside-it", test_a_line_with_no_branch_does_not_share_a_colour_with_the_line_beside_it);
+	Test.add_func("/gitrlf/history/a-remote-copy-ahead-keeps-its-colour-above-the-blue-line", test_a_remote_copy_ahead_keeps_its_colour_above_the_blue_line);
+	Test.add_func("/gitrlf/history/a-remote-copy-with-its-own-line-keeps-its-colour", test_a_remote_copy_with_its_own_line_keeps_its_colour);
 	Test.add_func("/gitrlf/history/commits-a-ticked-branch-shares-with-an-unticked-one-are-drawn", test_commits_a_ticked_branch_shares_with_an_unticked_one_are_drawn);
 	Test.add_func("/gitrlf/history/count-is-rows-of-commits", test_count_is_rows_of_commits);
 	Test.add_func("/gitrlf/history/graph-lines-join-from-row-to-row", test_graph_lines_join_from_row_to_row);
@@ -145,6 +199,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/history/refs-that-hold-a-commit-are-those-of-git", test_refs_that_hold_a_commit_are_those_of_git);
 	Test.add_func("/gitrlf/history/shallow-boundary-ends-the-history", test_shallow_boundary_ends_the_history);
 	Test.add_func("/gitrlf/history/ticking-does-not-read-the-repository-again", test_ticking_does_not_read_the_repository_again);
+	Test.add_func("/gitrlf/history/the-checked-out-line-is-blue-from-its-commit-down", test_the_checked_out_line_is_blue_from_its_commit_down);
+	Test.add_func("/gitrlf/history/the-stretch-above-the-checked-out-commit-keeps-the-colour-that-leads-in", test_the_stretch_above_the_checked_out_commit_keeps_the_colour_that_leads_in);
 	Test.add_func("/gitrlf/history/topological-order-keeps-children-above-parents", test_topological_order_keeps_children_above_parents);
 	Test.add_func("/gitrlf/history/two-branch-lines-side-by-side-do-not-share-a-colour", test_two_branch_lines_side_by_side_do_not_share_a_colour);
 	Test.add_func("/gitrlf/history/two-branch-lines-two-places-apart-do-not-share-a-colour", test_two_branch_lines_two_places_apart_do_not_share_a_colour);
@@ -186,7 +242,7 @@ private static void test_a_branch_and_its_remote_keep_one_colour_side_by_side()
 		repo.git({"update-ref", "refs/remotes/origin/alpha", "away"});
 		repo.git({"checkout", "--quiet", "-b", "alpha", "master"});
 		repo.commit("alpha one", "alpha");
-		repo.checkout("master");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 		repo.delete_branch("away");
 
 		var rows = coloured(open(repo.path), {"master", "alpha", "origin/alpha"}, {"alpha:3"});
@@ -231,7 +287,7 @@ private static void test_a_branch_line_keeps_its_colour_over_a_line_with_no_bran
 	}
 }
 
-private static void test_a_checkout_changes_no_colour_and_moves_no_line()
+private static void test_a_checkout_puts_its_line_far_left_and_only_that_line_turns_blue()
 {
 	try
 	{
@@ -244,20 +300,115 @@ private static void test_a_checkout_changes_no_colour_and_moves_no_line()
 		repo.commit("gamma one", "gamma");
 		repo.git({"checkout", "--quiet", "-b", "alpha", "beta~1"});
 
-		repo.checkout("master");
-		var rows = coloured(open(repo.path), {"master", "alpha", "beta", "gamma"});
+		string[] heads = { "master", "alpha", "beta", "gamma" };
+		string[] tips = { "base", "beta one", "beta two", "gamma one" };
+		string[] blue = { "base", "beta one,base", "beta two,beta one,base", "gamma one,base" };
+		var own = new Gee.HashMap<string, uint>();
+		own["beta two"] = 1;
+		own["beta one"] = 1;
+		own["gamma one"] = 2;
 
-		assert_cmpuint(colour_of(rows, "beta two"), CompareOperator.EQ, 1);
-		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 1);
-		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.EQ, 2);
-		assert_cmpuint(colour_of(rows, "base"), CompareOperator.EQ, 2);
-
-		foreach (var head in new string[] { "alpha", "beta", "gamma" })
+		for (var i = 0; i < heads.length; i++)
 		{
-			repo.checkout(head);
-			assert_cmpstr(lanes_of(coloured(open(repo.path), {"master", "alpha", "beta", "gamma"})), CompareOperator.EQ, lanes_of(rows));
+			repo.checkout(heads[i]);
+
+			var rows = coloured(open(repo.path), {"master", "alpha", "beta", "gamma"});
+			var painted = blue_rows(rows).split(",");
+
+			assert_cmpuint(lane_of(rows, tips[i]), CompareOperator.EQ, 0);
+			assert_cmpstr(blue_rows(rows), CompareOperator.EQ, blue[i]);
+
+			foreach (var entry in own.entries)
+			{
+				if (!(entry.key in painted))
+				{
+					assert_cmpuint(colour_of(rows, entry.key), CompareOperator.EQ, entry.value);
+				}
+			}
 		}
 
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_detached_or_hidden_checkout_paints_no_line_blue()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "beta"});
+		repo.commit("beta one", "beta");
+
+		var rows = coloured(open(repo.path), {"master"});
+
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "");
+
+		repo.git({"checkout", "--quiet", "--detach"});
+		rows = coloured(open(repo.path), {"master", "beta"});
+
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_folded_checked_out_line_is_blue_on_both_sides_of_the_fold()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.branch("side");
+
+		for (var i = 0; i < 60; i++)
+		{
+			repo.commit("master %d".printf(i));
+		}
+
+		repo.checkout("side");
+		repo.commit("side one", "side");
+
+		var history = new Settings(Gitrlf.Config.APPLICATION_ID + ".preferences.history");
+		history.set_boolean("collapse-inactive-lanes-enabled", true);
+		history.set_boolean("mainline-head", false);
+
+		var rows = coloured(open(repo.path), {"master", "side"});
+		var ends = 0;
+		var starts = 0;
+
+		foreach (var commit in rows)
+		{
+			foreach (var lane in commit.get_lanes())
+			{
+				if ((lane.tag & Gitg.LaneTag.END) != 0)
+				{
+					assert_true(lane.color.is_head);
+					ends++;
+				}
+
+				if ((lane.tag & Gitg.LaneTag.START) != 0)
+				{
+					assert_true(lane.color.is_head);
+					starts++;
+				}
+			}
+		}
+
+		assert_cmpint(ends, CompareOperator.GT, 0);
+		assert_cmpint(starts, CompareOperator.GT, 0);
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "side one,base");
+
+		history.reset("collapse-inactive-lanes-enabled");
+		history.reset("mainline-head");
 		repo.remove();
 	}
 	catch (Error e)
@@ -276,7 +427,7 @@ private static void test_a_line_colour_that_changes_is_kept_for_its_branch()
 		repo.commit("alpha one", "alpha");
 		repo.git({"checkout", "--quiet", "-b", "beta", "master"});
 		repo.commit("beta one", "beta");
-		repo.checkout("master");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 
 		var opened = open(repo.path);
 		var known = new Gee.HashMap<string, int>();
@@ -322,7 +473,7 @@ private static void test_a_line_with_no_branch_does_not_share_a_colour_with_a_li
 		repo.git({"checkout", "--quiet", "-b", "beta", "alpha~1"});
 		repo.commit("beta one", "beta");
 		repo.git({"tag", "beta-tip", "beta"});
-		repo.checkout("master");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 		repo.delete_branch("beta");
 
 		var rows = coloured(open(repo.path), {"master", "alpha", "beta-tip", "gamma"}, {"alpha:0", "gamma:5"});
@@ -361,6 +512,64 @@ private static void test_a_line_with_no_branch_does_not_share_a_colour_with_the_
 		assert_cmpuint(colour_of(rows, "beta one"), CompareOperator.EQ, 0);
 		assert_cmpuint(colour_of(rows, "alpha two"), CompareOperator.EQ, 5);
 		assert_cmpuint(colour_of(rows, "gamma one"), CompareOperator.NE, 0);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_remote_copy_ahead_keeps_its_colour_above_the_blue_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "alpha"});
+		repo.commit("alpha one", "alpha");
+		repo.git({"checkout", "--quiet", "-b", "away"});
+		repo.commit("remote one", "away");
+		repo.commit("remote two", "away");
+		repo.git({"update-ref", "refs/remotes/origin/alpha", "away"});
+		repo.checkout("alpha");
+		repo.delete_branch("away");
+
+		var rows = coloured(open(repo.path), {"master", "alpha", "origin/alpha"}, {"alpha:3"});
+
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "alpha one,base");
+		assert_cmpuint(colour_of(rows, "remote two"), CompareOperator.EQ, 3);
+		assert_cmpuint(colour_of(rows, "remote one"), CompareOperator.EQ, 3);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_remote_copy_with_its_own_line_keeps_its_colour()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.git({"checkout", "--quiet", "-b", "away"});
+		repo.commit("remote one", "away");
+		repo.git({"update-ref", "refs/remotes/origin/alpha", "away"});
+		repo.git({"checkout", "--quiet", "-b", "alpha", "master"});
+		repo.commit("alpha one", "alpha");
+		repo.delete_branch("away");
+
+		var rows = coloured(open(repo.path), {"master", "alpha", "origin/alpha"}, {"alpha:3"});
+
+		var blue = blue_rows(rows).split(",");
+
+		assert_true("alpha one" in blue);
+		assert_false("remote one" in blue);
+		assert_cmpuint(colour_of(rows, "remote one"), CompareOperator.EQ, 3);
 
 		repo.remove();
 	}
@@ -737,6 +946,88 @@ private static void test_shallow_boundary_ends_the_history()
 	}
 }
 
+private static void test_the_checked_out_line_is_blue_from_its_commit_down()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("base");
+		repo.commit("master two");
+		repo.git({"checkout", "--quiet", "-b", "feature"});
+		repo.commit("feature one", "feature");
+
+		var rows = coloured(open(repo.path), {"master", "feature"}, {"feature:4"});
+
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "feature one,master two,base");
+
+		repo.checkout("master");
+		rows = coloured(open(repo.path), {"master", "feature"}, {"feature:4"});
+
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "master two,base");
+		assert_cmpuint(colour_of(rows, "feature one"), CompareOperator.EQ, 4);
+
+		repo.git({"checkout", "--quiet", "-b", "fresh", "master"});
+		rows = coloured(open(repo.path), {"master", "feature", "fresh"}, {"feature:4"});
+
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "master two,base");
+		assert_cmpuint(colour_of(rows, "feature one"), CompareOperator.EQ, 4);
+
+		var history = new Settings(Gitrlf.Config.APPLICATION_ID + ".preferences.history");
+		history.set_boolean("mainline-head", false);
+
+		rows = coloured(open(repo.path), {"master", "feature", "fresh"}, {"feature:4"});
+
+		assert_cmpuint(lane_of(rows, "feature one"), CompareOperator.EQ, lane_of(rows, "master two"));
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "master two,base");
+		assert_cmpuint(colour_of(rows, "feature one"), CompareOperator.EQ, 4);
+
+		history.reset("mainline-head");
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_stretch_above_the_checked_out_commit_keeps_the_colour_that_leads_in()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("initial");
+		repo.branch("fix");
+		repo.commit("fix typo");
+		repo.checkout("fix");
+		repo.commit("tidy docs", "fix");
+		repo.git({"checkout", "--quiet", "-b", "feature", "master"});
+		repo.commit("add parser", "feature");
+		repo.checkout("master");
+
+		var rows = coloured(open(repo.path), {"master", "feature", "fix"}, {"feature:4", "fix:1"});
+
+		assert_cmpstr(subjects(rows), CompareOperator.EQ, "add parser,tidy docs,fix typo,initial");
+		assert_cmpuint(lane_of(rows, "fix typo"), CompareOperator.EQ, 0);
+		assert_cmpuint(lane_of(rows, "tidy docs"), CompareOperator.EQ, 1);
+		assert_cmpstr(colour_at(rows, "tidy docs", 0), CompareOperator.EQ, "4");
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "fix typo,initial");
+		assert_cmpuint(colour_of(rows, "add parser"), CompareOperator.EQ, 4);
+
+		repo.git({"checkout", "--quiet", "--detach", "master"});
+		rows = coloured(open(repo.path), {"master", "feature", "fix"}, {"feature:4", "fix:1"});
+
+		assert_cmpuint(lane_of(rows, "fix typo"), CompareOperator.EQ, 0);
+		assert_cmpstr(colour_at(rows, "tidy docs", 0), CompareOperator.EQ, "4");
+		assert_cmpstr(blue_rows(rows), CompareOperator.EQ, "");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_ticking_does_not_read_the_repository_again()
 {
 	try
@@ -861,7 +1152,7 @@ private static void test_two_branch_lines_two_places_apart_do_not_share_a_colour
 		repo.commit("gamma one", "gamma");
 		repo.git({"checkout", "--quiet", "-b", "alpha", "master"});
 		repo.commit("alpha one", "alpha");
-		repo.checkout("master");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 
 		var rows = coloured(open(repo.path), {"master", "alpha", "beta", "gamma"}, {"alpha:3", "beta:3", "gamma:5"});
 
@@ -891,7 +1182,7 @@ private static Gitg.Commit[] ticked(Opened opened, string[] shorts, Gitrlf.Branc
 
 	var mainline = new Settings(Gitrlf.Config.APPLICATION_ID + ".preferences.history").get_boolean("mainline-head");
 
-	return opened.history.tick(tips(opened, shorts), Gitrlf.History.mainline(opened.repository, mainline), colours.of_tips(opened.refs, ticks));
+	return opened.history.tick(tips(opened, shorts), Gitrlf.History.mainline(opened.repository, mainline), colours.of_tips(opened.refs, ticks), colours.head_of(ticks));
 }
 
 private static Ggit.OId[] tips(Opened opened, string[] shorts)

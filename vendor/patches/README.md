@@ -9,7 +9,7 @@ To make a patch again, first run `vendor/fetch-upstream.sh`, then:
 
 A patch for a Vala file has the name of the file without `.vala`. A patch for another file has the whole file name, for example `resources.xml.patch`.
 
-Nineteen files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
+Twenty files have patches. Five of them remove the line selection from the diff pane, and the five have the same cause. The cause is given once, under `gitg-diff-view-file-renderer-text.patch`, and the other four refer to it.
 
 gitrl-f takes these patches from gitrl-z, which vendors the same source. The differences are these:
 
@@ -264,7 +264,7 @@ Adds `add_lines()`, which adds the added and removed lines of a list of diff lin
 
 ## gitg-lanes.patch
 
-Eight changes.
+Nine changes.
 
 **1. Lets the caller give `Gitg.Lanes` the parents of each commit, through `set_parents_func()`.** `next()` reads the parents of a commit through `parent_ids()`, which calls that function when it is set, and reads the commit when it is not. It gives them to the two places that use them: `prepare_lanes()` and `expand_lanes()`. `Gitg.Lanes` does not own the function: the caller owns the lanes and must live longer than them. An owned function held a reference to its caller, and the two were never freed.
 
@@ -292,6 +292,20 @@ The lanes of a tick of every ref of a history of 100000 commits took 0.27 s befo
 
 Change 8 gives the lines that branches start colours that gitg does not give. When no colour function is set, as in `Gitg.CommitModel`, each lane takes its colour from `Color.next()`, as upstream does.
 
+**9. Gives each lane container a number that no other container has.** The lane of the container keeps the number in `line`, and each row gets it in the copy of the lane. A collapsed lane keeps the number of its container, and the container that the expand makes gets the same number.
+
+**Why.** gitrl-f must find all the rows of one line: the line that holds the checked-out commit is blue from that commit down. The colour cannot find the rows of a line, because a branch and its remote branch share one colour object on two lines. Because the number goes through a collapse, the two parts of a collapsed line are one line.
+
+**Cost.** One counter. The rows and their colours do not change.
+
+## gitg-lane.patch
+
+Adds the field `line` to `Gitg.Lane`. `copy()` copies it.
+
+**Why.** `gitg-lanes.patch` gives each lane container a number, and each row gets a copy of the lane of the container. Without this field, the copy loses the number. `dup()` has no caller, so it does not copy the number.
+
+**Cost.** One more integer in each lane of each row.
+
 ## resources.xml.patch
 
 Removes two entries from the resource list of `libgitg`: `ui/gitg-authentication-dialog.ui` and `ui/gitg-sidebar.ui`.
@@ -302,11 +316,11 @@ Removes two entries from the resource list of `libgitg`: `ui/gitg-authentication
 
 ## gitg-color.patch
 
-Five changes.
+Six changes.
 
-**1. Changes the palette.** The standard palette is `#204a87`, `#6c3566`, `#729fcf`, `#a40000`, `#ad7fa8`, `#f37fb7` and `#fce94f`, in this order. The other colours of gitg are removed.
+**1. Changes the palette.** The standard palette is `#6c3566`, `#729fcf`, `#a40000`, `#ad7fa8`, `#f37fb7` and `#fce94f`, in this order. The other colours of gitg are removed.
 
-**Why.** `gitg-label-renderer.patch` fills the label of a local branch with a colour from this palette. `style.css` gives `#4e9a06` to the labels of remote branches, `#ce5c00` to the labels of tags and `#c4a000` to the label of the stash. `gitrlf-style.css` gives `#888a85` to the label of the uncommitted changes. With these colours in the palette, a branch label could have the colour of a label of another kind. `#8ae234`, `#fcaf3e` and `#e9b96e` are lighter shades of these colours, and are too near them. The operator selected the seven colours on a page that showed each colour of gitg and two more, `#34e2e2` and `#f37fb7`. The operator removed `#ef2929` and `#34e2e2`, and added `#fce94f`, although it is a lighter shade of the stash colour.
+**Why.** `gitg-label-renderer.patch` fills the label of a local branch with a colour from this palette. `style.css` gives `#4e9a06` to the labels of remote branches, `#ce5c00` to the labels of tags and `#c4a000` to the label of the stash. `gitrlf-style.css` gives `#888a85` to the label of the uncommitted changes. With these colours in the palette, a branch label could have the colour of a label of another kind. `#8ae234`, `#fcaf3e` and `#e9b96e` are lighter shades of these colours, and are too near them. The operator selected the seven colours on a page that showed each colour of gitg and two more, `#34e2e2` and `#f37fb7`. The operator removed `#ef2929` and `#34e2e2`, and added `#fce94f`, although it is a lighter shade of the stash colour. Later, the operator kept `#204a87`, which was the first colour, for the checked-out branch only (change 6).
 
 **2. Adds `Color.from_index()`**, which makes the colour at an index. It is the function of gitrl-z.
 
@@ -324,15 +338,19 @@ Five changes.
 
 **Why.** The Line Colours menu of gitrl-f gives six more palettes of five colours, from *A Dictionary of Color Combinations* by Sanzo Wada. The palette is in a static field with no start value. Vala sets a static field that has a start value when the class is first used, and that can come after a call to `use_palette()`.
 
-**Cost.** The lanes do not have the colours of gitg, and the standard palette has 7 colours, not 14. With more than 7 local branches, two branches have the same colour. The pixel suite finds a difference at each dot and line.
+**6. Adds `Color.head()` and the property `is_head`.** `Color.head()` makes the colour of the checked-out branch: `#204a87`, with light text. This colour is the same in each palette, and no index of a palette gives it.
+
+**Why.** The operator asked that the checked-out branch, and no other branch, has deep blue. `#204a87` is the fill that `style.css` gives to the label of a branch. An index cannot give this colour, because other branches with that index would then have it too.
+
+**Cost.** The lanes do not have the colours of gitg, and the standard palette has 6 colours, not 14. With more than 6 local branches, two branches have the same colour. The pixel suite finds a difference at each dot and line.
 
 ## gitg-cell-renderer-lanes.patch
 
 Two changes.
 
-**1. Gives the colour of the lane of the commit to the labels of that commit.**
+**1. Gives the labels of a commit the colour of the lane of the commit, and a function that gives the colour of each label.** `set_label_color_func()` sets the function.
 
-**Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its lane. Only the lane renderer knows that colour. gitrl-z has the same patch.
+**Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its branch. Only gitrl-f knows that colour. The label of a detached HEAD has the colour of its lane, and only the lane renderer knows that colour. gitrl-z gives only the colour of the lane.
 
 **2. Adds the width of the lanes and the labels to the natural width of the cell.**
 
@@ -342,14 +360,14 @@ Two changes.
 
 ## gitg-label-renderer.patch
 
-Two changes. gitrl-z has the same patch, except that gitrl-z selects the text tone of a label by its contrast with the fill.
+Two changes. gitrl-z has a similar patch, but gitrl-z fills the label with the colour of its lane, and selects the text tone of a label by its contrast with the fill.
 
 **1. Draws the label of the checked-out branch with a pointed left end.**
 
-**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. Its colours are those of the other branch labels, so that a checkout changes no colour. When HEAD is detached, no label changes.
+**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. The label is also deep blue, which change 2 gives. When HEAD is detached, no label changes.
 
-**2. Fills the label of a local branch with the colour of its lane.**
+**2. Fills the label of a local branch with the colour that a function gives.** `draw()` takes the function as `ColorFunc`. When there is no function, or the function gives null, the label has the colour of its lane. gitrl-f gives each local branch its own branch colour, and the checked-out branch deep blue. The label of a detached HEAD has the colour of its lane.
 
-**Why.** gitg fills each label with the colour of its kind. Thus the label does not show which line of the graph it is on. The labels of remote branches, tags and the stash keep the colour of their kind, so that the kinds stay different. The text of the label is dark when the colour of the lane has `dark_text`, and light when it does not. The style class `light-fill` gives the dark text. `gitrlf-style.css` gives its colour, because `style.css` must stay byte for byte the stylesheet of gitg.
+**Why.** gitg fills each label with the colour of its kind. Thus the label does not show which branch it is. The colour of a branch stays the same on each line and at each checkout, so the operator selected it over the colour of the lane. The labels of remote branches, tags and the stash keep the colour of their kind, so that the kinds stay different. The text of the label is dark when its fill has `dark_text`, and light when it does not. The style class `light-fill` gives the dark text. `gitrlf-style.css` gives its colour, because `style.css` must stay byte for byte the stylesheet of gitg.
 
 **Cost.** The label of the checked-out branch is 8 pixels wider than before, and the labels of local branches do not have the colours of gitg. Thus the pixel suite finds a difference at each label of a local branch.

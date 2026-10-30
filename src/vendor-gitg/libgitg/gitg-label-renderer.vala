@@ -25,6 +25,8 @@ namespace Gitg
 		private const int padding = 6;
 		private const int point = 8;
 
+		public delegate Color? ColorFunc(Ref r);
+
 		private static string label_text(Ref r)
 		{
 			var escaped = Markup.escape_text(r.parsed_name.shortname);
@@ -190,7 +192,8 @@ namespace Gitg
 		                                double        y,
 		                                int           height,
 		                                bool          use_state,
-		                                Color?        lane = null)
+		                                Color?        lane = null,
+		                                ColorFunc?    color_of = null)
 		{
 			var context = widget.get_style_context();
 			var smaller = label_text(r);
@@ -212,7 +215,17 @@ namespace Gitg
 			}
 
 			var tip = point_width(r);
-			var fill = r.parsed_name.rtype == RefType.BRANCH ? lane : null;
+			Color? fill = null;
+
+			if (r.parsed_name.rtype == RefType.BRANCH)
+			{
+				fill = color_of != null ? color_of(r) : null;
+
+				if (fill == null)
+				{
+					fill = lane;
+				}
+			}
 
 			if (fill != null && fill.dark_text)
 			{
@@ -266,7 +279,8 @@ namespace Gitg
 		                        Cairo.Context         context,
 		                        SList<Ref>            labels,
 		                        Gdk.Rectangle         area,
-		                        Color?                lane = null)
+		                        Color?                lane = null,
+		                        ColorFunc?            color_of = null)
 		{
 			double pos;
 
@@ -299,7 +313,8 @@ namespace Gitg
 				                     area.y,
 				                     area.height,
 				                     true,
-				                     lane);
+				                     lane,
+				                     color_of);
 
 				var o = w + padding * 2 + margin;
 				pos += rtl ? -o : o;

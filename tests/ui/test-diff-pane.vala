@@ -18,7 +18,7 @@
  */namespace GitrlfTest
 {
 
-private const uint32 BLUE = 0x204a87;
+private const uint32 PURPLE = 0x6c3566;
 private const string FILE_RECORD = "cat \"$LOCAL\"; echo --; cat \"$REMOTE\"";
 private const uint32 GREY = 0x888a85;
 private const string NAMED_FILE_RECORD = "basename \"$(dirname \"$LOCAL\")\"; "
@@ -2330,7 +2330,7 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 		int unstaged_y;
 		int staged_y;
 		int grey_x;
-		int blue_x;
+		int purple_x;
 
 		var list_y = top_of_rows(window);
 
@@ -2349,23 +2349,23 @@ private static void test_the_changes_rows_sit_at_the_top_of_the_list()
 			out grey_x, null);
 		view.translate_coordinates(
 			window,
-			first_inked(view, row_y(window, 0) + pitch / 2, BLUE,
+			first_inked(view, row_y(window, 0) + pitch / 2, PURPLE,
 			            lane_x(1) - 8),
-			0, out blue_x, null);
+			0, out purple_x, null);
 
-		assert_cmpint(grey_x, CompareOperator.EQ, blue_x);
+		assert_cmpint(grey_x, CompareOperator.EQ, purple_x);
 
 		var label = label_with(unstaged, "Unstaged changes");
 		var grey = inked_rows(label, label.get_allocated_width() / 2, 0,
 		                      pitch, GREY);
-		var blue = inked_rows(view, lane_x(1) + 4, row_y(window, 0),
-		                      pitch, BLUE);
+		var purple = inked_rows(view, lane_x(1) + 4, row_y(window, 0),
+		                        pitch, PURPLE);
 
-		assert_true(blue.contains("#"));
+		assert_true(purple.contains("#"));
 		assert_cmpint(grey.index_of_char('#'), CompareOperator.EQ,
-		              blue.index_of_char('#'));
+		              purple.index_of_char('#'));
 		assert_cmpint(grey.last_index_of_char('#'), CompareOperator.EQ,
-		              blue.last_index_of_char('#'));
+		              purple.last_index_of_char('#'));
 
 		repo.git({"stash", "--quiet", "--include-untracked"});
 		settle(2600);

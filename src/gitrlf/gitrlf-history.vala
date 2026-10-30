@@ -250,6 +250,28 @@ public class History : Object
 		d_starts = id_map<Gee.List<Ggit.OId>>();
 	}
 
+	private static void carry(Gitg.Commit[] rows, Gee.Set<Ggit.OId> ids)
+	{
+		var lines = firsts(rows, ids);
+		unowned SList<Gitg.Lane>? above = null;
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			unowned SList<Gitg.Lane> lanes = rows[i].get_lanes();
+
+			foreach (var lane in lanes)
+			{
+				if (lines.has_key(lane.line) && i < lines[lane.line]
+				    && lane.from != null && holds(above, lane.line))
+				{
+					lane.color = above.nth_data(lane.from.data).color;
+				}
+			}
+
+			above = lanes;
+		}
+	}
+
 	private Gitg.Color? colour_of(Ggit.OId id)
 	{
 		if (!d_colours.has_key(id))
@@ -348,6 +370,23 @@ public class History : Object
 		var message = data.length > 0 ? ((string)data).ndup(data.length).strip() : "";
 
 		return new IOError.FAILED("%s", message != "" ? message : _("git failed"));
+	}
+
+	private static Gee.HashMap<uint, int> firsts(Gitg.Commit[] rows, Gee.Set<Ggit.OId> ids)
+	{
+		var lines = new Gee.HashMap<uint, int>();
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			var line = rows[i].lane.line;
+
+			if (rows[i].get_id() in ids && !lines.has_key(line))
+			{
+				lines[line] = i;
+			}
+		}
+
+		return lines;
 	}
 
 	public static string[] git(File directory, string[] arguments, string? input) throws Error
@@ -466,6 +505,19 @@ public class History : Object
 		{
 			throw error;
 		}
+	}
+
+	private static bool holds(SList<Gitg.Lane> lanes, uint line)
+	{
+		foreach (var lane in lanes)
+		{
+			if (lane.line == line)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public static Gee.HashMap<Ggit.OId, V> id_map<V>()
@@ -651,6 +703,23 @@ public class History : Object
 		}
 
 		return list;
+	}
+
+	private static void paint(Gitg.Commit[] rows, Gee.Set<Ggit.OId> ids)
+	{
+		var lines = firsts(rows, ids);
+		var colour = Gitg.Color.head();
+
+		for (var i = 0; i < rows.length; i++)
+		{
+			foreach (var lane in rows[i].get_lanes())
+			{
+				if (lines.has_key(lane.line) && i >= lines[lane.line])
+				{
+					lane.color = colour;
+				}
+			}
+		}
 	}
 
 	private int[] parents_at(int commit)
@@ -880,7 +949,7 @@ public class History : Object
 		return resolved.get_target();
 	}
 
-	public Gitg.Commit[] tick(Ggit.OId[] tips, Ggit.OId[] mainline, Gee.Map<Ggit.OId, Gitg.Color>? colours = null)
+	public Gitg.Commit[] tick(Ggit.OId[] tips, Ggit.OId[] mainline, Gee.Map<Ggit.OId, Gitg.Color>? colours = null, Ggit.OId? head = null)
 	{
 		var reached = new bool[d_commits.length];
 		var starts = new int[0];
@@ -962,7 +1031,20 @@ public class History : Object
 			}
 		}
 
+		var held = id_set();
+		var checked_out = id_set();
+
+		held.add_all_array(reserved);
+
+		if (head != null)
+		{
+			checked_out.add_all_array(starts_of(head));
+			held.add_all(checked_out);
+		}
+
+		carry(rows, held);
 		dodge(rows);
+		paint(rows, checked_out);
 
 		return rows;
 	}

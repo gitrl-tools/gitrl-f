@@ -444,6 +444,8 @@ private static string[] lane_colours()
 		colours += rgba_of(Gitg.Color.from_index(i)).to_string();
 	}
 
+	colours += rgba_of(Gitg.Color.head()).to_string();
+
 	return colours;
 }
 
@@ -555,9 +557,10 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitrlf/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
-	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-on-a-commit-take-the-colour-of-its-line", test_the_branch_labels_on_a_commit_take_the_colour_of_its_line);
-	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-colour-of-their-lines", test_the_branch_labels_take_the_colour_of_their_lines);
-	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end-and-the-fill-of-the-others", test_the_checked_out_label_has_a_pointed_end_and_the_fill_of_the_others);
+	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-show-their-own-colour-and-the-checked-out-one-blue", test_the_branch_labels_show_their_own_colour_and_the_checked_out_one_blue);
+	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-text-tone-of-their-fill", test_the_branch_labels_take_the_text_tone_of_their_fill);
+	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-colour-is-the-blue-of-a-branch", test_the_checked_out_colour_is_the_blue_of_a_branch);
+	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end", test_the_checked_out_label_has_a_pointed_end);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-leaves-out-the-rows-between-picks", test_the_commit_menu_leaves_out_the_rows_between_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
@@ -575,7 +578,6 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-last-column-edge-gives-its-room-to-the-subject", test_the_last_column_edge_gives_its_room_to_the_subject);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-column-edge-starts-from-the-width-it-shows", test_the_last_column_edge_starts_from_the_width_it_shows);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-row-scrolls-into-view-under-the-titles", test_the_last_row_scrolls_into_view_under_the_titles);
-	Test.add_func("/gitrlf/ui/history-activity/the-first-line-has-the-blue-of-a-branch", test_the_first_line_has_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-row-under-the-pointer-is-tinted-before-it-is-picked", test_the_row_under_the_pointer_is_tinted_before_it_is_picked);
 	Test.add_func("/gitrlf/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
@@ -1003,25 +1005,38 @@ private static void test_a_branch_keeps_its_colour_after_a_checkout_and_a_restar
 
 		var window = opened(repo, {"refs/heads/master", "refs/heads/beta", "refs/heads/gamma"});
 		var beta = line_hex(window, "beta one");
+
+		assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(beta, CompareOperator.NE, "204a87");
+
+		repo.checkout("beta");
+		window.history.refresh();
+		drain();
+
 		var gamma = line_hex(window, "gamma one");
 
-		assert_cmpstr(beta, CompareOperator.EQ, "204a87");
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(gamma, CompareOperator.NE, "204a87");
 		assert_cmpstr(gamma, CompareOperator.NE, beta);
 
-		foreach (var head in new string[] { "beta", "gamma", "master" })
-		{
-			repo.checkout(head);
-			window.history.refresh();
-			drain();
+		repo.checkout("gamma");
+		window.history.refresh();
+		drain();
 
-			assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, beta);
-			assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, gamma);
-		}
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, beta);
+		assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, "204a87");
+
+		repo.git({"checkout", "--quiet", "--detach", "master"});
+		window.history.refresh();
+		drain();
+
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, beta);
+		assert_cmpstr(line_hex(window, "gamma one"), CompareOperator.EQ, gamma);
 
 		window.destroy();
 		repo.git({"checkout", "--quiet", "-b", "alpha", "master"});
 		repo.commit("alpha one", "alpha");
-		repo.checkout("master");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 		window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/beta", "refs/heads/gamma"});
 
 		var alpha = line_hex(window, "alpha one");
@@ -1050,7 +1065,11 @@ private static void test_a_branch_keeps_the_colour_it_took_to_part_from_a_close_
 		repo.commit("alpha one", "alpha");
 		repo.git({"checkout", "--quiet", "-b", "beta", "master"});
 		repo.commit("beta one", "beta");
-		repo.checkout("master");
+		repo.checkout("alpha");
+		repo.commit("alpha two", "alpha");
+		repo.checkout("beta");
+		repo.commit("beta two", "beta");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 
 		var state = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
 		var path = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path)).get_location().get_path();
@@ -2171,21 +2190,21 @@ private static void test_choosing_a_set_of_line_colours_recolours_the_lines()
 		repo.commit("base");
 		repo.git({"checkout", "--quiet", "-b", "beta"});
 		repo.commit("beta one", "beta");
-		repo.checkout("master");
+		repo.git({"checkout", "--quiet", "--detach", "master"});
 
 		var window = opened(repo, {"refs/heads/master", "refs/heads/beta"});
 
-		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "6c3566");
 
 		application().activate_action("line-colours", new Variant.string("dictionary-1"));
 		drain();
 
-		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "1c4286");
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "ab2439");
 
 		application().activate_action("line-colours", new Variant.string("default"));
 		drain();
 
-		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(line_hex(window, "beta one"), CompareOperator.EQ, "6c3566");
 
 		window.destroy();
 		repo.remove();
@@ -2931,11 +2950,11 @@ private static void test_history_settings_redraw_the_list()
 		var by_time = subjects_of(window);
 
 		assert_cmpstr(by_time, CompareOperator.EQ, "master two,side two,side one,master one,base");
-		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 1);
-
-		settings.set_boolean("mainline-head", true);
-		drain();
 		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 0);
+
+		settings.set_boolean("mainline-head", false);
+		drain();
+		assert_cmpuint(lane_of(window, "side two"), CompareOperator.EQ, 1);
 
 		settings.set_boolean("topological-order", true);
 		drain();
@@ -3821,7 +3840,7 @@ private static void test_summary_counts_rows_of_commits()
 	}
 }
 
-private static void test_the_branch_labels_on_a_commit_take_the_colour_of_its_line()
+private static void test_the_branch_labels_show_their_own_colour_and_the_checked_out_one_blue()
 {
 	try
 	{
@@ -3835,12 +3854,12 @@ private static void test_the_branch_labels_on_a_commit_take_the_colour_of_its_li
 		sizes.set_value("size", new Variant("(ii)", 1180, 600));
 
 		var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/beta"});
-		var line = line_hex(window, "second");
 
-		assert_cmpstr(label_fill(window, 0, "alpha"), CompareOperator.EQ, line);
-		assert_cmpstr(label_fill(window, 0, "beta"), CompareOperator.EQ, line);
-		assert_cmpstr(line_hex(window, "first"), CompareOperator.EQ, line);
-		assert_cmpstr(label_fill(window, 1, "master"), CompareOperator.EQ, line);
+		assert_cmpstr(line_hex(window, "second"), CompareOperator.EQ, "6c3566");
+		assert_cmpstr(line_hex(window, "first"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(label_fill(window, 0, "alpha"), CompareOperator.EQ, "6c3566");
+		assert_cmpstr(label_fill(window, 0, "beta"), CompareOperator.EQ, "729fcf");
+		assert_cmpstr(label_fill(window, 1, "master"), CompareOperator.EQ, "204a87");
 
 		window.destroy();
 		sizes.reset("size");
@@ -3852,7 +3871,7 @@ private static void test_the_branch_labels_on_a_commit_take_the_colour_of_its_li
 	}
 }
 
-private static void test_the_branch_labels_take_the_colour_of_their_lines()
+private static void test_the_branch_labels_take_the_text_tone_of_their_fill()
 {
 	try
 	{
@@ -3868,9 +3887,9 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 		var width = 120;
 		var height = 23;
 		var middle = height / 2;
-		var light = lane_colour(6);
-		var blue = lane_colour(0);
-		var sky = lane_colour(2);
+		var light = lane_colour(5);
+		var purple = lane_colour(0);
+		var sky = lane_colour(1);
 		int darkest;
 		int lightest;
 
@@ -3882,11 +3901,11 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 		assert_cmpint(darkest, CompareOperator.LT, ink_of(fill) - 48);
 		assert_cmpint(lightest, CompareOperator.LE, ink_of(fill) + 48);
 
-		var on_blue = pill_of(repository, view, "refs/heads/side", blue, width, height);
-		fill = pixel_at(on_blue, right_end(on_blue, middle) - 3, middle);
-		ink_range(on_blue, middle, out darkest, out lightest);
+		var on_purple = pill_of(repository, view, "refs/heads/side", purple, width, height);
+		fill = pixel_at(on_purple, right_end(on_purple, middle) - 3, middle);
+		ink_range(on_purple, middle, out darkest, out lightest);
 
-		assert_true(close_to(fill, rgba_of(blue)));
+		assert_true(close_to(fill, rgba_of(purple)));
 		assert_cmpint(lightest, CompareOperator.GT, ink_of(fill) + 48);
 		assert_cmpint(darkest, CompareOperator.GE, ink_of(fill) - 48);
 
@@ -3916,7 +3935,16 @@ private static void test_the_branch_labels_take_the_colour_of_their_lines()
 	}
 }
 
-private static void test_the_checked_out_label_has_a_pointed_end_and_the_fill_of_the_others()
+private static void test_the_checked_out_colour_is_the_blue_of_a_branch()
+{
+	application();
+
+	var context = new Gtk.TreeView().get_style_context();
+
+	assert_cmpstr(rgba_of(Gitg.Color.head()).to_string(), CompareOperator.EQ, kind_fill(context, "branch").to_string());
+}
+
+private static void test_the_checked_out_label_has_a_pointed_end()
 {
 	try
 	{
@@ -3930,7 +3958,6 @@ private static void test_the_checked_out_label_has_a_pointed_end_and_the_fill_of
 		var view = new Gtk.TreeView();
 		var width = 120;
 		var height = 23;
-		var middle = height / 2;
 
 		var lane = lane_colour(0);
 		var head = pill_of(repository, view, "refs/heads/master", lane, width, height);
@@ -3938,9 +3965,6 @@ private static void test_the_checked_out_label_has_a_pointed_end_and_the_fill_of
 
 		assert_cmpint(pixel_at(head, 5, 4)[3], CompareOperator.EQ, 0);
 		assert_cmpint(pixel_at(other, 5, 4)[3], CompareOperator.GT, 0);
-
-		assert_true(close_to(pixel_at(head, right_end(head, middle) - 3, middle), rgba_of(lane)));
-		assert_true(close_to(pixel_at(other, right_end(other, middle) - 3, middle), rgba_of(lane)));
 
 		repo.remove();
 	}
@@ -4543,15 +4567,6 @@ private static void test_the_last_row_scrolls_into_view_under_the_titles()
 	{
 		Test.fail_printf("%s", e.message);
 	}
-}
-
-private static void test_the_first_line_has_the_blue_of_a_branch()
-{
-	application();
-
-	var context = new Gtk.TreeView().get_style_context();
-
-	assert_cmpstr(lane_colours()[0], CompareOperator.EQ, kind_fill(context, "branch").to_string());
 }
 
 private static void test_the_ref_menu_goes_to_where_two_refs_split()

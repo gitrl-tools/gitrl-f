@@ -1,14 +1,16 @@
 --- a/libgitg/gitg-label-renderer.vala
 +++ b/libgitg/gitg-label-renderer.vala
-@@ -23,6 +23,7 @@
+@@ -23,6 +23,9 @@
  	{
  		private const int margin = 2;
  		private const int padding = 6;
 +		private const int point = 8;
++
++		public delegate Color? ColorFunc(Ref r);
  
  		private static string label_text(Ref r)
  		{
-@@ -40,7 +41,7 @@
+@@ -40,7 +43,7 @@
  			layout.set_markup(smaller, -1);
  			layout.get_pixel_size(out w, null);
  
@@ -17,7 +19,7 @@
  		}
  
  		public static int width(Gtk.Widget             widget,
-@@ -93,6 +94,94 @@
+@@ -93,6 +96,94 @@
  			return style_class;
  		}
  
@@ -112,22 +114,33 @@
  		private static int render_label(Gtk.Widget    widget,
  		                                Cairo.Context cr,
  		                                Pango.Layout  layout,
-@@ -100,7 +189,8 @@
+@@ -100,7 +191,9 @@
  		                                double        x,
  		                                double        y,
  		                                int           height,
 -		                                bool          use_state)
 +		                                bool          use_state,
-+		                                Color?        lane = null)
++		                                Color?        lane = null,
++		                                ColorFunc?    color_of = null)
  		{
  			var context = widget.get_style_context();
  			var smaller = label_text(r);
-@@ -121,39 +211,62 @@
+@@ -121,39 +214,73 @@
  				context.add_class(style_class);
  			}
  
 +			var tip = point_width(r);
-+			var fill = r.parsed_name.rtype == RefType.BRANCH ? lane : null;
++			Color? fill = null;
++
++			if (r.parsed_name.rtype == RefType.BRANCH)
++			{
++				fill = color_of != null ? color_of(r) : null;
++
++				if (fill == null)
++				{
++					fill = lane;
++				}
++			}
 +
 +			if (fill != null && fill.dark_text)
 +			{
@@ -196,17 +209,19 @@
  		                        SList<Ref>            labels,
 -		                        Gdk.Rectangle         area)
 +		                        Gdk.Rectangle         area,
-+		                        Color?                lane = null)
++		                        Color?                lane = null,
++		                        ColorFunc?            color_of = null)
  		{
  			double pos;
  
-@@ -185,7 +298,8 @@
+@@ -185,7 +312,9 @@
  				                     (int)pos,
  				                     area.y,
  				                     area.height,
 -				                     true);
 +				                     true,
-+				                     lane);
++				                     lane,
++				                     color_of);
  
  				var o = w + padding * 2 + margin;
  				pos += rtl ? -o : o;

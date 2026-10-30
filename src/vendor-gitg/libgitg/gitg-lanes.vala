@@ -35,6 +35,8 @@ public class Lanes : Object
 
 	class LaneContainer
 	{
+		private static uint lines;
+
 		public Lane lane;
 		public int inactive;
 		public Ggit.OId? from;
@@ -47,6 +49,7 @@ public class Lanes : Object
 			this.from = from;
 			this.to = to;
 			this.lane = new Lane.with_color(color);
+			this.lane.line = ++lines;
 			this.inactive = 0;
 		}
 
@@ -97,6 +100,7 @@ public class Lanes : Object
 	class CollapsedLane
 	{
 		public Color color;
+		public uint line;
 		public uint index;
 		public Ggit.OId? from;
 		public Ggit.OId? to;
@@ -104,6 +108,7 @@ public class Lanes : Object
 		public CollapsedLane(LaneContainer container)
 		{
 			color = container.lane.color;
+			line = container.lane.line;
 			from = container.from;
 			to = container.to;
 		}
@@ -498,6 +503,7 @@ public class Lanes : Object
 	{
 		var index = lane.index;
 		var ln = new Lane.with_color(lane.color);
+		ln.line = lane.line;
 		var len = d_lanes.length;
 
 		if (index > len)
@@ -510,6 +516,7 @@ public class Lanes : Object
 		var container = new LaneContainer.with_color(lane.from,
 		                                             lane.to,
 		                                             lane.color);
+		container.lane.line = lane.line;
 
 		update_current_lane_merge_indices((int)index, 1);
 

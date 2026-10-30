@@ -23,7 +23,6 @@ namespace Gitrlf
 public class LineColours : Object
 {
 	private const Gitg.Color.Rgb[] SET_1 = {
-		{28, 66, 134, false},
 		{171, 36, 57, false},
 		{26, 116, 68, false},
 		{152, 111, 45, false},
@@ -48,7 +47,6 @@ public class LineColours : Object
 
 	private const Gitg.Color.Rgb[] SET_4 = {
 		{78, 29, 76, false},
-		{6, 79, 110, false},
 		{67, 119, 66, false},
 		{218, 82, 93, false},
 		{249, 157, 27, true}

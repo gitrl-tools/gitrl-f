@@ -1,0 +1,18 @@
+--- a/libgitg/gitg-lane.vala
++++ b/libgitg/gitg-lane.vala
+@@ -35,6 +35,7 @@
+ public class Lane : Object
+ {
+ 	public Color color;
++	public uint line;
+ 	public SList<int> from;
+ 	public LaneTag tag;
+ 	public Ggit.OId? boundary_id;
+@@ -59,6 +60,7 @@
+ 	public Lane copy()
+ 	{
+ 		Lane ret = new Lane.with_color(color);
++		ret.line = line;
+ 		ret.from = from.copy();
+ 		ret.tag = tag;
+ 		ret.boundary_id = boundary_id;

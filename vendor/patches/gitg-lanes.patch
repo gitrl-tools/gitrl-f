@@ -1,6 +1,6 @@
 --- a/libgitg/gitg-lanes.vala
 +++ b/libgitg/gitg-lanes.vala
-@@ -29,7 +29,7 @@
+@@ -29,12 +29,14 @@
  	public Gee.LinkedList<Commit> miss_commits {get; set; }
  
  	private SList<weak Commit> d_previous;
@@ -9,7 +9,22 @@
  	private HashTable<Ggit.OId, CollapsedLane> d_collapsed;
  	private Gee.HashSet<Ggit.OId>? d_roots;
  
-@@ -59,7 +59,6 @@
+ 	class LaneContainer
+ 	{
++		private static uint lines;
++
+ 		public Lane lane;
+ 		public int inactive;
+ 		public Ggit.OId? from;
+@@ -47,6 +49,7 @@
+ 			this.from = from;
+ 			this.to = to;
+ 			this.lane = new Lane.with_color(color);
++			this.lane.line = ++lines;
+ 			this.inactive = 0;
+ 		}
+ 
+@@ -59,7 +62,6 @@
  		public void next(int index)
  		{
  			var hidden = is_hidden;
@@ -17,7 +32,23 @@
  
  			lane.tag = LaneTag.NONE;
  			lane.from = new SList<int>();
-@@ -130,10 +129,56 @@
+@@ -98,6 +100,7 @@
+ 	class CollapsedLane
+ 	{
+ 		public Color color;
++		public uint line;
+ 		public uint index;
+ 		public Ggit.OId? from;
+ 		public Ggit.OId? to;
+@@ -105,6 +108,7 @@
+ 		public CollapsedLane(LaneContainer container)
+ 		{
+ 			color = container.lane.color;
++			line = container.lane.line;
+ 			from = container.from;
+ 			to = container.to;
+ 		}
+@@ -130,10 +134,56 @@
  		reset();
  	}
  
@@ -75,7 +106,7 @@
  		miss_commits = new Gee.LinkedList<Commit>();
  		d_roots = roots;
  
-@@ -143,7 +188,7 @@
+@@ -143,7 +193,7 @@
  		{
  			foreach (var r in reserved)
  			{
@@ -84,7 +115,7 @@
  				ct.inactive = -1;
  				ct.is_hidden = true;
  
-@@ -161,14 +206,14 @@
+@@ -161,14 +211,14 @@
  	                 bool save_miss = false)
  	{
  		var myoid = next.get_id();
@@ -101,7 +132,7 @@
  		LaneContainer? mylane = find_lane_by_oid(myoid, out nextpos);
  		if (mylane == null && d_roots != null && !d_roots.contains(myoid))
  		{
-@@ -184,16 +229,13 @@
+@@ -184,16 +234,13 @@
  		if (mylane == null)
  		{
  			// there is no lane reserved for this commit, add a new lane
@@ -120,7 +151,7 @@
  			mylane.to = null;
  			mylane.from = next.get_id();
  
-@@ -211,15 +253,23 @@
+@@ -211,15 +258,23 @@
  
  		var hidden = mylane.is_hidden;
  
@@ -148,7 +179,7 @@
  		var myoid = next.get_id();
  
  		if (!hidden)
-@@ -229,10 +279,10 @@
+@@ -229,10 +284,10 @@
  
  		var mylane = d_lanes[pos];
  
@@ -161,7 +192,7 @@
  
  			var container = find_lane_by_oid(poid, out lnpos);
  
-@@ -255,8 +305,6 @@
+@@ -255,8 +310,6 @@
  						mylane.is_hidden = false;
  					}
  
@@ -170,7 +201,7 @@
  					if (mylane.inactive >= 0)
  					{
  						mylane.inactive = 0;
-@@ -273,8 +321,6 @@
+@@ -273,8 +326,6 @@
  						container.lane.from.append(pos);
  					}
  
@@ -179,7 +210,7 @@
  					if (!hidden)
  					{
  						container.is_hidden = false;
-@@ -293,8 +339,6 @@
+@@ -293,8 +344,6 @@
  				// there is no parent yet which can proceed on the current
  				// commit lane, so set it now
  				mylane.to = poid;
@@ -188,7 +219,7 @@
  			}
  			else if (!hidden)
  			{
-@@ -381,11 +425,9 @@
+@@ -381,11 +430,9 @@
  	{
  		int index = 0;
  
@@ -202,7 +233,7 @@
  
  			if (container.inactive != inactive_max + inactive_gap)
  			{
-@@ -396,7 +438,7 @@
+@@ -396,7 +443,7 @@
  			collapse_lane(container, container.lane.from.data);
  			update_current_lane_merge_indices(index, -1);
  
@@ -211,16 +242,25 @@
  		}
  	}
  
-@@ -456,7 +498,7 @@
+@@ -456,7 +503,8 @@
  	{
  		var index = lane.index;
  		var ln = new Lane.with_color(lane.color);
 -		var len = d_lanes.size;
++		ln.line = lane.line;
 +		var len = d_lanes.length;
  
  		if (index > len)
  		{
-@@ -532,15 +574,13 @@
+@@ -468,6 +516,7 @@
+ 		var container = new LaneContainer.with_color(lane.from,
+ 		                                             lane.to,
+ 		                                             lane.color);
++		container.lane.line = lane.line;
+ 
+ 		update_current_lane_merge_indices((int)index, 1);
+ 
+@@ -532,15 +581,13 @@
  		}
  	}
  

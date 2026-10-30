@@ -279,6 +279,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned = new HistoryPaned();
 		d_paned.commit_list_view.model = d_model;
 		d_paned.column_subject.set_cell_data_func(d_paned.renderer_subject, lanes_data_func);
+		d_paned.renderer_subject.set_label_color_func(label_colour);
 		d_paned.column_author.set_cell_data_func(d_paned.renderer_author, author_data_func);
 		d_paned.column_hash.set_cell_data_func(d_paned.renderer_hash, hash_data_func);
 
@@ -1878,6 +1879,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 	}
 
+	private Gitg.Color? label_colour(Gitg.Ref label)
+	{
+		return d_colours.of_label(label.get_name());
+	}
+
 	private static int label_rank(Gitg.Ref label)
 	{
 		switch (label.parsed_name.rtype)
@@ -3365,7 +3371,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 				}
 			}
 
-			rows = history.tick(tips, History.mainline(d_repository, d_settings.get_boolean("mainline-head")), d_colours.of_tips(d_refs, d_ticks));
+			rows = history.tick(tips, History.mainline(d_repository, d_settings.get_boolean("mainline-head")), d_colours.of_tips(d_refs, d_ticks), d_colours.head_of(d_ticks));
 
 			if (d_colours.keep())
 			{

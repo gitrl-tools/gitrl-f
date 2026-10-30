@@ -23,6 +23,7 @@ namespace Gitrlf
 public class BranchColours : Object
 {
 	private Gee.Map<string, int> d_colours;
+	private Ref? d_head;
 	private Gee.Map<string, Gitg.Color> d_lines;
 	private Gee.Set<string> d_locals;
 
@@ -50,6 +51,11 @@ public class BranchColours : Object
 			}
 
 			d_locals.add(name);
+
+			if (reference.head)
+			{
+				d_head = reference;
+			}
 
 			if (saved.has_key(name) && saved[name] < used.length)
 			{
@@ -97,6 +103,11 @@ public class BranchColours : Object
 		return d_locals.contains(name) ? name : null;
 	}
 
+	public Ggit.OId? head_of(Gee.Set<string> ticks)
+	{
+		return d_head != null && ticks.contains(d_head.name) ? d_head.target : null;
+	}
+
 	public bool keep()
 	{
 		var changed = false;
@@ -116,6 +127,21 @@ public class BranchColours : Object
 	public int of_branch(string name)
 	{
 		return d_colours[name];
+	}
+
+	public Gitg.Color? of_label(string name)
+	{
+		if (!name.has_prefix("refs/heads/"))
+		{
+			return null;
+		}
+
+		if (d_head != null && name == d_head.name)
+		{
+			return Gitg.Color.head();
+		}
+
+		return Gitg.Color.from_index(of_branch(name.substring(11)));
 	}
 
 	public Gee.Map<Ggit.OId, Gitg.Color> of_tips(Gee.List<Ref> refs, Gee.Set<string> ticks)

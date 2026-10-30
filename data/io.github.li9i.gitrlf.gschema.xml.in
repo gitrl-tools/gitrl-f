@@ -99,12 +99,11 @@
       </description>
     </key>
     <key name="mainline-head" type="b">
-      <default>false</default>
+      <default>true</default>
       <summary>Mainline Head</summary>
       <description>
          Setting that indicates whether to always preserve a mainline in the
-         history for the current HEAD. Off by default, unlike gitg, so that
-         a checkout does not move the lines of the history.
+         history for the current HEAD.
       </description>
     </key>
   </schema>

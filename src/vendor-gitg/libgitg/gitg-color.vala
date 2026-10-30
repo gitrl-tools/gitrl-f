@@ -30,8 +30,9 @@ public class Color : Object
 		public bool dark_text;
 	}
 
+	private const Rgb checked_out = {32, 74, 135, false};
+
 	private const Rgb[] standard = {
-		{32, 74, 135, false},
 		{108, 53, 102, false},
 		{114, 159, 207, false},
 		{164, 0, 0, false},
@@ -45,6 +46,8 @@ public class Color : Object
 	private static uint current_index;
 
 	public uint idx = 0;
+
+	public bool is_head { get; private set; }
 
 	public static void reset()
 	{
@@ -62,9 +65,17 @@ public class Color : Object
 		return chosen != null ? chosen : standard;
 	}
 
+	public static Color head()
+	{
+		Color ret = new Color();
+		ret.is_head = true;
+
+		return ret;
+	}
+
 	private Rgb rgb
 	{
-		get { return palette()[idx % size()]; }
+		get { return is_head ? checked_out : palette()[idx % size()]; }
 	}
 
 	public double r

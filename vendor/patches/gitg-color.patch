@@ -1,6 +1,6 @@
 --- a/libgitg/gitg-color.vala
 +++ b/libgitg/gitg-color.vala
-@@ -22,31 +22,26 @@
+@@ -22,53 +22,80 @@
  
  public class Color : Object
  {
@@ -34,8 +34,9 @@
 +		public bool dark_text;
 +	}
 +
++	private const Rgb checked_out = {32, 74, 135, false};
++
 +	private const Rgb[] standard = {
-+		{32, 74, 135, false},
 +		{108, 53, 102, false},
 +		{114, 159, 207, false},
 +		{164, 0, 0, false},
@@ -49,7 +50,11 @@
  	private static uint current_index;
  
  	public uint idx = 0;
-@@ -56,19 +51,40 @@
+ 
++	public bool is_head { get; private set; }
++
+ 	public static void reset()
+ 	{
  		current_index = 0;
  	}
  
@@ -64,9 +69,17 @@
 +		return chosen != null ? chosen : standard;
 +	}
 +
++	public static Color head()
++	{
++		Color ret = new Color();
++		ret.is_head = true;
++
++		return ret;
++	}
++
 +	private Rgb rgb
 +	{
-+		get { return palette()[idx % size()]; }
++		get { return is_head ? checked_out : palette()[idx % size()]; }
 +	}
 +
  	public double r
@@ -93,7 +106,7 @@
  	}
  
  	public void components(out double r, out double g, out double b)
-@@ -82,7 +98,7 @@
+@@ -82,7 +109,7 @@
  	{
  		uint next = current_index++;
  
@@ -102,7 +115,7 @@
  		{
  			current_index = 0;
  		}
-@@ -98,6 +114,19 @@
+@@ -98,6 +125,19 @@
  		return ret;
  	}
  
