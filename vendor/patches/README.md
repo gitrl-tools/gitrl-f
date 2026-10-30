@@ -294,7 +294,7 @@ Change 8 gives the lines that branches start colours that gitg does not give. Wh
 
 **9. Gives each lane container a number that no other container has.** The lane of the container keeps the number in `line`, and each row gets it in the copy of the lane. A collapsed lane keeps the number of its container, and the container that the expand makes gets the same number.
 
-**Why.** gitrl-f must find all the rows of one line: the line that holds the checked-out commit is blue from that commit down. The colour cannot find the rows of a line, because a branch and its remote branch share one colour object on two lines. Because the number goes through a collapse, the two parts of a collapsed line are one line.
+**Why.** gitrl-f must find all the rows of one line: the line that holds the checked-out commit is blue from that commit down, and a bend keeps the colour of the line that it leaves. The colour cannot find the rows of a line, because a branch and its remote branch share one colour object on two lines. Because the number goes through a collapse, the two parts of a collapsed line are one line.
 
 **Cost.** One counter. The rows and their colours do not change.
 
@@ -346,7 +346,7 @@ Six changes.
 
 ## gitg-cell-renderer-lanes.patch
 
-Two changes.
+Three changes.
 
 **1. Gives the labels of a commit the colour of the lane of the commit, and a function that gives the colour of each label.** `set_label_color_func()` sets the function.
 
@@ -356,7 +356,11 @@ Two changes.
 
 **Why.** The cell draws the lanes and the labels, and then the subject to their right. gitg gives only the width of the subject as the natural width. A double click on the edge of the Subject title sets the column to the natural width of its widest row. Without this change, the end of the subject was cut by the width of the lanes and the labels.
 
-**Cost.** None.
+**3. Draws a bend in the colour of the line that it leaves.** A bend is the curve between two rows from one lane to another. gitg draws each curve in the colour of the lane in the lower row. Now, when the line of the lower lane is also in the upper row, the curve has the colour of the upper lane that it comes from. When the line of the lower lane starts in the lower row, as at the second parent of a merge, the curve keeps the colour of the lower lane. The property `prev_commit` gives the commit of the upper row.
+
+**Why.** The operator selected this. When a branch joins another line, the bend has the colour of the branch. At a merge, the bend to the merged branch has the colour of the merged branch. Thus the line of the checked-out branch is blue from the checked-out commit down, and the bend of a branch that joins it above that commit is not blue.
+
+**Cost.** Changes 1 and 2 cost nothing. After change 3, the bend where a line joins another has the colour of the line that ends, not of the line that continues. The pixel suite finds a difference at each such bend.
 
 ## gitg-label-renderer.patch
 

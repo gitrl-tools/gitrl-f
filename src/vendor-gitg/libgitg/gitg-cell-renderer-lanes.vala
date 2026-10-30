@@ -23,6 +23,7 @@ namespace Gitg
 	{
 		public Commit? commit { get; set; }
 		public Commit? next_commit { get; set; }
+		public Commit? prev_commit { get; set; }
 		public uint lane_width { get; set; default = 16; }
 		public uint dot_width { get; set; default = 10; }
 		public unowned SList<Ref> labels { get; set; }
@@ -123,9 +124,30 @@ namespace Gitg
 			}
 		}
 
+		private static Color bend_color(Lane lane, int from, Commit? above)
+		{
+			if (above == null)
+			{
+				return lane.color;
+			}
+
+			unowned SList<Lane> lanes = above.get_lanes();
+
+			foreach (var other in lanes)
+			{
+				if (other.line == lane.line)
+				{
+					return lanes.nth_data(from).color;
+				}
+			}
+
+			return lane.color;
+		}
+
 		private void draw_paths_real(Cairo.Context context,
 		                             Gdk.Rectangle area,
 		                             Commit?       commit,
+		                             Commit?       above,
 		                             DirectionFunc f,
 		                             double        yoffset)
 		{
@@ -146,11 +168,11 @@ namespace Gitg
 					continue;
 				}
 
-				var color = lane.color;
-				context.set_source_rgb(color.r, color.g, color.b);
-
 				foreach (var from in lane.from)
 				{
+					var color = bend_color(lane, from, above);
+					context.set_source_rgb(color.r, color.g, color.b);
+
 					double x1 = area.x + f(from * cw + cw / 2.0);
 					double x2 = area.x + f(to * cw + cw / 2.0);
 					double y1 = area.y + yoffset * ch;
@@ -170,14 +192,14 @@ namespace Gitg
 		                            Gdk.Rectangle area,
 		                            DirectionFunc f)
 		{
-			draw_paths_real(context, area, commit, f, -1);
+			draw_paths_real(context, area, commit, prev_commit, f, -1);
 		}
 
 		private void draw_bottom_paths(Cairo.Context context,
 		                               Gdk.Rectangle area,
 		                               DirectionFunc f)
 		{
-			draw_paths_real(context, area, next_commit, f, 1);
+			draw_paths_real(context, area, next_commit, commit, f, 1);
 		}
 
 		private void draw_paths(Cairo.Context context,

@@ -479,6 +479,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitrlf/ui/history-activity/a-bend-keeps-the-colour-of-the-line-it-leaves", test_a_bend_keeps_the_colour_of_the_line_it_leaves);
 	Test.add_func("/gitrlf/ui/history-activity/a-branch-keeps-its-colour-after-a-checkout-and-a-restart", test_a_branch_keeps_its_colour_after_a_checkout_and_a_restart);
 	Test.add_func("/gitrlf/ui/history-activity/a-branch-keeps-the-colour-it-took-to-part-from-a-close-line", test_a_branch_keeps_the_colour_it_took_to_part_from_a_close_line);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-dragged-by-its-title-keeps-its-place", test_a_column_dragged_by_its_title_keeps_its_place);
@@ -990,6 +991,38 @@ private static string subjects_of(Gitrlf.Window window)
 	}
 
 	return string.joinv(",", names);
+}
+
+private static void test_a_bend_keeps_the_colour_of_the_line_it_leaves()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("initial");
+		repo.branch("fix");
+		repo.commit("fix typo");
+		repo.checkout("fix");
+		repo.commit("tidy docs", "fix");
+		repo.git({"checkout", "--quiet", "-b", "feature", "master"});
+		repo.commit("add parser", "feature");
+		repo.checkout("master");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature", "refs/heads/fix"});
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "add parser,tidy docs,fix typo,initial");
+		assert_false("204a87" in row_strip(window, 0, 0, 32));
+		assert_true("6c3566" in row_strip(window, 1, 0, 16));
+		assert_false("204a87" in row_strip(window, 1, 0, 32));
+		assert_true("204a87" in row_strip(window, 2, 0, 16));
+		assert_true("729fcf" in row_strip(window, 3, 0, 32));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_a_branch_keeps_its_colour_after_a_checkout_and_a_restart()

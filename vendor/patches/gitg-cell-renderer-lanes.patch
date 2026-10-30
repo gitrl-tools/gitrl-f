@@ -1,6 +1,12 @@
 --- a/libgitg/gitg-cell-renderer-lanes.vala
 +++ b/libgitg/gitg-cell-renderer-lanes.vala
-@@ -28,6 +28,7 @@
+@@ -23,11 +23,13 @@
+ 	{
+ 		public Commit? commit { get; set; }
+ 		public Commit? next_commit { get; set; }
++		public Commit? prev_commit { get; set; }
+ 		public uint lane_width { get; set; default = 16; }
+ 		public uint dot_width { get; set; default = 10; }
  		public unowned SList<Ref> labels { get; set; }
  
  		private int d_last_height;
@@ -8,7 +14,7 @@
  
  		private delegate double DirectionFunc(double i);
  
-@@ -74,6 +75,8 @@
+@@ -74,6 +76,8 @@
  			{
  				minimum_width = w;
  			}
@@ -17,7 +23,70 @@
  		}
  
  		private void draw_arrow(Cairo.Context context,
-@@ -240,7 +243,7 @@
+@@ -120,9 +124,30 @@
+ 			}
+ 		}
+ 
++		private static Color bend_color(Lane lane, int from, Commit? above)
++		{
++			if (above == null)
++			{
++				return lane.color;
++			}
++
++			unowned SList<Lane> lanes = above.get_lanes();
++
++			foreach (var other in lanes)
++			{
++				if (other.line == lane.line)
++				{
++					return lanes.nth_data(from).color;
++				}
++			}
++
++			return lane.color;
++		}
++
+ 		private void draw_paths_real(Cairo.Context context,
+ 		                             Gdk.Rectangle area,
+ 		                             Commit?       commit,
++		                             Commit?       above,
+ 		                             DirectionFunc f,
+ 		                             double        yoffset)
+ 		{
+@@ -143,11 +168,11 @@
+ 					continue;
+ 				}
+ 
+-				var color = lane.color;
+-				context.set_source_rgb(color.r, color.g, color.b);
+-
+ 				foreach (var from in lane.from)
+ 				{
++					var color = bend_color(lane, from, above);
++					context.set_source_rgb(color.r, color.g, color.b);
++
+ 					double x1 = area.x + f(from * cw + cw / 2.0);
+ 					double x2 = area.x + f(to * cw + cw / 2.0);
+ 					double y1 = area.y + yoffset * ch;
+@@ -167,14 +192,14 @@
+ 		                            Gdk.Rectangle area,
+ 		                            DirectionFunc f)
+ 		{
+-			draw_paths_real(context, area, commit, f, -1);
++			draw_paths_real(context, area, commit, prev_commit, f, -1);
+ 		}
+ 
+ 		private void draw_bottom_paths(Cairo.Context context,
+ 		                               Gdk.Rectangle area,
+ 		                               DirectionFunc f)
+ 		{
+-			draw_paths_real(context, area, next_commit, f, 1);
++			draw_paths_real(context, area, next_commit, commit, f, 1);
+ 		}
+ 
+ 		private void draw_paths(Cairo.Context context,
+@@ -240,7 +265,7 @@
  
  			context.save();
  			context.translate(offset, 0);
@@ -26,7 +95,7 @@
  			context.restore();
  		}
  
-@@ -336,6 +339,11 @@
+@@ -336,6 +361,11 @@
  			                                    x - offset,
  			                                    out hot_x);
  		}

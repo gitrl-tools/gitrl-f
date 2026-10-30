@@ -1958,10 +1958,19 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			next_commit = d_model.commit_from_iter(next);
 		}
 
+		var prev = iter;
+		Gitg.Commit? prev_commit = null;
+
+		if (d_model.iter_previous(ref prev))
+		{
+			prev_commit = d_model.commit_from_iter(prev);
+		}
+
 		d_labels = ticked_labels(commit);
 
 		lanes.commit = commit;
 		lanes.next_commit = next_commit;
+		lanes.prev_commit = prev_commit;
 		lanes.labels = d_labels;
 		embolden(cell, commit);
 
