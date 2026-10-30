@@ -1,3 +1,22 @@
+gitrl-f (0.15.0-1) noble; urgency=medium
+
+  * Deep blue is only for the checked-out branch. Its line, from its commit
+    down, is deep blue. No other branch has deep blue as its own colour.
+  * "Preserve mainline for currently checked out branch" is on by default
+    again, as in gitg. Thus the line of the checked-out branch is at the far
+    left, and a checkout can move the lines.
+  * A branch label has the colour of the line at its commit. Thus the
+    checked-out label, and each branch label on the blue line, is blue.
+  * A bend has the colour of the line where it starts. At a merge, the bend to
+    the merged branch has the colour of that branch.
+  * The default colours are plum, sky blue, dark red, light purple, pink and
+    yellow. Deep blue is not one of them, so after the update a branch can show
+    a different colour one time.
+  * In Line Colours, Set 1 and Set 4 have four colours. The colour of each set
+    that was too near deep blue is removed.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 30 Oct 2026 15:36:26 +0100
+
 gitrl-f (0.14.0-1) noble; urgency=medium
 
   * A checkout changes no colour and moves no line. Deep blue is a usual

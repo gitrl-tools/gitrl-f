@@ -63,6 +63,40 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.15.0" date="2026-10-30">
+      <description>
+        <ul>
+          <li>
+            Deep blue is only for the checked-out branch. Its line, from its
+            commit down, is deep blue. No other branch has deep blue as its
+            own colour.
+          </li>
+          <li>
+            "Preserve mainline for currently checked out branch" is on by
+            default again, as in gitg. Thus the line of the checked-out branch
+            is at the far left, and a checkout can move the lines.
+          </li>
+          <li>
+            A branch label has the colour of the line at its commit. Thus the
+            checked-out label, and each branch label on the blue line, is
+            blue.
+          </li>
+          <li>
+            A bend has the colour of the line where it starts. At a merge, the
+            bend to the merged branch has the colour of that branch.
+          </li>
+          <li>
+            The default colours are plum, sky blue, dark red, light purple,
+            pink and yellow. Deep blue is not one of them, so after the update
+            a branch can show a different colour one time.
+          </li>
+          <li>
+            In Line Colours, Set 1 and Set 4 have four colours. The colour of
+            each set that was too near deep blue is removed.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.14.0" date="2026-10-29">
       <description>
         <ul>
