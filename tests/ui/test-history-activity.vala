@@ -494,6 +494,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-the-subject-edge-leaves-out-the-changes-rows", test_a_double_click_on_the_subject_edge_leaves_out_the_changes_rows);
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
+	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-branch-whose-tip-the-search-hides", test_a_line_names_a_branch_whose_tip_the_search_hides);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-with-no-branch-above-it-names-none", test_a_line_with_no_branch_above_it_names_none);
@@ -1642,6 +1643,40 @@ private static void test_a_line_names_the_local_branches_at_or_above_the_pointer
 		assert_cmpstr(line_tip(window, 1, 0, 0.9), CompareOperator.EQ, "feature");
 		assert_cmpstr(line_tip(window, 2, 0, 0.5), CompareOperator.EQ, "feature\nmaster");
 		assert_null(line_tip(window, 1, 4, 0.5));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_names_a_branch_whose_tip_the_search_hides()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.git({"checkout", "--quiet", "-b", "feature"});
+		repo.commit("lexer one", "feature");
+		repo.commit("lexer two", "feature");
+		repo.commit("docs", "feature");
+		repo.checkout("master");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/feature"});
+
+		window.history.search_visible = true;
+		window.history.search_field.text = "lexer";
+		window.history.search_field.activate();
+		settle(400);
+		window.history.only_matches = true;
+		settle(200);
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "lexer two,lexer one");
+		assert_cmpstr(line_tip(window, 0, 0, 0.5), CompareOperator.EQ, "feature");
+		assert_cmpstr(line_tip(window, 1, 0, 0.1), CompareOperator.EQ, "feature");
 
 		window.destroy();
 		repo.remove();

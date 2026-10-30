@@ -2140,34 +2140,46 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private string[] line_names(uint line, int top)
 	{
-		var rows = new Gee.TreeSet<int>();
-		var shown = new Gee.HashSet<string>();
+		var history = shown_history();
+		var rows = new Gee.TreeMap<int, Gee.List<string>>();
 		var names = new string[0];
 
 		foreach (var reference in d_refs)
 		{
-			var path = d_model.path_from_commit(reference.target);
 			var branch = reference.name.has_prefix("refs/heads/")
 			             || (reference.kind == RefKind.REMOTE
 			                 && d_colours.branch_of(reference) == null);
 
-			if (path != null && branch && d_ticks.contains(reference.name)
-			    && path.get_indices()[0] <= top
-			    && d_model.get_row(path.get_indices()[0]).lane.line == line)
+			if (!branch || !d_ticks.contains(reference.name))
 			{
-				rows.add(path.get_indices()[0]);
-				shown.add(reference.name);
+				continue;
+			}
+
+			foreach (var start in history.starts_of(reference.target))
+			{
+				var path = d_model.path_from_commit(start);
+
+				if (path != null && path.get_indices()[0] <= top
+				    && d_model.get_row(path.get_indices()[0]).lane.line == line)
+				{
+					var row = path.get_indices()[0];
+
+					if (!rows.has_key(row))
+					{
+						rows[row] = new Gee.ArrayList<string>();
+					}
+
+					rows[row].add(reference.short_name);
+					break;
+				}
 			}
 		}
 
-		foreach (var row in rows)
+		foreach (var row in rows.values)
 		{
-			foreach (var label in ticked_labels(d_model.get_row(row)))
+			foreach (var name in row)
 			{
-				if (label.get_name() in shown)
-				{
-					names += label.parsed_name.shortname;
-				}
+				names += name;
 			}
 		}
 
