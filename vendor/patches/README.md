@@ -348,9 +348,9 @@ Six changes.
 
 Three changes.
 
-**1. Gives the labels of a commit the colour of the lane of the commit, and a function that gives the colour of each label.** `set_label_color_func()` sets the function.
+**1. Gives the colour of the lane of the commit to the labels of that commit.**
 
-**Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its branch. Only gitrl-f knows that colour. The label of a detached HEAD has the colour of its lane, and only the lane renderer knows that colour. gitrl-z gives only the colour of the lane.
+**Why.** `gitg-label-renderer.patch` fills a branch label with the colour of its lane. Only the lane renderer knows that colour. gitrl-z has the same patch.
 
 **2. Adds the width of the lanes and the labels to the natural width of the cell.**
 
@@ -364,14 +364,14 @@ Three changes.
 
 ## gitg-label-renderer.patch
 
-Two changes. gitrl-z has a similar patch, but gitrl-z fills the label with the colour of its lane, and selects the text tone of a label by its contrast with the fill.
+Two changes. gitrl-z has the same patch, except that gitrl-z selects the text tone of a label by its contrast with the fill.
 
 **1. Draws the label of the checked-out branch with a pointed left end.**
 
-**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. The label is also deep blue, which change 2 gives. When HEAD is detached, no label changes.
+**Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. The label is also deep blue, because its lane is blue from the checked-out commit down. When HEAD is detached, no label changes.
 
-**2. Fills the label of a local branch with the colour that a function gives.** `draw()` takes the function as `ColorFunc`. When there is no function, or the function gives null, the label has the colour of its lane. gitrl-f gives each local branch its own branch colour, and the checked-out branch deep blue. The label of a detached HEAD has the colour of its lane.
+**2. Fills the label of a local branch with the colour of its lane.**
 
-**Why.** gitg fills each label with the colour of its kind. Thus the label does not show which branch it is. The colour of a branch stays the same on each line and at each checkout, so the operator selected it over the colour of the lane. The labels of remote branches, tags and the stash keep the colour of their kind, so that the kinds stay different. The text of the label is dark when its fill has `dark_text`, and light when it does not. The style class `light-fill` gives the dark text. `gitrlf-style.css` gives its colour, because `style.css` must stay byte for byte the stylesheet of gitg.
+**Why.** gitg fills each label with the colour of its kind. Thus the label does not show which line of the graph it is on. The labels of remote branches, tags and the stash keep the colour of their kind, so that the kinds stay different. The text of the label is dark when the colour of the lane has `dark_text`, and light when it does not. The style class `light-fill` gives the dark text. `gitrlf-style.css` gives its colour, because `style.css` must stay byte for byte the stylesheet of gitg.
 
 **Cost.** The label of the checked-out branch is 8 pixels wider than before, and the labels of local branches do not have the colours of gitg. Thus the pixel suite finds a difference at each label of a local branch.

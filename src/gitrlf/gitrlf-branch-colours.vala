@@ -129,21 +129,6 @@ public class BranchColours : Object
 		return d_colours[name];
 	}
 
-	public Gitg.Color? of_label(string name)
-	{
-		if (!name.has_prefix("refs/heads/"))
-		{
-			return null;
-		}
-
-		if (d_head != null && name == d_head.name)
-		{
-			return Gitg.Color.head();
-		}
-
-		return Gitg.Color.from_index(of_branch(name.substring(11)));
-	}
-
 	public Gee.Map<Ggit.OId, Gitg.Color> of_tips(Gee.List<Ref> refs, Gee.Set<string> ticks)
 	{
 		var names = History.id_map<string>();

@@ -29,7 +29,6 @@ namespace Gitg
 		public unowned SList<Ref> labels { get; set; }
 
 		private int d_last_height;
-		private unowned LabelRenderer.ColorFunc? d_label_color_func;
 
 		private delegate double DirectionFunc(double i);
 
@@ -265,7 +264,7 @@ namespace Gitg
 
 			context.save();
 			context.translate(offset, 0);
-			LabelRenderer.draw(widget, font_desc, context, labels, area, commit.lane.color, d_label_color_func);
+			LabelRenderer.draw(widget, font_desc, context, labels, area, commit.lane.color);
 			context.restore();
 		}
 
@@ -360,11 +359,6 @@ namespace Gitg
 			                                    labels,
 			                                    x - offset,
 			                                    out hot_x);
-		}
-
-		public void set_label_color_func(LabelRenderer.ColorFunc? func)
-		{
-			d_label_color_func = func;
 		}
 	}
 }

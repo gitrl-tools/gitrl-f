@@ -558,7 +558,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
 	Test.add_func("/gitrlf/ui/history-activity/summary-counts-rows-of-commits", test_summary_counts_rows_of_commits);
-	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-show-their-own-colour-and-the-checked-out-one-blue", test_the_branch_labels_show_their_own_colour_and_the_checked_out_one_blue);
+	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-on-a-commit-take-the-colour-of-its-line", test_the_branch_labels_on_a_commit_take_the_colour_of_its_line);
 	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-text-tone-of-their-fill", test_the_branch_labels_take_the_text_tone_of_their_fill);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-colour-is-the-blue-of-a-branch", test_the_checked_out_colour_is_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end", test_the_checked_out_label_has_a_pointed_end);
@@ -3873,7 +3873,7 @@ private static void test_summary_counts_rows_of_commits()
 	}
 }
 
-private static void test_the_branch_labels_show_their_own_colour_and_the_checked_out_one_blue()
+private static void test_the_branch_labels_on_a_commit_take_the_colour_of_its_line()
 {
 	try
 	{
@@ -3887,11 +3887,20 @@ private static void test_the_branch_labels_show_their_own_colour_and_the_checked
 		sizes.set_value("size", new Variant("(ii)", 1180, 600));
 
 		var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/beta"});
+		var line = line_hex(window, "second");
 
-		assert_cmpstr(line_hex(window, "second"), CompareOperator.EQ, "6c3566");
+		assert_cmpstr(line, CompareOperator.NE, "204a87");
+		assert_cmpstr(label_fill(window, 0, "alpha"), CompareOperator.EQ, line);
+		assert_cmpstr(label_fill(window, 0, "beta"), CompareOperator.EQ, line);
 		assert_cmpstr(line_hex(window, "first"), CompareOperator.EQ, "204a87");
-		assert_cmpstr(label_fill(window, 0, "alpha"), CompareOperator.EQ, "6c3566");
-		assert_cmpstr(label_fill(window, 0, "beta"), CompareOperator.EQ, "729fcf");
+		assert_cmpstr(label_fill(window, 1, "master"), CompareOperator.EQ, "204a87");
+
+		repo.checkout("beta");
+		window.history.refresh();
+		drain();
+
+		assert_cmpstr(label_fill(window, 0, "alpha"), CompareOperator.EQ, "204a87");
+		assert_cmpstr(label_fill(window, 0, "beta"), CompareOperator.EQ, "204a87");
 		assert_cmpstr(label_fill(window, 1, "master"), CompareOperator.EQ, "204a87");
 
 		window.destroy();

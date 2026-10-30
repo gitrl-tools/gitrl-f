@@ -55,18 +55,6 @@ private static Gee.Set<string> every_name(Gee.List<Gitrlf.Ref> refs)
 	return names;
 }
 
-private static string label_of(Gitrlf.BranchColours colours, string name)
-{
-	var colour = colours.of_label(name);
-
-	if (colour == null)
-	{
-		return "none";
-	}
-
-	return colour.is_head ? "head" : colour.idx.to_string();
-}
-
 private static string line_of(Gee.Map<Ggit.OId, Gitg.Color> lines, string target)
 {
 	var id = new Ggit.OId.from_string(target);
@@ -81,8 +69,6 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/branch-colours/a-branch-keeps-its-colour-when-others-come", test_a_branch_keeps_its_colour_when_others_come);
 	Test.add_func("/gitrlf/branch-colours/a-branch-saved-past-the-last-colour-takes-another", test_a_branch_saved_past_the_last_colour_takes_another);
 	Test.add_func("/gitrlf/branch-colours/a-deleted-branch-gives-its-colour-back", test_a_deleted_branch_gives_its_colour_back);
-	Test.add_func("/gitrlf/branch-colours/a-detached-head-makes-no-label-blue", test_a_detached_head_makes_no_label_blue);
-	Test.add_func("/gitrlf/branch-colours/a-label-shows-the-colour-of-its-own-branch", test_a_label_shows_the_colour_of_its_own_branch);
 	Test.add_func("/gitrlf/branch-colours/a-line-shows-the-colour-of-a-ticked-branch-only", test_a_line_shows_the_colour_of_a_ticked_branch_only);
 	Test.add_func("/gitrlf/branch-colours/a-line-takes-the-colour-of-its-first-branch-by-name", test_a_line_takes_the_colour_of_its_first_branch_by_name);
 	Test.add_func("/gitrlf/branch-colours/a-new-branch-takes-the-least-used-colour", test_a_new_branch_takes_the_least_used_colour);
@@ -91,7 +77,6 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/branch-colours/branches-take-every-colour-in-turn", test_branches_take_every_colour_in_turn);
 	Test.add_func("/gitrlf/branch-colours/new-branches-take-colours-in-name-order", test_new_branches_take_colours_in_name_order);
 	Test.add_func("/gitrlf/branch-colours/no-branch-is-the-checked-out-blue", test_no_branch_is_the_checked_out_blue);
-	Test.add_func("/gitrlf/branch-colours/only-the-checked-out-label-is-blue", test_only_the_checked_out_label_is_blue);
 
 	return Test.run();
 }
@@ -185,37 +170,6 @@ private static void test_a_deleted_branch_gives_its_colour_back()
 	var colours = new Gitrlf.BranchColours(saved_of({"alpha:0", "gone:1"}), refs);
 
 	assert_cmpstr(colours_of(colours), CompareOperator.EQ, "alpha:0,delta:1");
-}
-
-private static void test_a_detached_head_makes_no_label_blue()
-{
-	var refs = new Gee.ArrayList<Gitrlf.Ref>();
-	refs.add(new Gitrlf.Ref("HEAD", "HEAD", Gitrlf.RefKind.LOCAL, "", new Ggit.OId.from_string(ONE), true));
-	refs.add(branch("alpha"));
-
-	var colours = new Gitrlf.BranchColours(saved_of({"alpha:3"}), refs);
-
-	assert_cmpstr(label_of(colours, "HEAD"), CompareOperator.EQ, "none");
-	assert_cmpstr(label_of(colours, "refs/heads/alpha"), CompareOperator.EQ, "3");
-}
-
-private static void test_a_label_shows_the_colour_of_its_own_branch()
-{
-	var refs = new Gee.ArrayList<Gitrlf.Ref>();
-	refs.add(branch("alpha", ONE));
-	refs.add(branch("beta", ONE));
-	refs.add(branch("gamma", TWO, true));
-	refs.add(remote("origin/beta", ONE));
-	refs.add(new Gitrlf.Ref("refs/tags/v1", "v1", Gitrlf.RefKind.TAG, "", new Ggit.OId.from_string(ONE), false));
-
-	var colours = new Gitrlf.BranchColours(saved_of({"alpha:3", "beta:1"}), refs);
-
-	colours.of_tips(refs, every_name(refs));
-
-	assert_cmpstr(label_of(colours, "refs/heads/alpha"), CompareOperator.EQ, "3");
-	assert_cmpstr(label_of(colours, "refs/heads/beta"), CompareOperator.EQ, "1");
-	assert_cmpstr(label_of(colours, "refs/remotes/origin/beta"), CompareOperator.EQ, "none");
-	assert_cmpstr(label_of(colours, "refs/tags/v1"), CompareOperator.EQ, "none");
 }
 
 private static void test_a_line_shows_the_colour_of_a_ticked_branch_only()
@@ -325,19 +279,6 @@ private static void test_no_branch_is_the_checked_out_blue()
 
 		assert_false(colour.r == head.r && colour.g == head.g && colour.b == head.b);
 	}
-}
-
-private static void test_only_the_checked_out_label_is_blue()
-{
-	var refs = new Gee.ArrayList<Gitrlf.Ref>();
-	refs.add(branch("alpha", ONE));
-	refs.add(branch("beta", ONE, true));
-
-	var colours = new Gitrlf.BranchColours(saved_of({"alpha:2", "beta:4"}), refs);
-
-	assert_cmpstr(label_of(colours, "refs/heads/alpha"), CompareOperator.EQ, "2");
-	assert_cmpstr(label_of(colours, "refs/heads/beta"), CompareOperator.EQ, "head");
-	assert_cmpint(colours.of_branch("beta"), CompareOperator.EQ, 4);
 }
 
 }
