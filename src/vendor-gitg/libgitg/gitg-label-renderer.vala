@@ -24,6 +24,7 @@ namespace Gitg
 		private const int margin = 2;
 		private const int padding = 6;
 		private const int point = 8;
+		private const int point_gap = 3;
 
 		private static string label_text(Ref r)
 		{
@@ -145,7 +146,7 @@ namespace Gitg
 
 		private static int text_start(Ref r)
 		{
-			return point_width(r) > 0 ? point : padding;
+			return point_width(r) > 0 ? point + point_gap : padding;
 		}
 
 		private static void render_shape(Gtk.StyleContext context,

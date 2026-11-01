@@ -1,14 +1,15 @@
 --- a/libgitg/gitg-label-renderer.vala
 +++ b/libgitg/gitg-label-renderer.vala
-@@ -23,6 +23,7 @@
+@@ -23,6 +23,8 @@
  	{
  		private const int margin = 2;
  		private const int padding = 6;
 +		private const int point = 8;
++		private const int point_gap = 3;
  
  		private static string label_text(Ref r)
  		{
-@@ -40,7 +41,7 @@
+@@ -40,7 +42,7 @@
  			layout.set_markup(smaller, -1);
  			layout.get_pixel_size(out w, null);
  
@@ -17,7 +18,7 @@
  		}
  
  		public static int width(Gtk.Widget             widget,
-@@ -93,6 +94,99 @@
+@@ -93,6 +95,99 @@
  			return style_class;
  		}
  
@@ -72,7 +73,7 @@
 +
 +		private static int text_start(Ref r)
 +		{
-+			return point_width(r) > 0 ? point : padding;
++			return point_width(r) > 0 ? point + point_gap : padding;
 +		}
 +
 +		private static void render_shape(Gtk.StyleContext context,
@@ -117,7 +118,7 @@
  		private static int render_label(Gtk.Widget    widget,
  		                                Cairo.Context cr,
  		                                Pango.Layout  layout,
-@@ -100,7 +194,8 @@
+@@ -100,7 +195,8 @@
  		                                double        x,
  		                                double        y,
  		                                int           height,
@@ -127,7 +128,7 @@
  		{
  			var context = widget.get_style_context();
  			var smaller = label_text(r);
-@@ -121,39 +216,63 @@
+@@ -121,39 +217,63 @@
  				context.add_class(style_class);
  			}
  
@@ -206,7 +207,7 @@
  		{
  			double pos;
  
-@@ -185,7 +304,8 @@
+@@ -185,7 +305,8 @@
  				                     (int)pos,
  				                     area.y,
  				                     area.height,
