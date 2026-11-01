@@ -8,7 +8,16 @@
  
  		private static string label_text(Ref r)
  		{
-@@ -93,6 +94,94 @@
+@@ -40,7 +41,7 @@
+ 			layout.set_markup(smaller, -1);
+ 			layout.get_pixel_size(out w, null);
+ 
+-			return w + padding * 2;
++			return w + text_start(r) + padding;
+ 		}
+ 
+ 		public static int width(Gtk.Widget             widget,
+@@ -93,6 +94,99 @@
  			return style_class;
  		}
  
@@ -61,6 +70,11 @@
 +			}
 +		}
 +
++		private static int text_start(Ref r)
++		{
++			return point_width(r) > 0 ? point : padding;
++		}
++
 +		private static void render_shape(Gtk.StyleContext context,
 +		                                 Cairo.Context    cr,
 +		                                 double           x,
@@ -103,7 +117,7 @@
  		private static int render_label(Gtk.Widget    widget,
  		                                Cairo.Context cr,
  		                                Pango.Layout  layout,
-@@ -100,7 +189,8 @@
+@@ -100,7 +194,8 @@
  		                                double        x,
  		                                double        y,
  		                                int           height,
@@ -113,11 +127,12 @@
  		{
  			var context = widget.get_style_context();
  			var smaller = label_text(r);
-@@ -121,6 +211,14 @@
+@@ -121,39 +216,63 @@
  				context.add_class(style_class);
  			}
  
 +			var tip = point_width(r);
++			var start = text_start(r);
 +			var fill = r.parsed_name.rtype == RefType.BRANCH ? lane : null;
 +
 +			if (fill != null && fill.dark_text)
@@ -128,8 +143,9 @@
  			var rtl = (widget.get_style_context().get_state() & Gtk.StateFlags.DIR_RTL) != 0;
  
  			if (rtl)
-@@ -128,17 +226,31 @@
- 				x -= w + padding * 2;
+ 			{
+-				x -= w + padding * 2;
++				x -= w + start + padding;
  			}
  
 -			context.render_background(cr,
@@ -149,7 +165,7 @@
 +				             cr,
 +				             x,
 +				             y + margin,
-+				             w + padding * 2,
++				             w + start + padding,
 +				             height - margin * 2,
 +				             fill,
 +				             tip);
@@ -170,8 +186,17 @@
 +			}
  
  			context.render_layout(cr,
- 			                      x + padding,
-@@ -153,7 +265,8 @@
+-			                      x + padding,
++			                      x + start,
+ 			                      y + (height - h) / 2.0 - 1,
+ 			                      layout);
+ 
+ 			context.restore();
+-			return w;
++			return w + start - padding;
+ 		}
+ 
+ 		public static void draw(Gtk.Widget            widget,
  		                        Pango.FontDescription font,
  		                        Cairo.Context         context,
  		                        SList<Ref>            labels,
@@ -181,7 +206,7 @@
  		{
  			double pos;
  
-@@ -185,7 +298,8 @@
+@@ -185,7 +304,8 @@
  				                     (int)pos,
  				                     area.y,
  				                     area.height,

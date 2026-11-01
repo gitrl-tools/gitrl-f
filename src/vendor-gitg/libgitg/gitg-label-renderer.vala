@@ -41,7 +41,7 @@ namespace Gitg
 			layout.set_markup(smaller, -1);
 			layout.get_pixel_size(out w, null);
 
-			return w + padding * 2;
+			return w + text_start(r) + padding;
 		}
 
 		public static int width(Gtk.Widget             widget,
@@ -143,6 +143,11 @@ namespace Gitg
 			}
 		}
 
+		private static int text_start(Ref r)
+		{
+			return point_width(r) > 0 ? point : padding;
+		}
+
 		private static void render_shape(Gtk.StyleContext context,
 		                                 Cairo.Context    cr,
 		                                 double           x,
@@ -212,6 +217,7 @@ namespace Gitg
 			}
 
 			var tip = point_width(r);
+			var start = text_start(r);
 			var fill = r.parsed_name.rtype == RefType.BRANCH ? lane : null;
 
 			if (fill != null && fill.dark_text)
@@ -223,7 +229,7 @@ namespace Gitg
 
 			if (rtl)
 			{
-				x -= w + padding * 2;
+				x -= w + start + padding;
 			}
 
 			if (tip > 0 || fill != null)
@@ -232,7 +238,7 @@ namespace Gitg
 				             cr,
 				             x,
 				             y + margin,
-				             w + padding * 2,
+				             w + start + padding,
 				             height - margin * 2,
 				             fill,
 				             tip);
@@ -253,12 +259,12 @@ namespace Gitg
 			}
 
 			context.render_layout(cr,
-			                      x + padding,
+			                      x + start,
 			                      y + (height - h) / 2.0 - 1,
 			                      layout);
 
 			context.restore();
-			return w;
+			return w + start - padding;
 		}
 
 		public static void draw(Gtk.Widget            widget,

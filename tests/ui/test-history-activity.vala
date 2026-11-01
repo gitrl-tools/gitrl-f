@@ -362,6 +362,25 @@ private static void ink_range(Cairo.ImageSurface surface, int y, out int darkest
 	}
 }
 
+private static int ink_start(Cairo.ImageSurface surface, int y)
+{
+	var fill = pixel_at(surface, right_end(surface, y) - 3, y);
+
+	for (var i = 1; i < right_end(surface, y); i++)
+	{
+		for (var j = y - 3; j <= y + 3; j++)
+		{
+			if (pixel_at(surface, i - 1, j)[3] == 255 &&
+			    ink_of(pixel_at(surface, i, j)) > ink_of(fill) + 48)
+			{
+				return i;
+			}
+		}
+	}
+
+	return -1;
+}
+
 private static Gdk.RGBA kind_fill(Gtk.StyleContext context, string kind)
 {
 	context.save();
@@ -460,6 +479,18 @@ private static uint lane_of(Gitrlf.Window window, string subject)
 	}
 
 	assert_not_reached();
+}
+
+private static int left_end(Cairo.ImageSurface surface, int y)
+{
+	var x = 0;
+
+	while (pixel_at(surface, x, y)[3] == 0)
+	{
+		x++;
+	}
+
+	return x;
 }
 
 private static void lift_hidden(Gitrlf.Window window)
@@ -566,7 +597,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-text-tone-of-their-fill", test_the_branch_labels_take_the_text_tone_of_their_fill);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-colour-is-the-blue-of-a-branch", test_the_checked_out_colour_is_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end", test_the_checked_out_label_has_a_pointed_end);
-	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-keeps-its-text-in-place", test_the_checked_out_label_keeps_its_text_in_place);
+	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-text-starts-after-the-slope", test_the_checked_out_label_text_starts_after_the_slope);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-leaves-out-the-rows-between-picks", test_the_commit_menu_leaves_out_the_rows_between_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
@@ -1008,6 +1039,25 @@ private static Repo side_branch() throws Error
 	repo.checkout("master");
 
 	return repo;
+}
+
+private static int slope_end(Cairo.ImageSurface surface, int y)
+{
+	var top = 0;
+
+	while (pixel_at(surface, right_end(surface, y) / 2, top)[3] < 255)
+	{
+		top++;
+	}
+
+	var x = 0;
+
+	while (pixel_at(surface, x, top)[3] < 255)
+	{
+		x++;
+	}
+
+	return x;
 }
 
 private static string subjects_of(Gitrlf.Window window)
@@ -4164,7 +4214,7 @@ private static void test_the_checked_out_label_has_a_pointed_end()
 	}
 }
 
-private static void test_the_checked_out_label_keeps_its_text_in_place()
+private static void test_the_checked_out_label_text_starts_after_the_slope()
 {
 	try
 	{
@@ -4175,34 +4225,25 @@ private static void test_the_checked_out_label_keeps_its_text_in_place()
 		repo.branch("side");
 
 		var view = new Gtk.TreeView();
-		var font = view.get_style_context().get_font(Gtk.StateFlags.NORMAL);
 		var name = "refs/heads/side";
 		var lane = lane_colour(0);
 		var width = 120;
 		var height = 23;
+		var middle = height / 2;
 
 		var before = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
 		var plain = pill_of(before, view, name, lane, width, height);
-		var plain_labels = new SList<Gitg.Ref>();
-		plain_labels.append(before.lookup_reference(name));
-		var pill = Gitg.LabelRenderer.width(view, font, plain_labels);
 
 		repo.checkout("side");
 
 		var after = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
 		var head = pill_of(after, view, name, lane, width, height);
-		var head_labels = new SList<Gitg.Ref>();
-		head_labels.append(after.lookup_reference(name));
 
-		assert_cmpint(Gitg.LabelRenderer.width(view, font, head_labels), CompareOperator.EQ, pill);
+		var slope = slope_end(head, middle);
+		var text = ink_start(head, middle);
 
-		for (var y = 0; y < height; y++)
-		{
-			for (var x = pill / 2; x < width; x++)
-			{
-				assert_cmpuint(*(uint32*)pixel_at(plain, x, y), CompareOperator.EQ, *(uint32*)pixel_at(head, x, y));
-			}
-		}
+		assert_cmpint(text, CompareOperator.GE, slope);
+		assert_cmpint(text - slope, CompareOperator.LT, ink_start(plain, middle) - left_end(plain, middle));
 
 		repo.remove();
 	}
