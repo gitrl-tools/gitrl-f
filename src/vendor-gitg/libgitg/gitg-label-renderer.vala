@@ -41,7 +41,7 @@ namespace Gitg
 			layout.set_markup(smaller, -1);
 			layout.get_pixel_size(out w, null);
 
-			return w + padding * 2 + point_width(r);
+			return w + padding * 2;
 		}
 
 		public static int width(Gtk.Widget             widget,
@@ -223,7 +223,7 @@ namespace Gitg
 
 			if (rtl)
 			{
-				x -= w + padding * 2 + tip;
+				x -= w + padding * 2;
 			}
 
 			if (tip > 0 || fill != null)
@@ -232,7 +232,7 @@ namespace Gitg
 				             cr,
 				             x,
 				             y + margin,
-				             w + padding * 2 + tip,
+				             w + padding * 2,
 				             height - margin * 2,
 				             fill,
 				             tip);
@@ -253,12 +253,12 @@ namespace Gitg
 			}
 
 			context.render_layout(cr,
-			                      x + padding + tip,
+			                      x + padding,
 			                      y + (height - h) / 2.0 - 1,
 			                      layout);
 
 			context.restore();
-			return w + tip;
+			return w;
 		}
 
 		public static void draw(Gtk.Widget            widget,

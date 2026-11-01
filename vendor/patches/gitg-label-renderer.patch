@@ -8,15 +8,6 @@
  
  		private static string label_text(Ref r)
  		{
-@@ -40,7 +41,7 @@
- 			layout.set_markup(smaller, -1);
- 			layout.get_pixel_size(out w, null);
- 
--			return w + padding * 2;
-+			return w + padding * 2 + point_width(r);
- 		}
- 
- 		public static int width(Gtk.Widget             widget,
 @@ -93,6 +94,94 @@
  			return style_class;
  		}
@@ -122,7 +113,7 @@
  		{
  			var context = widget.get_style_context();
  			var smaller = label_text(r);
-@@ -121,39 +211,62 @@
+@@ -121,6 +211,14 @@
  				context.add_class(style_class);
  			}
  
@@ -137,9 +128,8 @@
  			var rtl = (widget.get_style_context().get_state() & Gtk.StateFlags.DIR_RTL) != 0;
  
  			if (rtl)
- 			{
--				x -= w + padding * 2;
-+				x -= w + padding * 2 + tip;
+@@ -128,17 +226,31 @@
+ 				x -= w + padding * 2;
  			}
  
 -			context.render_background(cr,
@@ -159,7 +149,7 @@
 +				             cr,
 +				             x,
 +				             y + margin,
-+				             w + padding * 2 + tip,
++				             w + padding * 2,
 +				             height - margin * 2,
 +				             fill,
 +				             tip);
@@ -180,17 +170,8 @@
 +			}
  
  			context.render_layout(cr,
--			                      x + padding,
-+			                      x + padding + tip,
- 			                      y + (height - h) / 2.0 - 1,
- 			                      layout);
- 
- 			context.restore();
--			return w;
-+			return w + tip;
- 		}
- 
- 		public static void draw(Gtk.Widget            widget,
+ 			                      x + padding,
+@@ -153,7 +265,8 @@
  		                        Pango.FontDescription font,
  		                        Cairo.Context         context,
  		                        SList<Ref>            labels,

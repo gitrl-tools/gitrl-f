@@ -566,6 +566,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-text-tone-of-their-fill", test_the_branch_labels_take_the_text_tone_of_their_fill);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-colour-is-the-blue-of-a-branch", test_the_checked_out_colour_is_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end", test_the_checked_out_label_has_a_pointed_end);
+	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-keeps-its-text-in-place", test_the_checked_out_label_keeps_its_text_in_place);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-leaves-out-the-rows-between-picks", test_the_commit_menu_leaves_out_the_rows_between_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
@@ -4154,6 +4155,54 @@ private static void test_the_checked_out_label_has_a_pointed_end()
 
 		assert_cmpint(pixel_at(head, 5, 4)[3], CompareOperator.EQ, 0);
 		assert_cmpint(pixel_at(other, 5, 4)[3], CompareOperator.GT, 0);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_checked_out_label_keeps_its_text_in_place()
+{
+	try
+	{
+		application();
+
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("side");
+
+		var view = new Gtk.TreeView();
+		var font = view.get_style_context().get_font(Gtk.StateFlags.NORMAL);
+		var name = "refs/heads/side";
+		var lane = lane_colour(0);
+		var width = 120;
+		var height = 23;
+
+		var before = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var plain = pill_of(before, view, name, lane, width, height);
+		var plain_labels = new SList<Gitg.Ref>();
+		plain_labels.append(before.lookup_reference(name));
+		var pill = Gitg.LabelRenderer.width(view, font, plain_labels);
+
+		repo.checkout("side");
+
+		var after = Gitrlf.Repository.open(Gitrlf.Application.discover_repository(repo.path));
+		var head = pill_of(after, view, name, lane, width, height);
+		var head_labels = new SList<Gitg.Ref>();
+		head_labels.append(after.lookup_reference(name));
+
+		assert_cmpint(Gitg.LabelRenderer.width(view, font, head_labels), CompareOperator.EQ, pill);
+
+		for (var y = 0; y < height; y++)
+		{
+			for (var x = pill / 2; x < width; x++)
+			{
+				assert_cmpuint(*(uint32*)pixel_at(plain, x, y), CompareOperator.EQ, *(uint32*)pixel_at(head, x, y));
+			}
+		}
 
 		repo.remove();
 	}

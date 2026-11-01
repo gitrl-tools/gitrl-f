@@ -366,7 +366,7 @@ Three changes.
 
 Two changes. gitrl-z has the same patch, except that gitrl-z selects the text tone of a label by its contrast with the fill.
 
-**1. Draws the label of the checked-out branch with a pointed left end.**
+**1. Draws the label of the checked-out branch with a pointed left end.** The point covers the left padding of the label. Thus the label has the width that gitg gives it, and its text starts at the same position as the text of the other labels.
 
 **Why.** gitg draws all branch labels in the commit list the same. Thus the list does not show which branch is checked out. The shape of the label now shows it, with no more text. The label is also deep blue, because its lane is blue from the checked-out commit down. When HEAD is detached, no label changes.
 
@@ -374,4 +374,4 @@ Two changes. gitrl-z has the same patch, except that gitrl-z selects the text to
 
 **Why.** gitg fills each label with the colour of its kind. Thus the label does not show which line of the graph it is on. The labels of remote branches, tags and the stash keep the colour of their kind, so that the kinds stay different. The text of the label is dark when the colour of the lane has `dark_text`, and light when it does not. The style class `light-fill` gives the dark text. `gitrlf-style.css` gives its colour, because `style.css` must stay byte for byte the stylesheet of gitg.
 
-**Cost.** The label of the checked-out branch is 8 pixels wider than before, and the labels of local branches do not have the colours of gitg. Thus the pixel suite finds a difference at each label of a local branch.
+**Cost.** The first letter of the checked-out label is near the slope of the point. The labels of local branches do not have the colours of gitg. Thus the pixel suite finds a difference at each label of a local branch.
