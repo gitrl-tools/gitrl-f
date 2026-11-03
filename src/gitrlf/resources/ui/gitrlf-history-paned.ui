@@ -337,7 +337,7 @@
                                         <property name="xpad">0</property>
                                       </object>
                                       <cell-packing>
-                                        <property name="expand">True</property>
+                                        <property name="expand">False</property>
                                       </cell-packing>
                                     </child>
                                     <child>
@@ -346,7 +346,7 @@
                                         <property name="xpad">0</property>
                                       </object>
                                       <cell-packing>
-                                        <property name="expand">True</property>
+                                        <property name="expand">False</property>
                                       </cell-packing>
                                     </child>
                                   </object>

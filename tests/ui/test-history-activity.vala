@@ -590,6 +590,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-holds-four-digits-a-side", test_lines_column_holds_four_digits_a_side);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-coloured-on-the-row-selected-at-the-start", test_lines_column_is_coloured_on_the_row_selected_at_the_start);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-plain-on-a-picked-row", test_lines_column_is_plain_on_a_picked_row);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-keeps-its-counts-at-its-left-edge", test_lines_column_keeps_its_counts_at_its_left_edge);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-leaves-a-zero-blank", test_lines_column_leaves_a_zero_blank);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-sets-the-two-numbers-either-side-of-one-line", test_lines_column_sets_the_two_numbers_either_side_of_one_line);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-added-in-green-and-removed-in-red", test_lines_column_shows_added_in_green_and_removed_in_red);
@@ -3434,10 +3435,10 @@ private static void test_lines_column_holds_four_digits_a_side()
 		view.create_pango_layout("0").get_pixel_size(out digit, null);
 
 		assert_cmpint(column.get_width(), CompareOperator.EQ, width);
-		assert_cmpint(left - row.x, CompareOperator.GE, digit);
-		assert_cmpint(left - row.x, CompareOperator.LE, digit + 6);
-		assert_cmpint(row.x + row.width - end, CompareOperator.GE, digit);
-		assert_cmpint(row.x + row.width - end, CompareOperator.LE, digit + 6);
+		assert_cmpint(left - row.x, CompareOperator.GE, 0);
+		assert_cmpint(left - row.x, CompareOperator.LE, 6);
+		assert_cmpint(row.x + row.width - end, CompareOperator.GE, 2 * digit);
+		assert_cmpint(row.x + row.width - end, CompareOperator.LE, 2 * digit + 6);
 
 		window.destroy();
 		repo.remove();
@@ -3496,6 +3497,56 @@ private static void test_lines_column_is_plain_on_a_picked_row()
 		assert_cmpstr(tint(view, iter, cells.last().data),
 		              CompareOperator.EQ, "green 0, red 0");
 
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_keeps_its_counts_at_its_left_edge()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
+		var repo = counts_repo();
+
+		settings.reset("column-widths");
+		sizes.set_value("size", new Variant("(ii)", 1180, 600));
+
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		var cells = view.get_column(1).get_cells();
+		var added = (Gtk.CellRendererText)cells.first().data;
+		var removed = (Gtk.CellRendererText)cells.last().data;
+		var width = view.get_column(1).width;
+		Gtk.TreeIter iter;
+		int left;
+		int start;
+		int moved_left;
+		int moved_start;
+		int end;
+
+		settle(400);
+		assert_true(view.model.iter_nth_child(out iter, null, 1));
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+1,-2");
+		text_span(view, iter, added, out left, out end);
+		text_span(view, iter, removed, out start, out end);
+
+		drag_edge(window, 1, 60);
+		lines_text(view, iter);
+		text_span(view, iter, added, out moved_left, out end);
+		text_span(view, iter, removed, out moved_start, out end);
+
+		assert_cmpint(view.get_column(1).width, CompareOperator.EQ, width + 60);
+		assert_cmpint(moved_left, CompareOperator.EQ, left);
+		assert_cmpint(moved_start, CompareOperator.EQ, start);
+
+		settings.reset("column-widths");
+		sizes.reset("size");
 		window.destroy();
 		repo.remove();
 	}
