@@ -24,6 +24,7 @@ unit_tests = [
   'branch-colours',
   'changes',
   'cli',
+  'commit-files',
   'diff-find',
   'diff-tool',
   'filter-history',

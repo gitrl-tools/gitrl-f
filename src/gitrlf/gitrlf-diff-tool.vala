@@ -190,7 +190,7 @@ public class DiffTool : Object
 		return target;
 	}
 
-	private static void seal(File folder) throws Error
+	internal static void seal(File folder) throws Error
 	{
 		var children = folder.enumerate_children(
 			"standard::name,standard::type",
@@ -208,7 +208,7 @@ public class DiffTool : Object
 		FileUtils.chmod(folder.get_path(), 0555);
 	}
 
-	private static void write(File target, uint8[] data) throws Error
+	internal static void write(File target, uint8[] data) throws Error
 	{
 		FileUtils.set_contents_full(target.get_path(), (string)data,
 		                            data.length, FileSetContentsFlags.NONE,

@@ -7,6 +7,7 @@ gitrlf_lib_sources = files(
   'gitrlf-line-colours.vala',
   'gitrlf-changes.vala',
   'gitrlf-command-line.vala',
+  'gitrlf-commit-files.vala',
   'gitrlf-copy-menu.vala',
   'gitrlf-dash-view.vala',
   'gitrlf-diff-find-bar.vala',

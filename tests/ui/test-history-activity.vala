@@ -648,6 +648,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-colour-is-the-blue-of-a-branch", test_the_checked_out_colour_is_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end", test_the_checked_out_label_has_a_pointed_end);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-text-starts-after-the-slope", test_the_checked_out_label_text_starts_after_the_slope);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-browses-no-files-for-several-picks", test_the_commit_menu_browses_no_files_for_several_picks);
+	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-browses-the-files-of-its-commit", test_the_commit_menu_browses_the_files_of_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-fits-the-merge-item", test_the_commit_menu_fits_the_merge_item);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-leaves-out-the-rows-between-picks", test_the_commit_menu_leaves_out_the_rows_between_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-lists-the-branches-and-tags-with-it", test_the_commit_menu_lists_the_branches_and_tags_with_it);
@@ -930,6 +932,34 @@ private static void point_at_row(Gitrlf.Window window, int row)
 	row_centre(window, row, out x, out y);
 	point_at(x, y);
 	settle(300);
+}
+
+private static File record_file_manager(Repo repo) throws Error
+{
+	var record = File.new_for_path(repo.path.get_path() + ".folder");
+	var config = Environment.get_user_config_dir();
+	var applications = Path.build_filename(Environment.get_user_data_dir(),
+	                                       "applications");
+	var script = Path.build_filename(applications, "record-folder");
+
+	DirUtils.create_with_parents(config, 0700);
+	DirUtils.create_with_parents(applications, 0700);
+	FileUtils.set_contents(script,
+		"#!/bin/sh\n"
+		+ "{ cd \"$1\" && pwd && grep -r . | LC_ALL=C sort; } > '%s.part' "
+		.printf(record.get_path())
+		+ "&& mv '%s.part' '%s'\n"
+		.printf(record.get_path(), record.get_path()));
+	FileUtils.chmod(script, 0700);
+	FileUtils.set_contents(
+		Path.build_filename(applications, "record-folder.desktop"),
+		"[Desktop Entry]\nType=Application\nName=Record folder\n"
+		+ "Exec=%s %%f\nMimeType=inode/directory;\n".printf(script));
+	FileUtils.set_contents(Path.build_filename(config, "mimeapps.list"),
+	                       "[Default Applications]\n"
+	                       + "inode/directory=record-folder.desktop\n");
+
+	return record;
 }
 
 private static Gdk.RGBA rgba_of(Gitg.Color colour)
@@ -4506,6 +4536,74 @@ private static void test_the_checked_out_label_text_starts_after_the_slope()
 		assert_cmpint(text, CompareOperator.GE, slope);
 		assert_cmpint(text - slope, CompareOperator.LT, ink_start(plain, middle) - left_end(plain, middle));
 
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_browses_no_files_for_several_picks()
+{
+	try
+	{
+		var repo = picks_repo();
+		var window = opened(repo, {"refs/heads/master"});
+
+		click_row(window, row_of(window, "third"));
+		click_row_holding(window, row_of(window, "second"), "shift");
+		right_click(window, row_of(window, "second"), 1, 10);
+		settle(500);
+
+		var item = menu_item("Open diff in difftool");
+
+		assert_nonnull(item);
+		assert_null(menu_item("Browse files at this commit"));
+		((Gtk.Menu)item.get_parent()).popdown();
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_commit_menu_browses_the_files_of_its_commit()
+{
+	try
+	{
+		var repo = Repo.create();
+		var record = record_file_manager(repo);
+
+		repo.commit("kept", "a");
+
+		var changed = repo.commit("changed", "b");
+		var window = opened(repo, {"refs/heads/master"});
+
+		right_click(window, row_of(window, "changed"), 1, 10);
+		settle(500);
+
+		var item = menu_item("Browse files at this commit");
+
+		assert_nonnull(item);
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+
+		var lines = read_record(record).split("\n", 2);
+		var folder = File.new_for_path(lines[0]);
+
+		assert_cmpstr(folder.get_basename(), CompareOperator.EQ,
+		              changed.substring(0, 7));
+		assert_cmpstr(lines[1], CompareOperator.EQ, "a:kept\nb:changed\n");
+
+		window.destroy();
+		Process.spawn_command_line_sync(
+			"chmod -R u+w '%s'".printf(folder.get_parent().get_path()));
+		Process.spawn_command_line_sync(
+			"rm -rf '%s'".printf(folder.get_parent().get_path()));
 		repo.remove();
 	}
 	catch (Error e)

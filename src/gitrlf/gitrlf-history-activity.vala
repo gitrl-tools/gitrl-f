@@ -698,6 +698,28 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		show_choice();
 	}
 
+	private void add_browse_item(Gitg.Commit commit)
+	{
+		var item = new Gtk.MenuItem.with_label(
+			_("Browse files at this commit"));
+
+		item.activate.connect(() => {
+			try
+			{
+				var folder = CommitFiles.copy(d_repository, commit);
+
+				Gtk.show_uri_on_window(d_paned.get_toplevel() as Gtk.Window,
+				                       folder.get_uri(), Gdk.CURRENT_TIME);
+			}
+			catch (Error e)
+			{
+				show_error(_("Could not open the files"), e.message);
+			}
+		});
+		item.show();
+		d_copy_menu.add(item);
+	}
+
 	private void add_compare_item(owned Gitg.Commit[] picked)
 	{
 		var item = new Gtk.MenuItem.with_label(_("Open diff in difftool"));
@@ -1588,7 +1610,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			add_show_item();
 		}
 
-		add_compare_item(picked ? picks() : new Gitg.Commit[] { commit });
+		var commits = picked ? picks() : new Gitg.Commit[] { commit };
+
+		add_compare_item(commits);
+
+		if (commits.length == 1)
+		{
+			add_browse_item(commit);
+		}
 
 		return true;
 	}
