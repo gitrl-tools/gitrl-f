@@ -49,13 +49,18 @@ public static void drag(int x, int y, int to_x, int to_y)
 	xdotool({"mousemove", x.to_string(), y.to_string(), "mousedown", "1", "mousemove", to_x.to_string(), to_y.to_string(), "mouseup", "1"});
 }
 
+public static void hold_at(int x, int y)
+{
+	xdotool({"mousemove", x.to_string(), y.to_string(), "mousedown", "1"});
+}
+
 public static void hold_widget(Gtk.Widget widget)
 {
 	int x;
 	int y;
 
 	centre(widget, out x, out y);
-	xdotool({"mousemove", x.to_string(), y.to_string(), "mousedown", "1"});
+	hold_at(x, y);
 }
 
 public static void point_at(int x, int y)

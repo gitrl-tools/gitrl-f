@@ -269,6 +269,22 @@ private static void drag_edge(Gitrlf.Window window, int column, int by)
 	settle(400);
 }
 
+private static void drag_last_edge(Gitrlf.Window window, int column, int by)
+{
+	var fatal = Log.set_always_fatal(LogLevelFlags.LEVEL_CRITICAL);
+	int x;
+	int y;
+
+	edge_of(window, column, out x, out y);
+	hold_at(x, y);
+	settle(200);
+	point_at(x + by, y);
+	settle(200);
+	release_pointer();
+	settle(400);
+	Log.set_always_fatal(fatal);
+}
+
 private static void drag_subject_edge(Gitrlf.Window window, int by)
 {
 	drag_edge(window, 0, by);
@@ -514,7 +530,9 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-branch-keeps-its-colour-after-a-checkout-and-a-restart", test_a_branch_keeps_its_colour_after_a_checkout_and_a_restart);
 	Test.add_func("/gitrlf/ui/history-activity/a-branch-keeps-the-colour-it-took-to-part-from-a-close-line", test_a_branch_keeps_the_colour_it_took_to_part_from_a_close_line);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-dragged-by-its-title-keeps-its-place", test_a_column_dragged_by_its_title_keeps_its_place);
-	Test.add_func("/gitrlf/ui/history-activity/a-column-edge-changes-only-its-column", test_a_column_edge_changes_only_its_column);
+	Test.add_func("/gitrlf/ui/history-activity/a-column-edge-pushes-on-past-a-column-at-its-title-width", test_a_column_edge_pushes_on_past_a_column_at_its_title_width);
+	Test.add_func("/gitrlf/ui/history-activity/a-column-edge-takes-its-room-from-the-next-column", test_a_column_edge_takes_its_room_from_the_next_column);
+	Test.add_func("/gitrlf/ui/history-activity/a-column-narrowed-by-its-title-gives-the-next-column-only-its-room", test_a_column_narrowed_by_its_title_gives_the_next_column_only_its_room);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-narrowed-by-its-title-stays-as-wide-as-its-title", test_a_column_narrowed_by_its_title_stays_as_wide_as_its_title);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-unticked-in-the-title-menu-stays-hidden", test_a_column_unticked_in_the_title_menu_stays_hidden);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-widened-by-its-title-keeps-its-width", test_a_column_widened_by_its_title_keeps_its_width);
@@ -529,6 +547,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-with-no-branch-above-it-names-none", test_a_line_with_no_branch_above_it_names_none);
+	Test.add_func("/gitrlf/ui/history-activity/a-pushed-column-comes-back-when-the-edge-goes-back", test_a_pushed_column_comes_back_when_the_edge_goes_back);
 	Test.add_func("/gitrlf/ui/history-activity/a-repository-opened-for-the-first-time-fits-its-columns-to-the-list", test_a_repository_opened_for_the_first_time_fits_its_columns_to_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/a-repository-opened-in-a-narrow-window-gives-the-subject-its-title-width", test_a_repository_opened_in_a_narrow_window_gives_the_subject_its_title_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
@@ -612,13 +631,14 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-reports-a-difftool-that-fails", test_the_commit_menu_reports_a_difftool_that_fails);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-shows-the-diff-of-the-picks", test_the_commit_menu_shows_the_diff_of_the_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
-	Test.add_func("/gitrlf/ui/history-activity/the-last-column-edge-gives-its-room-to-the-subject", test_the_last_column_edge_gives_its_room_to_the_subject);
-	Test.add_func("/gitrlf/ui/history-activity/the-last-column-edge-starts-from-the-width-it-shows", test_the_last_column_edge_starts_from_the_width_it_shows);
+	Test.add_func("/gitrlf/ui/history-activity/the-last-column-edge-stays-at-the-list-edge", test_the_last_column_edge_stays_at_the_list_edge);
+	Test.add_func("/gitrlf/ui/history-activity/the-last-shown-column-edge-stays-when-the-last-column-is-hidden", test_the_last_shown_column_edge_stays_when_the_last_column_is_hidden);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-row-scrolls-into-view-under-the-titles", test_the_last_row_scrolls_into_view_under_the_titles);
 	Test.add_func("/gitrlf/ui/history-activity/the-ref-menu-goes-to-where-two-refs-split", test_the_ref_menu_goes_to_where_two_refs_split);
 	Test.add_func("/gitrlf/ui/history-activity/the-row-under-the-pointer-is-tinted-before-it-is-picked", test_the_row_under_the_pointer_is_tinted_before_it_is_picked);
 	Test.add_func("/gitrlf/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
-	Test.add_func("/gitrlf/ui/history-activity/the-subject-edge-changes-only-the-subject", test_the_subject_edge_changes_only_the_subject);
+	Test.add_func("/gitrlf/ui/history-activity/the-subject-edge-follows-the-pointer-in-a-list-too-narrow-for-the-columns", test_the_subject_edge_follows_the_pointer_in_a_list_too_narrow_for_the_columns);
+	Test.add_func("/gitrlf/ui/history-activity/the-subject-edge-takes-its-room-from-lines", test_the_subject_edge_takes_its_room_from_lines);
 	Test.add_func("/gitrlf/ui/history-activity/the-subject-fills-the-list-when-the-window-changes-width", test_the_subject_fills_the_list_when_the_window_changes_width);
 	Test.add_func("/gitrlf/ui/history-activity/the-title-menu-keeps-the-last-column-shown", test_the_title_menu_keeps_the_last_column_shown);
 	Test.add_func("/gitrlf/ui/history-activity/the-titles-show-when-the-list-is-wider-than-its-columns", test_the_titles_show_when_the_list_is_wider_than_its_columns);
@@ -1248,7 +1268,48 @@ private static void test_a_column_dragged_by_its_title_keeps_its_place()
 	}
 }
 
-private static void test_a_column_edge_changes_only_its_column()
+private static void test_a_column_edge_pushes_on_past_a_column_at_its_title_width()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
+		var repo = Repo.create();
+
+		repo.commit("first");
+		settings.reset("column-widths");
+		sizes.set_value("size", new Variant("(ii)", 1180, 600));
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		settle(400);
+
+		var lines = paned.column_lines.width;
+		var room = paned.column_hash.width - paned.column_hash.min_width;
+		var author = paned.column_author.width;
+		var date = paned.column_date.x_offset;
+
+		drag_edge(window, 1, room + 20);
+
+		assert_cmpint(paned.column_lines.width, CompareOperator.EQ, lines + room + 20);
+		assert_cmpint(paned.column_hash.width, CompareOperator.EQ, paned.column_hash.min_width);
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author - 20);
+		assert_cmpint(paned.column_date.x_offset, CompareOperator.EQ, date);
+		assert_false(scrolls_sideways(window));
+
+		settings.reset("column-widths");
+		sizes.reset("size");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_column_edge_takes_its_room_from_the_next_column()
 {
 	try
 	{
@@ -1273,10 +1334,51 @@ private static void test_a_column_edge_changes_only_its_column()
 		drag_edge(window, 2, 30);
 
 		assert_cmpint(paned.column_hash.width, CompareOperator.EQ, hash + 30);
-		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author);
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author - 30);
 		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject);
-		assert_cmpint(paned.column_date.x_offset, CompareOperator.EQ, date + 30);
-		assert_true(scrolls_sideways(window));
+		assert_cmpint(paned.column_date.x_offset, CompareOperator.EQ, date);
+		assert_false(scrolls_sideways(window));
+
+		settings.reset("column-widths");
+		sizes.reset("size");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_column_narrowed_by_its_title_gives_the_next_column_only_its_room()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
+		var repo = Repo.create();
+
+		repo.commit("first");
+		settings.reset("column-widths");
+		sizes.set_value("size", new Variant("(ii)", 1180, 600));
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		settle(400);
+
+		var subject = paned.column_subject.width;
+		var lines = paned.column_lines.width;
+		var hash = paned.column_hash.width;
+		var author = paned.column_author.x_offset;
+
+		drag_edge(window, 1, -lines);
+
+		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject);
+		assert_cmpint(paned.column_lines.width, CompareOperator.EQ, paned.column_lines.min_width);
+		assert_cmpint(paned.column_hash.width, CompareOperator.EQ, hash + lines - paned.column_lines.min_width);
+		assert_cmpint(paned.column_author.x_offset, CompareOperator.EQ, author);
+		assert_false(scrolls_sideways(window));
 
 		settings.reset("column-widths");
 		sizes.reset("size");
@@ -1426,23 +1528,21 @@ private static void test_a_double_click_on_a_title_edge_fits_the_widest_commit()
 
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
-		var date = 0;
 
 		settle(400);
-		double_click_edge(window, 4);
 
-		for (var row = 0; row <= 40; row++)
-		{
-			date = int.max(date, entry_width(window, paned.column_date, row));
-		}
-
-		assert_cmpint(paned.column_date.width, CompareOperator.EQ, date);
-		assert_subject_fills(window);
+		var author = paned.column_author.width;
+		var date = paned.column_date.width;
 
 		double_click_edge(window, 3);
 
-		assert_cmpint(paned.column_author.width, CompareOperator.EQ,
-		              entry_width(window, paned.column_author, 40));
+		var widest = entry_width(window, paned.column_author, 40);
+
+		assert_cmpint(widest, CompareOperator.GT, author);
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, widest);
+		assert_cmpint(paned.column_date.width, CompareOperator.EQ,
+		              date - widest + author);
+		assert_subject_fills(window);
 		assert_titles_in_line(window);
 
 		settings.reset("column-widths");
@@ -1558,7 +1658,8 @@ private static void test_a_double_click_on_the_subject_edge_fits_the_widest_subj
 		              lane + text_width(window, paned.column_subject, text));
 		assert_cmpint(paned.column_lines.x_offset, CompareOperator.EQ,
 		              paned.column_subject.width);
-		assert_true(scrolls_sideways(window));
+		assert_false(scrolls_sideways(window));
+		assert_subject_fills(window);
 		assert_titles_in_line(window);
 
 		settings.reset("column-widths");
@@ -1795,6 +1896,56 @@ private static void test_a_line_with_no_branch_above_it_names_none()
 	}
 }
 
+private static void test_a_pushed_column_comes_back_when_the_edge_goes_back()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
+		var repo = Repo.create();
+
+		repo.commit("first");
+		settings.reset("column-widths");
+		sizes.set_value("size", new Variant("(ii)", 1180, 600));
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		settle(400);
+
+		var hash = paned.column_hash.width;
+		var author = paned.column_author.width;
+		var room = hash - paned.column_hash.min_width;
+		int x;
+		int y;
+
+		edge_of(window, 1, out x, out y);
+		hold_at(x, y);
+		settle(200);
+		point_at(x + room + 20, y);
+		settle(200);
+
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author - 20);
+
+		point_at(x, y);
+		settle(200);
+		release_pointer();
+		settle(400);
+
+		assert_cmpint(paned.column_hash.width, CompareOperator.EQ, hash);
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author);
+
+		settings.reset("column-widths");
+		sizes.reset("size");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_repository_opened_for_the_first_time_fits_its_columns_to_the_list()
 {
 	try
@@ -1812,18 +1963,20 @@ private static void test_a_repository_opened_for_the_first_time_fits_its_columns
 		var window = opened(first, {"refs/heads/master"});
 
 		settle(400);
+
+		var lines = window.history.paned.column_lines.width;
+
 		drag_subject_edge(window, 300);
 
-		assert_true(scrolls_sideways(window));
+		assert_cmpint(window.history.paned.column_lines.width, CompareOperator.LT, lines);
 
 		window.destroy();
 		window = opened(second, {"refs/heads/master"});
 		settle(400);
 
-		var date = window.history.paned.column_date;
-
+		assert_cmpint(window.history.paned.column_lines.width, CompareOperator.EQ, lines);
 		assert_false(scrolls_sideways(window));
-		assert_cmpint(date.width, CompareOperator.EQ, date.fixed_width);
+		assert_subject_fills(window);
 
 		settings.reset("column-widths");
 		sizes.reset("size");
@@ -2035,6 +2188,7 @@ private static void test_a_window_change_goes_to_the_subject_alone()
 		var view = paned.commit_list_view;
 		var list = view.get_allocated_width();
 		var subject = paned.column_subject.width;
+		var lines = paned.column_lines.width;
 
 		window.resize(1000, 600);
 		settle(400);
@@ -2043,8 +2197,9 @@ private static void test_a_window_change_goes_to_the_subject_alone()
 
 		assert_cmpint(change, CompareOperator.LT, 0);
 		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject + change);
-		assert_cmpint(paned.column_date.width, CompareOperator.EQ, paned.column_date.fixed_width + 100);
+		assert_cmpint(paned.column_lines.width, CompareOperator.EQ, lines);
 		assert_false(scrolls_sideways(window));
+		assert_subject_fills(window);
 
 		settings.reset("column-widths");
 		sizes.reset("size");
@@ -2345,6 +2500,7 @@ private static void test_changes_rows_set_their_lines_under_the_lines_column()
 {
 	try
 	{
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
 		var repo = changes_repo();
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
@@ -2364,13 +2520,14 @@ private static void test_changes_rows_set_their_lines_under_the_lines_column()
 		assert_cmpstr(lines_ink(window, paned.staged_row), CompareOperator.EQ,
 		              below);
 
-		paned.column_subject.fixed_width += 50;
+		window.resize(1180, 600);
 		settle(500);
 
 		assert_cmpstr(lines_ink(window, null), CompareOperator.NE, below);
 		assert_cmpstr(lines_ink(window, paned.staged_row), CompareOperator.EQ,
 		              lines_ink(window, null));
 
+		sizes.reset("size");
 		window.destroy();
 		repo.remove();
 	}
@@ -4744,7 +4901,7 @@ private static void test_the_commit_menu_widens_for_a_long_first_tag()
 	}
 }
 
-private static void test_the_last_column_edge_gives_its_room_to_the_subject()
+private static void test_the_last_column_edge_stays_at_the_list_edge()
 {
 	try
 	{
@@ -4764,11 +4921,11 @@ private static void test_the_last_column_edge_gives_its_room_to_the_subject()
 		var subject = paned.column_subject.width;
 		var date = paned.column_date.width;
 
-		drag_edge(window, 4, -40);
+		drag_last_edge(window, 4, -40);
 
-		assert_cmpint(paned.column_date.width, CompareOperator.EQ, date - 40);
-		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject + 40);
-		assert_false(scrolls_sideways(window));
+		assert_cmpint(paned.column_date.width, CompareOperator.EQ, date);
+		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject);
+		assert_subject_fills(window);
 
 		settings.reset("column-widths");
 		sizes.reset("size");
@@ -4781,7 +4938,7 @@ private static void test_the_last_column_edge_gives_its_room_to_the_subject()
 	}
 }
 
-private static void test_the_last_column_edge_starts_from_the_width_it_shows()
+private static void test_the_last_shown_column_edge_stays_when_the_last_column_is_hidden()
 {
 	try
 	{
@@ -4791,24 +4948,38 @@ private static void test_the_last_column_edge_starts_from_the_width_it_shows()
 
 		repo.commit("first");
 		settings.reset("column-widths");
+		settings.reset("hidden-columns");
 		sizes.set_value("size", new Variant("(ii)", 1180, 600));
 
 		var window = opened(repo, {"refs/heads/master"});
 		var paned = window.history.paned;
 
 		settle(400);
-		drag_subject_edge(window, -100);
+		paned.column_date.visible = false;
+		settle(400);
 
 		var subject = paned.column_subject.width;
+		var author = paned.column_author.width;
+
+		drag_last_edge(window, 3, -40);
+
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author);
+		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject);
+		assert_cmpint(paned.column_author.x_offset + author, CompareOperator.EQ,
+		              paned.commit_list_view.get_allocated_width());
+
+		paned.column_date.visible = true;
+		settle(400);
+
 		var date = paned.column_date.width;
 
-		drag_edge(window, 4, -60);
+		drag_edge(window, 3, -40);
 
-		assert_cmpint(paned.column_date.width, CompareOperator.EQ, date - 60);
-		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject + 60);
-		assert_false(scrolls_sideways(window));
+		assert_cmpint(paned.column_author.width, CompareOperator.EQ, author - 40);
+		assert_cmpint(paned.column_date.width, CompareOperator.EQ, date + 40);
 
 		settings.reset("column-widths");
+		settings.reset("hidden-columns");
 		sizes.reset("size");
 		window.destroy();
 		repo.remove();
@@ -4969,7 +5140,42 @@ private static void test_the_search_bars_meet_without_a_border()
 	}
 }
 
-private static void test_the_subject_edge_changes_only_the_subject()
+private static void test_the_subject_edge_follows_the_pointer_in_a_list_too_narrow_for_the_columns()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var repo = Repo.create();
+
+		repo.commit("first");
+		settings.reset("column-widths");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		settle(400);
+
+		var subject = paned.column_subject.width;
+		var lines = paned.column_lines.width;
+
+		assert_true(scrolls_sideways(window));
+
+		drag_subject_edge(window, 40);
+
+		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject + 40);
+		assert_cmpint(paned.column_lines.width, CompareOperator.EQ, lines - 40);
+
+		settings.reset("column-widths");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_subject_edge_takes_its_room_from_lines()
 {
 	try
 	{
@@ -4988,14 +5194,14 @@ private static void test_the_subject_edge_changes_only_the_subject()
 
 		var subject = paned.column_subject.width;
 		var lines = paned.column_lines.width;
-		var start = paned.column_lines.x_offset;
+		var hash = paned.column_hash.x_offset;
 
 		drag_subject_edge(window, 40);
 
 		assert_cmpint(paned.column_subject.width, CompareOperator.EQ, subject + 40);
-		assert_cmpint(paned.column_lines.width, CompareOperator.EQ, lines);
-		assert_cmpint(paned.column_lines.x_offset, CompareOperator.EQ, start + 40);
-		assert_true(scrolls_sideways(window));
+		assert_cmpint(paned.column_lines.width, CompareOperator.EQ, lines - 40);
+		assert_cmpint(paned.column_hash.x_offset, CompareOperator.EQ, hash);
+		assert_false(scrolls_sideways(window));
 
 		settings.reset("column-widths");
 		sizes.reset("size");
