@@ -903,16 +903,20 @@ public class HistoryPaned : Gtk.Box
 	{
 		var area = column.get_area();
 		var context = area.create_context();
+		var style = d_commit_list_view.get_style_context();
 		var least = 0;
 		var natural = 0;
 		int separator;
 
+		style.save();
+		style.add_class(Gtk.STYLE_CLASS_CELL);
 		d_commit_list_view.model.foreach((model, path, iter) => {
 			column.cell_set_cell_data(model, iter, false, false);
 			area.get_preferred_width(context, d_commit_list_view, out least,
 			                         out natural);
 			return false;
 		});
+		style.restore();
 
 		d_commit_list_view.style_get("horizontal-separator", out separator);
 		context.get_preferred_width(out least, out natural);

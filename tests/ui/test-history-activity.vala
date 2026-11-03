@@ -358,6 +358,36 @@ private static string folded(Gitrlf.Window window)
 	return string.joinv("|", keys);
 }
 
+private static int ink_end(Gitrlf.Window window, Gtk.TreeViewColumn column,
+                           int row)
+{
+	var view = window.history.paned.commit_list_view;
+	var surface = drawn(view);
+	var end = -1;
+	Gdk.Rectangle area;
+	int x;
+	int y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(row), column,
+	                         out area);
+	view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
+
+	var fill = ink_of(pixel_at(surface, x + 1, y + area.height / 2));
+
+	for (var j = y; j < y + area.height; j++)
+	{
+		for (var i = x; i < x + area.width; i++)
+		{
+			if (ink_of(pixel_at(surface, i, j)) < fill - 48)
+			{
+				end = int.max(end, i - x);
+			}
+		}
+	}
+
+	return end;
+}
+
 private static int ink_of(uint8* pixel)
 {
 	return pixel[0] + pixel[1] + pixel[2];
@@ -538,6 +568,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-column-widened-by-its-title-keeps-its-width", test_a_column_widened_by_its_title_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-border-fits-the-column-to-its-right", test_a_double_click_on_a_border_fits_the_column_to_its_right);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-border-pushes-on-past-a-column-at-its-title-width", test_a_double_click_on_a_border_pushes_on_past_a_column_at_its_title_width);
+	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-border-shows-the-whole-text-under-a-theme-that-pads-cells", test_a_double_click_on_a_border_shows_the_whole_text_under_a_theme_that_pads_cells);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-title-edge-keeps-the-titles-in-line", test_a_double_click_on_a_title_edge_keeps_the_titles_in_line);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-the-border-before-lines-gives-back-its-opening-width", test_a_double_click_on_the_border_before_lines_gives_back_its_opening_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
@@ -1611,6 +1642,51 @@ private static void test_a_double_click_on_a_border_pushes_on_past_a_column_at_i
 		sizes.reset("size");
 		window.destroy();
 		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_double_click_on_a_border_shows_the_whole_text_under_a_theme_that_pads_cells()
+{
+	try
+	{
+		var settings = new Settings(Gitrlf.Config.APPLICATION_ID
+		                            + ".state.history");
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID
+		                         + ".state.window");
+		var theme = new Gtk.CssProvider();
+		var screen = Gdk.Screen.get_default();
+		var repo = Repo.create();
+
+		theme.load_from_data(".cell { padding: 0 4px; }");
+		Gtk.StyleContext.add_provider_for_screen(screen, theme, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+		repo.commit("first");
+		repo.commit("second");
+		settings.reset("column-widths");
+		sizes.set_value("size", new Variant("(ii)", 1180, 600));
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+
+		settle(400);
+		drag_edge(window, 2, 40);
+
+		var wide = paned.column_hash.width;
+		var whole = ink_end(window, paned.column_hash, 1);
+
+		double_click_edge(window, 1);
+
+		assert_cmpint(paned.column_hash.width, CompareOperator.LT, wide);
+		assert_cmpint(ink_end(window, paned.column_hash, 1), CompareOperator.EQ, whole);
+
+		settings.reset("column-widths");
+		sizes.reset("size");
+		window.destroy();
+		repo.remove();
+		Gtk.StyleContext.remove_provider_for_screen(screen, theme);
 	}
 	catch (Error e)
 	{
