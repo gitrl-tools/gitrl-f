@@ -28,6 +28,9 @@ namespace Gitg
 		public uint dot_width { get; set; default = 10; }
 		public unowned SList<Ref> labels { get; set; }
 
+		private const double LEADER_ALPHA = 0.35;
+		private const double LEADER_WIDTH = 1.0;
+
 		private int d_last_height;
 
 		private delegate double DirectionFunc(double i);
@@ -288,9 +291,32 @@ namespace Gitg
 				f = (a) => a;
 			}
 
+			draw_leader(context, area, f);
 			draw_paths(context, area, f);
 			draw_indicator(context, area, f);
 
+			context.restore();
+		}
+
+		private void draw_leader(Cairo.Context context,
+		                         Gdk.Rectangle area,
+		                         DirectionFunc f)
+		{
+			if (labels == null || commit.mylane + 1 >= num_visible_lanes)
+			{
+				return;
+			}
+
+			var color = commit.lane.color;
+			double cw = lane_width;
+			double y = Math.floor(area.y + area.height / 2.0) + 0.5;
+
+			context.save();
+			context.set_source_rgba(color.r, color.g, color.b, LEADER_ALPHA);
+			context.set_line_width(LEADER_WIDTH);
+			context.move_to(area.x + f(commit.mylane * cw + cw / 2.0), y);
+			context.line_to(area.x + f(num_visible_lanes * cw), y);
+			context.stroke();
 			context.restore();
 		}
 

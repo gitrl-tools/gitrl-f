@@ -346,7 +346,7 @@ Six changes.
 
 ## gitg-cell-renderer-lanes.patch
 
-Three changes.
+Four changes.
 
 **1. Gives the colour of the lane of the commit to the labels of that commit.**
 
@@ -360,7 +360,11 @@ Three changes.
 
 **Why.** The operator selected this. When a branch joins another line, the bend has the colour of the branch. At a merge, the bend to the merged branch has the colour of the merged branch. Thus the line of the checked-out branch is blue from the checked-out commit down, and the bend of a branch that joins it above that commit is not blue.
 
-**Cost.** Changes 1 and 2 cost nothing. After change 3, the bend where a line joins another has the colour of the line that ends, not of the line that continues. The pixel suite finds a difference at each such bend.
+**4. Draws a faint line from the dot of a commit to its labels** when another lane lies between them. The line is 1 pixel wide, in the colour of the lane of the commit, at 35 percent strength. It is drawn under the lanes, so a line that it crosses stays whole.
+
+**Why.** The labels start to the right of the last lane. When a line of another branch runs between the dot and the labels, the eye joins the labels to that line. The operator saw this with a branch label that sat next to the line of a different branch. The faint line joins the labels to their own dot, and it is drawn only where it is needed, so that the list has no more lines than before. The operator chose the faint strength from 35 percent, 60 percent and full, on a mock-up.
+
+**Cost.** Changes 1 and 2 cost nothing. After change 3, the bend where a line joins another has the colour of the line that ends, not of the line that continues. The pixel suite finds a difference at each such bend. After change 4, a labelled row with a lane to the right of its dot has one more line. The pixel suite finds a difference at each such row.
 
 ## gitg-label-renderer.patch
 

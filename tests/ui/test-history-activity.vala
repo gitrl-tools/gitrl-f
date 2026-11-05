@@ -573,6 +573,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-the-border-before-lines-gives-back-its-opening-width", test_a_double_click_on_the_border_before_lines_gives_back_its_opening_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
+	Test.add_func("/gitrlf/ui/history-activity/a-label-is-joined-to-its-dot-by-a-faint-line-where-a-line-passes-between", test_a_label_is_joined_to_its_dot_by_a_faint_line_where_a_line_passes_between);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-branch-whose-tip-the-search-hides", test_a_line_names_a_branch_whose_tip_the_search_hides);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
@@ -1018,6 +1019,22 @@ private static int row_of(Gitrlf.Window window, string subject)
 	}
 
 	error("no row %s", subject);
+}
+
+private static string row_pixel(Gitrlf.Window window, int row, int x)
+{
+	var view = window.history.paned.commit_list_view;
+	var surface = new Cairo.ImageSurface(Cairo.Format.RGB24, view.get_allocated_width(), view.get_allocated_height());
+	Gdk.Rectangle area;
+	int origin_x;
+	int origin_y;
+
+	view.draw(new Cairo.Context(surface));
+	surface.flush();
+	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out area);
+	view.convert_bin_window_to_widget_coords(area.x, area.y, out origin_x, out origin_y);
+
+	return "%06x".printf(*(uint32*)pixel_at(surface, origin_x + x, origin_y + area.height / 2) & 0xffffff);
 }
 
 private static string row_strip(Gitrlf.Window window, int row, int from, int to)
@@ -1879,6 +1896,39 @@ private static void test_a_line_names_the_local_branches_at_or_above_the_pointer
 		assert_cmpstr(line_tip(window, 1, 0, 0.9), CompareOperator.EQ, "feature");
 		assert_cmpstr(line_tip(window, 2, 0, 0.5), CompareOperator.EQ, "feature\nmaster");
 		assert_null(line_tip(window, 1, 4, 0.5));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_label_is_joined_to_its_dot_by_a_faint_line_where_a_line_passes_between()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.commit("main two");
+		repo.branch("alpha");
+		repo.git({"checkout", "--quiet", "-b", "side", "master~1"});
+		repo.commit("side one", "side");
+		repo.checkout("master");
+		repo.commit("main three");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/side"});
+		var crossed = row_of(window, "main two");
+		var open = row_of(window, "side one");
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "main three,side one,main two,first");
+		assert_cmpuint(lane_of(window, "main two"), CompareOperator.EQ, 0);
+		assert_cmpuint(lane_of(window, "side one"), CompareOperator.EQ, 1);
+		assert_cmpstr(row_pixel(window, crossed, 18), CompareOperator.NE, row_pixel(window, crossed, 1));
+		assert_cmpstr(row_pixel(window, crossed, 24), CompareOperator.EQ, line_hex(window, "side one"));
+		assert_cmpstr(row_pixel(window, open, 30), CompareOperator.EQ, row_pixel(window, open, 1));
 
 		window.destroy();
 		repo.remove();

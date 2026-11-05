@@ -1,6 +1,6 @@
 --- a/libgitg/gitg-cell-renderer-lanes.vala
 +++ b/libgitg/gitg-cell-renderer-lanes.vala
-@@ -23,6 +23,7 @@
+@@ -23,10 +23,14 @@
  	{
  		public Commit? commit { get; set; }
  		public Commit? next_commit { get; set; }
@@ -8,7 +8,14 @@
  		public uint lane_width { get; set; default = 16; }
  		public uint dot_width { get; set; default = 10; }
  		public unowned SList<Ref> labels { get; set; }
-@@ -74,6 +75,8 @@
+ 
++		private const double LEADER_ALPHA = 0.35;
++		private const double LEADER_WIDTH = 1.0;
++
+ 		private int d_last_height;
+ 
+ 		private delegate double DirectionFunc(double i);
+@@ -74,6 +78,8 @@
  			{
  				minimum_width = w;
  			}
@@ -17,7 +24,7 @@
  		}
  
  		private void draw_arrow(Cairo.Context context,
-@@ -120,9 +123,30 @@
+@@ -120,9 +126,30 @@
  			}
  		}
  
@@ -48,7 +55,7 @@
  		                             DirectionFunc f,
  		                             double        yoffset)
  		{
-@@ -143,11 +167,11 @@
+@@ -143,11 +170,11 @@
  					continue;
  				}
  
@@ -63,7 +70,7 @@
  					double x1 = area.x + f(from * cw + cw / 2.0);
  					double x2 = area.x + f(to * cw + cw / 2.0);
  					double y1 = area.y + yoffset * ch;
-@@ -167,14 +191,14 @@
+@@ -167,14 +194,14 @@
  		                            Gdk.Rectangle area,
  		                            DirectionFunc f)
  		{
@@ -80,7 +87,7 @@
  		}
  
  		private void draw_paths(Cairo.Context context,
-@@ -240,7 +264,7 @@
+@@ -240,7 +267,7 @@
  
  			context.save();
  			context.translate(offset, 0);
@@ -89,3 +96,39 @@
  			context.restore();
  		}
  
+@@ -264,12 +291,35 @@
+ 				f = (a) => a;
+ 			}
+ 
++			draw_leader(context, area, f);
+ 			draw_paths(context, area, f);
+ 			draw_indicator(context, area, f);
+ 
+ 			context.restore();
+ 		}
+ 
++		private void draw_leader(Cairo.Context context,
++		                         Gdk.Rectangle area,
++		                         DirectionFunc f)
++		{
++			if (labels == null || commit.mylane + 1 >= num_visible_lanes)
++			{
++				return;
++			}
++
++			var color = commit.lane.color;
++			double cw = lane_width;
++			double y = Math.floor(area.y + area.height / 2.0) + 0.5;
++
++			context.save();
++			context.set_source_rgba(color.r, color.g, color.b, LEADER_ALPHA);
++			context.set_line_width(LEADER_WIDTH);
++			context.move_to(area.x + f(commit.mylane * cw + cw / 2.0), y);
++			context.line_to(area.x + f(num_visible_lanes * cw), y);
++			context.stroke();
++			context.restore();
++		}
++
+ 		public override void render(Cairo.Context         context,
+ 		                            Gtk.Widget            widget,
+ 		                            Gdk.Rectangle         area,
