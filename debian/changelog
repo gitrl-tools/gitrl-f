@@ -1,3 +1,24 @@
+gitrl-f (0.16.0-1) noble; urgency=medium
+
+  * A tooltip on a line, dot or bend of the graph names its branches. It
+    names each branch with a tip on that line at or above the pointer. A
+    remote branch shows only if no local branch has its name. This also works
+    when a search or a file history hides the tip.
+  * The text of the checked-out branch label is in line with the other
+    labels, with a small gap after its pointed end.
+  * When you drag a column edge, the column to its right gives or takes the
+    width. The other columns do not move.
+  * A double click on a column border fits the column to its right to its
+    widest text. Hashes are no longer cut short by one character.
+  * The line counts start at the left edge of the Lines column, so the signs
+    stay in one line.
+  * A new commit menu item, "Browse files at this commit", opens a read-only
+    copy of the commit's files in the file manager.
+  * A faint line joins a label to its dot when another branch's line lies
+    between them.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Sat, 07 Nov 2026 11:43:41 +0100
+
 gitrl-f (0.15.0-1) noble; urgency=medium
 
   * Deep blue is only for the checked-out branch. Its line, from its commit

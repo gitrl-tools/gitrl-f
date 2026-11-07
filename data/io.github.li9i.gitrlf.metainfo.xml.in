@@ -63,6 +63,43 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.16.0" date="2026-11-07">
+      <description>
+        <ul>
+          <li>
+            A tooltip on a line, dot or bend of the graph names its branches.
+            It names each branch with a tip on that line at or above the
+            pointer. A remote branch shows only if no local branch has its
+            name. This also works when a search or a file history hides the
+            tip.
+          </li>
+          <li>
+            The text of the checked-out branch label is in line with the
+            other labels, with a small gap after its pointed end.
+          </li>
+          <li>
+            When you drag a column edge, the column to its right gives or
+            takes the width. The other columns do not move.
+          </li>
+          <li>
+            A double click on a column border fits the column to its right to
+            its widest text. Hashes are no longer cut short by one character.
+          </li>
+          <li>
+            The line counts start at the left edge of the Lines column, so
+            the signs stay in one line.
+          </li>
+          <li>
+            A new commit menu item, "Browse files at this commit", opens a
+            read-only copy of the commit's files in the file manager.
+          </li>
+          <li>
+            A faint line joins a label to its dot when another branch's line
+            lies between them.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.15.0" date="2026-10-30">
       <description>
         <ul>
