@@ -114,13 +114,10 @@ public class HistoryPaned : Gtk.Box
 	};
 
 	private Gee.HashMap<Gtk.TreeViewColumn, Gtk.TreeViewColumn> d_columns;
-	private bool d_arranging;
 	private Variant d_default_widths;
-	private int d_floor;
-	private Gtk.GestureMultiPress d_press;
+	private bool d_filling;
 	private int d_pressed;
 	private string d_repository_path;
-	private int[] d_rest;
 	private bool d_saving;
 	private Settings d_state_settings;
 	private CopyMenu d_titles_menu;
@@ -423,10 +420,6 @@ public class HistoryPaned : Gtk.Box
 		d_commit_list_view.columns_changed.connect(lock_last_edge);
 		d_headed_list.allocating.connect(fill_subject);
 		d_titles.columns_changed.connect(follow_titles);
-		d_press = new Gtk.GestureMultiPress(d_headed_list);
-		d_press.button = Gdk.BUTTON_PRIMARY;
-		d_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
-		d_press.pressed.connect(remember_widths);
 		destroy.connect(() => {
 			d_titles.columns_changed.disconnect(follow_titles);
 			d_commit_list_view.columns_changed.disconnect(save_column_order);
@@ -475,22 +468,13 @@ public class HistoryPaned : Gtk.Box
 		return null;
 	}
 
-	private void arrange(Gtk.TreeViewColumn[] shown, int[] widths)
-	{
-		d_arranging = true;
-
-		for (var i = 0; i < shown.length; i++)
-		{
-			shown[i].fixed_width = widths[i];
-		}
-
-		d_arranging = false;
-		d_floor = d_column_subject.fixed_width;
-		save_column_widths();
-	}
-
 	private void fill_subject(int width)
 	{
+		if (!d_filling)
+		{
+			return;
+		}
+
 		foreach (var column in d_commit_list_view.get_columns())
 		{
 			if (column == d_column_subject)
@@ -506,11 +490,9 @@ public class HistoryPaned : Gtk.Box
 			width -= width_of(column);
 		}
 
-		d_floor = width < d_floor ? d_floor : 0;
-		d_arranging = true;
-		d_column_subject.fixed_width = int.max(int.max(width, d_floor),
+		d_filling = false;
+		d_column_subject.fixed_width = int.max(width,
 		                                       d_column_subject.min_width);
-		d_arranging = false;
 	}
 
 	private bool fill_titles_menu(double x, double y)
@@ -542,32 +524,17 @@ public class HistoryPaned : Gtk.Box
 	private void fit_column(Object title, ParamSpec property)
 	{
 		var column = d_columns[(Gtk.TreeViewColumn)title];
-		int[] widths;
-		int at;
 
 		if (!d_saving || column.fixed_width != -1)
 		{
 			return;
 		}
 
-		var shown = shown_columns(column, out at, out widths);
-		var fitted = shown[++at];
-		var widest = fitted == d_column_lines
-		             ? width_in(d_default_widths, fitted)
-		             : widest_entry(fitted);
-		var by = int.max(widest, fitted.min_width) - widths[at];
+		var widest = column == d_column_lines
+		             ? width_in(d_default_widths, column)
+		             : widest_entry(column);
 
-		if (by > 0)
-		{
-			widths[at] += shove(shown, widths, at - 1, -1, by);
-		}
-		else
-		{
-			widths[at] += by;
-			widths[at - 1] -= by;
-		}
-
-		arrange(shown, widths);
+		column.fixed_width = int.max(widest, column.min_width);
 	}
 
 	public void fit_sidebar()
@@ -621,42 +588,6 @@ public class HistoryPaned : Gtk.Box
 			d_commit_list_view.move_column_after(d_columns[title], previous);
 			previous = d_columns[title];
 		}
-	}
-
-	private void give_way(Object column, ParamSpec property)
-	{
-		var changed = (Gtk.TreeViewColumn)column;
-		var event = Gtk.get_current_event();
-		var dragged = event != null
-		              && event.type == Gdk.EventType.MOTION_NOTIFY;
-		int[] widths;
-		int at;
-
-		if (d_arranging || !d_saving || changed.fixed_width == -1)
-		{
-			return;
-		}
-
-		var shown = shown_columns(changed, out at, out widths);
-
-		if (dragged)
-		{
-			widths = d_rest;
-		}
-
-		var by = changed.fixed_width - widths[at];
-
-		if (by > 0)
-		{
-			widths[at] += shove(shown, widths, at + 1, 1, by);
-		}
-		else
-		{
-			widths[at + 1] += int.min(-by, widths[at] - changed.min_width);
-			widths[at] = changed.fixed_width;
-		}
-
-		arrange(shown, widths);
 	}
 
 	private void keep_fixed_width(Object column, ParamSpec property)
@@ -748,19 +679,6 @@ public class HistoryPaned : Gtk.Box
 		d_unstaged_overlay.queue_resize();
 	}
 
-	private void remember_widths(int presses, double x, double y)
-	{
-		d_rest = {};
-
-		foreach (var column in d_commit_list_view.get_columns())
-		{
-			if (column.visible)
-			{
-				d_rest += width_of(column);
-			}
-		}
-	}
-
 	private void restore_column_order()
 	{
 		Gtk.TreeViewColumn? previous = null;
@@ -791,7 +709,7 @@ public class HistoryPaned : Gtk.Box
 			column.fixed_width = width_in(widths, column);
 		}
 
-		d_floor = 0;
+		d_filling = saved == null;
 		d_repository_path = repository;
 		d_saving = true;
 	}
@@ -850,52 +768,13 @@ public class HistoryPaned : Gtk.Box
 		d_state_settings.set_strv("hidden-columns", names);
 	}
 
-	private Gtk.TreeViewColumn[] shown_columns(Gtk.TreeViewColumn column,
-	                                           out int at, out int[] widths)
-	{
-		Gtk.TreeViewColumn[] shown = {};
-		int[] allocated = {};
-
-		at = 0;
-
-		foreach (var each in d_commit_list_view.get_columns())
-		{
-			if (each.visible)
-			{
-				at = each == column ? shown.length : at;
-				shown += each;
-				allocated += each.width;
-			}
-		}
-
-		widths = allocated;
-
-		return shown;
-	}
-
-	private static int shove(Gtk.TreeViewColumn[] shown, int[] widths,
-	                         int from, int step, int by)
-	{
-		var left = by;
-
-		for (var i = from; i >= 0 && i < shown.length && left > 0; i += step)
-		{
-			var give = int.min(left, widths[i] - shown[i].min_width);
-
-			widths[i] -= give;
-			left -= give;
-		}
-
-		return by - left;
-	}
-
 	public void watch_column_widths()
 	{
 		d_default_widths = fixed_widths();
 
 		foreach (var column in d_commit_list_view.get_columns())
 		{
-			column.notify["fixed-width"].connect(give_way);
+			column.notify["fixed-width"].connect(save_column_widths);
 		}
 	}
 
