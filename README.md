@@ -8,37 +8,51 @@
 
 Somewhere in the history is the commit you want: the one that added a function, the one that changed a line, the one whose hash a colleague pasted in a chat. `git log` can find it with `-S`, `-G`, `-L` and a path, but it gives you a wall of text, and it gives you every branch, including the ones you do not care about. `gitrl-f` draws the history the way `gitg` does, with only the branches, remote branches and tags that you tick, and puts a search on top of it.
 
-One search bar looks in three places: the messages, authors and hashes of the commits, the lines that each commit added or removed, and the files that each commit changed. The matches are in bold, and **Display matches only** hides the rest, with the graph joined across the gaps. Double click a commit and its details and its diff open below the history. There, Ctrl+F finds a word in every file of the diff, and a right click on lines shows only the commits that changed them. **It writes nothing to the repository.**
-
 > [!TIP]
 > gitrl-f is pronounced git-ROL-EFF (/ɡɪtˈrəʊlɛf/), after ctrl-f said aloud: control eff.
 
 ![A word typed in the search bar, its matches in bold, then only the matching commits shown](docs/screenshots/demo-search.gif)
 
-## Only the refs that you tick
+## Features
 
-Most days you care about two or three branches, not all of them. The panel on the left lists every branch, remote branch and tag, in groups split at the slashes of their names, so `feature/lexer` sits under `feature`. Tick the ones you want and the history redraws with only those. A commit shows when a ticked ref reaches it, and only the ticked refs get a label. The box of a group ticks or unticks everything in it.
+**History**
+- Graph of only the branches, remote branches and tags that you tick, remembered per repository
+- Staged and unstaged changes as rows above the history, with their line counts
+- Added and removed line counts for each commit
+- Columns that move, resize, hide and fit to their widest entry on a double click, remembered per repository
+- Each branch label in the colour of its line, the checked-out branch in deep blue at the far left
+- A choice of line colour sets
+- Branch names in a tooltip when the pointer is on a line
+- Reloads by itself when the repository changes
 
-The ticks come back. Run `gitrlf` again in the same repository, with no refs on the command line, and you get the refs that you chose last time. Give it refs, such as `gitrlf main 'feature/*'`, and it ticks those instead, and forgets any tick that you change in that run.
+**Search**
+- One bar for messages, authors and hashes, changed lines (`git log -S` / `-G`) and files (`git log --follow`)
+- Match case, Regex and **Display matches only**
+- **Tick and show**: finds matches in the refs that you did not tick
 
-![Refs ticked and unticked on the left, and the history redrawn on the right each time](docs/screenshots/demo-ticks.gif)
+**Right-click on a commit**
+- **Show diff**, also for several selected commits as one combined diff
+- **Open diff in difftool**, for one commit, several commits, or one file
+- **Browse files at this commit** in the file manager
+- Branches and tags that hold it, the first tag with it, and the merge that brought it in
+- Copy hash, copy ref name
 
-The search knows about the refs that you left out. When a search of the messages finds nothing in the ticked refs, it counts the matches in the others, and **Tick and show** ticks a ref that holds the newest one and goes straight to it. A pasted hash always lands.
+**Right-click on a ref**
+- **Go to where it splits from** another ref (`git merge-base`)
+- Copy name
 
-## What it finds
+**Diff pane**
+- Ctrl+F finds a word in every file of the diff
+- **Show history of the selected lines** (`git log -L`)
+- **Go to the commit that last changed this line** (`git blame`)
+- **Show history of this file**, following renames
+- Open a staged or unstaged file in the difftool
 
-Bring `gitrl-f` a question about the history, and it gives you the commits that answer it.
+**Command line**
+- `gitrlf [refs] [-S text] [-G regex] [-- paths]`, with TAB completion in bash
+- A chooser of recent repositories when run outside one
 
-![A word found in both files of a merge, then three lines of a diff selected and the list cut to the three commits that changed them](docs/screenshots/demo-diff.gif)
-
-- **Where in this commit is that word?** Open the commit and press Ctrl+F. The find bar marks every match in every file of the diff, folded files too, and Enter takes you from one to the next.
-- **When did these lines change, and why?** Select lines in the diff and right click them. **Show history of the selected lines** keeps only the commits that changed them, as `git log -L` does. On a line that the commit did not add, the same menu offers the commit that last changed it, as `git blame` finds it.
-- **Which commit added this function?** Pick **Changed lines** in the search bar, or press Ctrl+Shift+F, then type its name and press Enter. The list keeps only the commits that added or removed it, as `git log -S` does. Turn on **Regex** and it keeps the commits whose changed lines match, as `git log -G` does.
-- **What happened to this file?** Type its path in **Files** and press Enter, or right click the file in a diff and pick **Show history of this file**. The list keeps only the commits that changed it. With one file, it follows the file through its earlier names, as `git log --follow` does.
-- **Which branches have this fix, and which release had it first?** Right click the commit. The menu lists every branch and tag that holds it, names the first tag that holds it, and says which merge brought it into your current branch.
-- **Where did these two branches split?** Right click a ref in the panel, pick **Go to where it splits from**, then the other ref. The list goes to the newest commit that the two share, as `git merge-base` finds it.
-
-`gitrl-f` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries. The graph, the labels and the diff are gitg's own code.
+It never writes to the repository.
 
 ## Installation
 
@@ -169,6 +183,8 @@ Run outside a repository, `gitrlf` opens a chooser listing the repositories that
 The window follows the repository as it changes, so a commit, a fetch, a checkout or a rebase in another terminal shows up without you touching anything. The ticks and the selected commit stay as they were.
 
 ## Licence
+
+`gitrl-f` is built from `gitg`. It uses the language of gitg (Vala) and the same libraries. The graph, the labels and the diff are gitg's own code.
 
 GPL-2.0-or-later, from gitg. Refer to `COPYING`. `debian/copyright` gives the per-file data that credits the gitg authors. The icon is an adaptation of the Git logo by Jason Long, CC BY 3.0.
 
