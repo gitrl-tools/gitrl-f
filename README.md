@@ -19,10 +19,6 @@ Somewhere in the history is the commit you want: the one that added a function, 
 - Graph of only the branches, remote branches and tags that you tick, remembered per repository
 - Staged and unstaged changes as rows above the history, with their line counts
 - Added and removed line counts for each commit
-- Columns that move, resize, hide and fit to their widest entry on a double click, remembered per repository
-- Each branch label in the colour of its line, the checked-out branch in deep blue at the far left
-- A choice of line colour sets
-- Branch names in a tooltip when the pointer is on a line
 - Reloads by itself when the repository changes
 
 **Search**
@@ -34,25 +30,21 @@ Somewhere in the history is the commit you want: the one that added a function, 
 - **Show diff**, also for several selected commits as one combined diff
 - **Open diff in difftool**, for one commit, several commits, or one file
 - **Browse files at this commit** in the file manager
-- Branches and tags that hold it, the first tag with it, and the merge that brought it in
-- Copy hash, copy ref name
 
 **Right-click on a ref**
 - **Go to where it splits from** another ref (`git merge-base`)
-- Copy name
 
 **Diff pane**
 - Ctrl+F finds a word in every file of the diff
 - **Show history of the selected lines** (`git log -L`)
 - **Go to the commit that last changed this line** (`git blame`)
 - **Show history of this file**, following renames
-- Open a staged or unstaged file in the difftool
 
 **Command line**
 - `gitrlf [refs] [-S text] [-G regex] [-- paths]`, with TAB completion in bash
-- A chooser of recent repositories when run outside one
 
-It never writes to the repository.
+> [!NOTE]
+> `gitrl-f` never writes to the repository
 
 ## Installation
 
