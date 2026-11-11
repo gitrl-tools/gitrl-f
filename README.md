@@ -21,6 +21,8 @@ Somewhere in the history is the commit you want: the one that added a function, 
 - Added and removed line counts for each commit
 - Reloads by itself when the repository changes
 
+![Refs ticked and unticked on the left, and the history redrawn on the right each time](docs/screenshots/demo-ticks.gif)
+
 **Search**
 - One bar for messages, authors and hashes, changed lines (`git log -S` / `-G`) and files (`git log --follow`)
 - Match case, Regex and **Display matches only**
@@ -39,6 +41,8 @@ Somewhere in the history is the commit you want: the one that added a function, 
 - **Show history of the selected lines** (`git log -L`)
 - **Go to the commit that last changed this line** (`git blame`)
 - **Show history of this file**, following renames
+
+![A word found in both files of a merge, then three lines of a diff selected and the list cut to the three commits that changed them](docs/screenshots/demo-diff.gif)
 
 **Command line**
 - `gitrlf [refs] [-S text] [-G regex] [-- paths]`, with TAB completion in bash
