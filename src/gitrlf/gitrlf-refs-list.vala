@@ -24,6 +24,7 @@ public class RefsList : Gtk.ListBox
 {
 	private CopyMenu d_copy_menu;
 	private Gee.HashMap<string, bool> d_folds;
+	private bool d_folding;
 	private Gee.ArrayList<RefsHeader> d_headers;
 	private string d_needle;
 	private Gee.ArrayList<RefsRow> d_rows;
@@ -90,7 +91,11 @@ public class RefsList : Gtk.ListBox
 		header.expanded = d_folds.has_key(key) ? d_folds[key] : key != "section:tags";
 		header.notify["expanded"].connect(() => {
 			d_folds[header.key] = header.expanded;
-			invalidate_filter();
+
+			if (!d_folding)
+			{
+				invalidate_filter();
+			}
 		});
 		header.toggled.connect(() => {
 			var names = leaves(header);
@@ -282,6 +287,8 @@ public class RefsList : Gtk.ListBox
 
 	public void fold_unticked()
 	{
+		d_folding = true;
+
 		foreach (var header in d_headers)
 		{
 			var ticked = false;
@@ -296,6 +303,9 @@ public class RefsList : Gtk.ListBox
 				header.expanded = false;
 			}
 		}
+
+		d_folding = false;
+		invalidate_filter();
 	}
 
 	private Gee.List<string> leaves(RefsHeader header)
