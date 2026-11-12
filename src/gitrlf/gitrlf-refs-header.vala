@@ -51,6 +51,7 @@ public class RefsHeader : Gtk.ListBoxRow
 
 	public bool expanded { get; set; default = true; }
 	public string key { get; construct; }
+	public int order;
 
 	public bool is_shown_by_folds
 	{
@@ -99,9 +100,9 @@ public class RefsHeader : Gtk.ListBoxRow
 		});
 	}
 
-	public bool contains(RefsRow row)
+	public bool contains(RefsHeader inner)
 	{
-		for (var group = row.group; group != null; group = group.parent_group)
+		for (var group = inner; group != null; group = group.parent_group)
 		{
 			if (group == this)
 			{

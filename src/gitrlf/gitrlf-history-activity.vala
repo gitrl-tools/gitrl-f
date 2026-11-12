@@ -2499,8 +2499,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_full = d_history;
-		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history);
-		d_paned.refs_list.fold_unticked();
+		d_paned.refs_list.set_refs(d_refs, d_ticks, d_history, true);
 		d_paned.fit_sidebar();
 		d_paned.restore_column_widths(repository.get_location().get_path());
 

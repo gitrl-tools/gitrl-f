@@ -22,11 +22,30 @@ namespace Gitrlf
 
 public class RefsList : Gtk.ListBox
 {
+	private class Entry
+	{
+		public RefsHeader group;
+		public string label;
+		public int order;
+		public Ref reference;
+		public RefsRow? row;
+
+		public Entry(Ref reference, RefsHeader group, string label, int order)
+		{
+			this.reference = reference;
+			this.group = group;
+			this.label = label;
+			this.order = order;
+		}
+	}
+
+	private bool d_batching;
 	private CopyMenu d_copy_menu;
+	private Gee.ArrayList<Entry> d_entries;
 	private Gee.HashMap<string, bool> d_folds;
-	private bool d_folding;
 	private Gee.ArrayList<RefsHeader> d_headers;
 	private string d_needle;
+	private int d_order;
 	private Gee.ArrayList<RefsRow> d_rows;
 	private string? d_shape;
 	private Gee.HashSet<string> d_ticks;
@@ -40,10 +59,15 @@ public class RefsList : Gtk.ListBox
 
 			if (d_needle != "")
 			{
+				d_batching = true;
+
 				foreach (var header in d_headers)
 				{
 					header.expanded = true;
 				}
+
+				d_batching = false;
+				build_shown();
 			}
 
 			invalidate_filter();
@@ -66,6 +90,7 @@ public class RefsList : Gtk.ListBox
 
 	construct
 	{
+		d_entries = new Gee.ArrayList<Entry>();
 		d_folds = new Gee.HashMap<string, bool>();
 		d_headers = new Gee.ArrayList<RefsHeader>();
 		d_needle = "";
@@ -78,6 +103,7 @@ public class RefsList : Gtk.ListBox
 		get_style_context().add_class("sidebar");
 
 		set_filter_func(filter_row);
+		set_sort_func((a, b) => order_of(a) - order_of(b));
 		row_activated.connect(on_row_activated);
 
 		d_copy_menu = new CopyMenu(this);
@@ -88,12 +114,14 @@ public class RefsList : Gtk.ListBox
 	{
 		var header = new RefsHeader(key, title, parent_group);
 
+		header.order = d_order++;
 		header.expanded = d_folds.has_key(key) ? d_folds[key] : key != "section:tags";
 		header.notify["expanded"].connect(() => {
 			d_folds[header.key] = header.expanded;
 
-			if (!d_folding)
+			if (!d_batching)
 			{
+				build_shown();
 				invalidate_filter();
 			}
 		});
@@ -128,23 +156,7 @@ public class RefsList : Gtk.ListBox
 
 	private void add_row(Ref reference, RefsHeader group, string label)
 	{
-		var row = new RefsRow(reference, group, label);
-
-		row.toggled.connect(() => {
-			if (row.ticked)
-			{
-				d_ticks.add(reference.name);
-			}
-			else
-			{
-				d_ticks.remove(reference.name);
-			}
-
-			changed_by_user();
-		});
-
-		d_rows.add(row);
-		add(row);
+		d_entries.add(new Entry(reference, group, label, d_order++));
 	}
 
 	private void add_tree(Gee.List<Ref> refs, string key_prefix, RefsHeader group, History? history)
@@ -192,6 +204,78 @@ public class RefsList : Gtk.ListBox
 			}
 
 			add_row(reference, open.is_empty ? group : open.last(), parts[parts.length - 1]);
+		}
+	}
+
+	private void build_row(Entry entry)
+	{
+		var row = new RefsRow(entry.reference, entry.group, entry.label);
+
+		row.order = entry.order;
+		row.ticked = d_ticks.contains(entry.reference.name);
+		row.toggled.connect(() => {
+			if (row.ticked)
+			{
+				d_ticks.add(row.reference.name);
+			}
+			else
+			{
+				d_ticks.remove(row.reference.name);
+			}
+
+			changed_by_user();
+		});
+
+		entry.row = row;
+		d_rows.add(row);
+		add(row);
+	}
+
+	private void build_shown()
+	{
+		foreach (var entry in d_entries)
+		{
+			if (entry.row == null && entry.group.expanded && entry.group.is_shown_by_folds)
+			{
+				build_row(entry);
+			}
+		}
+	}
+
+	private void build_widest()
+	{
+		var widest = new Gee.HashMap<int, Entry>();
+		var widths = new Gee.HashMap<int, int>();
+
+		foreach (var entry in d_entries)
+		{
+			if (entry.row != null)
+			{
+				continue;
+			}
+
+			if (entry.reference.head)
+			{
+				build_row(entry);
+				continue;
+			}
+
+			var depth = entry.group.depth;
+			int width;
+			int height;
+
+			create_pango_layout(entry.label).get_pixel_size(out width, out height);
+
+			if (!widths.has_key(depth) || width > widths[depth])
+			{
+				widths[depth] = width;
+				widest[depth] = entry;
+			}
+		}
+
+		foreach (var entry in widest.values)
+		{
+			build_row(entry);
 		}
 	}
 
@@ -249,7 +333,7 @@ public class RefsList : Gtk.ListBox
 			{
 				foreach (var candidate in d_rows)
 				{
-					if (header.contains(candidate) && candidate.matches(d_needle))
+					if (header.contains(candidate.group) && candidate.matches(d_needle))
 					{
 						return true;
 					}
@@ -285,9 +369,9 @@ public class RefsList : Gtk.ListBox
 		return true;
 	}
 
-	public void fold_unticked()
+	private void fold_unticked()
 	{
-		d_folding = true;
+		d_batching = true;
 
 		foreach (var header in d_headers)
 		{
@@ -304,7 +388,7 @@ public class RefsList : Gtk.ListBox
 			}
 		}
 
-		d_folding = false;
+		d_batching = false;
 		invalidate_filter();
 	}
 
@@ -312,11 +396,11 @@ public class RefsList : Gtk.ListBox
 	{
 		var names = new Gee.ArrayList<string>();
 
-		foreach (var row in d_rows)
+		foreach (var entry in d_entries)
 		{
-			if (header.contains(row))
+			if (header.contains(entry.group))
 			{
-				names.add(row.reference.name);
+				names.add(entry.reference.name);
 			}
 		}
 
@@ -336,6 +420,13 @@ public class RefsList : Gtk.ListBox
 		ref_activated(((RefsRow)row).reference);
 	}
 
+	private static int order_of(Gtk.ListBoxRow row)
+	{
+		var header = row as RefsHeader;
+
+		return header != null ? header.order : ((RefsRow)row).order;
+	}
+
 	private static int position_of(Ref reference, History? history)
 	{
 		return history != null ? history.position(reference.target) : int.MAX;
@@ -345,15 +436,15 @@ public class RefsList : Gtk.ListBox
 	{
 		var refs = new Gee.ArrayList<Ref>();
 
-		foreach (var row in d_rows)
+		foreach (var entry in d_entries)
 		{
-			refs.add(row.reference);
+			refs.add(entry.reference);
 		}
 
 		return refs;
 	}
 
-	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks, History? history)
+	public void set_refs(Gee.List<Ref> refs, Gee.Set<string> ticks, History? history, bool fold = false)
 	{
 		var shape = shape_of(refs, history);
 
@@ -369,12 +460,23 @@ public class RefsList : Gtk.ListBox
 				named[reference.name] = reference;
 			}
 
-			foreach (var row in d_rows)
+			foreach (var entry in d_entries)
 			{
-				row.reference = named[row.reference.name];
+				entry.reference = named[entry.reference.name];
+
+				if (entry.row != null)
+				{
+					entry.row.reference = entry.reference;
+				}
 			}
 
 			show_ticks();
+
+			if (fold)
+			{
+				fold_unticked();
+			}
+
 			return;
 		}
 
@@ -385,7 +487,9 @@ public class RefsList : Gtk.ListBox
 			child.destroy();
 		}
 
+		d_entries.clear();
 		d_headers.clear();
+		d_order = 0;
 		d_rows.clear();
 
 		Ref? detached = null;
@@ -435,6 +539,12 @@ public class RefsList : Gtk.ListBox
 			add_tree(tags, "tag:", add_header("section:tags", _("Tags"), null), history);
 		}
 
+		if (fold)
+		{
+			fold_unticked();
+		}
+
+		build_shown();
 		show_ticks();
 		invalidate_filter();
 	}
@@ -505,9 +615,9 @@ public class RefsList : Gtk.ListBox
 
 	public void tick_all()
 	{
-		foreach (var row in d_rows)
+		foreach (var entry in d_entries)
 		{
-			d_ticks.add(row.reference.name);
+			d_ticks.add(entry.reference.name);
 		}
 
 		changed_by_user();
@@ -522,6 +632,8 @@ public class RefsList : Gtk.ListBox
 	public int widest_row()
 	{
 		var widest = 0;
+
+		build_widest();
 
 		foreach (var child in get_children())
 		{

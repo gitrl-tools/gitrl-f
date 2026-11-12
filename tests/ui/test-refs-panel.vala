@@ -94,6 +94,7 @@ public static int main(string[] args)
 {
 	Gtk.test_init(ref args);
 
+	Test.add_func("/gitrlf/ui/refs-panel/a-folded-group-opens-with-its-ticks", test_a_folded_group_opens_with_its_ticks);
 	Test.add_func("/gitrlf/ui/refs-panel/a-reload-follows-the-new-graph-order", test_a_reload_follows_the_new_graph_order);
 	Test.add_func("/gitrlf/ui/refs-panel/a-reload-gives-the-rows-the-new-targets", test_a_reload_gives_the_rows_the_new_targets);
 	Test.add_func("/gitrlf/ui/refs-panel/a-reload-shows-the-new-ticks", test_a_reload_shows_the_new_ticks);
@@ -116,6 +117,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/refs-panel/rows-offer-no-only-link", test_rows_offer_no_only_link);
 	Test.add_func("/gitrlf/ui/refs-panel/subgroup-checkbox-ticks-everything-under-it", test_subgroup_checkbox_ticks_everything_under_it);
 	Test.add_func("/gitrlf/ui/refs-panel/subgroup-name-folds-everything-under-it", test_subgroup_name_folds_everything_under_it);
+	Test.add_func("/gitrlf/ui/refs-panel/the-widest-row-counts-names-in-folded-groups", test_the_widest_row_counts_names_in_folded_groups);
 	return Test.run();
 }
 
@@ -178,12 +180,54 @@ private static void settle(int milliseconds)
 	}
 }
 
+private static bool shown(Gitrlf.RefsList list, string short_name)
+{
+	foreach (var child in list.get_children())
+	{
+		var candidate = child as Gitrlf.RefsRow;
+
+		if (candidate != null && candidate.reference.short_name == short_name)
+		{
+			return candidate.get_child_visible();
+		}
+	}
+
+	return false;
+}
+
 private static string sorted(Gee.Set<string> names)
 {
 	var list = new Gee.ArrayList<string>();
 	list.add_all(names);
 	list.sort();
 	return string.joinv(",", list.to_array());
+}
+
+private static void test_a_folded_group_opens_with_its_ticks()
+{
+	try
+	{
+		var repo = nested_fixture();
+		Gee.List<Gitrlf.Ref> refs;
+		var list = panel(repo, out refs);
+		var ticks = new Gee.HashSet<string>();
+
+		ticks.add("refs/tags/release/v2");
+		list.set_ticks(ticks);
+		header(list, "section:tags").expanded = true;
+
+		assert_true(row(list, "release/v2").ticked);
+		assert_false(row(list, "release/v10").ticked);
+		assert_true(shown(list, "release/v2"));
+		assert_cmpstr(label_of(header(list, "section:tags"), 1),
+		              CompareOperator.EQ, "1/3");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_a_reload_follows_the_new_graph_order()
@@ -405,7 +449,7 @@ private static void test_folds_are_kept_across_a_reload()
 
 		assert_false(header(list, "section:local").expanded);
 		assert_true(header(list, "section:tags").expanded);
-		assert_false(row(list, "master").get_child_visible());
+		assert_false(shown(list, "master"));
 
 		repo.remove();
 	}
@@ -589,7 +633,7 @@ private static void test_groups_order_and_notes()
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
 			"H:Branches:3/3", "R:master HEAD", "H:fix:1/1", "R:stamp", "H:feature:1/1", "R:scan",
 			"H:Remotes:2/2", "H:backup:1/1", "R:master", "H:origin:1/1", "R:master",
-			"H:Tags:1/1", "R:v1(hidden)",
+			"H:Tags:1/1",
 		}));
 
 		repo.remove();
@@ -608,10 +652,12 @@ private static void test_nested_groups_in_every_list()
 		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
+		header(list, "section:tags").expanded = true;
+
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
 			"H:Branches:8/8", "R:Alpha", "R:backup", "R:master HEAD", "R:zed", "H:b:4/4", "R:a1", "R:a2", "R:a10", "H:c:1/1", "R:d",
 			"H:Remotes:2/2", "H:origin:2/2", "R:master", "H:b:1/1", "R:a1",
-			"H:Tags:3/3", "R:v1(hidden)", "H:release:2/2(hidden)", "R:v2(hidden)", "R:v10(hidden)",
+			"H:Tags:3/3", "R:v1", "H:release:2/2", "R:v2", "R:v10",
 		}));
 
 		header(list, "section:tags").expanded = true;
@@ -743,10 +789,12 @@ private static void test_rows_follow_the_graph_order()
 		Gee.List<Gitrlf.Ref> refs;
 		var list = panel(repo, out refs);
 
+		header(list, "section:tags").expanded = true;
+
 		assert_cmpstr(layout(list), CompareOperator.EQ, string.joinv("|", {
 			"H:Branches:7/7", "R:master HEAD", "R:z-new", "R:m-mid", "R:a-old", "H:y:1/1", "R:new", "H:x:2/2", "R:mid", "R:old",
 			"H:Remotes:3/3", "H:upstream:1/1", "R:master", "H:origin:2/2", "R:new", "R:old",
-			"H:Tags:3/3", "R:v10(hidden)", "R:v2(hidden)", "R:v1(hidden)",
+			"H:Tags:3/3", "R:v10", "R:v2", "R:v1",
 		}));
 
 		repo.remove();
@@ -849,6 +897,35 @@ private static void test_subgroup_name_folds_everything_under_it()
 
 		assert_true(row(list, "b/a1").get_child_visible());
 		assert_false(row(list, "b/c/d").get_child_visible());
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_widest_row_counts_names_in_folded_groups()
+{
+	try
+	{
+		var repo = nested_fixture();
+		var name = "release/" + string.nfill(60, 'w');
+
+		repo.git({"tag", name});
+
+		Gee.List<Gitrlf.Ref> refs;
+		var list = panel(repo, out refs);
+		var folded = list.widest_row();
+		int minimum;
+		int natural;
+
+		header(list, "section:tags").expanded = true;
+		row(list, name).get_preferred_width(out minimum, out natural);
+
+		assert_cmpint(folded, CompareOperator.EQ, natural);
+		assert_cmpint(list.widest_row(), CompareOperator.EQ, folded);
 
 		repo.remove();
 	}

@@ -36,6 +36,7 @@ public class RefsRow : Gtk.ListBoxRow
 
 	public RefsHeader group { get; construct; }
 	public string label { get; construct; }
+	public int order;
 	public Ref reference { get; set construct; }
 
 	public bool ticked
