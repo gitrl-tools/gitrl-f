@@ -63,6 +63,27 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.17.0" date="2026-11-12">
+      <description>
+        <ul>
+          <li>
+            gitrl-f opens faster in a repository with many branches and tags.
+            The refs panel makes the rows of a folded group only when the
+            group opens. The panel keeps the same width as before.
+          </li>
+          <li>
+            At start, gitrl-f reads the refs only one time, and sorts their
+            names faster.
+          </li>
+          <li>
+            A drag on a column border changes only the column to its left. The
+            columns after it move. A double click on a border fits the column
+            to its left to its widest entry. The list scrolls sideways when
+            the columns are wider than the list.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.16.0" date="2026-11-07">
       <description>
         <ul>
