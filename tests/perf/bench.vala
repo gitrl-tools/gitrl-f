@@ -1296,7 +1296,9 @@ public class Bench : Object
 			return 1;
 		}
 
+		var timer = new Timer();
 		var window = new Window(app);
+		window.open_repository(File.new_for_path(path));
 		window.show();
 
 		var painting = new Timer();
@@ -1307,10 +1309,6 @@ public class Bench : Object
 			s_frames += painting.elapsed();
 			s_painted = thread_seconds();
 		});
-		drain();
-
-		var timer = new Timer();
-		window.open_repository(File.new_for_path(path));
 		drain();
 
 		stdout.printf("window open %.3f s\n", timer.elapsed());
