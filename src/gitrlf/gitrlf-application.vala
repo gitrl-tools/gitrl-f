@@ -174,9 +174,8 @@ public class Application : Gtk.Application
 			try
 			{
 				var repository = Repository.open(location);
-				var refs = Refs.read(repository);
 
-				d_ticks = command_line.names_ticks ? Ticks.resolve(command_line, refs) : null;
+				d_ticks = command_line.names_ticks ? Ticks.resolve(command_line, Refs.read(repository)) : null;
 			}
 			catch (TicksError.NO_MATCH e)
 			{

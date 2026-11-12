@@ -98,18 +98,7 @@ public class Refs : Object
 
 	private static string[] natural_parts(string text)
 	{
-		string[] parts;
-
-		try
-		{
-			parts = new Regex("([0-9]+)").split(text);
-		}
-		catch (RegexError e)
-		{
-			parts = { text };
-		}
-
-		return parts;
+		return /([0-9]+)/.split(text);
 	}
 
 	public static Gee.List<Ref> read(Gitg.Repository repository) throws Error
