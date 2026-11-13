@@ -108,6 +108,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.ListBoxRow d_unstaged_row;
 
+	private const string SET_BY_HAND = "set-by-hand";
+
 	private const string[] TITLE_PROPERTIES = {
 		"expand", "fixed-width", "min-width", "reorderable", "resizable",
 		"sizing", "title", "visible"
@@ -116,11 +118,14 @@ public class HistoryPaned : Gtk.Box
 	private Gee.HashMap<Gtk.TreeViewColumn, Gtk.TreeViewColumn> d_columns;
 	private Variant d_default_widths;
 	private bool d_filling;
+	private bool d_held;
 	private int d_pressed;
 	private string d_repository_path;
 	private bool d_saving;
+	private bool d_set_by_hand;
 	private Settings d_state_settings;
 	private CopyMenu d_titles_menu;
+	private Gtk.GestureMultiPress d_titles_press;
 
 	public Gtk.Button all_button
 	{
@@ -420,6 +425,10 @@ public class HistoryPaned : Gtk.Box
 		d_commit_list_view.columns_changed.connect(lock_last_edge);
 		d_headed_list.allocating.connect(fill_subject);
 		d_titles.columns_changed.connect(follow_titles);
+		d_titles_press = new Gtk.GestureMultiPress(d_titles);
+		d_titles_press.propagation_phase = Gtk.PropagationPhase.CAPTURE;
+		d_titles_press.begin.connect(() => d_held = true);
+		d_titles_press.end.connect(() => d_held = false);
 		destroy.connect(() => {
 			d_titles.columns_changed.disconnect(follow_titles);
 			d_commit_list_view.columns_changed.disconnect(save_column_order);
@@ -709,7 +718,9 @@ public class HistoryPaned : Gtk.Box
 			column.fixed_width = width_in(widths, column);
 		}
 
-		d_filling = saved == null;
+		d_set_by_hand = saved != null
+		                && saved.lookup_value(SET_BY_HAND, null) != null;
+		d_filling = !d_set_by_hand;
 		d_repository_path = repository;
 		d_saving = true;
 	}
@@ -749,7 +760,16 @@ public class HistoryPaned : Gtk.Box
 		var saved = new VariantDict(
 			d_state_settings.get_value("column-widths"));
 
-		saved.insert_value(d_repository_path, fixed_widths());
+		var widths = new VariantDict(fixed_widths());
+
+		d_set_by_hand = d_set_by_hand || d_held;
+
+		if (d_set_by_hand)
+		{
+			widths.insert_value(SET_BY_HAND, true);
+		}
+
+		saved.insert_value(d_repository_path, widths.end());
 		d_state_settings.set_value("column-widths", saved.end());
 	}
 
