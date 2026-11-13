@@ -63,6 +63,18 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.17.1" date="2026-11-13">
+      <description>
+        <ul>
+          <li>
+            When a repository opens, Subject fills the list and Date ends at
+            the right edge. A wider window no longer puts empty space after
+            Date. After a drag or a double click on a column border, the
+            repository keeps the widths that you set.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.17.0" date="2026-11-12">
       <description>
         <ul>

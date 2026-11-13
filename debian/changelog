@@ -1,3 +1,12 @@
+gitrl-f (0.17.1-1) noble; urgency=medium
+
+  * When a repository opens, Subject fills the list and Date ends at the right
+    edge. A wider window no longer puts empty space after Date. After a drag
+    or a double click on a column border, the repository keeps the widths
+    that you set.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Fri, 13 Nov 2026 18:11:07 +0100
+
 gitrl-f (0.17.0-1) noble; urgency=medium
 
   * gitrl-f opens faster in a repository with many branches and tags. The refs
