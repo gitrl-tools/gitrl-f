@@ -108,6 +108,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned Gtk.ListBoxRow d_unstaged_row;
 
+	private const string SUBJECT_FILLS = "subject-fills";
+
 	private const string[] TITLE_PROPERTIES = {
 		"expand", "fixed-width", "min-width", "reorderable", "resizable",
 		"sizing", "title", "visible"
@@ -413,17 +415,17 @@ public class HistoryPaned : Gtk.Box
 		restore_column_order();
 		restore_hidden_columns();
 		add_titles();
-		lock_last_edge();
+		lock_edges();
 		d_titles_menu = new CopyMenu(d_titles);
 		d_titles_menu.find.connect(fill_titles_menu);
 		d_commit_list_view.columns_changed.connect(save_column_order);
-		d_commit_list_view.columns_changed.connect(lock_last_edge);
+		d_commit_list_view.columns_changed.connect(lock_edges);
 		d_headed_list.allocating.connect(fill_subject);
 		d_titles.columns_changed.connect(follow_titles);
 		destroy.connect(() => {
 			d_titles.columns_changed.disconnect(follow_titles);
 			d_commit_list_view.columns_changed.disconnect(save_column_order);
-			d_commit_list_view.columns_changed.disconnect(lock_last_edge);
+			d_commit_list_view.columns_changed.disconnect(lock_edges);
 			d_columns.clear();
 		});
 	}
@@ -448,7 +450,7 @@ public class HistoryPaned : Gtk.Box
 			d_titles.append_column(title);
 			title.notify["fixed-width"].connect(fit_column);
 			column.notify["width"].connect(keep_fixed_width);
-			column.notify["visible"].connect(lock_last_edge);
+			column.notify["visible"].connect(lock_edges);
 		}
 
 		fit_titles();
@@ -490,7 +492,6 @@ public class HistoryPaned : Gtk.Box
 			width -= width_of(column);
 		}
 
-		d_filling = false;
 		d_column_subject.fixed_width = int.max(width,
 		                                       d_column_subject.min_width);
 	}
@@ -600,13 +601,13 @@ public class HistoryPaned : Gtk.Box
 		}
 	}
 
-	private void lock_last_edge()
+	private void lock_edges()
 	{
 		Gtk.TreeViewColumn? last = null;
 
 		foreach (var column in d_commit_list_view.get_columns())
 		{
-			column.resizable = true;
+			column.resizable = column != d_column_subject || !d_filling;
 			last = column.visible ? column : last;
 		}
 
@@ -709,9 +710,11 @@ public class HistoryPaned : Gtk.Box
 			column.fixed_width = width_in(widths, column);
 		}
 
-		d_filling = saved == null;
+		d_filling = saved == null
+		            || saved.lookup_value(SUBJECT_FILLS, null) != null;
 		d_repository_path = repository;
 		d_saving = true;
+		lock_edges();
 	}
 
 	private void restore_hidden_columns()
@@ -749,7 +752,14 @@ public class HistoryPaned : Gtk.Box
 		var saved = new VariantDict(
 			d_state_settings.get_value("column-widths"));
 
-		saved.insert_value(d_repository_path, fixed_widths());
+		var widths = new VariantDict(fixed_widths());
+
+		if (d_filling)
+		{
+			widths.insert_value(SUBJECT_FILLS, true);
+		}
+
+		saved.insert_value(d_repository_path, widths.end());
 		d_state_settings.set_value("column-widths", saved.end());
 	}
 
