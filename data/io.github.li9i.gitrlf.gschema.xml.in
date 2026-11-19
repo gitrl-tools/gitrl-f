@@ -199,6 +199,9 @@
     <key name="hidden-columns" type="as">
       <default>[]</default>
     </key>
+    <key name="hidden-lines" type="a{sv}">
+      <default>{}</default>
+    </key>
     <key name="paned-sidebar-dragged" type="b">
       <default>false</default>
     </key>

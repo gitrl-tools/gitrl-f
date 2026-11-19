@@ -50,6 +50,7 @@ private const string[] KEYS = {
 	"state.history|column-order|[]",
 	"state.history|column-widths|{}",
 	"state.history|hidden-columns|[]",
+	"state.history|hidden-lines|{}",
 	"state.history|paned-sidebar-dragged|false",
 	"state.history|paned-sidebar-position|200",
 	"state.history|ticks|{}",

@@ -202,6 +202,16 @@ splits from, with the other ticked refs. A choice selects the newest
 commit that the two refs share, as
 .B git merge-base
 finds it.
+.SH HIDDEN LINES
+A right click on a branch label in the list offers Hide line. The line is
+the commits that the line of the label draws and that HEAD does not reach,
+with every line that splits off them. Hide line unticks each ticked ref
+whose commit is on that line. A line that splits off another hides alone.
+The note under the commit count then says how many lines are hidden, and
+its Show link ticks them all again. A right click on a hidden ref in the
+panel offers Show line, which ticks the refs of that line again. A ref
+that you tick by hand leaves its hidden line. The hidden lines are kept
+with the ticks of the repository.
 .SH THE HISTORY OF LINES
 A right click on a line of the diff, or on lines that you selected, offers
 Show history of this line or Show history of the selected lines. The list

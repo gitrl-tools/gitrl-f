@@ -182,6 +182,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/history/a-checkout-puts-its-line-far-left-and-only-that-line-turns-blue", test_a_checkout_puts_its_line_far_left_and_only_that_line_turns_blue);
 	Test.add_func("/gitrlf/history/a-detached-or-hidden-checkout-paints-no-line-blue", test_a_detached_or_hidden_checkout_paints_no_line_blue);
 	Test.add_func("/gitrlf/history/a-folded-checked-out-line-is-blue-on-both-sides-of-the-fold", test_a_folded_checked_out_line_is_blue_on_both_sides_of_the_fold);
+	Test.add_func("/gitrlf/history/a-hidden-line-split-off-another-takes-only-its-own-commits", test_a_hidden_line_split_off_another_takes_only_its_own_commits);
+	Test.add_func("/gitrlf/history/a-hidden-line-takes-the-lines-that-split-off-it", test_a_hidden_line_takes_the_lines_that_split_off_it);
 	Test.add_func("/gitrlf/history/a-line-colour-that-changes-is-kept-for-its-branch", test_a_line_colour_that_changes_is_kept_for_its_branch);
 	Test.add_func("/gitrlf/history/a-line-with-no-branch-does-not-share-a-colour-with-a-line-it-joins", test_a_line_with_no_branch_does_not_share_a_colour_with_a_line_it_joins);
 	Test.add_func("/gitrlf/history/a-line-with-no-branch-does-not-share-a-colour-with-the-line-beside-it", test_a_line_with_no_branch_does_not_share_a_colour_with_the_line_beside_it);
@@ -199,6 +201,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/history/refs-that-hold-a-commit-are-those-of-git", test_refs_that_hold_a_commit_are_those_of_git);
 	Test.add_func("/gitrlf/history/shallow-boundary-ends-the-history", test_shallow_boundary_ends_the_history);
 	Test.add_func("/gitrlf/history/ticking-does-not-read-the-repository-again", test_ticking_does_not_read_the_repository_again);
+	Test.add_func("/gitrlf/history/the-checked-out-line-has-nothing-to-hide", test_the_checked_out_line_has_nothing_to_hide);
 	Test.add_func("/gitrlf/history/the-checked-out-line-is-blue-from-its-commit-down", test_the_checked_out_line_is_blue_from_its_commit_down);
 	Test.add_func("/gitrlf/history/the-stretch-above-the-checked-out-commit-keeps-the-colour-that-leads-in", test_the_stretch_above_the_checked_out_commit_keeps_the_colour_that_leads_in);
 	Test.add_func("/gitrlf/history/topological-order-keeps-children-above-parents", test_topological_order_keeps_children_above_parents);
@@ -206,6 +209,39 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/history/two-branch-lines-two-places-apart-do-not-share-a-colour", test_two_branch_lines_two_places_apart_do_not_share_a_colour);
 
 	return Test.run();
+}
+
+private static string line_subjects(Opened opened, string name)
+{
+	Ggit.OId? tip = null;
+	Ggit.OId? head = null;
+
+	foreach (var reference in opened.refs)
+	{
+		if (reference.short_name == name)
+		{
+			tip = reference.target;
+		}
+
+		if (reference.head)
+		{
+			head = reference.target;
+		}
+	}
+
+	var rows = coloured(opened, {"master", "pipeline", "readme", "solver", "tools"});
+	var line = opened.history.line_of(rows, tip, head);
+	var parts = new string[0];
+
+	foreach (var commit in rows)
+	{
+		if (commit.get_id() in line)
+		{
+			parts += commit.get_subject();
+		}
+	}
+
+	return string.joinv(",", parts);
 }
 
 private static Opened open(File path, bool topological = false) throws Error
@@ -409,6 +445,45 @@ private static void test_a_folded_checked_out_line_is_blue_on_both_sides_of_the_
 
 		history.reset("collapse-inactive-lanes-enabled");
 		history.reset("mainline-head");
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_hidden_line_split_off_another_takes_only_its_own_commits()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+		var opened = open(repo.path);
+
+		assert_cmpstr(line_subjects(opened, "readme"), CompareOperator.EQ, "readme one");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_hidden_line_takes_the_lines_that_split_off_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+		var opened = open(repo.path);
+		var whole = "tools one,tools two,tools three,readme one,tools four,tools five";
+
+		assert_cmpstr(line_subjects(opened, "tools"), CompareOperator.EQ, whole);
+		assert_cmpstr(line_subjects(opened, "pipeline"), CompareOperator.EQ, whole);
+		assert_cmpstr(line_subjects(opened, "solver"), CompareOperator.EQ, whole);
+
 		repo.remove();
 	}
 	catch (Error e)
@@ -937,6 +1012,24 @@ private static void test_shallow_boundary_ends_the_history()
 		assert_cmpstr(subjects(rows), CompareOperator.EQ, "two");
 		assert_cmpint(opened.history.size, CompareOperator.EQ, 1);
 		assert_cmpint(opened.history.parents_of(rows[0]).length, CompareOperator.EQ, 0);
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_checked_out_line_has_nothing_to_hide()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+		var opened = open(repo.path);
+
+		assert_cmpstr(line_subjects(opened, "master"), CompareOperator.EQ, "");
 
 		repo.remove();
 	}

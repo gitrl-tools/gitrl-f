@@ -210,6 +210,26 @@ public class Repo : Object
 		return out;
 	}
 
+	public void stacked() throws Error
+	{
+		commit("root");
+		commit("split");
+		git({"checkout", "--quiet", "-b", "tools"});
+		commit("tools five", "tools");
+		commit("tools four", "tools");
+		branch("solver");
+		git({"checkout", "--quiet", "-b", "readme"});
+		commit("readme one", "readme");
+		checkout("tools");
+		commit("tools three", "tools");
+		branch("pipeline");
+		commit("tools two", "tools");
+		commit("tools one", "tools");
+		checkout("master");
+		commit("master one");
+		commit("master two");
+	}
+
 	public void stash(string? message = null) throws Error
 	{
 		if (message != null)

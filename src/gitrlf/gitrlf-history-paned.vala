@@ -50,6 +50,8 @@ public class HistoryPaned : Gtk.Box
 	[GtkChild]
 	private unowned HeadedList d_headed_list;
 	[GtkChild]
+	private unowned Gtk.Label d_hidden_note;
+	[GtkChild]
 	private unowned Gtk.Button d_none;
 	[GtkChild]
 	private unowned Gtk.Label d_notice;
@@ -209,6 +211,11 @@ public class HistoryPaned : Gtk.Box
 	public Gtk.SearchEntry filter
 	{
 		get { return d_filter; }
+	}
+
+	public Gtk.Label hidden_note
+	{
+		get { return d_hidden_note; }
 	}
 
 	public Gtk.Orientation inner_orientation

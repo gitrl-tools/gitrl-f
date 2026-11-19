@@ -78,6 +78,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private History? d_narrow_source;
 	private History? d_narrowed;
 	private Gtk.InfoBar d_hidden_bar;
+	private Gee.List<Gee.Set<string>> d_hidden_lines = new Gee.ArrayList<Gee.Set<string>>();
 	private Gtk.Label d_hidden_label;
 	private Gtk.Widget d_lift_button;
 	private Ggit.OId? d_hidden_target;
@@ -658,7 +659,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_paned.refs_list.ticks_changed.connect(() => {
 			set_ticks(d_paned.refs_list.ticks);
 		});
+		d_paned.refs_list.menu_opening.connect(add_show_line_item);
 		d_paned.refs_list.menu_opening.connect(add_split_item);
+		d_paned.hidden_note.activate_link.connect(() => {
+			show_hidden_lines();
+			return true;
+		});
 		d_paned.refs_list.ref_activated.connect((reference) => {
 			jump(reference.name);
 		});
@@ -780,6 +786,51 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			item.activate.connect(() => jump("refs/tags/" + tag));
 			d_copy_menu.fit();
 		});
+	}
+
+	private void add_hide_item(Gitg.Ref label)
+	{
+		var history = shown_history();
+		var mainline = History.mainline(d_repository, true);
+		var names = new Gee.HashSet<string>();
+		Ggit.OId? tip = null;
+
+		foreach (var reference in d_refs)
+		{
+			if (reference.name == label.get_name())
+			{
+				tip = reference.target;
+			}
+		}
+
+		if (history == null || tip == null)
+		{
+			return;
+		}
+
+		var line = history.line_of(rows(), tip, mainline.length > 0 ? mainline[0] : null);
+
+		foreach (var reference in d_refs)
+		{
+			var start = history.start_of(reference.target);
+
+			if (d_ticks.contains(reference.name) && start != null && start in line)
+			{
+				names.add(reference.name);
+			}
+		}
+
+		if (names.is_empty)
+		{
+			return;
+		}
+
+		var item = new Gtk.MenuItem.with_label(_("Hide line"));
+
+		item.activate.connect(() => hide_line(names));
+		item.show();
+		d_copy_menu.add_separator();
+		d_copy_menu.add(item);
 	}
 
 	private void add_holders_item(Ggit.OId commit)
@@ -1012,6 +1063,23 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 		item.show();
 		d_copy_menu.add(item);
+	}
+
+	private void add_show_line_item(Ref reference, CopyMenu menu)
+	{
+		foreach (var line in d_hidden_lines)
+		{
+			if (reference.name in line)
+			{
+				var item = new Gtk.MenuItem.with_label(_("Show line"));
+
+				item.activate.connect(() => show_line(line));
+				item.show();
+				menu.add_separator();
+				menu.add(item);
+				return;
+			}
+		}
 	}
 
 	private void add_split_item(Ref reference, CopyMenu menu)
@@ -1579,10 +1647,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return false;
 		}
 
+		Gitg.Ref? label = null;
+
 		if (column == d_paned.column_subject)
 		{
 			var lanes = (Gitg.CellRendererLanes)view.find_cell_at_pos(column, path, cell_x, out cell_width);
-			var label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
+			label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
 
 			if (label != null)
 			{
@@ -1597,6 +1667,12 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_menu_search = new Cancellable();
 		d_copy_menu.add_copy(_("Copy hash"), commit.get_id().to_string());
+
+		if (label != null)
+		{
+			add_hide_item(label);
+		}
+
 		d_copy_menu.add_separator();
 		add_holders_item(commit.get_id());
 		add_first_tag_item(commit.get_id());
@@ -1907,6 +1983,15 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_id().to_string().substring(0, 7), d_query.hash_marks());
 			embolden(cell, commit);
 		}
+	}
+
+	private void hide_line(Gee.Set<string> names)
+	{
+		var ticks = this.ticks;
+
+		ticks.remove_all(names);
+		d_hidden_lines.add(names);
+		set_ticks(ticks);
 	}
 
 	public void jump(string name)
@@ -2486,6 +2571,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		Languages.warm(repository);
 		d_refs = refs;
 		d_ticks = resolved;
+		d_hidden_lines = d_remember ? remembered_lines(repository) : new Gee.ArrayList<Gee.Set<string>>();
 		colour_branches();
 
 		try
@@ -2621,6 +2707,29 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		return commits;
+	}
+
+	private void prune_hidden_lines()
+	{
+		var known = new Gee.HashSet<string>();
+
+		foreach (var reference in d_refs)
+		{
+			known.add(reference.name);
+		}
+
+		var iter = d_hidden_lines.iterator();
+
+		while (iter.next())
+		{
+			iter.get().remove_all(d_ticks);
+			iter.get().retain_all(known);
+
+			if (iter.get().is_empty)
+			{
+				iter.remove();
+			}
+		}
 	}
 
 	private void queue_details()
@@ -2876,6 +2985,17 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		saved.insert_value(d_repository.get_location().get_path(), new Variant.tuple({ new Variant.strv(d_ticks.to_array()), new Variant.strv(known) }));
 		d_state.set_value("ticks", saved.end());
+
+		var lines = new VariantBuilder(new VariantType("aas"));
+		var hidden = new VariantDict(d_state.get_value("hidden-lines"));
+
+		foreach (var line in d_hidden_lines)
+		{
+			lines.add_value(new Variant.strv(line.to_array()));
+		}
+
+		hidden.insert_value(d_repository.get_location().get_path(), lines.end());
+		d_state.set_value("hidden-lines", hidden.end());
 	}
 
 	private Gee.Set<string> remembered(Gitg.Repository repository, Gee.List<Ref> refs) throws TicksError
@@ -2894,6 +3014,27 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		known.add_all_array(saved.get_child_value(1).get_strv());
 
 		return Ticks.carry(ticked, known, refs);
+	}
+
+	private Gee.List<Gee.Set<string>> remembered_lines(Gitg.Repository repository)
+	{
+		var lines = new Gee.ArrayList<Gee.Set<string>>();
+		var saved = new VariantDict(d_state.get_value("hidden-lines")).lookup_value(repository.get_location().get_path(), new VariantType("aas"));
+
+		if (saved == null)
+		{
+			return lines;
+		}
+
+		foreach (var names in saved)
+		{
+			var line = new Gee.HashSet<string>();
+
+			line.add_all_array(names.get_strv());
+			lines.add(line);
+		}
+
+		return lines;
 	}
 
 	private void reveal(Ggit.OId id)
@@ -3086,6 +3227,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		d_ticks = new Gee.HashSet<string>();
 		d_ticks.add_all(ticks);
 		d_paned.refs_list.set_ticks(d_ticks);
+		prune_hidden_lines();
 		remember();
 		show_ticks();
 	}
@@ -3328,11 +3470,44 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		apply("", d_ignore_case, d_regex, { wanted });
 	}
 
+	private void show_hidden_lines()
+	{
+		var ticks = this.ticks;
+
+		foreach (var line in d_hidden_lines)
+		{
+			ticks.add_all(line);
+		}
+
+		d_hidden_lines.clear();
+		set_ticks(ticks);
+	}
+
+	private void show_hidden_note()
+	{
+		prune_hidden_lines();
+
+		var count = d_hidden_lines.size;
+		var note = d_paned.hidden_note;
+
+		note.label = ngettext("%d line hidden.", "%d lines hidden.", count).printf(count) + " <a href=\"show\">%s</a>".printf(_("Show"));
+		note.visible = count > 0;
+	}
+
 	private void show_hint(string text, bool lift)
 	{
 		d_hidden_label.label = text;
 		d_lift_button.visible = lift;
 		d_hidden_bar.show();
+	}
+
+	private void show_line(Gee.Set<string> line)
+	{
+		var ticks = this.ticks;
+
+		ticks.add_all(line);
+		d_hidden_lines.remove(line);
+		set_ticks(ticks);
 	}
 
 	private void show_line_history(LineHistory lines, string path, Ggit.OId commit)
@@ -3589,6 +3764,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		var counted = changes_apply() && !d_only_matches.active ? unlimited_history() : d_history;
 		var total = counted != null ? counted.size : 0;
 		d_paned.summary.label = d_waiting ? "" : _("Showing %u of %d commits").printf(d_model.size, total);
+		show_hidden_note();
 
 		if (d_waiting)
 		{

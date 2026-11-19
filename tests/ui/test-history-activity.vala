@@ -361,6 +361,26 @@ private static string folded(Gitrlf.Window window)
 	return string.joinv("|", keys);
 }
 
+private static void hide_line(Gitrlf.Window window, string name)
+{
+	var rows = window.history.rows();
+
+	for (var i = 0; i < rows.length; i++)
+	{
+		if (name in window.history.labels_for(rows[i]))
+		{
+			right_click(window, i, 0, label_x(window, i, name));
+		}
+	}
+
+	var item = menu_item("Hide line");
+
+	assert_nonnull(item);
+	item.activate();
+	((Gtk.Menu)item.get_parent()).popdown();
+	settle(300);
+}
+
 private static int ink_end(Gitrlf.Window window, Gtk.TreeViewColumn column,
                            int row)
 {
@@ -575,11 +595,13 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-the-border-after-lines-gives-back-its-opening-width", test_a_double_click_on_the_border_after_lines_gives_back_its_opening_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
+	Test.add_func("/gitrlf/ui/history-activity/a-hidden-line-is-kept-when-the-repository-opens-again", test_a_hidden_line_is_kept_when_the_repository_opens_again);
 	Test.add_func("/gitrlf/ui/history-activity/a-label-is-joined-to-its-dot-by-a-faint-line-where-a-line-passes-between", test_a_label_is_joined_to_its_dot_by_a_faint_line_where_a_line_passes_between);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-branch-whose-tip-the-search-hides", test_a_line_names_a_branch_whose_tip_the_search_hides);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-with-no-branch-above-it-names-none", test_a_line_with_no_branch_above_it_names_none);
+	Test.add_func("/gitrlf/ui/history-activity/a-ref-ticked-by-hand-leaves-its-hidden-line", test_a_ref_ticked_by_hand_leaves_its_hidden_line);
 	Test.add_func("/gitrlf/ui/history-activity/a-reopened-repository-ends-the-date-at-the-list-edge", test_a_reopened_repository_ends_the_date_at_the_list_edge);
 	Test.add_func("/gitrlf/ui/history-activity/a-reopened-repository-keeps-the-widths-set-by-hand", test_a_reopened_repository_keeps_the_widths_set_by_hand);
 	Test.add_func("/gitrlf/ui/history-activity/a-repository-opened-for-the-first-time-fits-its-columns-to-the-list", test_a_repository_opened_for_the_first_time_fits_its_columns_to_the_list);
@@ -617,6 +639,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-then-the-search-bar", test_escape_closes_the_pane_then_the_search_bar);
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
 	Test.add_func("/gitrlf/ui/history-activity/hash-column-shows-the-short-hash", test_hash_column_shows_the_short_hash);
+	Test.add_func("/gitrlf/ui/history-activity/hide-line-hides-the-line-and-the-lines-that-split-off-it", test_hide_line_hides_the_line_and_the_lines_that_split_off_it);
+	Test.add_func("/gitrlf/ui/history-activity/hide-line-on-a-split-hides-only-the-split", test_hide_line_on_a_split_hides_only_the_split);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-redraw-the-list", test_history_settings_redraw_the_list);
 	Test.add_func("/gitrlf/ui/history-activity/left-pane-is-never-cut-off", test_left_pane_is_never_cut_off);
@@ -642,6 +666,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
 	Test.add_func("/gitrlf/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
 	Test.add_func("/gitrlf/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
+	Test.add_func("/gitrlf/ui/history-activity/show-line-in-the-refs-panel-brings-back-its-line", test_show_line_in_the_refs_panel_brings_back_its_line);
+	Test.add_func("/gitrlf/ui/history-activity/show-on-the-note-brings-back-every-hidden-line", test_show_on_the_note_brings_back_every_hidden_line);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-fits-every-ref-up-to-fifty-characters", test_sidebar_fits_every_ref_up_to_fifty_characters);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-layout", test_sidebar_layout);
 	Test.add_func("/gitrlf/ui/history-activity/sidebar-position-is-kept", test_sidebar_position_is_kept);
@@ -650,6 +676,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-branch-labels-take-the-text-tone-of-their-fill", test_the_branch_labels_take_the_text_tone_of_their_fill);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-colour-is-the-blue-of-a-branch", test_the_checked_out_colour_is_the_blue_of_a_branch);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-has-a-pointed-end", test_the_checked_out_label_has_a_pointed_end);
+	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-offers-no-hide-line", test_the_checked_out_label_offers_no_hide_line);
 	Test.add_func("/gitrlf/ui/history-activity/the-checked-out-label-text-starts-after-the-slope", test_the_checked_out_label_text_starts_after_the_slope);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-browses-no-files-for-several-picks", test_the_commit_menu_browses_no_files_for_several_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-browses-the-files-of-its-commit", test_the_commit_menu_browses_the_files_of_its_commit);
@@ -1820,6 +1847,50 @@ private static void test_a_group_with_no_tick_opens_folded()
 	}
 }
 
+private static void test_a_hidden_line_is_kept_when_the_repository_opens_again()
+{
+	try
+	{
+		var state = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.history");
+		var repo = Repo.create();
+		repo.stacked();
+
+		var location = Gitrlf.Application.discover_repository(repo.path);
+		var window = new Gitrlf.Window(application());
+		window.open_repository(location, null, {}, repo.path);
+		window.show();
+		drain();
+
+		hide_line(window, "tools");
+		window.destroy();
+
+		window = new Gitrlf.Window(application());
+		window.open_repository(location, null, {}, repo.path);
+		window.show();
+		drain();
+
+		var note = window.history.paned.hidden_note;
+
+		assert_cmpstr(ticked_names(window), CompareOperator.EQ, "refs/heads/master");
+		assert_true(note.visible);
+		assert_cmpstr(note.get_text(), CompareOperator.EQ, "1 line hidden. Show");
+
+		note.activate_link("show");
+		drain();
+
+		assert_cmpstr(ticked_names(window), CompareOperator.EQ, "refs/heads/master,refs/heads/pipeline,refs/heads/readme,refs/heads/solver,refs/heads/tools");
+
+		state.reset("ticks");
+		state.reset("hidden-lines");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_line_names_the_local_branches_at_or_above_the_pointer()
 {
 	try
@@ -1962,6 +2033,40 @@ private static void test_a_line_with_no_branch_above_it_names_none()
 		assert_cmpuint(lane_of(window, "side one"), CompareOperator.EQ, 1);
 		assert_cmpstr(line_tip(window, 2, 0, 0.5), CompareOperator.EQ, "master");
 		assert_null(line_tip(window, 2, 1, 0.5));
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_ref_ticked_by_hand_leaves_its_hidden_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+		var note = window.history.paned.hidden_note;
+
+		hide_line(window, "tools");
+		check_of(window, "readme").clicked();
+		drain();
+
+		assert_true(note.visible);
+
+		foreach (var name in new string[] { "pipeline", "solver", "tools" })
+		{
+			check_of(window, name).clicked();
+		}
+
+		drain();
+
+		assert_false(note.visible);
 
 		window.destroy();
 		repo.remove();
@@ -3362,6 +3467,58 @@ private static void test_hash_column_shows_the_short_hash()
 	}
 }
 
+private static void test_hide_line_hides_the_line_and_the_lines_that_split_off_it()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+		var note = window.history.paned.hidden_note;
+
+		assert_false(note.visible);
+
+		hide_line(window, "tools");
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "master two,master one,split,root");
+		assert_cmpstr(ticked_names(window), CompareOperator.EQ, "refs/heads/master");
+		assert_true(note.visible);
+		assert_cmpstr(note.get_text(), CompareOperator.EQ, "1 line hidden. Show");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_hide_line_on_a_split_hides_only_the_split()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+
+		hide_line(window, "readme");
+
+		assert_false("readme one" in subjects_of(window));
+		assert_true("tools four" in subjects_of(window));
+		assert_cmpstr(ticked_names(window), CompareOperator.EQ, "refs/heads/master,refs/heads/pipeline,refs/heads/solver,refs/heads/tools");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_history_settings_keep_the_top_row()
 {
 	try
@@ -4235,6 +4392,76 @@ private static void test_selection_with_the_pane_hidden_builds_no_diff()
 	}
 }
 
+private static void test_show_line_in_the_refs_panel_brings_back_its_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+		var list = window.history.paned.refs_list;
+
+		hide_line(window, "tools");
+
+		click_widget(row(list, "master"), 3);
+		settle(300);
+		assert_null(menu_item("Show line"));
+		((Gtk.Menu)menu_item("Copy name").get_parent()).popdown();
+		settle(100);
+
+		click_widget(row(list, "solver"), 3);
+		settle(300);
+
+		var item = menu_item("Show line");
+
+		assert_nonnull(item);
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(300);
+
+		assert_cmpstr(ticked_names(window), CompareOperator.EQ, "refs/heads/master,refs/heads/pipeline,refs/heads/readme,refs/heads/solver,refs/heads/tools");
+		assert_false(window.history.paned.hidden_note.visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_show_on_the_note_brings_back_every_hidden_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+		var note = window.history.paned.hidden_note;
+
+		hide_line(window, "readme");
+		hide_line(window, "tools");
+
+		assert_cmpstr(note.get_text(), CompareOperator.EQ, "2 lines hidden. Show");
+
+		note.activate_link("show");
+		drain();
+
+		assert_cmpstr(ticked_names(window), CompareOperator.EQ, "refs/heads/master,refs/heads/pipeline,refs/heads/readme,refs/heads/solver,refs/heads/tools");
+		assert_false(note.visible);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_sidebar_fits_every_ref_up_to_fifty_characters()
 {
 	try
@@ -4288,7 +4515,7 @@ private static void test_sidebar_layout()
 			kinds += child.get_type().name();
 		}
 
-		assert_cmpstr(string.joinv(",", kinds), CompareOperator.EQ, "GtkBox,GtkSeparator,GtkScrolledWindow,GtkSeparator,GtkLabel");
+		assert_cmpstr(string.joinv(",", kinds), CompareOperator.EQ, "GtkBox,GtkSeparator,GtkScrolledWindow,GtkSeparator,GtkLabel,GtkLabel");
 
 		var controls = ((Gtk.Box)sidebar.get_children().nth_data(0)).get_children();
 		var buttons = ((Gtk.Box)controls.nth_data(1)).get_children();
@@ -4487,6 +4714,31 @@ private static void test_the_checked_out_label_has_a_pointed_end()
 		assert_cmpint(pixel_at(head, 5, 4)[3], CompareOperator.EQ, 0);
 		assert_cmpint(pixel_at(other, 5, 4)[3], CompareOperator.GT, 0);
 
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_checked_out_label_offers_no_hide_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+
+		right_click(window, 0, 0, label_x(window, 0, "master"));
+
+		assert_nonnull(menu_item("Copy name"));
+		assert_null(menu_item("Hide line"));
+
+		((Gtk.Menu)menu_item("Copy name").get_parent()).popdown();
+		settle(100);
+		window.destroy();
 		repo.remove();
 	}
 	catch (Error e)
@@ -5896,6 +6148,16 @@ private static int text_width(Gitrlf.Window window,
 	view.style_get("horizontal-separator", out separator);
 
 	return natural + separator;
+}
+
+private static string ticked_names(Gitrlf.Window window)
+{
+	var names = new Gee.ArrayList<string>();
+
+	names.add_all(window.history.ticks);
+	names.sort();
+
+	return string.joinv(",", names.to_array());
 }
 
 private static File ticks_file(Repo repo)

@@ -32,9 +32,11 @@ Somewhere in the history is the commit you want: the one that added a function, 
 - **Show diff**, also for several selected commits as one combined diff
 - **Open diff in difftool**, for one commit, several commits, or one file
 - **Browse files at this commit** in the file manager
+- **Hide line**, on a branch label, unticks the line of that branch and the lines that split off it
 
 **Right-click on a ref**
 - **Go to where it splits from** another ref (`git merge-base`)
+- **Show line** ticks a hidden line again. The note under the commit count shows every hidden line at once
 
 **Diff pane**
 - Ctrl+F finds a word in every file of the diff

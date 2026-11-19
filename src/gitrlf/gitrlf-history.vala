@@ -562,6 +562,67 @@ public class History : Object
 		d_parents_start[d_commits.length] = d_parents.length;
 	}
 
+	public Gee.Set<Ggit.OId> line_of(Gitg.Commit[] rows, Ggit.OId tip, Ggit.OId? head)
+	{
+		var kept = new bool[d_commits.length];
+		var heads = new int[0];
+		var lines = new Gee.HashSet<uint>();
+		var found = id_set();
+		var start = start_of(tip);
+
+		if (head != null)
+		{
+			foreach (var id in starts_of(head))
+			{
+				heads += d_index[id];
+			}
+		}
+
+		reach(heads, false, kept);
+
+		foreach (var commit in rows)
+		{
+			if (start != null && commit.get_id().equal(start))
+			{
+				lines.add(commit.lane.line);
+			}
+		}
+
+		var grew = true;
+
+		while (grew)
+		{
+			grew = false;
+
+			foreach (var commit in rows)
+			{
+				var id = commit.get_id();
+				var i = d_index[id];
+
+				if (kept[i] || id in found)
+				{
+					continue;
+				}
+
+				foreach (var parent in parents_at(i))
+				{
+					if (d_commits[parent].get_id() in found)
+					{
+						lines.add(commit.lane.line);
+					}
+				}
+
+				if (commit.lane.line in lines)
+				{
+					found.add(id);
+					grew = true;
+				}
+			}
+		}
+
+		return found;
+	}
+
 	private void load_log(Gitg.Repository repository, string[] records, string[] tips, Gee.Map<string, string> starts) throws Error
 	{
 		begin();
