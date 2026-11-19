@@ -38,3 +38,14 @@ viewport.changes {
 .branch.light-fill {
 	color: @aluminium6;
 }
+
+.hidden-note {
+	border-radius: 4px;
+	background-color: #fcaf3e;
+	color: #2e3436;
+	padding: 2px 6px;
+}
+
+.hidden-note link {
+	color: #2e3436;
+}

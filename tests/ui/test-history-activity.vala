@@ -695,6 +695,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-reports-a-difftool-that-fails", test_the_commit_menu_reports_a_difftool_that_fails);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-shows-the-diff-of-the-picks", test_the_commit_menu_shows_the_diff_of_the_picks);
 	Test.add_func("/gitrlf/ui/history-activity/the-commit-menu-widens-for-a-long-first-tag", test_the_commit_menu_widens_for_a_long_first_tag);
+	Test.add_func("/gitrlf/ui/history-activity/the-hidden-line-note-has-a-warm-background", test_the_hidden_line_note_has_a_warm_background);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-column-edge-stays-at-the-list-edge", test_the_last_column_edge_stays_at_the_list_edge);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-shown-column-edge-stays-when-the-last-column-is-hidden", test_the_last_shown_column_edge_stays_when_the_last_column_is_hidden);
 	Test.add_func("/gitrlf/ui/history-activity/the-last-row-scrolls-into-view-under-the-titles", test_the_last_row_scrolls_into_view_under_the_titles);
@@ -5374,6 +5375,34 @@ private static void test_the_commit_menu_widens_for_a_long_first_tag()
 		assert_fits_its_menu(item);
 
 		((Gtk.Menu)item.get_parent()).popdown();
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_hidden_line_note_has_a_warm_background()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+		var note = window.history.paned.hidden_note;
+
+		hide_line(window, "tools");
+
+		var surface = drawn(note);
+		var pixel = pixel_at(surface, 2, surface.get_height() / 2);
+
+		assert_cmpint(pixel[2], CompareOperator.GT, 200);
+		assert_cmpint(pixel[2], CompareOperator.GT, pixel[1]);
+		assert_cmpint(pixel[0], CompareOperator.LT, 120);
+
 		window.destroy();
 		repo.remove();
 	}

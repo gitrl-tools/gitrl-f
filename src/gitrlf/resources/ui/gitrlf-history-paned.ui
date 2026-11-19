@@ -128,7 +128,7 @@
                     <property name="margin_end">6</property>
                     <property name="margin_bottom">6</property>
                     <style>
-                      <class name="dim-label"/>
+                      <class name="hidden-note"/>
                     </style>
                   </object>
                 </child>
