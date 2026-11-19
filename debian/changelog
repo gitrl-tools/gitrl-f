@@ -1,3 +1,17 @@
+gitrl-f (0.18.0-1) noble; urgency=medium
+
+  * A right click on a commit offers Hide line. It unticks the refs of the
+    line of that commit and of the lines that split off it. The commits that
+    HEAD reaches stay. A note below the commit count, on an orange
+    background, shows the number of hidden lines and a Show link. A right
+    click on a hidden ref in the panel offers Show line. The hidden lines are
+    kept with the ticks.
+  * A line count of 10000 or more shows in thousands, such as +16k. Before,
+    the Lines column cut off the last digit. A count of zero shows as +0 or
+    -0.
+
+ -- alexandros filotheou <alexandros.filotheou@gmail.com>  Thu, 19 Nov 2026 14:46:48 +0100
+
 gitrl-f (0.17.1-1) noble; urgency=medium
 
   * When a repository opens, Subject fills the list and Date ends at the right
