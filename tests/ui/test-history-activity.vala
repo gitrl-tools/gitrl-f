@@ -648,8 +648,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-coloured-on-the-row-selected-at-the-start", test_lines_column_is_coloured_on_the_row_selected_at_the_start);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-is-plain-on-a-picked-row", test_lines_column_is_plain_on_a_picked_row);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-keeps-its-counts-at-its-left-edge", test_lines_column_keeps_its_counts_at_its_left_edge);
-	Test.add_func("/gitrlf/ui/history-activity/lines-column-leaves-a-zero-blank", test_lines_column_leaves_a_zero_blank);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-sets-the-two-numbers-either-side-of-one-line", test_lines_column_sets_the_two_numbers_either_side_of_one_line);
+	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-a-zero-as-plus-or-minus-0", test_lines_column_shows_a_zero_as_plus_or_minus_0);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-added-in-green-and-removed-in-red", test_lines_column_shows_added_in_green_and_removed_in_red);
 	Test.add_func("/gitrlf/ui/history-activity/lines-column-shows-the-added-and-removed-lines", test_lines_column_shows_the_added_and_removed_lines);
 	Test.add_func("/gitrlf/ui/history-activity/local-branch-labels-come-before-remote-ones", test_local_branch_labels_come_before_remote_ones);
@@ -2766,9 +2766,9 @@ private static void test_changes_rows_show_their_added_and_removed_lines()
 		assert_cmpstr(paned.staged_removed.get_text(), CompareOperator.EQ,
 		              "-1");
 		assert_cmpstr(paned.unstaged_added.get_text(), CompareOperator.EQ,
-		              "");
+		              "+0");
 		assert_cmpstr(paned.unstaged_removed.get_text(), CompareOperator.EQ,
-		              "");
+		              "-0");
 
 		FileUtils.set_contents(repo.path.get_child("notes").get_path(),
 		                       "c\nd\ne\nf\n");
@@ -3786,27 +3786,6 @@ private static void test_lines_column_keeps_its_counts_at_its_left_edge()
 	}
 }
 
-private static void test_lines_column_leaves_a_zero_blank()
-{
-	try
-	{
-		var repo = counts_repo();
-		var window = opened(repo, {"refs/heads/master"});
-		var view = window.history.paned.commit_list_view;
-		Gtk.TreeIter iter;
-
-		assert_true(view.model.get_iter_first(out iter));
-		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+9999,");
-
-		window.destroy();
-		repo.remove();
-	}
-	catch (Error e)
-	{
-		Test.fail_printf("%s", e.message);
-	}
-}
-
 private static void test_lines_column_sets_the_two_numbers_either_side_of_one_line()
 {
 	try
@@ -3846,6 +3825,27 @@ private static void test_lines_column_sets_the_two_numbers_either_side_of_one_li
 
 		assert_cmpint(ends.size, CompareOperator.EQ, 1);
 		assert_cmpint(starts.size, CompareOperator.EQ, 1);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_lines_column_shows_a_zero_as_plus_or_minus_0()
+{
+	try
+	{
+		var repo = counts_repo();
+		var window = opened(repo, {"refs/heads/master"});
+		var view = window.history.paned.commit_list_view;
+		Gtk.TreeIter iter;
+
+		assert_true(view.model.get_iter_first(out iter));
+		assert_cmpstr(lines_text(view, iter), CompareOperator.EQ, "+9999,-0");
 
 		window.destroy();
 		repo.remove();

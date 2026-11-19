@@ -2302,17 +2302,14 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 	private string? line_piece(string? text, int index)
 	{
-		if (text != null)
+		if (text == null)
 		{
-			var count = text.split("/")[index];
-
-			if (int.parse(count) != 0)
-			{
-				return count;
-			}
+			return null;
 		}
 
-		return null;
+		var count = text.split("/")[index];
+
+		return count;
 	}
 
 	private void lines_data_func(Gtk.CellLayout layout, Gtk.CellRenderer cell,
