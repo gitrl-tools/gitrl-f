@@ -60,12 +60,39 @@ public static int main(string[] args)
 {
 	Test.init(ref args);
 
+	Test.add_func("/gitrlf/line-counts/a-count-past-four-digits-shows-in-thousands", test_a_count_past_four_digits_shows_in_thousands);
 	Test.add_func("/gitrlf/line-counts/a-merge-counts-against-its-first-parent", test_a_merge_counts_against_its_first_parent);
 	Test.add_func("/gitrlf/line-counts/a-rename-or-a-binary-file-adds-no-lines", test_a_rename_or_a_binary_file_adds_no_lines);
 	Test.add_func("/gitrlf/line-counts/a-root-commit-adds-all-its-lines", test_a_root_commit_adds_all_its_lines);
 	Test.add_func("/gitrlf/line-counts/a-rewrite-adds-and-removes-lines", test_a_rewrite_adds_and_removes_lines);
 
 	return Test.run();
+}
+
+private static void test_a_count_past_four_digits_shows_in_thousands()
+{
+	try
+	{
+		var repo = Repo.create();
+		var lines = new StringBuilder();
+
+		for (var i = 1; i <= 16400; i++)
+		{
+			lines.append_printf("%d\n", i);
+		}
+
+		var big = repo.commit_bytes("big", "big", lines.data);
+
+		assert_cmpstr(counts(repo, {big}), CompareOperator.EQ, "+16k/-0");
+		assert_cmpstr(Gitrlf.LineCounts.text_of(9999, 10000), CompareOperator.EQ, "+9999/-10k");
+		assert_cmpstr(Gitrlf.LineCounts.text_of(999999, 1000000), CompareOperator.EQ, "+999k/-1M");
+
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
 }
 
 private static void test_a_merge_counts_against_its_first_parent()

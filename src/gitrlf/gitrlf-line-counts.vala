@@ -22,6 +22,10 @@ namespace Gitrlf
 
 public class LineCounts : Object
 {
+	private const int MILLION = 1000000;
+	private const int SHORTEN = 10000;
+	private const int THOUSAND = 1000;
+
 	private Cancellable d_cancellable;
 	private Gee.HashMap<Ggit.OId, string> d_counts;
 	private bool d_counting;
@@ -105,6 +109,21 @@ public class LineCounts : Object
 		d_counting = false;
 	}
 
+	private static string short_count(int count)
+	{
+		if (count >= MILLION)
+		{
+			return "%dM".printf(count / MILLION);
+		}
+
+		if (count >= SHORTEN)
+		{
+			return "%dk".printf(count / THOUSAND);
+		}
+
+		return count.to_string();
+	}
+
 	public void stop()
 	{
 		d_cancellable.cancel();
@@ -127,7 +146,7 @@ public class LineCounts : Object
 
 	public static string text_of(int added, int removed)
 	{
-		return "+%d/-%d".printf(added, removed);
+		return "+%s/-%s".printf(short_count(added), short_count(removed));
 	}
 }
 
