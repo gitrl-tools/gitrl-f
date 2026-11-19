@@ -788,27 +788,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		});
 	}
 
-	private void add_hide_item(Gitg.Ref label)
+	private void add_hide_item(Ggit.OId commit)
 	{
 		var history = shown_history();
 		var mainline = History.mainline(d_repository, true);
 		var names = new Gee.HashSet<string>();
-		Ggit.OId? tip = null;
 
-		foreach (var reference in d_refs)
-		{
-			if (reference.name == label.get_name())
-			{
-				tip = reference.target;
-			}
-		}
-
-		if (history == null || tip == null)
+		if (history == null)
 		{
 			return;
 		}
 
-		var line = history.line_of(rows(), tip, mainline.length > 0 ? mainline[0] : null);
+		var line = history.line_of(rows(), commit, mainline.length > 0 ? mainline[0] : null);
 
 		foreach (var reference in d_refs)
 		{
@@ -1647,12 +1638,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return false;
 		}
 
-		Gitg.Ref? label = null;
-
 		if (column == d_paned.column_subject)
 		{
 			var lanes = (Gitg.CellRendererLanes)view.find_cell_at_pos(column, path, cell_x, out cell_width);
-			label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
+			var label = lanes.get_ref_at_pos(view, cell_x, cell_width, out hot_x);
 
 			if (label != null)
 			{
@@ -1667,12 +1656,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 		d_menu_search = new Cancellable();
 		d_copy_menu.add_copy(_("Copy hash"), commit.get_id().to_string());
-
-		if (label != null)
-		{
-			add_hide_item(label);
-		}
-
+		add_hide_item(commit.get_id());
 		d_copy_menu.add_separator();
 		add_holders_item(commit.get_id());
 		add_first_tag_item(commit.get_id());

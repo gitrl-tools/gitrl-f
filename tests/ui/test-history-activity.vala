@@ -639,6 +639,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-then-the-search-bar", test_escape_closes_the_pane_then_the_search_bar);
 	Test.add_func("/gitrlf/ui/history-activity/escape-closes-the-pane-when-nothing-has-the-focus", test_escape_closes_the_pane_when_nothing_has_the_focus);
 	Test.add_func("/gitrlf/ui/history-activity/hash-column-shows-the-short-hash", test_hash_column_shows_the_short_hash);
+	Test.add_func("/gitrlf/ui/history-activity/hide-line-from-a-commit-below-the-tip-hides-the-whole-line", test_hide_line_from_a_commit_below_the_tip_hides_the_whole_line);
 	Test.add_func("/gitrlf/ui/history-activity/hide-line-hides-the-line-and-the-lines-that-split-off-it", test_hide_line_hides_the_line_and_the_lines_that_split_off_it);
 	Test.add_func("/gitrlf/ui/history-activity/hide-line-on-a-split-hides-only-the-split", test_hide_line_on_a_split_hides_only_the_split);
 	Test.add_func("/gitrlf/ui/history-activity/history-settings-keep-the-top-row", test_history_settings_keep_the_top_row);
@@ -3458,6 +3459,43 @@ private static void test_hash_column_shows_the_short_hash()
 
 		assert_cmpstr(cell.text, CompareOperator.EQ, sha.substring(0, 7));
 
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_hide_line_from_a_commit_below_the_tip_hides_the_whole_line()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.stacked();
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/pipeline", "refs/heads/readme", "refs/heads/solver", "refs/heads/tools"});
+		var width = window.history.paned.commit_list_view.get_column(0).get_width();
+
+		right_click(window, row_of(window, "tools two"), 0, width - 10);
+
+		var item = menu_item("Hide line");
+
+		assert_nonnull(item);
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(300);
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "master two,master one,split,root");
+
+		right_click(window, row_of(window, "master one"), 0, width - 10);
+
+		assert_nonnull(menu_item("Copy hash"));
+		assert_null(menu_item("Hide line"));
+
+		((Gtk.Menu)menu_item("Copy hash").get_parent()).popdown();
+		settle(100);
 		window.destroy();
 		repo.remove();
 	}

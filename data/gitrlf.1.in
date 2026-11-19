@@ -203,8 +203,8 @@ commit that the two refs share, as
 .B git merge-base
 finds it.
 .SH HIDDEN LINES
-A right click on a branch label in the list offers Hide line. The line is
-the commits that the line of the label draws and that HEAD does not reach,
+A right click on a commit in the list offers Hide line. The line is the
+commits that the line of that commit draws and that HEAD does not reach,
 with every line that splits off them. Hide line unticks each ticked ref
 whose commit is on that line. A line that splits off another hides alone.
 The note under the commit count then says how many lines are hidden, and

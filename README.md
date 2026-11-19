@@ -32,7 +32,7 @@ Somewhere in the history is the commit you want: the one that added a function, 
 - **Show diff**, also for several selected commits as one combined diff
 - **Open diff in difftool**, for one commit, several commits, or one file
 - **Browse files at this commit** in the file manager
-- **Hide line**, on a branch label, unticks the line of that branch and the lines that split off it
+- **Hide line** unticks the line of the commit and the lines that split off it
 
 **Right-click on a ref**
 - **Go to where it splits from** another ref (`git merge-base`)
