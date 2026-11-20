@@ -350,11 +350,9 @@ namespace Gitg
 					narea.x += (int)tw;
 					ncell_area.x += (int)tw;
 				}
-				else
-				{
-					narea.width -= (int)tw;
-					ncell_area.width -= (int)tw;
-				}
+
+				narea.width -= (int)tw;
+				ncell_area.width -= (int)tw;
 
 				context.restore();
 			}

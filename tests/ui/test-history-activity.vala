@@ -704,6 +704,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/the-search-bars-meet-without-a-border", test_the_search_bars_meet_without_a_border);
 	Test.add_func("/gitrlf/ui/history-activity/the-subject-edge-follows-the-pointer-in-a-list-too-narrow-for-the-columns", test_the_subject_edge_follows_the_pointer_in_a_list_too_narrow_for_the_columns);
 	Test.add_func("/gitrlf/ui/history-activity/the-subject-edge-slides-the-columns-after-it", test_the_subject_edge_slides_the_columns_after_it);
+	Test.add_func("/gitrlf/ui/history-activity/the-subject-ends-in-an-ellipsis-inside-its-column", test_the_subject_ends_in_an_ellipsis_inside_its_column);
 	Test.add_func("/gitrlf/ui/history-activity/a-narrower-window-scrolls-the-columns-sideways", test_a_narrower_window_scrolls_the_columns_sideways);
 	Test.add_func("/gitrlf/ui/history-activity/the-title-menu-keeps-the-last-column-shown", test_the_title_menu_keeps_the_last_column_shown);
 	Test.add_func("/gitrlf/ui/history-activity/the-titles-show-when-the-list-is-wider-than-its-columns", test_the_titles_show_when_the_list_is_wider_than_its_columns);
@@ -5716,6 +5717,53 @@ private static void test_the_subject_edge_slides_the_columns_after_it()
 
 		settings.reset("column-widths");
 		sizes.reset("size");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_the_subject_ends_in_an_ellipsis_inside_its_column()
+{
+	try
+	{
+		var repo = Repo.create();
+
+		repo.commit(string.nfill(200, 'w'));
+
+		var window = opened(repo, {"refs/heads/master"});
+		var paned = window.history.paned;
+		var view = paned.commit_list_view;
+		var cell = paned.renderer_subject;
+		var surface = new Cairo.RecordingSurface(Cairo.Content.COLOR_ALPHA,
+		                                         null);
+		Gdk.Rectangle row;
+		Gtk.TreeIter iter;
+		double x;
+		double y;
+		double width;
+		double height;
+
+		settle(300);
+		assert_true(view.model.get_iter_first(out iter));
+		view.get_background_area(view.model.get_path(iter),
+		                         paned.column_subject, out row);
+		paned.column_subject.cell_set_cell_data(view.model, iter, false,
+		                                        false);
+
+		var area = Gdk.Rectangle() {
+			x = 0, y = 0, width = 200, height = row.height
+		};
+
+		cell.render(new Cairo.Context(surface), view, area, area, 0);
+		surface.ink_extents(out x, out y, out width, out height);
+
+		assert_cmpfloat(x + width, CompareOperator.LE,
+		                area.width - cell.xpad);
+
 		window.destroy();
 		repo.remove();
 	}

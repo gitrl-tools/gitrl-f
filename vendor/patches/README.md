@@ -346,7 +346,7 @@ Six changes.
 
 ## gitg-cell-renderer-lanes.patch
 
-Four changes.
+Five changes.
 
 **1. Gives the colour of the lane of the commit to the labels of that commit.**
 
@@ -364,7 +364,11 @@ Four changes.
 
 **Why.** The labels start to the right of the last lane. When a line of another branch runs between the dot and the labels, the eye joins the labels to that line. The operator saw this with a branch label that sat next to the line of a different branch. The faint line joins the labels to their own dot, and it is drawn only where it is needed, so that the list has no more lines than before. The operator chose the faint strength from 35 percent, 60 percent and full, on a mock-up.
 
-**Cost.** Changes 1 and 2 cost nothing. After change 3, the bend where a line joins another has the colour of the line that ends, not of the line that continues. The pixel suite finds a difference at each such bend. After change 4, a labelled row with a lane to the right of its dot has one more line. The pixel suite finds a difference at each such row.
+**5. Takes the width of the lanes and the labels off the room for the subject** in a left to right layout too. gitg moved the subject right by that width but kept its full width, so the subject ran past the right edge of the column. It was cut there, under the next column, and its ellipsis was never seen. gitg took the width off only in a right to left layout.
+
+**Why.** The operator asked for an ellipsis at the end of a subject that the column cannot show whole. In gitg the subject is the last column and fills the list, so the fault was not seen. In gitrl-f the Lines column follows the subject.
+
+**Cost.** Changes 1 and 2 cost nothing. After change 3, the bend where a line joins another has the colour of the line that ends, not of the line that continues. The pixel suite finds a difference at each such bend. After change 4, a labelled row with a lane to the right of its dot has one more line. The pixel suite finds a difference at each such row. After change 5, a subject that the column cuts ends in an ellipsis. The pixel suite finds a difference at each such row.
 
 ## gitg-label-renderer.patch
 
