@@ -3705,10 +3705,10 @@ private static void test_lines_column_holds_four_digits_a_side()
 		view.create_pango_layout("0").get_pixel_size(out digit, null);
 
 		assert_cmpint(column.get_width(), CompareOperator.EQ, width);
-		assert_cmpint(left - row.x, CompareOperator.GE, 0);
-		assert_cmpint(left - row.x, CompareOperator.LE, 6);
-		assert_cmpint(row.x + row.width - end, CompareOperator.GE, 2 * digit);
-		assert_cmpint(row.x + row.width - end, CompareOperator.LE, 2 * digit + 6);
+		assert_cmpint(left - row.x, CompareOperator.GE, digit);
+		assert_cmpint(left - row.x, CompareOperator.LE, digit + 6);
+		assert_cmpint(row.x + row.width - end, CompareOperator.GE, digit);
+		assert_cmpint(row.x + row.width - end, CompareOperator.LE, digit + 6);
 
 		window.destroy();
 		repo.remove();

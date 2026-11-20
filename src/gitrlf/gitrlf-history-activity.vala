@@ -1815,6 +1815,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			total += width + 2 * focus;
 		}
 
+		column.get_cells().data.width += digit;
 		column.fixed_width = total;
 	}
 
