@@ -1638,6 +1638,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return false;
 		}
 
+		var picked = view.get_selection().path_is_selected(path);
+		var commits = picked ? picks() : new Gitg.Commit[] { commit };
+
 		if (column == d_paned.column_subject)
 		{
 			var lanes = (Gitg.CellRendererLanes)view.find_cell_at_pos(column, path, cell_x, out cell_width);
@@ -1645,7 +1648,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 
 			if (label != null)
 			{
-				d_copy_menu.add_copy(_("Copy name"), label.parsed_name.shortname);
+				var names = commits.length == 1
+				            ? label.parsed_name.shortname
+				            : names_of_kind(commits, label.parsed_name.rtype);
+
+				d_copy_menu.add_copy(_("Copy name"), names);
 			}
 		}
 
@@ -1655,7 +1662,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_menu_search = new Cancellable();
-		d_copy_menu.add_copy(_("Copy hash"), commit.get_id().to_string());
+		d_copy_menu.add_copy(_("Copy hash"), hashes(commits));
 		add_hide_item(commit.get_id());
 		d_copy_menu.add_separator();
 		add_holders_item(commit.get_id());
@@ -1663,14 +1670,10 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		add_merge_item(commit.get_id());
 		d_copy_menu.add_separator();
 
-		var picked = view.get_selection().path_is_selected(path);
-
 		if (picked && !d_paned.details_visible)
 		{
 			add_show_item();
 		}
-
-		var commits = picked ? picks() : new Gitg.Commit[] { commit };
 
 		add_compare_item(commits);
 
@@ -1968,6 +1971,18 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			((Gtk.CellRendererText)cell).markup = Search.marked(commit.get_id().to_string().substring(0, 7), d_query.hash_marks());
 			embolden(cell, commit);
 		}
+	}
+
+	private string hashes(Gitg.Commit[] commits)
+	{
+		var lines = new string[0];
+
+		foreach (var commit in commits)
+		{
+			lines += commit.get_id().to_string();
+		}
+
+		return string.joinv("\n", lines);
 	}
 
 	private void hide_line(Gee.Set<string> names)
@@ -2399,6 +2414,24 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool messages_apply()
 	{
 		return !d_query.is_empty && d_query.problem == null;
+	}
+
+	private string names_of_kind(Gitg.Commit[] commits, Gitg.RefType kind)
+	{
+		var lines = new string[0];
+
+		foreach (var commit in commits)
+		{
+			foreach (var label in ticked_labels(commit))
+			{
+				if (label.parsed_name.rtype == kind)
+				{
+					lines += label.parsed_name.shortname;
+				}
+			}
+		}
+
+		return string.joinv("\n", lines);
 	}
 
 	private string narrow_key()

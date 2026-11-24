@@ -664,6 +664,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/refs-that-cannot-be-read-leave-no-old-rows", test_refs_that_cannot_be_read_leave_no_old_rows);
 	Test.add_func("/gitrlf/ui/history-activity/right-click-on-a-label-copies-its-name", test_right_click_on_a_label_copies_its_name);
 	Test.add_func("/gitrlf/ui/history-activity/right-click-on-the-hash-copies-the-full-hash", test_right_click_on_the_hash_copies_the_full_hash);
+	Test.add_func("/gitrlf/ui/history-activity/copy-hash-copies-every-pick", test_copy_hash_copies_every_pick);
+	Test.add_func("/gitrlf/ui/history-activity/copy-name-copies-the-labels-of-every-pick", test_copy_name_copies_the_labels_of_every_pick);
 	Test.add_func("/gitrlf/ui/history-activity/row-is-drawn-before-its-diff-is-built", test_row_is_drawn_before_its_diff_is_built);
 	Test.add_func("/gitrlf/ui/history-activity/selection-is-kept-across-a-tick", test_selection_is_kept_across_a_tick);
 	Test.add_func("/gitrlf/ui/history-activity/selection-with-the-pane-hidden-builds-no-diff", test_selection_with_the_pane_hidden_builds_no_diff);
@@ -4274,6 +4276,84 @@ private static void test_right_click_on_a_label_copies_its_name()
 		settle(100);
 
 		assert_cmpstr(clipboard.wait_for_text(), CompareOperator.EQ, "feature/scan");
+
+		sizes.reset("size");
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_copy_hash_copies_every_pick()
+{
+	try
+	{
+		var repo = Repo.create();
+		var first = repo.commit("first");
+		var second = repo.commit("second");
+		repo.commit("third");
+
+		var window = opened(repo, {"refs/heads/master"});
+		var clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+
+		click_row(window, row_of(window, "second"));
+		click_row_holding(window, row_of(window, "first"), "shift");
+		right_click(window, row_of(window, "first"), 1, 20);
+
+		var item = copy_item();
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy hash");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+
+		assert_cmpstr(clipboard.wait_for_text(), CompareOperator.EQ,
+		              second + "\n" + first);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_copy_name_copies_the_labels_of_every_pick()
+{
+	try
+	{
+		var sizes = new Settings(Gitrlf.Config.APPLICATION_ID + ".state.window");
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.branch("one");
+		repo.commit("second");
+		repo.branch("two");
+		repo.git({"tag", "v2"});
+		repo.commit("third");
+		sizes.set_value("size", new Variant("(ii)", 1180, 600));
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/one",
+		                           "refs/heads/two", "refs/tags/v2"});
+		var clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+		var row = row_of(window, "second");
+
+		click_row(window, row);
+		click_row_holding(window, row_of(window, "first"), "shift");
+		right_click(window, row, 0, label_x(window, row, "two"));
+
+		var item = copy_item();
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy name");
+
+		item.activate();
+		((Gtk.Menu)item.get_parent()).popdown();
+		settle(100);
+
+		assert_cmpstr(clipboard.wait_for_text(), CompareOperator.EQ,
+		              "two\none");
 
 		sizes.reset("size");
 		window.destroy();

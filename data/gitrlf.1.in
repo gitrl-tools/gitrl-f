@@ -189,7 +189,11 @@ lines of the file that holds the current match, or else of the file in the
 middle of the pane.
 .SH THE MENU OF A COMMIT
 A right click on a commit in the list opens its menu. Copy hash copies its
-hash, and Copy name, on a label, the name of that ref. Branches and tags
+hash, and Copy name, on a label, the name of that ref. On one of several
+selected commits, Copy hash copies the hash of each, one per line, in the
+order of the list. Copy name then copies, one per line, every name on the
+selected commits that is of the same kind as the label clicked: a local
+branch, a remote branch or a tag. Branches and tags
 with this commit lists every ref whose history holds the commit, and a
 choice ticks or unticks it. First tag with this commit names the tag that
 .B git describe \-\-contains
