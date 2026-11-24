@@ -1649,10 +1649,13 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			if (label != null)
 			{
 				var names = commits.length == 1
-				            ? label.parsed_name.shortname
+				            ? new string[] { label.parsed_name.shortname }
 				            : names_of_kind(commits, label.parsed_name.rtype);
+				var caption = names.length == 1
+				              ? _("Copy name")
+				              : ngettext("Copy %d name", "Copy %d names", names.length).printf(names.length);
 
-				d_copy_menu.add_copy(_("Copy name"), names);
+				d_copy_menu.add_copy(caption, string.joinv("\n", names));
 			}
 		}
 
@@ -1662,7 +1665,11 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		}
 
 		d_menu_search = new Cancellable();
-		d_copy_menu.add_copy(_("Copy hash"), hashes(commits));
+		var copy_hashes = commits.length == 1
+		                  ? _("Copy hash")
+		                  : ngettext("Copy %d hash", "Copy %d hashes", commits.length).printf(commits.length);
+
+		d_copy_menu.add_copy(copy_hashes, hashes(commits));
 		add_hide_item(commit.get_id());
 		d_copy_menu.add_separator();
 		add_holders_item(commit.get_id());
@@ -2416,7 +2423,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		return !d_query.is_empty && d_query.problem == null;
 	}
 
-	private string names_of_kind(Gitg.Commit[] commits, Gitg.RefType kind)
+	private string[] names_of_kind(Gitg.Commit[] commits, Gitg.RefType kind)
 	{
 		var lines = new string[0];
 
@@ -2431,7 +2438,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			}
 		}
 
-		return string.joinv("\n", lines);
+		return lines;
 	}
 
 	private string narrow_key()

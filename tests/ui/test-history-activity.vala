@@ -4304,7 +4304,7 @@ private static void test_copy_hash_copies_every_pick()
 		right_click(window, row_of(window, "first"), 1, 20);
 
 		var item = copy_item();
-		assert_cmpstr(item.label, CompareOperator.EQ, "Copy hash");
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy 2 hashes");
 
 		item.activate();
 		((Gtk.Menu)item.get_parent()).popdown();
@@ -4346,7 +4346,7 @@ private static void test_copy_name_copies_the_labels_of_every_pick()
 		right_click(window, row, 0, label_x(window, row, "two"));
 
 		var item = copy_item();
-		assert_cmpstr(item.label, CompareOperator.EQ, "Copy name");
+		assert_cmpstr(item.label, CompareOperator.EQ, "Copy 2 names");
 
 		item.activate();
 		((Gtk.Menu)item.get_parent()).popdown();
