@@ -2201,8 +2201,9 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 	private bool line_at(int row, int x, int y, int height, out uint line,
 	                     out int top)
 	{
-		var width = (double)d_paned.renderer_subject.lane_width;
-		var dot = d_paned.renderer_subject.dot_width / 2.0;
+		var lanes = d_paned.renderer_subject;
+		var width = (double)lanes.lane_width;
+		var dot = lanes.dot_width / 2.0;
 		var commit = d_model.get_row(row);
 		var middle = height / 2.0;
 		var upper = y < middle ? row - 1 : row;
@@ -2213,7 +2214,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		line = commit.lane.line;
 		top = row;
 
-		if (Math.fabs(x - (commit.mylane + 0.5) * width) <= dot
+		if (Math.fabs(x - lanes.lane_centre(commit.mylane)) <= dot
 		    && Math.fabs(y - middle) <= dot)
 		{
 			return true;
@@ -2233,8 +2234,8 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			{
 				foreach (var from in lane.from)
 				{
-					var gap = Math.fabs(x - bend_x((from + 0.5) * width,
-					                               (to + 0.5) * width, down));
+					var gap = Math.fabs(x - bend_x(lanes.lane_centre(from),
+					                               lanes.lane_centre(to), down));
 
 					if (gap < nearest)
 					{

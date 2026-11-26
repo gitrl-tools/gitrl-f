@@ -28,10 +28,14 @@ namespace Gitg
 		public uint dot_width { get; set; default = 10; }
 		public unowned SList<Ref> labels { get; set; }
 
-		private const double LEADER_ALPHA = 0.35;
-		private const double LEADER_WIDTH = 1.0;
+		private const string CAPITALS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		private const double CLEARANCE = 2.0;
+		private const double LINE_WIDTH = 2.0;
 
 		private int d_last_height;
+		private uint d_gap;
+		private int d_indent;
+		private string? d_gap_key;
 
 		private delegate double DirectionFunc(double i);
 
@@ -60,10 +64,76 @@ namespace Gitg
 			}
 		}
 
-		private uint total_width(Gtk.Widget widget)
+		private uint lane_gap
 		{
-			return num_visible_lanes * lane_width +
-			       LabelRenderer.width(widget, font_desc, labels);
+			get { return d_gap > 0 ? d_gap : lane_width; }
+		}
+
+		private uint own_end
+		{
+			get { return commit.mylane * lane_gap + lane_width; }
+		}
+
+		private uint lanes_end
+		{
+			get
+			{
+				var visible = num_visible_lanes;
+
+				return visible == 0 ? 0 : (visible - 1) * lane_gap + lane_width;
+			}
+		}
+
+		/**
+		 * Gives the x of the middle of lane @index, from the left edge of
+		 * the cell.
+		 */
+		public double lane_centre(uint index)
+		{
+			return index * lane_gap + lane_width / 2.0;
+		}
+
+		private uint text_offset(Gtk.Widget widget)
+		{
+			return own_end + LabelRenderer.width(widget, font_desc, labels);
+		}
+
+		private void measure_gap(Gtk.Widget widget)
+		{
+			var font = widget.get_pango_context().get_font_description().copy();
+			font.merge(font_desc, true);
+
+			var key = "%s %d %u".printf(font.to_string(), d_indent, xpad);
+
+			if (key == d_gap_key)
+			{
+				return;
+			}
+
+			d_gap_key = key;
+
+			var layout = widget.create_pango_layout(null);
+			var reach = 0;
+
+			foreach (var weight in new Pango.Weight[] { Pango.Weight.NORMAL, Pango.Weight.BOLD })
+			{
+				font.set_weight(weight);
+				layout.set_font_description(font);
+
+				for (var i = 0; i < CAPITALS.length; i++)
+				{
+					Pango.Rectangle ink;
+
+					layout.set_text(CAPITALS.substring(i, 1), -1);
+					layout.get_pixel_extents(out ink, null);
+					reach = int.max(reach, ink.x + ink.width);
+				}
+			}
+
+			var gap = lane_width / 2.0 + d_indent + xpad + reach +
+			          CLEARANCE + LINE_WIDTH / 2.0;
+
+			d_gap = uint.max(lane_width, (uint)Math.ceil(gap));
 		}
 
 		public override void get_preferred_width(Gtk.Widget widget,
@@ -72,14 +142,13 @@ namespace Gitg
 		{
 			base.get_preferred_width(widget, out minimum_width, out natural_width);
 
-			var w = (int)total_width(widget);
+			measure_gap(widget);
 
-			if (w > minimum_width)
-			{
-				minimum_width = w;
-			}
+			var offset = (int)text_offset(widget);
+			var reach = (int)lanes_end;
 
-			natural_width += w;
+			minimum_width = int.max(minimum_width, int.max(offset, reach));
+			natural_width = int.max(natural_width + offset, reach);
 		}
 
 		private void draw_arrow(Cairo.Context context,
@@ -87,11 +156,10 @@ namespace Gitg
 		                        uint          laneidx,
 		                        bool          top)
 		{
-			double cw = lane_width;
-			double xpos = area.x + laneidx * cw + cw / 2.0;
+			double xpos = area.x + lane_centre(laneidx);
 			double df = (top ? -1 : 1) * 0.25 * area.height;
 			double ypos = area.y + area.height / 2.0 + df;
-			double q = cw / 4.0;
+			double q = lane_width / 4.0;
 
 			context.move_to(xpos - q, ypos + (top ? q : -q));
 			context.line_to(xpos, ypos);
@@ -159,7 +227,6 @@ namespace Gitg
 			}
 
 			int to = 0;
-			double cw = lane_width;
 			double ch = area.height / 2.0;
 
 			foreach (var lane in commit.get_lanes())
@@ -175,8 +242,8 @@ namespace Gitg
 					var color = bend_color(lane, from, above);
 					context.set_source_rgb(color.r, color.g, color.b);
 
-					double x1 = area.x + f(from * cw + cw / 2.0);
-					double x2 = area.x + f(to * cw + cw / 2.0);
+					double x1 = area.x + f(lane_centre(from));
+					double x2 = area.x + f(lane_centre(to));
 					double y1 = area.y + yoffset * ch;
 					double y2 = area.y + (yoffset + 1) * ch;
 					double y3 = area.y + (yoffset + 2) * ch;
@@ -208,7 +275,7 @@ namespace Gitg
 		                        Gdk.Rectangle area,
 		                        DirectionFunc f)
 		{
-			context.set_line_width(2.0);
+			context.set_line_width(LINE_WIDTH);
 			context.set_line_cap(Cairo.LineCap.ROUND);
 
 			context.save();
@@ -224,15 +291,11 @@ namespace Gitg
 		                            Gdk.Rectangle area,
 		                            DirectionFunc f)
 		{
-			double offset;
-			double radius;
-
-			offset = commit.mylane * lane_width + (lane_width - dot_width) / 2.0;
-			radius = dot_width / 2.0;
+			double radius = dot_width / 2.0;
 
 			context.set_line_width(0.0);
 
-			context.arc(area.x + f(offset + radius),
+			context.arc(area.x + f(lane_centre(commit.mylane)),
 			            area.y + area.height / 2.0,
 			            radius,
 			            0,
@@ -256,7 +319,7 @@ namespace Gitg
 		{
 			int offset;
 
-			offset = (int)(num_visible_lanes * lane_width);
+			offset = (int)own_end;
 
 			var rtl = (widget.get_style_context().get_state() & Gtk.StateFlags.DIR_RTL) != 0;
 
@@ -291,32 +354,9 @@ namespace Gitg
 				f = (a) => a;
 			}
 
-			draw_leader(context, area, f);
 			draw_paths(context, area, f);
 			draw_indicator(context, area, f);
 
-			context.restore();
-		}
-
-		private void draw_leader(Cairo.Context context,
-		                         Gdk.Rectangle area,
-		                         DirectionFunc f)
-		{
-			if (labels == null || commit.mylane + 1 >= num_visible_lanes)
-			{
-				return;
-			}
-
-			var color = commit.lane.color;
-			double cw = lane_width;
-			double y = Math.floor(area.y + area.height / 2.0) + 0.5;
-
-			context.save();
-			context.set_source_rgba(color.r, color.g, color.b, LEADER_ALPHA);
-			context.set_line_width(LEADER_WIDTH);
-			context.move_to(area.x + f(commit.mylane * cw + cw / 2.0), y);
-			context.line_to(area.x + f(num_visible_lanes * cw), y);
-			context.stroke();
 			context.restore();
 		}
 
@@ -333,36 +373,79 @@ namespace Gitg
 
 			d_last_height = area.height;
 
-			if (commit != null)
-			{
-				context.save();
-
-				Gdk.cairo_rectangle(context, area);
-				context.clip();
-
-				draw_lane(context, widget, area);
-				draw_labels(context, widget, area);
-
-				var tw = total_width(widget);
-
-				if (!rtl)
-				{
-					narea.x += (int)tw;
-					ncell_area.x += (int)tw;
-				}
-
-				narea.width -= (int)tw;
-				ncell_area.width -= (int)tw;
-
-				context.restore();
-			}
-
 			if (rtl == (Pango.find_base_dir(text, -1) != Pango.Direction.RTL))
 			{
 				xalign = 1.0f;
 			}
 
+			if (commit != null)
+			{
+				d_indent = rtl ? area.x + area.width - cell_area.x - cell_area.width
+				               : cell_area.x - area.x;
+				measure_gap(widget);
+
+				var tw = (int)text_offset(widget);
+
+				if (!rtl)
+				{
+					narea.x += tw;
+					ncell_area.x += tw;
+				}
+
+				narea.width -= tw;
+				ncell_area.width -= tw;
+
+				context.save();
+
+				Gdk.cairo_rectangle(context, area);
+				context.clip();
+
+				var crossed = num_visible_lanes > commit.mylane + 1;
+
+				if (crossed)
+				{
+					context.push_group();
+				}
+
+				draw_lane(context, widget, area);
+
+				if (crossed)
+				{
+					cut_clearance(context, widget, area, narea, ncell_area,
+					              flags);
+					context.pop_group_to_source();
+					context.paint();
+				}
+
+				draw_labels(context, widget, area);
+
+				context.restore();
+			}
+
 			base.render(context, widget, narea, ncell_area, flags);
+		}
+
+		private void cut_clearance(Cairo.Context         context,
+		                           Gtk.Widget            widget,
+		                           Gdk.Rectangle         area,
+		                           Gdk.Rectangle         text_area,
+		                           Gdk.Rectangle         text_cell_area,
+		                           Gtk.CellRendererState flags)
+		{
+			context.set_operator(Cairo.Operator.DEST_OUT);
+
+			for (var dy = -CLEARANCE; dy <= CLEARANCE; dy++)
+			{
+				for (var dx = -CLEARANCE; dx <= CLEARANCE; dx++)
+				{
+					context.save();
+					context.translate(dx, dy);
+					draw_labels(context, widget, area);
+					base.render(context, widget, text_area, text_cell_area,
+					            flags);
+					context.restore();
+				}
+			}
 		}
 
 		public Ref? get_ref_at_pos(Gtk.Widget widget,
@@ -371,7 +454,7 @@ namespace Gitg
 		                           out int    hot_x)
 		{
 			var rtl = (widget.get_style_context().get_state() & Gtk.StateFlags.DIR_RTL) != 0;
-			var offset = (int)(num_visible_lanes * lane_width);
+			var offset = (int)own_end;
 
 			if (rtl)
 			{

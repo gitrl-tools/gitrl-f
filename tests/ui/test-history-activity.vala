@@ -229,6 +229,33 @@ private static Repo counts_repo() throws Error
 	return repo;
 }
 
+private static Repo crossed_repo() throws Error
+{
+	var repo = Repo.create();
+	repo.commit("first");
+	repo.commit("W W W");
+	repo.commit("mmmmmmmmmmmm");
+	repo.commit("main two");
+	repo.branch("alpha");
+	repo.git({"checkout", "--quiet", "-b", "side", "master~3"});
+	repo.commit("side one", "side");
+	repo.checkout("master");
+	repo.commit("main three");
+
+	return repo;
+}
+
+private static Gitrlf.Window crossed_window(Repo repo) throws Error
+{
+	var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/side"});
+
+	assert_cmpstr(subjects_of(window), CompareOperator.EQ, "main three,side one,main two,mmmmmmmmmmmm,W W W,first");
+	assert_cmpuint(lane_of(window, "W W W"), CompareOperator.EQ, 0);
+	assert_cmpuint(lane_of(window, "side one"), CompareOperator.EQ, 1);
+
+	return window;
+}
+
 private static bool details_shown(Gitrlf.Window window)
 {
 	return window.history.paned.box_details.get_mapped();
@@ -364,12 +391,13 @@ private static string folded(Gitrlf.Window window)
 private static void hide_line(Gitrlf.Window window, string name)
 {
 	var rows = window.history.rows();
+	var first = (int)window.history.paned.renderer_subject.lane_centre(0);
 
 	for (var i = 0; i < rows.length; i++)
 	{
 		if (name in window.history.labels_for(rows[i]))
 		{
-			right_click(window, i, 0, label_x(window, i, name));
+			right_click(window, i, 0, first);
 		}
 	}
 
@@ -448,6 +476,14 @@ private static int ink_start(Cairo.ImageSurface surface, int y)
 	}
 
 	return -1;
+}
+
+private static bool is_ink(uint8* pixel)
+{
+	var high = uint8.max(pixel[0], uint8.max(pixel[1], pixel[2]));
+	var low = uint8.min(pixel[0], uint8.min(pixel[1], pixel[2]));
+
+	return high - low < 40 && ink_of(pixel) < 3 * 160;
 }
 
 private static Gdk.RGBA kind_fill(Gtk.StyleContext context, string kind)
@@ -589,6 +625,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-column-narrowed-by-its-title-stays-as-wide-as-its-title", test_a_column_narrowed_by_its_title_stays_as_wide_as_its_title);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-unticked-in-the-title-menu-stays-hidden", test_a_column_unticked_in_the_title_menu_stays_hidden);
 	Test.add_func("/gitrlf/ui/history-activity/a-column-widened-by-its-title-keeps-its-width", test_a_column_widened_by_its_title_keeps_its_width);
+	Test.add_func("/gitrlf/ui/history-activity/a-crossing-line-keeps-2-px-clear-of-the-letters", test_a_crossing_line_keeps_2_px_clear_of_the_letters);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-border-fits-the-column-to-its-left", test_a_double_click_on_a_border_fits_the_column_to_its_left);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-border-shows-the-whole-text-under-a-theme-that-pads-cells", test_a_double_click_on_a_border_shows_the_whole_text_under_a_theme_that_pads_cells);
 	Test.add_func("/gitrlf/ui/history-activity/a-double-click-on-a-title-edge-keeps-the-titles-in-line", test_a_double_click_on_a_title_edge_keeps_the_titles_in_line);
@@ -596,7 +633,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-dragged-sidebar-keeps-its-width", test_a_dragged_sidebar_keeps_its_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-group-with-no-tick-opens-folded", test_a_group_with_no_tick_opens_folded);
 	Test.add_func("/gitrlf/ui/history-activity/a-hidden-line-is-kept-when-the-repository-opens-again", test_a_hidden_line_is_kept_when_the_repository_opens_again);
-	Test.add_func("/gitrlf/ui/history-activity/a-label-is-joined-to-its-dot-by-a-faint-line-where-a-line-passes-between", test_a_label_is_joined_to_its_dot_by_a_faint_line_where_a_line_passes_between);
+	Test.add_func("/gitrlf/ui/history-activity/a-label-starts-after-the-lane-of-its-commit", test_a_label_starts_after_the_lane_of_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-branch-whose-tip-the-search-hides", test_a_line_names_a_branch_whose_tip_the_search_hides);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
@@ -608,6 +645,7 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-repository-opened-in-a-narrow-window-gives-the-subject-its-title-width", test_a_repository_opened_in_a_narrow_window_gives_the_subject_its_title_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-lit-only-once-the-user-picks-it", test_a_row_is_lit_only_once_the_user_picks_it);
 	Test.add_func("/gitrlf/ui/history-activity/a-row-is-plain-until-picked-under-a-theme-that-paints-the-selection", test_a_row_is_plain_until_picked_under_a_theme_that_paints_the_selection);
+	Test.add_func("/gitrlf/ui/history-activity/a-subject-starts-after-the-lane-of-its-commit", test_a_subject_starts_after_the_lane_of_its_commit);
 	Test.add_func("/gitrlf/ui/history-activity/a-wider-sidebar-keeps-every-column-width", test_a_wider_sidebar_keeps_every_column_width);
 	Test.add_func("/gitrlf/ui/history-activity/a-window-change-goes-to-the-last-column-alone", test_a_window_change_goes_to_the_last_column_alone);
 	Test.add_func("/gitrlf/ui/history-activity/back-arrow-steps-back-from-the-full-diff", test_back_arrow_steps_back_from_the_full_diff);
@@ -748,17 +786,30 @@ private static string line_hex(Gitrlf.Window window, string subject)
 	assert_not_reached();
 }
 
+private static int line_left(Cairo.ImageSurface surface, Gdk.Rectangle row, string hex)
+{
+	for (var i = row.x; i < row.x + row.width; i++)
+	{
+		if ("%06x".printf(*(uint32*)pixel_at(surface, i, row.y) & 0xffffff) == hex)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 private static string? line_tip(Gitrlf.Window window, int row, uint lane, double down)
 {
 	var view = window.history.paned.commit_list_view;
-	var width = window.history.paned.renderer_subject.lane_width;
+	var lanes = window.history.paned.renderer_subject;
 	Gdk.Rectangle area;
 	int origin_x;
 	int origin_y;
 
 	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out area);
 	view.get_bin_window().get_origin(out origin_x, out origin_y);
-	point_at(origin_x + area.x + (int)(lane * width + width / 2), origin_y + area.y + (int)(area.height * down));
+	point_at(origin_x + area.x + (int)lanes.lane_centre(lane), origin_y + area.y + (int)(area.height * down));
 	settle(1000);
 
 	foreach (var toplevel in Gtk.Window.list_toplevels())
@@ -1026,6 +1077,19 @@ private static int right_end(Cairo.ImageSurface surface, int y)
 	}
 
 	return x;
+}
+
+private static Gdk.Rectangle row_box(Gitrlf.Window window, int row)
+{
+	var view = window.history.paned.commit_list_view;
+	Gdk.Rectangle area;
+	int x;
+	int y;
+
+	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out area);
+	view.convert_bin_window_to_widget_coords(area.x, area.y, out x, out y);
+
+	return { x, y, area.width, area.height };
 }
 
 private static void row_centre(Gitrlf.Window window, int row, out int x, out int y)
@@ -1617,6 +1681,55 @@ private static void test_a_column_widened_by_its_title_keeps_its_width()
 	}
 }
 
+private static void test_a_crossing_line_keeps_2_px_clear_of_the_letters()
+{
+	try
+	{
+		var repo = crossed_repo();
+		var window = crossed_window(repo);
+		var box = row_box(window, row_of(window, "mmmmmmmmmmmm"));
+		var hex = line_hex(window, "side one");
+		var surface = drawn(window.history.paned.commit_list_view);
+		var left = line_left(surface, box, hex);
+		var lit = 0;
+		var broken = 0;
+
+		assert_cmpint(left, CompareOperator.GE, 0);
+
+		for (var j = box.y; j < box.y + box.height; j++)
+		{
+			for (var i = left; i <= left + 1; i++)
+			{
+				if ("%06x".printf(*(uint32*)pixel_at(surface, i, j) & 0xffffff) != hex)
+				{
+					broken++;
+					continue;
+				}
+
+				lit++;
+
+				for (var dj = -2; dj <= 2; dj++)
+				{
+					for (var di = -2; di <= 2; di++)
+					{
+						assert_false(is_ink(pixel_at(surface, i + di, j + dj)));
+					}
+				}
+			}
+		}
+
+		assert_cmpint(lit, CompareOperator.GT, 0);
+		assert_cmpint(broken, CompareOperator.GT, 0);
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
 private static void test_a_double_click_on_a_border_fits_the_column_to_its_left()
 {
 	try
@@ -1924,29 +2037,24 @@ private static void test_a_line_names_the_local_branches_at_or_above_the_pointer
 	}
 }
 
-private static void test_a_label_is_joined_to_its_dot_by_a_faint_line_where_a_line_passes_between()
+private static void test_a_label_starts_after_the_lane_of_its_commit()
 {
 	try
 	{
-		var repo = Repo.create();
-		repo.commit("first");
-		repo.commit("main two");
-		repo.branch("alpha");
-		repo.git({"checkout", "--quiet", "-b", "side", "master~1"});
-		repo.commit("side one", "side");
-		repo.checkout("master");
-		repo.commit("main three");
+		var repo = crossed_repo();
+		var window = crossed_window(repo);
+		var row = row_of(window, "main two");
+		var box = row_box(window, row);
+		var below = row_box(window, row_of(window, "mmmmmmmmmmmm"));
+		var left = line_left(drawn(window.history.paned.commit_list_view), below, line_hex(window, "side one"));
+		int first;
+		int last;
 
-		var window = opened(repo, {"refs/heads/master", "refs/heads/alpha", "refs/heads/side"});
-		var crossed = row_of(window, "main two");
-		var open = row_of(window, "side one");
+		label_span(window, row, "alpha", out first, out last);
 
-		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "main three,side one,main two,first");
-		assert_cmpuint(lane_of(window, "main two"), CompareOperator.EQ, 0);
-		assert_cmpuint(lane_of(window, "side one"), CompareOperator.EQ, 1);
-		assert_cmpstr(row_pixel(window, crossed, 18), CompareOperator.NE, row_pixel(window, crossed, 1));
-		assert_cmpstr(row_pixel(window, crossed, 24), CompareOperator.EQ, line_hex(window, "side one"));
-		assert_cmpstr(row_pixel(window, open, 30), CompareOperator.EQ, row_pixel(window, open, 1));
+		assert_cmpint(left, CompareOperator.GE, 0);
+		assert_cmpint(box.x + first, CompareOperator.LT, left);
+		assert_cmpint(box.x + last, CompareOperator.GT, left);
 
 		window.destroy();
 		repo.remove();
@@ -2338,6 +2446,47 @@ private static void test_a_row_is_plain_until_picked_under_a_theme_that_paints_t
 		window.destroy();
 		repo.remove();
 		Gtk.StyleContext.remove_provider_for_screen(screen, theme);
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_subject_starts_after_the_lane_of_its_commit()
+{
+	try
+	{
+		var repo = crossed_repo();
+		var window = crossed_window(repo);
+		var box = row_box(window, row_of(window, "W W W"));
+		var surface = drawn(window.history.paned.commit_list_view);
+		var left = line_left(surface, box, line_hex(window, "side one"));
+		var lane = (int)window.history.paned.renderer_subject.lane_width;
+		var first = -1;
+		var last = -1;
+
+		for (var i = box.x + lane; i < left; i++)
+		{
+			var inked = false;
+
+			for (var j = box.y; j < box.y + box.height; j++)
+			{
+				inked = inked || is_ink(pixel_at(surface, i, j));
+			}
+
+			if (inked && (first < 0 || last == i - 1))
+			{
+				first = first < 0 ? i : first;
+				last = i;
+			}
+		}
+
+		assert_cmpint(first, CompareOperator.GE, 0);
+		assert_cmpint(last + 3, CompareOperator.LE, left);
+
+		window.destroy();
+		repo.remove();
 	}
 	catch (Error e)
 	{
