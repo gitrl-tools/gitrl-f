@@ -71,7 +71,7 @@ namespace Gitg
 
 		private uint own_end
 		{
-			get { return commit.mylane * lane_gap + lane_width; }
+			get { return (uint)(lane_centre(commit, commit.mylane) + lane_width / 2.0); }
 		}
 
 		private uint lanes_end
@@ -80,17 +80,27 @@ namespace Gitg
 			{
 				var visible = num_visible_lanes;
 
-				return visible == 0 ? 0 : (visible - 1) * lane_gap + lane_width;
+				return visible == 0 ? 0 : (uint)(lane_centre(commit, visible - 1) + lane_width / 2.0);
 			}
 		}
 
 		/**
-		 * Gives the x of the middle of lane @index, from the left edge of
-		 * the cell.
+		 * Gives the x of the middle of lane @index of @row, from the left
+		 * edge of the cell. A lane whose line crosses a subject sits the
+		 * gap after the lane before it, and any other lane one lane width.
 		 */
-		public double lane_centre(uint index)
+		public double lane_centre(Commit row, uint index)
 		{
-			return index * lane_gap + lane_width / 2.0;
+			var x = lane_width / 2.0;
+			unowned SList<Lane>? lanes = row.get_lanes();
+
+			for (uint i = 1; i <= index; i++)
+			{
+				lanes = lanes != null ? lanes.next : null;
+				x += lanes != null && lanes.data.crosses ? lane_gap : lane_width;
+			}
+
+			return x;
 		}
 
 		private uint text_offset(Gtk.Widget widget)
@@ -156,7 +166,7 @@ namespace Gitg
 		                        uint          laneidx,
 		                        bool          top)
 		{
-			double xpos = area.x + lane_centre(laneidx);
+			double xpos = area.x + lane_centre(commit, laneidx);
 			double df = (top ? -1 : 1) * 0.25 * area.height;
 			double ypos = area.y + area.height / 2.0 + df;
 			double q = lane_width / 4.0;
@@ -242,8 +252,8 @@ namespace Gitg
 					var color = bend_color(lane, from, above);
 					context.set_source_rgb(color.r, color.g, color.b);
 
-					double x1 = area.x + f(lane_centre(from));
-					double x2 = area.x + f(lane_centre(to));
+					double x1 = area.x + f(lane_centre(above, from));
+					double x2 = area.x + f(lane_centre(commit, to));
 					double y1 = area.y + yoffset * ch;
 					double y2 = area.y + (yoffset + 1) * ch;
 					double y3 = area.y + (yoffset + 2) * ch;
@@ -295,7 +305,7 @@ namespace Gitg
 
 			context.set_line_width(0.0);
 
-			context.arc(area.x + f(lane_centre(commit.mylane)),
+			context.arc(area.x + f(lane_centre(commit, commit.mylane)),
 			            area.y + area.height / 2.0,
 			            radius,
 			            0,

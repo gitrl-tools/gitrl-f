@@ -391,13 +391,13 @@ private static string folded(Gitrlf.Window window)
 private static void hide_line(Gitrlf.Window window, string name)
 {
 	var rows = window.history.rows();
-	var first = (int)window.history.paned.renderer_subject.lane_centre(0);
+	var lanes = window.history.paned.renderer_subject;
 
 	for (var i = 0; i < rows.length; i++)
 	{
 		if (name in window.history.labels_for(rows[i]))
 		{
-			right_click(window, i, 0, first);
+			right_click(window, i, 0, (int)lanes.lane_centre(rows[i], 0));
 		}
 	}
 
@@ -637,7 +637,8 @@ public static int main(string[] args)
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-branch-whose-tip-the-search-hides", test_a_line_names_a_branch_whose_tip_the_search_hides);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-a-remote-branch-with-no-local-branch", test_a_line_names_a_remote_branch_with_no_local_branch);
 	Test.add_func("/gitrlf/ui/history-activity/a-line-names-the-local-branches-at-or-above-the-pointer", test_a_line_names_the_local_branches_at_or_above_the_pointer);
-	Test.add_func("/gitrlf/ui/history-activity/a-line-with-no-branch-above-it-names-none", test_a_line_with_no_branch_above_it_names_none);
+	Test.add_func("/gitrlf/ui/history-activity/a-line-that-crosses-no-subject-sits-one-lane-from-its-neighbour", test_a_line_that_crosses_no_subject_sits_one_lane_from_its_neighbour);
+	Test.add_func("/gitrlf/ui/history-activity/a-line-with-no-branch-above-it-names-none",test_a_line_with_no_branch_above_it_names_none);
 	Test.add_func("/gitrlf/ui/history-activity/a-ref-ticked-by-hand-leaves-its-hidden-line", test_a_ref_ticked_by_hand_leaves_its_hidden_line);
 	Test.add_func("/gitrlf/ui/history-activity/a-reopened-repository-ends-the-date-at-the-list-edge", test_a_reopened_repository_ends_the_date_at_the_list_edge);
 	Test.add_func("/gitrlf/ui/history-activity/a-reopened-repository-keeps-the-widths-set-by-hand", test_a_reopened_repository_keeps_the_widths_set_by_hand);
@@ -809,7 +810,7 @@ private static string? line_tip(Gitrlf.Window window, int row, uint lane, double
 
 	view.get_background_area(new Gtk.TreePath.from_indices(row), view.get_column(0), out area);
 	view.get_bin_window().get_origin(out origin_x, out origin_y);
-	point_at(origin_x + area.x + (int)lanes.lane_centre(lane), origin_y + area.y + (int)(area.height * down));
+	point_at(origin_x + area.x + (int)lanes.lane_centre(window.history.rows()[row], lane), origin_y + area.y + (int)(area.height * down));
 	settle(1000);
 
 	foreach (var toplevel in Gtk.Window.list_toplevels())
@@ -2117,6 +2118,47 @@ private static void test_a_line_names_a_remote_branch_with_no_local_branch()
 		assert_cmpuint(lane_of(window, "fix one"), CompareOperator.EQ, 1);
 		assert_cmpstr(line_tip(window, 0, 1, 0.5), CompareOperator.EQ, "origin/fix");
 		assert_cmpstr(line_tip(window, 1, 0, 0.5), CompareOperator.EQ, "master");
+
+		window.destroy();
+		repo.remove();
+	}
+	catch (Error e)
+	{
+		Test.fail_printf("%s", e.message);
+	}
+}
+
+private static void test_a_line_that_crosses_no_subject_sits_one_lane_from_its_neighbour()
+{
+	try
+	{
+		var repo = Repo.create();
+		repo.commit("first");
+		repo.commit("main two");
+		repo.git({"checkout", "--quiet", "-b", "side"});
+		repo.commit("side one", "side");
+		repo.checkout("master");
+		repo.commit("main three");
+
+		var window = opened(repo, {"refs/heads/master", "refs/heads/side"});
+
+		assert_cmpstr(subjects_of(window), CompareOperator.EQ, "main three,side one,main two,first");
+		assert_cmpuint(lane_of(window, "side one"), CompareOperator.EQ, 1);
+
+		var box = row_box(window, row_of(window, "side one"));
+		var middle = Gdk.Rectangle() { x = box.x, y = box.y + box.height / 2, width = box.width, height = 1 };
+		var surface = drawn(window.history.paned.commit_list_view);
+		var ground = *(uint32*)pixel_at(surface, middle.x, middle.y);
+		var main = middle.x;
+		var side = line_left(surface, middle, line_hex(window, "side one"));
+
+		while (*(uint32*)pixel_at(surface, main, middle.y) == ground)
+		{
+			main++;
+		}
+
+		assert_cmpint(side, CompareOperator.GE, 0);
+		assert_cmpint(side - main, CompareOperator.LT, (int)window.history.paned.renderer_subject.lane_width);
 
 		window.destroy();
 		repo.remove();

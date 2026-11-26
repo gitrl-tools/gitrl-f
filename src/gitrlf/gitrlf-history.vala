@@ -285,6 +285,34 @@ public class History : Object
 		return colour;
 	}
 
+	private static void cross(Gitg.Commit[] rows)
+	{
+		var crossing = new Gee.HashSet<uint>();
+
+		foreach (var commit in rows)
+		{
+			var index = 0;
+
+			foreach (var lane in commit.get_lanes())
+			{
+				if (index > commit.mylane && (lane.tag & Gitg.LaneTag.HIDDEN) == 0)
+				{
+					crossing.add(lane.line);
+				}
+
+				index++;
+			}
+		}
+
+		foreach (var commit in rows)
+		{
+			foreach (var lane in commit.get_lanes())
+			{
+				lane.crosses = lane.line in crossing;
+			}
+		}
+	}
+
 	private void dodge(Gitg.Commit[] rows)
 	{
 		var seen = new Gee.ArrayList<Gitg.Color>();
@@ -1106,6 +1134,7 @@ public class History : Object
 		carry(rows, held);
 		dodge(rows);
 		paint(rows, checked_out);
+		cross(rows);
 
 		return rows;
 	}

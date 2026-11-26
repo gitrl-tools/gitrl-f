@@ -36,6 +36,7 @@ public class Lane : Object
 {
 	public Color color;
 	public uint line;
+	public bool crosses;
 	public SList<int> from;
 	public LaneTag tag;
 	public Ggit.OId? boundary_id;
@@ -61,6 +62,7 @@ public class Lane : Object
 	{
 		Lane ret = new Lane.with_color(color);
 		ret.line = line;
+		ret.crosses = crosses;
 		ret.from = from.copy();
 		ret.tag = tag;
 		ret.boundary_id = boundary_id;

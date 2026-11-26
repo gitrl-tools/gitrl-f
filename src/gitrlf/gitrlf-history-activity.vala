@@ -2214,7 +2214,7 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 		line = commit.lane.line;
 		top = row;
 
-		if (Math.fabs(x - lanes.lane_centre(commit.mylane)) <= dot
+		if (Math.fabs(x - lanes.lane_centre(commit, commit.mylane)) <= dot
 		    && Math.fabs(y - middle) <= dot)
 		{
 			return true;
@@ -2225,17 +2225,19 @@ public class HistoryActivity : Object, GitgExt.UIElement, GitgExt.Activity, Gitg
 			return false;
 		}
 
-		unowned SList<Gitg.Lane> above = d_model.get_row(upper).get_lanes();
+		var upper_row = d_model.get_row(upper);
+		var lower_row = d_model.get_row(upper + 1);
+		unowned SList<Gitg.Lane> above = upper_row.get_lanes();
 		var to = 0;
 
-		foreach (var lane in d_model.get_row(upper + 1).get_lanes())
+		foreach (var lane in lower_row.get_lanes())
 		{
 			if ((lane.tag & Gitg.LaneTag.HIDDEN) == 0)
 			{
 				foreach (var from in lane.from)
 				{
-					var gap = Math.fabs(x - bend_x(lanes.lane_centre(from),
-					                               lanes.lane_centre(to), down));
+					var gap = Math.fabs(x - bend_x(lanes.lane_centre(upper_row, from),
+					                               lanes.lane_centre(lower_row, to), down));
 
 					if (gap < nearest)
 					{
