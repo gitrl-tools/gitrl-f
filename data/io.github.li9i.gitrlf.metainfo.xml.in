@@ -63,6 +63,32 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.19.0" date="2026-11-27">
+      <description>
+        <ul>
+          <li>
+            With more than one selected commit, Copy hash copies the hash of
+            each selected commit, one per line, in the order of the list. Copy
+            name copies each name on the selected commits that has the same
+            kind as the clicked label: local branch, remote branch or tag. The
+            item shows the count, such as Copy 9 hashes.
+          </li>
+          <li>
+            The labels and the subject of a commit start after the line of
+            that commit. Thus it is clear which commits are on which branch.
+            The lines to the right go across them and stop 2 pixels before
+            each letter and label. A line that crosses no subject keeps its
+            narrow position.
+          </li>
+          <li>
+            A subject that is too long for its column ends with an ellipsis.
+            Before, the Lines column cut it off. The line counts have the
+            width of one digit at their left, so a long subject does not touch
+            them.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.0" date="2026-11-19">
       <description>
         <ul>
